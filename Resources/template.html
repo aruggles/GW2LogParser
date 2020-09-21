@@ -1,0 +1,197 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+    <title>Combat Report</title>
+    <style>
+        img.icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1>Combat Report</h1>
+        <dl class="row">
+            <dt class="col-2">Recording started at</dt>
+            <dd class="col-10"><!-- STARTLOG --></dd>
+            <dt class="col-2">Recording ended at</dt>
+            <dd class="col-10"><!-- ENDLOG --></dd>
+            <dt class="col-2">Point of View</dt>
+            <dd class="col-10"><!-- POINTOFVIEW --></dd>
+        </dl>
+        <nav id="table-tab">
+            <div class="nav nav-tabs" role="tablist">
+                <a class="nav-item nav-link active" data-toggle="tab" href="#nav-damage" role="tab" aria-controls="nav-damage" aria-selected="true">Damage Stats</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-defense" role="tab" aria-controls="nav-defence" aria-selected="true">Defensive Stats</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-support" role="tab" aria-controls="nav-support" aria-selected="true">Support Stats</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-gameplay" role="tab" aria-controls="nav-gameplay" aria-selected="true">Gameplay Stats</a>
+            </div>
+        </nav>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="nav-damage" role="tabpanel" aria-labelledby="nav-damage-tab">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                            <th>&nbsp;</th>
+                            <th>Name</th>
+                            <th>Account</th>
+                            <th>Combat Time (s)</th>
+                            <th>Total DPS</th>
+                            <th>All Damage</th>
+                            <th>Power</th>
+                            <th>Condi</th>
+                            <th>Target Damage</th>
+                            <th>Power</th>
+                            <th>Condi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Player Damage Stats -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane" id="nav-defense" role="tabpanel" aria-labelledby="nav-defense-tab">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                            <th>&nbsp;</th>
+                            <th>Name</th>
+                            <th>Account</th>
+                            <th data-toggle="tooltip" title="Damage Taken">Dmg Taken</th>
+                            <th data-toggle="tooltip" title="Damage absorbed by barrier">Dmg Barrier</th>
+                            <th data-toggle="tooltip" title="Number of times blocked an attack">Blocked</th>
+                            <th data-toggle="tooltip" title="Number of times was invulnerable to damage">Invulned</th>
+                            <th data-toggle="tooltip" title="Number of times interrupted">Interrupted</th>
+                            <th data-toggle="tooltip" title="Number of evades">Evaded</th>
+                            <th data-toggle="tooltip" title="Number of dodge + mirage cloak">Dodges</th>
+                            <th data-toggle="tooltip" title="Number of hits missed against">Missed</th>
+                            <th data-toggle="tooltip" title="Times downed">Downed</th>
+                            <th data-toggle="tooltip" title="Times died">Dead</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Player Defense Stats -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane" id="nav-support" role="tabpanel" aria-labelledby="nav-support-tab">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                            <th>&nbsp;</th>
+                            <th>Name</th>
+                            <th>Account</th>
+                            <th>Condi Cleanse on Others</th>
+                            <th>Condi Cleanse on Self</th>
+                            <th>Boon Strips</th>
+                            <th>Resurrects</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Player Support Stats -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane" id="nav-gameplay" role="tabpanel" aria-labelledby="nav-gameplay-tab">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                            <th>&nbsp;</th>
+                            <th>Name</th>
+                            <th>Account</th>
+                            <th data-toggle="tooltip" title="Percent time hits critical">
+                                <img src="https://wiki.guildwars2.com/images/9/95/Critical_Chance.png" alt="Crits"
+                                     class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Percent time hits while flanking">
+                                <img src="https://wiki.guildwars2.com/images/b/bb/Hunter%27s_Tactics.png" alt="Flank"
+                                     class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Percent time hits while glancing">
+                                <img src="https://wiki.guildwars2.com/images/f/f9/Weakness.png" alt="Glance" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Number of hits while blinded">
+                                <img src="https://wiki.guildwars2.com/images/3/33/Blinded.png" alt="Miss" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Number of hits used to interupt">
+                                <img src="https://wiki.guildwars2.com/images/7/79/Daze.png" alt="Interupts" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Times the enemy was invulnerable to attacks">
+                                <img src="https://wiki.guildwars2.com/images/e/eb/Determined.png" alt="Ivuln" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Times the enemy evaded an attack">
+                                <img src="https://wiki.guildwars2.com/images/e/e2/Evade.png" alt="Evaded" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Times the enemy blocked an attack">
+                                <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Blocked" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Time wasted(in seconds) interupting skill casts">
+                                <img src="https://wiki.guildwars2.com/images/b/b3/Out_Of_Health_Potions.png" alt="Wasted"
+                                     class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Time saved(in seconds) interupting skill casts">
+                                <img src="https://wiki.guildwars2.com/images/e/eb/Ready.png" alt="Saved" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Times weapon swapped">
+                                <img src="https://wiki.guildwars2.com/images/c/ce/Weapon_Swap_Button.png" alt="Swap"
+                                     class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Average Distance to the center of the squad">
+                                <img src="https://wiki.guildwars2.com/images/e/ef/Commander_arrow_marker.png" alt="Stack Center"
+                                     class="icon icon-hover">
+                            </th>
+                            <th v-if="hasCommander" data-toggle="tooltip" title="Average Distance to the commander">
+                                <img src="https://wiki.guildwars2.com/images/5/54/Commander_tag_%28blue%29.png" alt="Stack Commander"
+                                     class="icon icon-hover">
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Player Gameplay Stats -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div>
+            <h2>Individual Fight Details</h2>
+            <div class="btn-group" role="group" aria-label="Links to the individual fights">
+                <!-- Fight Links -->
+            </div>
+        <!-- Player Summaries -->
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+            $('.table').DataTable({
+                "paging": false,
+                "searching": false,
+                "info": false
+            });
+            $('#table-tab').tab('show');
+            $('nav.players').tab('show');
+            $('.dataTables_length').addClass('bs-select');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<template>
+    <div>
+        <div v-if="actor !== null">
+            <div v-if="isminion">
+                {{actor.name}} did {{round3(100*dmgdist.contributedDamage/dmgdist.totalDamage)}}% of its master's total
+                {{istarget ? 'Target' :''}} dps
+            </div>
+            <div v-else>
+                {{actor.name}} did {{round3(100*dmgdist.contributedDamage/dmgdist.totalDamage)}}% of its total {{istarget ?
+                'Target' :''}} dps
+            </div>
+        </div>
+        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" :id="tableid">
+            <thead>
+                <tr>
+                    <th class="text-left">Skill</th>
+                    <th>
+                        %
+                    </th>
+                    <th data-original-title="Damage">
+                        <img src="https://wiki.guildwars2.com/images/thumb/6/6a/Damage.png/30px-Damage.png" alt="Damage"
+                            class="icon icon-hover">
+                    </th>
+                    <th data-original-title="Damage against barrier. Not necessarily included in total damage">
+                        <img src="https://wiki.guildwars2.com/images/thumb/c/cc/Barrier.png/30px-Barrier.png"
+                            alt="Barrier Damage" class="icon icon-hover">
+                    </th>
+                    <th data-original-title="Minimum">
+                        Min
+                    </th>
+                    <th data-original-title="Average">
+                        Avg
+                    </th>
+                    <th data-original-title="Maximum">
+                        Max
+                    </th>
+                    <th v-if="actor !== null">
+                        Cast
+                    </th>
+                    <th>
+                        Hits
+                    </th>
+                    <th v-if="actor !== null" data-original-title="Hits per Cast">
+                        <img src="https://wiki.guildwars2.com/images/thumb/5/53/Number_of_targets.png/20px-Number_of_targets.png"
+                            alt="Hits per Cast" class="icon icon-hover">
+                    </th>
+                    <th v-if="actor !== null" data-original-title="Damage divided by time spent in animation">
+                        <img src="https://wiki.guildwars2.com/images/thumb/6/6a/Damage.png/30px-Damage.png" alt="Damage"
+                            class="icon">
+                        /
+                        <img src="https://wiki.guildwars2.com/images/6/6e/Activation.png" alt="Activation Time"
+                            class="icon">
+                    </th>
+                    <th data-original-title="Percent time hits critical">
+                        <img src="https://wiki.guildwars2.com/images/9/95/Critical_Chance.png" alt="Crits"
+                            class="icon icon-hover">
+                    </th>
+                    <th data-original-title="Percent time hits while flanking">
+                        <img src="https://wiki.guildwars2.com/images/b/bb/Hunter%27s_Tactics.png" alt="Flank"
+                            class="icon icon-hover">
+                    </th>
+                    <th data-original-title="Percent time hits while glancing">
+                        <img src="https://wiki.guildwars2.com/images/f/f9/Weakness.png" alt="Glance"
+                            class="icon icon-hover">
+                    </th>
+                    <th v-if="actor !== null" data-original-title="Time wasted interupting skill casts">
+                        <img src="https://wiki.guildwars2.com/images/b/b3/Out_Of_Health_Potions.png" alt="Wasted"
+                            class="icon icon-hover">
+                    </th>
+                    <th v-if="actor !== null" data-original-title="Time saved(in seconds) interupting skill casts">
+                        <img src="https://wiki.guildwars2.com/images/e/eb/Ready.png" alt="Saved"
+                            class="icon icon-hover">
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="row in dmgdist.distribution" :class="{condi: getSkill(row[0], row[1]).condi}">
+                    <td class="text-left" :data-original-title="row[1]">
+                        <img :src="getSkill(row[0], row[1]).icon" class="icon">
+                        {{getSkill(row[0],row[1]).name}}
+                    </td>
+                    <td>{{ round3(100*row[2]/dmgdist.contributedDamage) }}%</td>
+                    <td :data-original-title="round2(row[2]/phase.durationS) +' dps'">
+                        {{ row[2] }}
+                    </td>
+                    <td :data-original-title="round2(row[12]/phase.durationS) +' dps'">
+                        {{ row[12] }}
+                    </td>
+                    <td>{{ Math.max(row[3],0) }}</td>
+                    <td>{{ round(row[2]/row[6]) }}</td>
+                    <td>{{ row[4] }}</td>
+                    <td v-if="actor !== null">
+                        {{ !getSkill(row[0], row[1]).condi && row[5] ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '>= ' : '') + row[5] : ''}}
+                    </td>
+                    <td :data-original-title="(row[14] - row[6]) + ' hit(s) not connected'">
+                        {{ row[6] }}
+                    </td>
+                    <td v-if="actor !== null" :data-original-title=" (!getSkill(row[0], row[1]).condi && row[14] && row[5]) ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '<= ' : '') + round2(row[14]/row[5]) + ' with missed hits' : false" >
+                        {{(!getSkill(row[0], row[1]).condi && row[6] && row[5]) ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '<= ' : '') + round2(row[6]/row[5]) : ''}}
+                    </td>
+                    <td v-if="actor !== null">
+                        {{(!getSkill(row[0], row[1]).condi && row[6] && row[15]) ? round2(row[2]/(0.001 * row[15])) : ''}}
+                    </td>
+                    <td
+                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[7] +' out of ' + row[6] + ' hit(s) <br> Damage: ' + row[13] : false">
+                        {{(!getSkill(row[0], row[1]).condi && row[6]) ? round2(row[7]*100/row[6]) + '%' : ''}}
+                    </td>
+                    <td
+                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[8] +' out of ' + row[6] + ' hit(s)': false">
+                        {{(!getSkill(row[0], row[1]).condi && row[6]) ? round2(row[8]*100/row[6]) + '%' : ''}}
+                    </td>
+                    <td
+                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[9] +' out of ' + row[6] + ' hit(s)': false">
+                        {{(!getSkill(row[0], row[1]).condi && row[6]) ? round2(row[9]*100/row[6]) + '%' : ''}}
+                    </td>
+                    <td v-if="actor !== null"
+                        :data-original-title="row[10] ? round2(100.0 * row[10]/phase.durationS) + '% of the phase' : false">
+                        {{ row[10] ? row[10] + 's' : ''}}</td>
+                    <td v-if="actor !== null"
+                        :data-original-title="row[11] ? round2(100.0 * row[11]/phase.durationS) + '% of the phase' : false">
+                        {{ row[11] ? row[11] + 's' : ''}}</td>
+                </tr>
+            </tbody>
+            <tfoot class="text-dark">
+                <tr>
+                    <td class="text-left">Total</td>
+                    <td></td>
+                    <td :data-original-title="Math.round(dmgdist.contributedDamage/phase.durationS) +' dps'">
+                        {{dmgdist.contributedDamage}}
+                    </td>
+                    <td :data-original-title="Math.round(dmgdist.contributedShieldDamage/phase.durationS) +' dps'">
+                        {{dmgdist.contributedShieldDamage}}
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td v-if="actor !== null"></td>
+                    <td></td>
+                    <td v-if="actor !== null"></td>
+                    <td v-if="actor !== null">
+                        {{round2(dmgdist.contributedDamage/(0.001 * dmgdist.totalCasting))}}
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td v-if="actor !== null"></td>
+                    <td v-if="actor !== null"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</template>
+
+<script>
+    Vue.component("damagedist-table-component", {
+        props: ["dmgdist", "tableid", "actor", "isminion", "istarget", "phaseindex"],
+        template: `${template}`,
+        data: function () {
+            return {
+                sortdata: {
+                    order: "desc",
+                    index: 2
+                }
+            };
+        },
+        mixins: [roundingComponent],
+        mounted() {
+            var _this = this;
+            initTable(
+                "#" + this.tableid,
+                this.sortdata.index,
+                this.sortdata.order,
+                function () {
+                    var order = $("#" + _this.tableid)
+                        .DataTable()
+                        .order();
+                    _this.sortdata.order = order[0][1];
+                    _this.sortdata.index = order[0][0];
+                }
+            );
+        },
+        beforeUpdate() {
+            $("#" + this.tableid)
+                .DataTable()
+                .destroy();
+        },
+        updated() {
+            var _this = this;
+            initTable(
+                "#" + this.tableid,
+                this.sortdata.index,
+                this.sortdata.order,
+                function () {
+                    var order = $("#" + _this.tableid)
+                        .DataTable()
+                        .order();
+                    _this.sortdata.order = order[0][1];
+                    _this.sortdata.index = order[0][0];
+                }
+            );
+        },
+        methods: {
+            getSkill: function (isBoon, id) {
+                return findSkill(isBoon, id);
+            },
+            showInequality: function (skillData, castDuration) {
+                return castDuration === 0 && skillData.notAccurate;
+            },
+        },
+        computed: {
+            phase: function () {
+                return logData.phases[this.phaseindex];
+            }
+        }
+    });
+</script>
