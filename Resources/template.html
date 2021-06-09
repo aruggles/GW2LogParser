@@ -34,6 +34,7 @@
                 <a class="nav-item nav-link" data-toggle="tab" href="#nav-defense" role="tab" aria-controls="nav-defence" aria-selected="true">Defensive Stats</a>
                 <a class="nav-item nav-link" data-toggle="tab" href="#nav-support" role="tab" aria-controls="nav-support" aria-selected="true">Support Stats</a>
                 <a class="nav-item nav-link" data-toggle="tab" href="#nav-gameplay" role="tab" aria-controls="nav-gameplay" aria-selected="true">Gameplay Stats</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-boons" role="tab" aria-controls="nav-boons" aria-selected="true">Boon Stats</a>
             </div>
         </nav>
         <div class="tab-content">
@@ -112,6 +113,10 @@
                             <th>&nbsp;</th>
                             <th>Name</th>
                             <th>Account</th>
+                            <th data-toggle="tooltip" title="Number of fights from the log you participated in; used for averages">
+                                <img src="https://wiki.guildwars2.com/images/9/9d/PvP_Server_Browser.png" alt="Fights"
+                                     class="icon icon-hover">
+                            </th>
                             <th data-toggle="tooltip" title="Percent time hits critical">
                                 <img src="https://wiki.guildwars2.com/images/9/95/Critical_Chance.png" alt="Crits"
                                      class="icon icon-hover">
@@ -164,34 +169,328 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-        <div>
-            <h2>Individual Fight Details</h2>
-            <div class="btn-group" role="group" aria-label="Links to the individual fights">
-                <!-- Fight Links -->
+            <div class="tab-pane" id="nav-boons" role="tabpanel" aria-labelledby="nav-boons-tab">
+                <h2>Boons</h2>
+                <nav id="table-boonsub-tab">
+                    <div class="nav nav-tabs" role="tablist">
+                        <a class="nav-item nav-link active" data-toggle="tab" href="#nav-boon-uptime" role="tab" aria-controls="nav-boon-uptime" aria-selected="true">Uptime</a>
+                        <a class="nav-item nav-link" data-toggle="tab" href="#nav-boon-self" role="tab" aria-controls="nav-boonself" aria-selected="true">Generation Self</a>
+                        <a class="nav-item nav-link" data-toggle="tab" href="#nav-boon-group" role="tab" aria-controls="nav-boongroup" aria-selected="true">Generation Group</a>
+                        <a class="nav-item nav-link" data-toggle="tab" href="#nav-boon-offgroup" role="tab" aria-controls="nav-boonoffgroup" aria-selected="true">Generation Off-Group</a>
+                        <a class="nav-item nav-link" data-toggle="tab" href="#nav-boon-squad" role="tab" aria-controls="nav-boonsquad" aria-selected="true">Generation Squad</a>
+                    </div>
+                </nav>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="nav-boon-uptime" role="tabpanel" aria-labelledby="nav-boon-uptime-tab">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                                    <th>&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="Might, Max Stack(s) 25, Condition Damage: +30, Power: +30">
+                                        <img src="https://wiki.guildwars2.com/images/7/7c/Might.png" alt="Might" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Fury,  Max Stack(s) 9, Critical Chance: +20%">
+                                        <img src="https://wiki.guildwars2.com/images/4/46/Fury.png" alt="Fury"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Quickness,  Max Stack(s) 5, Attack Speed: +33.3333%">
+                                        <img src="https://wiki.guildwars2.com/images/b/b4/Quickness.png" alt="Quickness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Alacrity,  Max Stack(s) 9, Skill Cooldown Reduction: +25%">
+                                        <img src="https://wiki.guildwars2.com/images/4/4c/Alacrity.png" alt="Alacrity" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Protection,  Max Stack(s) 5, Incoming Physical Damage: -33%">
+                                        <img src="https://wiki.guildwars2.com/images/6/6c/Protection.png" alt="Protection" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Regeneration,  Max Stack(s) 5, Healing Formula: (0.125 * Healing Power + 130), Healing Formula: (0.025 * Healing Power + 26)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Regeneration.png" alt="Regeneration"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Vigor,  Max Stack(s) 5, Endurance Regeneration: +50%">
+                                        <img src="https://wiki.guildwars2.com/images/f/f4/Vigor.png" alt="Vigor" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Aegis,  Max Stack(s) 9">
+                                        <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Aegis"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Stability,  Max Stack(s) 25">
+                                        <img src="https://wiki.guildwars2.com/images/a/ae/Stability.png" alt="Stability"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
+                                        <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
+                                             class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Player Boon Uptime Stats -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tab-pane" id="nav-boon-self" role="tabpanel" aria-labelledby="nav-boonself-tab">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                                    <th>&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
+                                        <img src="https://wiki.guildwars2.com/images/7/7c/Might.png" alt="Might" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Fury,  Max Stack(s) 9, Critical Chance: +20%">
+                                        <img src="https://wiki.guildwars2.com/images/4/46/Fury.png" alt="Fury"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Quickness,  Max Stack(s) 5, Attack Speed: +33.3333%">
+                                        <img src="https://wiki.guildwars2.com/images/b/b4/Quickness.png" alt="Quickness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Alacrity,  Max Stack(s) 9, Skill Cooldown Reduction:  +25%">
+                                        <img src="https://wiki.guildwars2.com/images/4/4c/Alacrity.png" alt="Alacrity" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Protection,  Max Stack(s) 5, Incoming Physical Damage:  -33%">
+                                        <img src="https://wiki.guildwars2.com/images/6/6c/Protection.png" alt="Protection" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Regeneration,  Max Stack(s) 5, Healing Formula: (0.125 * Healing Power + 130), Healing Formula: (0.025 * Healing Power + 26)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Regeneration.png" alt="Regeneration"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Vigor,  Max Stack(s) 5, Endurance Regeneration:  +50%">
+                                        <img src="https://wiki.guildwars2.com/images/f/f4/Vigor.png" alt="Vigor" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Aegis,  Max Stack(s) 9">
+                                        <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Aegis"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Stability,  Max Stack(s) 25">
+                                        <img src="https://wiki.guildwars2.com/images/a/ae/Stability.png" alt="Stability"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
+                                        <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
+                                             class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Player Boon Self Stats -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tab-pane fade show" id="nav-boon-group" role="tabpanel" aria-labelledby="nav-boongroup-tab">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                                    <th>&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
+                                        <img src="https://wiki.guildwars2.com/images/7/7c/Might.png" alt="Might" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Fury,  Max Stack(s) 9, Critical Chance: +20%">
+                                        <img src="https://wiki.guildwars2.com/images/4/46/Fury.png" alt="Fury"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Quickness,  Max Stack(s) 5, Attack Speed: +33.3333%">
+                                        <img src="https://wiki.guildwars2.com/images/b/b4/Quickness.png" alt="Quickness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Alacrity,  Max Stack(s) 9, Skill Cooldown Reduction:  +25%">
+                                        <img src="https://wiki.guildwars2.com/images/4/4c/Alacrity.png" alt="Alacrity" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Protection,  Max Stack(s) 5, Incoming Physical Damage:  -33%">
+                                        <img src="https://wiki.guildwars2.com/images/6/6c/Protection.png" alt="Protection" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Regeneration,  Max Stack(s) 5, Healing Formula: (0.125 * Healing Power + 130), Healing Formula: (0.025 * Healing Power + 26)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Regeneration.png" alt="Regeneration"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Vigor,  Max Stack(s) 5, Endurance Regeneration:  +50%">
+                                        <img src="https://wiki.guildwars2.com/images/f/f4/Vigor.png" alt="Vigor" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Aegis,  Max Stack(s) 9">
+                                        <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Aegis"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Stability,  Max Stack(s) 25">
+                                        <img src="https://wiki.guildwars2.com/images/a/ae/Stability.png" alt="Stability"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
+                                        <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
+                                             class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Player Boon Group Stats -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tab-pane fade show" id="nav-boon-offgroup" role="tabpanel" aria-labelledby="nav-boonoffgroup-tab">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                                    <th>&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
+                                        <img src="https://wiki.guildwars2.com/images/7/7c/Might.png" alt="Might" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Fury,  Max Stack(s) 9, Critical Chance: +20%">
+                                        <img src="https://wiki.guildwars2.com/images/4/46/Fury.png" alt="Fury"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Quickness,  Max Stack(s) 5, Attack Speed: +33.3333%">
+                                        <img src="https://wiki.guildwars2.com/images/b/b4/Quickness.png" alt="Quickness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Alacrity,  Max Stack(s) 9, Skill Cooldown Reduction:  +25%">
+                                        <img src="https://wiki.guildwars2.com/images/4/4c/Alacrity.png" alt="Alacrity" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Protection,  Max Stack(s) 5, Incoming Physical Damage:  -33%">
+                                        <img src="https://wiki.guildwars2.com/images/6/6c/Protection.png" alt="Protection" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Regeneration,  Max Stack(s) 5, Healing Formula: (0.125 * Healing Power + 130), Healing Formula: (0.025 * Healing Power + 26)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Regeneration.png" alt="Regeneration"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Vigor,  Max Stack(s) 5, Endurance Regeneration:  +50%">
+                                        <img src="https://wiki.guildwars2.com/images/f/f4/Vigor.png" alt="Vigor" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Aegis,  Max Stack(s) 9">
+                                        <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Aegis"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Stability,  Max Stack(s) 25">
+                                        <img src="https://wiki.guildwars2.com/images/a/ae/Stability.png" alt="Stability"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
+                                        <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
+                                             class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Player Boon OffGroup Stats -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tab-pane fade show" id="nav-boon-squad" role="tabpanel" aria-labelledby="nav-boonsquad-tab">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
+                                    <th>&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
+                                        <img src="https://wiki.guildwars2.com/images/7/7c/Might.png" alt="Might" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Fury,  Max Stack(s) 9, Critical Chance: +20%">
+                                        <img src="https://wiki.guildwars2.com/images/4/46/Fury.png" alt="Fury"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Quickness,  Max Stack(s) 5, Attack Speed: +33.3333%">
+                                        <img src="https://wiki.guildwars2.com/images/b/b4/Quickness.png" alt="Quickness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Alacrity,  Max Stack(s) 9, Skill Cooldown Reduction:  +25%">
+                                        <img src="https://wiki.guildwars2.com/images/4/4c/Alacrity.png" alt="Alacrity" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Protection,  Max Stack(s) 5, Incoming Physical Damage:  -33%">
+                                        <img src="https://wiki.guildwars2.com/images/6/6c/Protection.png" alt="Protection" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Regeneration,  Max Stack(s) 5, Healing Formula: (0.125 * Healing Power + 130), Healing Formula: (0.025 * Healing Power + 26)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Regeneration.png" alt="Regeneration"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Vigor,  Max Stack(s) 5, Endurance Regeneration:  +50%">
+                                        <img src="https://wiki.guildwars2.com/images/f/f4/Vigor.png" alt="Vigor" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Aegis,  Max Stack(s) 9">
+                                        <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Aegis"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Stability,  Max Stack(s) 25">
+                                        <img src="https://wiki.guildwars2.com/images/a/ae/Stability.png" alt="Stability"
+                                             class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
+                                        <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
+                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
+                                             class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Player Boon Squad Stats -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        <!-- Player Summaries -->
-    </div>
+            <div>
+                <h2>Individual Fight Details</h2>
+                <div class="btn-group" role="group" aria-label="Links to the individual fights">
+                    <!-- Fight Links -->
+                </div>
+                <!-- Player Summaries -->
+            </div>
 
-    <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('[data-toggle="tooltip"]').tooltip();
-            $('.table').DataTable({
-                "paging": false,
-                "searching": false,
-                "info": false
-            });
-            $('#table-tab').tab('show');
-            $('nav.players').tab('show');
-            $('.dataTables_length').addClass('bs-select');
-        });
-    </script>
+            <!-- Optional JavaScript -->
+            <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+            <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+            <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+            <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+            <script>
+                $(document).ready(function () {
+                    $('[data-toggle="tooltip"]').tooltip();
+                    $('.table').DataTable({
+                        "paging": false,
+                        "searching": false,
+                        "info": false
+                    });
+                    $('#table-tab').tab('show');
+                    $('nav.players').tab('show');
+                    $('.dataTables_length').addClass('bs-select');
+                    $('#nav-boons').tab();
+                });
+            </script>
 </body>
 </html>

@@ -21,6 +21,7 @@ namespace Gw2LogParser.ExportModels.Report
         public List<BoonInfo> BoonGenGroupStats { get; internal set; } = new List<BoonInfo>();
         public List<BoonInfo> BoonGenOGroupStats { get; internal set; } = new List<BoonInfo>();
         public List<BoonInfo> BoonGenSquadStats { get; internal set; } = new List<BoonInfo>();
+        public int numberOfFights { get; set; } = 1;
 
         public PlayerReport()
         {

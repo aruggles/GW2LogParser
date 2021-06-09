@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -72,6 +73,11 @@ namespace Gw2LogParser.ExportModels.Report
             var support = "";
             var summaries = "";
             var gameplay = "";
+            var boonuptime = "";
+            var boonself = "";
+            var boongroup = "";
+            var boonoffgroup = "";
+            var boonsquad = "";
             var players = Report.players.Values.ToList<PlayerReport>();
             players.Sort(new PlayerReport());
             foreach (PlayerReport player in players)
@@ -102,8 +108,13 @@ namespace Gw2LogParser.ExportModels.Report
 
                 support += "<td>" + player.Support.CleanseOnOther + "</td><td>" + player.Support.CleanseOnSelf + "</td>";
                 support += "<td>" + player.Support.BoonStrips + "</td><td>" + player.Support.Resurrects + "</td></tr>";
-                gameplay += BuildGameplayTable(tableStart, player.Gameplay);
+                gameplay += BuildGameplayTable(tableStart, player.Gameplay, player);
                 summaries += BuildPlayerSummary(player);
+                boonuptime += BuildBoonTable(tableStart, player.BoonStats, false, player);
+                boonself += BuildBoonTable(tableStart, player.BoonGenSelfStats, true, player);
+                boongroup += BuildBoonTable(tableStart, player.BoonGenGroupStats, true, player);
+                boonoffgroup += BuildBoonTable(tableStart, player.BoonGenOGroupStats, true, player);
+                boonsquad += BuildBoonTable(tableStart, player.BoonGenSquadStats, true, player);
             }
 
             html = html.Replace("<!-- Player Damage Stats -->", damage);
@@ -111,15 +122,21 @@ namespace Gw2LogParser.ExportModels.Report
             html = html.Replace("<!-- Player Support Stats -->", support);
             html = html.Replace("<!-- Player Gameplay Stats -->", gameplay);
             html = html.Replace("<!-- Player Summaries -->", summaries);
+            html = html.Replace("<!-- Player Boon Uptime Stats -->", boonuptime);
+            html = html.Replace("<!-- Player Boon Self Stats -->", boonself);
+            html = html.Replace("<!-- Player Boon Group Stats -->", boongroup);
+            html = html.Replace("<!-- Player Boon OffGroup Stats -->", boonoffgroup);
+            html = html.Replace("<!-- Player Boon Squad Stats -->", boonsquad);
             return html;
         }
 
-        private string BuildGameplayTable(string tableStart, GameplayReport gameplay)
+        private string BuildGameplayTable(string tableStart, GameplayReport gameplay, PlayerReport player)
         {
             var html = tableStart;
             var crits = (gameplay.CriticalHits == 0) ? 0 : ((double)gameplay.CritableHits / (double)gameplay.CriticalHits) * 100.0;
             var flanks = (gameplay.ConnectedHits == 0) ? 0 : ((double)gameplay.Flanking / (double)gameplay.ConnectedHits) * 100.0;
             var glance = (gameplay.ConnectedHits == 0) ? 0 : ((double)gameplay.Glancing / (double)gameplay.ConnectedHits) * 100.0;
+            html += $"<td>{player.numberOfFights}</td>";
             html += $"<td data-toggle=\"tooltip\" title=\"{gameplay.CritableHits} out of {gameplay.CriticalHits} critable hit(s)\">{string.Format("{0:0.00}", crits)}%</td>";
             html += $"<td data-toggle=\"tooltip\" title=\"{gameplay.Flanking} out of {gameplay.ConnectedHits} connected hit(s)\">{string.Format("{0:0.00}", flanks)}%</td>";
             html += $"<td data-toggle=\"tooltip\" title=\"{gameplay.Glancing} out of {gameplay.ConnectedHits} connected hit(s)\">{string.Format("{0:0.00}", glance)}%</td>";
@@ -131,8 +148,47 @@ namespace Gw2LogParser.ExportModels.Report
             html += $"<td>{gameplay.Wasted}</td>";
             html += $"<td>{gameplay.Saved}</td>";
             html += $"<td>{gameplay.WeaponSwapped}</td>";
-            html += $"<td>{string.Format("{0:0.00}", gameplay.AvgDistanceToSquad / Report.Logs.Count)}</td>";
-            html += $"<td>{string.Format("{0:0.00}", gameplay.AvgDistanceToTag / Report.Logs.Count)}</td>";
+            html += $"<td>{string.Format("{0:0.00}", gameplay.AvgDistanceToSquad / (double) player.numberOfFights)}</td>";
+            html += $"<td>{string.Format("{0:0.00}", gameplay.AvgDistanceToTag / (double)player.numberOfFights)}</td></tr>";
+            return html;
+        }
+
+        private string BuildBoonTable(string tableStart, List<BoonInfo> boons, bool wasted, PlayerReport player)
+        {
+            var numberOfFights = (double) player.numberOfFights;
+            var html = tableStart;
+            for (var i = 0; i < 12; i++)
+            {
+                if (boons.Count > i)
+                {
+                    var boon = boons[i];
+                    var valueText = (boon.Value == 0) ? "-" : $"{string.Format("{0:0.000}", boon.Value / numberOfFights)}";
+                    if (boon.Uptime != 0) // Turns on tooltip for uptime info.
+                    {
+                        html += $"<td data-toggle=\"tooltip\" title=\"Uptime: {string.Format("{0:0.000}", boon.Uptime / numberOfFights)}%\">{valueText}</td>";
+                    } else if (wasted) // Turns on tooltip for overstacked info.
+                    {
+                        var toolTip = $"{string.Format("{0:0.000}", boon.Value / numberOfFights)} with overstack";
+                        toolTip += (boon.Wasted != 0) ? $", {string.Format("{0:0.000}", boon.Wasted / numberOfFights)} wasted" : "";
+                        toolTip += (boon.Extended != 0) ? $", {string.Format("{0:0.000}", boon.Extended / numberOfFights)} extended" : "";
+                        html += $"<td data-toggle=\"tooltip\" title=\"{toolTip}\">";
+                        if (i == 0 || i == 8) // Stack.
+                        {
+                            html += $"{string.Format("{0:0.000}", boon.Value / numberOfFights)}</td>"; 
+                        } else // Percentage.
+                        {
+                            html += (valueText == "-") ? $"{valueText}</td>" : $"{valueText}%</td>";
+                        }
+                    } else // No Tooltip.
+                    {
+                        html += (valueText == "-") ? $"<td>{valueText}</td>" : $"<td>{valueText}%</td>";
+                    }
+                } else // No Boon.
+                {
+                    html += "<td>-</td>";
+                }
+            }
+            html += "</tr>";
             return html;
         }
 

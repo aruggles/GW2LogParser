@@ -306,6 +306,7 @@ namespace Gw2LogParser.ExportModels
 
         public void SumPlayerStats(PlayerReport original, PlayerReport report)
         {
+            original.numberOfFights++;
             original.TimeInCombat += report.TimeInCombat;
             original.Damage.AllDamage += report.Damage.AllDamage;
             original.Damage.Power += report.Damage.Power;
@@ -388,47 +389,62 @@ namespace Gw2LogParser.ExportModels
             for (var i = 0; i < original.BoonStats.Count; i++)
             {
                 var originalBoon = original.BoonStats[i];
-                var reportBoon = report.BoonStats[i];
-                originalBoon.Value += reportBoon.Value;
-                originalBoon.Wasted += reportBoon.Wasted;
-                originalBoon.Uptime += reportBoon.Uptime;
-                originalBoon.Extended += reportBoon.Extended;
+                if (report.BoonStats.Count > i)
+                {
+                    var reportBoon = report.BoonStats[i];
+                    originalBoon.Value += reportBoon.Value;
+                    originalBoon.Wasted += reportBoon.Wasted;
+                    originalBoon.Uptime += reportBoon.Uptime;
+                    originalBoon.Extended += reportBoon.Extended;
+                }
             }
             for (var i = 0; i < original.BoonGenSelfStats.Count; i++)
             {
                 var originalBoon = original.BoonGenSelfStats[i];
-                var reportBoon = report.BoonGenSelfStats[i];
-                originalBoon.Value += reportBoon.Value;
-                originalBoon.Wasted += reportBoon.Wasted;
-                originalBoon.Uptime += reportBoon.Uptime;
-                originalBoon.Extended += reportBoon.Extended;
+                if (report.BoonGenSelfStats.Count > i)
+                {
+                    var reportBoon = report.BoonGenSelfStats[i];
+                    originalBoon.Value += reportBoon.Value;
+                    originalBoon.Wasted += reportBoon.Wasted;
+                    originalBoon.Uptime += reportBoon.Uptime;
+                    originalBoon.Extended += reportBoon.Extended;
+                }
             }
             for (var i = 0; i < original.BoonGenGroupStats.Count; i++)
             {
                 var originalBoon = original.BoonGenGroupStats[i];
-                var reportBoon = report.BoonGenGroupStats[i];
-                originalBoon.Value += reportBoon.Value;
-                originalBoon.Wasted += reportBoon.Wasted;
-                originalBoon.Uptime += reportBoon.Uptime;
-                originalBoon.Extended += reportBoon.Extended;
+                if (report.BoonGenGroupStats.Count > i)
+                {
+                    var reportBoon = report.BoonGenGroupStats[i];
+                    originalBoon.Value += reportBoon.Value;
+                    originalBoon.Wasted += reportBoon.Wasted;
+                    originalBoon.Uptime += reportBoon.Uptime;
+                    originalBoon.Extended += reportBoon.Extended;
+                }
             }
             for (var i = 0; i < original.BoonGenOGroupStats.Count; i++)
             {
                 var originalBoon = original.BoonGenOGroupStats[i];
-                var reportBoon = report.BoonGenOGroupStats[i];
-                originalBoon.Value += reportBoon.Value;
-                originalBoon.Wasted += reportBoon.Wasted;
-                originalBoon.Uptime += reportBoon.Uptime;
-                originalBoon.Extended += reportBoon.Extended;
+                if (report.BoonGenOGroupStats.Count > i)
+                {
+                    var reportBoon = report.BoonGenOGroupStats[i];
+                    originalBoon.Value += reportBoon.Value;
+                    originalBoon.Wasted += reportBoon.Wasted;
+                    originalBoon.Uptime += reportBoon.Uptime;
+                    originalBoon.Extended += reportBoon.Extended;
+                }
             }
             for (var i = 0; i < original.BoonGenSquadStats.Count; i++)
             {
                 var originalBoon = original.BoonGenSquadStats[i];
-                var reportBoon = report.BoonGenSquadStats[i];
-                originalBoon.Value += reportBoon.Value;
-                originalBoon.Wasted += reportBoon.Wasted;
-                originalBoon.Uptime += reportBoon.Uptime;
-                originalBoon.Extended += reportBoon.Extended;
+                if (report.BoonGenSquadStats.Count > i)
+                {
+                    var reportBoon = report.BoonGenSquadStats[i];
+                    originalBoon.Value += reportBoon.Value;
+                    originalBoon.Wasted += reportBoon.Wasted;
+                    originalBoon.Uptime += reportBoon.Uptime;
+                    originalBoon.Extended += reportBoon.Extended;
+                }
             }
 
         }

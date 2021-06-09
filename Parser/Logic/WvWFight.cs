@@ -14,6 +14,7 @@ namespace Gw2LogParser.Parser.Logic
     internal class WvWFight : FightLogic
     {
         private const string DefaultName = "World vs World";
+        private HashSet<int> uniqueTargetIDs = new HashSet<int>();
         public WvWFight(int triggerID) : base(triggerID)
         {
             Extension = "wvw";
@@ -23,7 +24,7 @@ namespace Gw2LogParser.Parser.Logic
 
         protected override HashSet<int> GetUniqueTargetIDs()
         {
-            return new HashSet<int>();
+            return uniqueTargetIDs;
         }
 
         internal override List<PhaseData> GetPhases(ParsedLog log, bool requirePhases)
