@@ -1,5 +1,4 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
-using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.El.Simulator;
 using Gw2LogParser.Parser.Data.Skills;
 using Gw2LogParser.Parser.Helper;
@@ -28,27 +27,13 @@ namespace Gw2LogParser.Parser.Data.Events.Buffs.BuffApplies
             _addedActive = addedActive;
         }
 
-        internal override bool IsBuffSimulatorCompliant(long fightEnd, bool hasStackIDs)
-        {
-            return BuffID != Buff.NoBuff;
-        }
-
         internal override void TryFindSrc(ParsedLog log)
         {
         }
 
         internal override void UpdateSimulator(AbstractBuffSimulator simulator)
         {
-            simulator.Add(AppliedDuration, By, Time, BuffInstance, _addedActive, _overstackDuration);
-        }
-
-        internal override int CompareTo(AbstractBuffEvent abe)
-        {
-            if (abe is BuffApplyEvent && !(abe is BuffExtensionEvent))
-            {
-                return 0;
-            }
-            return -1;
+            simulator.Add(AppliedDuration, CreditedBy, Time, BuffInstance, _addedActive || simulator.Buff.StackType == ArcDPSEnums.BuffStackType.StackingConditionalLoss, _overstackDuration);
         }
     }
 }

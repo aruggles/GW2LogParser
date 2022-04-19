@@ -14,12 +14,14 @@ namespace Gw2LogParser.ExportModels
 {
     public class DamageDistribution
     {
-        public long ContributedDamage { get; internal set; }
-        public long ContributedShieldDamage { get; internal set; }
-        public long TotalDamage { get; internal set; }
-        public long TotalCasting { get; internal set; }
-        public List<object[]> Distribution { get; internal set; }
-        private static object[] GetDMGDtoItem(KeyValuePair<Skill, List<AbstractDamageEvent>> entry, Dictionary<Skill, List<AbstractCastEvent>> castLogsBySkill, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBoons, BuffsContainer boons, PhaseData phase)
+        public long ContributedDamage { get; set; }
+        public double ContributedBreakbarDamage { get; set; }
+        public long ContributedShieldDamage { get; set; }
+        public long TotalDamage { get; set; }
+        public double TotalBreakbarDamage { get; set; }
+        public long TotalCasting { get; set; }
+        public List<object[]> Distribution { get; set; }
+        private static object[] GetDMGDtoItem(Skill skill, List<AbstractHealthDamageEvent> damageLogs, Dictionary<Skill, List<AbstractCastEvent>> castLogsBySkill, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBoons, BuffsContainer boons, PhaseData phase)
         {
             int totaldamage = 0,
                     mindamage = int.MaxValue,
@@ -29,24 +31,25 @@ namespace Gw2LogParser.ExportModels
                     critDamage = 0,
                     connectedHits = 0,
                     flank = 0,
+                    againstMoving = 0,
                     glance = 0,
                     shieldDamage = 0;
             bool IsIndirectDamage = false;
-            foreach (AbstractDamageEvent dl in entry.Value.Where(x => !x.DoubleProcHit))
+            foreach (AbstractHealthDamageEvent dl in damageLogs)
             {
-                IsIndirectDamage = IsIndirectDamage || dl is NonDirectDamageEvent;
-                int curdmg = dl.Damage;
+                IsIndirectDamage = IsIndirectDamage || dl is NonDirectHealthDamageEvent;
+                int curdmg = dl.HealthDamage;
                 totaldamage += curdmg;
-                if (curdmg < mindamage) { mindamage = curdmg; }
-                if (curdmg > maxdamage) { maxdamage = curdmg; }
-                hits++;
+                hits += dl.DoubleProcHit ? 0 : 1;
                 if (dl.HasHit)
                 {
+                    if (curdmg < mindamage) { mindamage = curdmg; }
+                    if (curdmg > maxdamage) { maxdamage = curdmg; }
                     connectedHits++;
                     if (dl.HasCrit)
                     {
                         crit++;
-                        critDamage += dl.Damage;
+                        critDamage += dl.HealthDamage;
                     }
                     if (dl.HasGlanced)
                     {
@@ -57,37 +60,41 @@ namespace Gw2LogParser.ExportModels
                     {
                         flank++;
                     }
+                    if (dl.AgainstMoving)
+                    {
+                        againstMoving++;
+                    }
                 }
 
                 shieldDamage += dl.ShieldDamage;
             }
             if (IsIndirectDamage)
             {
-                if (!usedBoons.ContainsKey(entry.Key.ID))
+                if (!usedBoons.ContainsKey(skill.ID))
                 {
-                    if (boons.BuffsByIds.TryGetValue(entry.Key.ID, out Buff buff))
+                    if (boons.BuffsByIds.TryGetValue(skill.ID, out Buff buff))
                     {
                         usedBoons.Add(buff.ID, buff);
                     }
                     else
                     {
-                        Skill aux = entry.Key;
-                        var auxBoon = new Buff(aux.Name, entry.Key.ID, aux.Icon);
+                        Skill aux = skill;
+                        var auxBoon = new Buff(aux.Name, aux.ID, aux.Icon);
                         usedBoons.Add(auxBoon.ID, auxBoon);
                     }
                 }
             }
             else
             {
-                if (!usedSkills.ContainsKey(entry.Key.ID))
+                if (!usedSkills.ContainsKey(skill.ID))
                 {
-                    usedSkills.Add(entry.Key.ID, entry.Key);
+                    usedSkills.Add(skill.ID, skill);
                 }
             }
 
             long timeCasting = 0;
             int casts = 0, timeWasted = 0, timeSaved = 0;
-            if (!IsIndirectDamage && castLogsBySkill != null && castLogsBySkill.TryGetValue(entry.Key, out List<AbstractCastEvent> clList))
+            if (!IsIndirectDamage && castLogsBySkill != null && castLogsBySkill.TryGetValue(skill, out List<AbstractCastEvent> clList))
             {
                 foreach (AbstractCastEvent cl in clList)
                 {
@@ -96,7 +103,7 @@ namespace Gw2LogParser.ExportModels
                         casts++;
                         switch (cl.Status)
                         {
-                            case AbstractCastEvent.AnimationStatus.Iterrupted:
+                            case AbstractCastEvent.AnimationStatus.Interrupted:
                                 timeWasted += cl.SavedDuration;
                                 break;
 
@@ -111,7 +118,7 @@ namespace Gw2LogParser.ExportModels
             }
             object[] skillItem = {
                     IsIndirectDamage,
-                    entry.Key.ID,
+                    skill.ID,
                     totaldamage,
                     mindamage == int.MaxValue ? 0 : mindamage,
                     maxdamage == int.MinValue ? 0 : maxdamage,
@@ -125,64 +132,63 @@ namespace Gw2LogParser.ExportModels
                     shieldDamage,
                     IsIndirectDamage ? 0 : critDamage,
                     hits,
-                    IsIndirectDamage ? 0 : timeCasting
+                    IsIndirectDamage ? 0 : timeCasting,
+                    againstMoving
                 };
             return skillItem;
         }
 
-        internal static DamageDistribution BuildDMGTakenDistData(ParsedLog log, AbstractSingleActor p, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DamageDistribution BuildDMGTakenDistData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new DamageDistribution
             {
                 Distribution = new List<object[]>()
             };
-            PhaseData phase = log.FightData.GetPhases(log)[phaseIndex];
-            List<AbstractDamageEvent> damageLogs = p.GetDamageTakenLogs(null, log, phase.Start, phase.End);
+            FinalDefensesAll incomingDamageStats = p.GetDefenseStats(log, phase.Start, phase.End);
+            IReadOnlyList<AbstractHealthDamageEvent> damageLogs = p.GetDamageTakenEvents(null, log, phase.Start, phase.End);
             var damageLogsBySkill = damageLogs.GroupBy(x => x.Skill).ToDictionary(x => x.Key, x => x.ToList());
-            dto.ContributedDamage = damageLogs.Count > 0 ? damageLogs.Sum(x => x.Damage) : 0;
-            dto.ContributedShieldDamage = damageLogs.Count > 0 ? damageLogs.Sum(x => x.ShieldDamage) : 0;
-            var conditionsById = log.Statistics.PresentConditions.ToDictionary(x => x.ID);
-            foreach (KeyValuePair<Skill, List<AbstractDamageEvent>> entry in damageLogsBySkill)
+            dto.ContributedDamage = incomingDamageStats.DamageTaken;
+            dto.ContributedShieldDamage = incomingDamageStats.DamageBarrier;
+            foreach (KeyValuePair<Skill, List<AbstractHealthDamageEvent>> pair in damageLogsBySkill)
             {
-                dto.Distribution.Add(GetDMGDtoItem(entry, null, usedSkills, usedBuffs, log.Buffs, phase));
+                dto.Distribution.Add(GetDMGDtoItem(pair.Key, pair.Value, null, usedSkills, usedBuffs, log.Buffs, phase));
             }
             return dto;
         }
 
-        private static List<object[]> BuildDMGDistBodyData(ParsedLog log, List<AbstractCastEvent> casting, List<AbstractDamageEvent> damageLogs, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs, int phaseIndex)
+        private static List<object[]> BuildDMGDistBodyData(ParsedLog log, IReadOnlyList<AbstractCastEvent> casting, IReadOnlyList<AbstractHealthDamageEvent> damageLogs, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs, PhaseData phase)
         {
             var list = new List<object[]>();
             var castLogsBySkill = casting.GroupBy(x => x.Skill).ToDictionary(x => x.Key, x => x.ToList());
             var damageLogsBySkill = damageLogs.GroupBy(x => x.Skill).ToDictionary(x => x.Key, x => x.ToList());
-            var conditionsById = log.Statistics.PresentConditions.ToDictionary(x => x.ID);
-            PhaseData phase = log.FightData.GetPhases(log)[phaseIndex];
-            foreach (KeyValuePair<Skill, List<AbstractDamageEvent>> entry in damageLogsBySkill)
+            var conditionsById = log.StatisticsHelper.PresentConditions.ToDictionary(x => x.ID);
+            foreach (KeyValuePair<Skill, List<AbstractHealthDamageEvent>> pair in damageLogsBySkill)
             {
-                list.Add(GetDMGDtoItem(entry, castLogsBySkill, usedSkills, usedBuffs, log.Buffs, phase));
+                list.Add(GetDMGDtoItem(pair.Key, pair.Value, castLogsBySkill, usedSkills, usedBuffs, log.Buffs, phase));
             }
             // non damaging
-            foreach (KeyValuePair<Skill, List<AbstractCastEvent>> entry in castLogsBySkill)
+            foreach (KeyValuePair<Skill, List<AbstractCastEvent>> pair in castLogsBySkill)
             {
-                if (damageLogsBySkill.ContainsKey(entry.Key))
+                if (damageLogsBySkill.ContainsKey(pair.Key))
                 {
                     continue;
                 }
 
-                if (!usedSkills.ContainsKey(entry.Key.ID))
+                if (!usedSkills.ContainsKey(pair.Key.ID))
                 {
-                    usedSkills.Add(entry.Key.ID, entry.Key);
+                    usedSkills.Add(pair.Key.ID, pair.Key);
                 }
                 long timeCasting = 0;
                 int casts = 0;
                 int timeWasted = 0, timeSaved = 0;
-                foreach (AbstractCastEvent cl in entry.Value)
+                foreach (AbstractCastEvent cl in pair.Value)
                 {
                     if (phase.InInterval(cl.Time))
                     {
                         casts++;
                         switch (cl.Status)
                         {
-                            case AbstractCastEvent.AnimationStatus.Iterrupted:
+                            case AbstractCastEvent.AnimationStatus.Interrupted:
                                 timeWasted += cl.SavedDuration;
                                 break;
 
@@ -196,7 +202,7 @@ namespace Gw2LogParser.ExportModels
 
                 object[] skillData = {
                     false,
-                    entry.Key.ID,
+                    pair.Key.ID,
                     0,
                     -1,
                     0,
@@ -210,67 +216,70 @@ namespace Gw2LogParser.ExportModels
                     0,
                     0,
                     0,
-                    timeCasting
+                    timeCasting,
+                    0
                 };
                 list.Add(skillData);
             }
             return list;
         }
 
-        private static DamageDistribution BuildDMGDistDataInternal(ParsedLog log, FinalDPS dps, AbstractSingleActor p, NPC target, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static DamageDistribution BuildDMGDistDataInternal(ParsedLog log, FinalDPS dps, AbstractSingleActor p, AbstractSingleActor target, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new DamageDistribution();
-            PhaseData phase = log.FightData.GetPhases(log)[phaseIndex];
-            List<AbstractCastEvent> casting = p.GetIntersectingCastLogs(log, phase.Start, phase.End);
-            List<AbstractDamageEvent> damageLogs = p.GetJustActorDamageLogs(target, log, phase.Start, phase.End);
-            dto.ContributedDamage = damageLogs.Count > 0 ? damageLogs.Sum(x => x.Damage) : 0;
-            dto.ContributedShieldDamage = damageLogs.Count > 0 ? damageLogs.Sum(x => x.ShieldDamage) : 0;
+            IReadOnlyList<AbstractCastEvent> casting = p.GetIntersectingCastEvents(log, phase.Start, phase.End);
+            IReadOnlyList<AbstractHealthDamageEvent> damageLogs = p.GetJustActorDamageEvents(target, log, phase.Start, phase.End);
+            dto.ContributedDamage = dps.ActorDamage;
+            dto.ContributedShieldDamage = dps.ActorBarrierDamage;
+            dto.ContributedBreakbarDamage = dps.ActorBreakbarDamage;
             dto.TotalDamage = dps.Damage;
+            dto.TotalBreakbarDamage = dps.BreakbarDamage;
             dto.TotalCasting = casting.Sum(cl => Math.Min(cl.EndTime, phase.End) - Math.Max(cl.Time, phase.Start));
-            dto.Distribution = BuildDMGDistBodyData(log, casting, damageLogs, usedSkills, usedBuffs, phaseIndex);
+            dto.Distribution = BuildDMGDistBodyData(log, casting, damageLogs, usedSkills, usedBuffs, phase);
             return dto;
         }
 
 
-        internal static DamageDistribution BuildPlayerDMGDistData(ParsedLog log, Player p, NPC target, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DamageDistribution BuildFriendlyDMGDistData(ParsedLog log, AbstractSingleActor actor, AbstractSingleActor target, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
-            FinalDPS dps = p.GetDPSTarget(log, phaseIndex, target);
-            return BuildDMGDistDataInternal(log, dps, p, target, phaseIndex, usedSkills, usedBuffs);
+            FinalDPS dps = actor.GetDPSStats(target, log, phase.Start, phase.End);
+            return BuildDMGDistDataInternal(log, dps, actor, target, phase, usedSkills, usedBuffs);
         }
 
 
-        internal static DamageDistribution BuildTargetDMGDistData(ParsedLog log, NPC target, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DamageDistribution BuildTargetDMGDistData(ParsedLog log, AbstractSingleActor npc, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
-            FinalDPS dps = target.GetDPSAll(log, phaseIndex);
-            return BuildDMGDistDataInternal(log, dps, target, null, phaseIndex, usedSkills, usedBuffs);
+            FinalDPS dps = npc.GetDPSStats(log, phase.Start, phase.End);
+            return BuildDMGDistDataInternal(log, dps, npc, null, phase, usedSkills, usedBuffs);
         }
 
-        private static DamageDistribution BuildDMGDistDataMinionsInternal(ParsedLog log, FinalDPS dps, Minions minions, NPC target, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static DamageDistribution BuildDMGDistDataMinionsInternal(ParsedLog log, FinalDPS dps, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new DamageDistribution();
-            PhaseData phase = log.FightData.GetPhases(log)[phaseIndex];
-            List<AbstractCastEvent> casting = minions.GetIntersectingCastLogs(log, phase.Start, phase.End);
-            List<AbstractDamageEvent> damageLogs = minions.GetDamageLogs(target, log, phase.Start, phase.End);
-            dto.ContributedDamage = damageLogs.Count > 0 ? damageLogs.Sum(x => x.Damage) : 0;
-            dto.ContributedShieldDamage = damageLogs.Count > 0 ? damageLogs.Sum(x => x.ShieldDamage) : 0;
+            IReadOnlyList<AbstractCastEvent> casting = minions.GetIntersectingCastEvents(log, phase.Start, phase.End);
+            IReadOnlyList<AbstractHealthDamageEvent> damageLogs = minions.GetDamageEvents(target, log, phase.Start, phase.End);
+            IReadOnlyList<AbstractBreakbarDamageEvent> brkDamageLogs = minions.GetBreakbarDamageEvents(target, log, phase.Start, phase.End);
+            dto.ContributedDamage = damageLogs.Sum(x => x.HealthDamage);
+            dto.ContributedShieldDamage = damageLogs.Sum(x => x.ShieldDamage);
+            dto.ContributedBreakbarDamage = Math.Round(brkDamageLogs.Sum(x => x.BreakbarDamage), 1);
             dto.TotalDamage = dps.Damage;
+            dto.TotalBreakbarDamage = dps.BreakbarDamage;
             dto.TotalCasting = casting.Sum(cl => Math.Min(cl.EndTime, phase.End) - Math.Max(cl.Time, phase.Start));
-            dto.Distribution = BuildDMGDistBodyData(log, casting, damageLogs, usedSkills, usedBuffs, phaseIndex);
+            dto.Distribution = BuildDMGDistBodyData(log, casting, damageLogs, usedSkills, usedBuffs, phase);
             return dto;
         }
 
-        internal static DamageDistribution BuildPlayerMinionDMGDistData(ParsedLog log, Player p, Minions minions, NPC target, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DamageDistribution BuildFriendlyMinionDMGDistData(ParsedLog log, AbstractSingleActor actor, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
-            FinalDPS dps = p.GetDPSTarget(log, phaseIndex, target);
-
-            return BuildDMGDistDataMinionsInternal(log, dps, minions, target, phaseIndex, usedSkills, usedBuffs);
+            FinalDPS dps = actor.GetDPSStats(target, log, phase.Start, phase.End);
+            return BuildDMGDistDataMinionsInternal(log, dps, minions, target, phase, usedSkills, usedBuffs);
         }
 
 
-        internal static DamageDistribution BuildTargetMinionDMGDistData(ParsedLog log, NPC target, Minions minions, int phaseIndex, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DamageDistribution BuildTargetMinionDMGDistData(ParsedLog log, AbstractSingleActor target, Minions minions, PhaseData phase, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
-            FinalDPS dps = target.GetDPSAll(log, phaseIndex);
-            return BuildDMGDistDataMinionsInternal(log, dps, minions, null, phaseIndex, usedSkills, usedBuffs);
+            FinalDPS dps = target.GetDPSStats(log, phase.Start, phase.End);
+            return BuildDMGDistDataMinionsInternal(log, dps, minions, null, phase, usedSkills, usedBuffs);
         }
     }
 }

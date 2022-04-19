@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels
 {
-    public class LogBuilder
+    internal class LogBuilder
     {
         private readonly ParsedLog log;
         private readonly Dictionary<long, Skill> usedSkills = new Dictionary<long, Skill>();
@@ -34,218 +34,11 @@ namespace Gw2LogParser.ExportModels
             log = parsedLog;
         }
 
-        internal LogDataDto BuildLogData()
+        internal LogDataDto BuildLogData(Version parserVersion, UploadResults uploadResults)
         {
-            GeneralStatistics statistics = log.Statistics;
-            log.UpdateProgressWithCancellationCheck("HTML: building Log Data");
-            var logData = new LogDataDto
-            {
-                EncounterStart = log.LogData.LogStartStd,
-                EncounterEnd = log.LogData.LogEndStd,
-                ArcVersion = log.LogData.ArcVersion,
-                Gw2Build = log.LogData.GW2Build,
-                FightID = log.FightData.TriggerID,
-                Parser = "Elite Insights " + log.ParserVersion.ToString(),
-                RecordedBy = log.LogData.PoVName,
-                UploadLinks = uploadLinks.ToList()
-            };
-            if (cr)
-            {
-                logData.CrData = new CombatReplayDto(log);
-            }
-            log.UpdateProgressWithCancellationCheck("HTML: building Players");
-            foreach (Player player in log.PlayerList)
-            {
-                logData.HasCommander = logData.HasCommander || player.HasCommanderTag;
-                logData.Players.Add(new PlayerDto(player, log, cr, ActorDetailsDto.BuildPlayerData(log, player, usedSkills, usedBuffs)));
-            }
-
-            log.UpdateProgressWithCancellationCheck("HTML: building Enemies");
-            foreach (AbstractActor enemy in log.MechanicData.GetEnemyList(log, 0))
-            {
-                logData.Enemies.Add(new EnemyDto() { Name = enemy.Character });
-            }
-
-            log.UpdateProgressWithCancellationCheck("HTML: building Targets");
-            foreach (NPC target in log.FightData.Logic.Targets)
-            {
-                var targetDto = new TargetDto(target, log, cr, ActorDetailsDto.BuildTargetData(log, target, usedSkills, usedBuffs, cr));
-                logData.Targets.Add(targetDto);
-            }
-            //
-            log.UpdateProgressWithCancellationCheck("HTML: building Skill/Buff dictionaries");
-            Dictionary<string, List<Buff>> persBuffDict = BuildPersonalBoonData(log, logData.PersBuffs, usedBuffs);
-            Dictionary<string, List<DamageModifier>> persDamageModDict = BuildPersonalDamageModData(log, logData.DmgModifiersPers, usedDamageMods);
-            var allDamageMods = new HashSet<string>();
-            foreach (Player p in log.PlayerList)
-            {
-                allDamageMods.UnionWith(p.GetPresentDamageModifier(log));
-            }
-            var commonDamageModifiers = new List<DamageModifier>();
-            if (log.DamageModifiers.DamageModifiersPerSource.TryGetValue(ParserHelper.Source.Common, out List<DamageModifier> list))
-            {
-                foreach (DamageModifier dMod in list)
-                {
-                    if (allDamageMods.Contains(dMod.Name))
-                    {
-                        commonDamageModifiers.Add(dMod);
-                        logData.DmgModifiersCommon.Add(dMod.ID);
-                        usedDamageMods.Add(dMod);
-                    }
-                }
-            }
-            if (log.DamageModifiers.DamageModifiersPerSource.TryGetValue(ParserHelper.Source.FightSpecific, out list))
-            {
-                foreach (DamageModifier dMod in list)
-                {
-                    if (allDamageMods.Contains(dMod.Name))
-                    {
-                        commonDamageModifiers.Add(dMod);
-                        logData.DmgModifiersCommon.Add(dMod.ID);
-                        usedDamageMods.Add(dMod);
-                    }
-                }
-            }
-            var itemDamageModifiers = new List<DamageModifier>();
-            if (log.DamageModifiers.DamageModifiersPerSource.TryGetValue(ParserHelper.Source.Item, out list))
-            {
-                foreach (DamageModifier dMod in list)
-                {
-                    if (allDamageMods.Contains(dMod.Name))
-                    {
-                        itemDamageModifiers.Add(dMod);
-                        logData.DmgModifiersItem.Add(dMod.ID);
-                        usedDamageMods.Add(dMod);
-                    }
-                }
-            }
-            foreach (Buff boon in statistics.PresentBoons)
-            {
-                logData.Boons.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
-            }
-            foreach (Buff boon in statistics.PresentConditions)
-            {
-                logData.Conditions.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
-            }
-            foreach (Buff boon in statistics.PresentOffbuffs)
-            {
-                logData.OffBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
-            }
-            foreach (Buff boon in statistics.PresentSupbuffs)
-            {
-                logData.SupBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
-            }
-            foreach (Buff boon in statistics.PresentDefbuffs)
-            {
-                logData.DefBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
-            }
-            foreach (Buff boon in statistics.PresentFractalInstabilities)
-            {
-                logData.FractalInstabilities.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
-            }
-            //
-            log.UpdateProgressWithCancellationCheck("HTML: building Phases");
-            List<PhaseData> phases = log.FightData.GetPhases(log);
-            for (int i = 0; i < phases.Count; i++)
-            {
-                PhaseData phaseData = phases[i];
-                var phaseDto = new PhaseDto(phaseData, phases, log)
-                {
-                    DpsStats = PhaseDto.BuildDPSData(log, i),
-                    DpsStatsTargets = PhaseDto.BuildDPSTargetsData(log, i),
-                    DmgStatsTargets = PhaseDto.BuildDMGStatsTargetsData(log, i),
-                    DmgStats = PhaseDto.BuildDMGStatsData(log, i),
-                    DefStats = PhaseDto.BuildDefenseData(log, i),
-                    SupportStats = PhaseDto.BuildSupportData(log, i),
-                    //
-                    BoonStats = GW2EIBuilders.BuffData.BuildBuffUptimeData(log, statistics.PresentBoons, i),
-                    OffBuffStats = GW2EIBuilders.BuffData.BuildBuffUptimeData(log, statistics.PresentOffbuffs, i),
-                    SupBuffStats = GW2EIBuilders.BuffData.BuildBuffUptimeData(log, statistics.PresentSupbuffs, i),
-                    DefBuffStats = GW2EIBuilders.BuffData.BuildBuffUptimeData(log, statistics.PresentDefbuffs, i),
-                    PersBuffStats = GW2EIBuilders.BuffData.BuildPersonalBuffUptimeData(log, persBuffDict, i),
-                    BoonGenSelfStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.Self),
-                    BoonGenGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.Group),
-                    BoonGenOGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.OffGroup),
-                    BoonGenSquadStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.Squad),
-                    OffBuffGenSelfStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.Self),
-                    OffBuffGenGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.Group),
-                    OffBuffGenOGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.OffGroup),
-                    OffBuffGenSquadStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.Squad),
-                    SupBuffGenSelfStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.Self),
-                    SupBuffGenGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.Group),
-                    SupBuffGenOGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.OffGroup),
-                    SupBuffGenSquadStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.Squad),
-                    DefBuffGenSelfStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.Self),
-                    DefBuffGenGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.Group),
-                    DefBuffGenOGroupStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.OffGroup),
-                    DefBuffGenSquadStats = GW2EIBuilders.BuffData.BuildBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.Squad),
-                    //
-                    BoonActiveStats = GW2EIBuilders.BuffData.BuildActiveBuffUptimeData(log, statistics.PresentBoons, i),
-                    OffBuffActiveStats = GW2EIBuilders.BuffData.BuildActiveBuffUptimeData(log, statistics.PresentOffbuffs, i),
-                    SupBuffActiveStats = GW2EIBuilders.BuffData.BuildActiveBuffUptimeData(log, statistics.PresentSupbuffs, i),
-                    DefBuffActiveStats = GW2EIBuilders.BuffData.BuildActiveBuffUptimeData(log, statistics.PresentDefbuffs, i),
-                    PersBuffActiveStats = GW2EIBuilders.BuffData.BuildActivePersonalBuffUptimeData(log, persBuffDict, i),
-                    BoonGenActiveSelfStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.Self),
-                    BoonGenActiveGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.Group),
-                    BoonGenActiveOGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.OffGroup),
-                    BoonGenActiveSquadStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentBoons, i, BuffEnum.Squad),
-                    OffBuffGenActiveSelfStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.Self),
-                    OffBuffGenActiveGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.Group),
-                    OffBuffGenActiveOGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.OffGroup),
-                    OffBuffGenActiveSquadStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentOffbuffs, i, BuffEnum.Squad),
-                    SupBuffGenActiveSelfStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.Self),
-                    SupBuffGenActiveGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.Group),
-                    SupBuffGenActiveOGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.OffGroup),
-                    SupBuffGenActiveSquadStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentSupbuffs, i, BuffEnum.Squad),
-                    DefBuffGenActiveSelfStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.Self),
-                    DefBuffGenActiveGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.Group),
-                    DefBuffGenActiveOGroupStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.OffGroup),
-                    DefBuffGenActiveSquadStats = GW2EIBuilders.BuffData.BuildActiveBuffGenerationData(log, statistics.PresentDefbuffs, i, BuffEnum.Squad),
-                    //
-                    DmgModifiersCommon = DamageModData.BuildDmgModifiersData(log, i, commonDamageModifiers),
-                    DmgModifiersItem = DamageModData.BuildDmgModifiersData(log, i, itemDamageModifiers),
-                    DmgModifiersPers = DamageModData.BuildPersonalDmgModifiersData(log, i, persDamageModDict),
-                    TargetsCondiStats = new List<List<Gw2LogParser.GW2EIBuilders.BuffData>>(),
-                    TargetsCondiTotals = new List<Gw2LogParser.GW2EIBuilders.BuffData>(),
-                    TargetsBoonTotals = new List<Gw2LogParser.GW2EIBuilders.BuffData>(),
-                    MechanicStats = MechanicDto.BuildPlayerMechanicData(log, i),
-                    EnemyMechanicStats = MechanicDto.BuildEnemyMechanicData(log, i)
-                };
-                foreach (NPC target in phaseData.Targets)
-                {
-                    phaseDto.TargetsCondiStats.Add(GW2EIBuilders.BuffData.BuildTargetCondiData(log, i, target));
-                    phaseDto.TargetsCondiTotals.Add(GW2EIBuilders.BuffData.BuildTargetCondiUptimeData(log, i, target));
-                    phaseDto.TargetsBoonTotals.Add(HasBoons(log, i, target) ? GW2EIBuilders.BuffData.BuildTargetBoonData(log, i, target) : null);
-                }
-                logData.Phases.Add(phaseDto);
-            }
-            //
-            log.UpdateProgressWithCancellationCheck("HTML: building Meta Data");
-            logData.EncounterDuration = log.FightData.DurationString;
-            logData.Success = log.FightData.Success;
-            logData.Wvw = log.FightData.Logic.Mode == FightLogic.ParseMode.WvW;
-            logData.Targetless = log.FightData.Logic.Targetless;
-            logData.FightName = log.FightData.GetFightName(log);
-            logData.FightIcon = log.FightData.Logic.Icon;
-            logData.LightTheme = light;
-            logData.SingleGroup = log.PlayerList.Where(x => !x.IsFakeActor).Select(x => x.Group).Distinct().Count() == 1;
-            logData.NoMechanics = log.FightData.Logic.HasNoFightSpecificMechanics;
-            if (log.LogData.LogErrors.Count > 0)
-            {
-                logData.LogErrors = new List<string>(log.LogData.LogErrors);
-            }
-            //
-            SkillDto.AssembleSkills(usedSkills.Values, logData.SkillMap, log.SkillData);
-            DamageModDto.AssembleDamageModifiers(usedDamageMods, logData.DamageModMap);
-            BuffDto.AssembleBoons(usedBuffs.Values, logData.BuffMap, log);
-            MechanicDto.BuildMechanics(log.MechanicData.GetPresentMechanics(log, 0), logData.MechanicMap);
-            return logData;
+            bool combatReplay = true;
+            bool lightTheme = true;
+            return LogDataDto.BuildLogData(log, combatReplay, lightTheme, parserVersion, uploadResults.ToArray());
         }
 
         public SummaryItem BuildSummary(object[] item, LogDataDto data)
@@ -275,12 +68,16 @@ namespace Gw2LogParser.ExportModels
             summaryItem.Damage = (long)Convert.ChangeType(item[2], typeof(long));
             summaryItem.BarrierDamage = (long)Convert.ChangeType(item[12], typeof(long));
             summaryItem.Min = (int)Convert.ChangeType(item[3], typeof(int));
+            if (summaryItem.Min < 0)
+            {
+                summaryItem.Min = 0;
+            }
             summaryItem.Max = (int)Convert.ChangeType(item[4], typeof(int));
             summaryItem.Casts = (int)Convert.ChangeType(item[5], typeof(int));
             summaryItem.Hits = (int)Convert.ChangeType(item[6], typeof(int));
             summaryItem.Wasted = (float)Convert.ChangeType(item[10], typeof(float));
             summaryItem.Saved = (float)Convert.ChangeType(item[11], typeof(float));
-            summaryItem.HitsPerCast = (summaryItem.Casts == 0) ? 0 : summaryItem.Hits / summaryItem.Casts;
+            summaryItem.HitsPerCast = (summaryItem.Casts == 0) ? 0 : (float)summaryItem.Hits / (float)summaryItem.Casts;
             summaryItem.Crit = (int)Convert.ChangeType(item[7], typeof(int));
             summaryItem.Flank = (int)Convert.ChangeType(item[8], typeof(int));
             summaryItem.Glance = (int)Convert.ChangeType(item[9], typeof(int));
@@ -297,7 +94,7 @@ namespace Gw2LogParser.ExportModels
             original.Flank += item.Flank;
             original.Glance += item.Glance;
             original.Hits += item.Hits;
-            original.HitsPerCast += (original.Casts == 0) ? 0 : original.Hits / original.Casts;
+            original.HitsPerCast += (original.Casts == 0) ? 0 : (float)original.Hits / (float)original.Casts;
             original.Max = Math.Max(original.Max, item.Max);
             original.Min = Math.Min(original.Min, item.Min);
             original.Saved += item.Saved;
@@ -313,12 +110,11 @@ namespace Gw2LogParser.ExportModels
             original.Damage.Condi += report.Damage.Condi;
             original.Damage.TargetDamage += report.Damage.TargetDamage;
             original.Damage.TargetPower += report.Damage.TargetPower;
-            original.Damage.TargetCondi = report.Damage.TargetCondi;
+            original.Damage.TargetCondi += report.Damage.TargetCondi;
 
             original.Support.BoonStrips += report.Support.BoonStrips;
             original.Support.CleanseOnOther += report.Support.CleanseOnOther;
             original.Support.CleanseOnSelf += report.Support.CleanseOnSelf;
-            original.Support.BoonStrips += report.Support.BoonStrips;
             original.Support.Resurrects += report.Support.Resurrects;
 
             original.Defense.DamageTaken += report.Defense.DamageTaken;
@@ -344,8 +140,12 @@ namespace Gw2LogParser.ExportModels
             original.Gameplay.Glancing += report.Gameplay.Glancing;
             original.Gameplay.Interrupted += report.Gameplay.Interrupted;
             original.Gameplay.Invulnerable += report.Gameplay.Invulnerable;
+            original.Gameplay.Downed += report.Gameplay.Downed;
+            original.Gameplay.Killed += report.Gameplay.Killed;
             original.Gameplay.Saved += report.Gameplay.Saved;
+            original.Gameplay.SavedCount += report.Gameplay.SavedCount;
             original.Gameplay.Wasted += report.Gameplay.Wasted;
+            original.Gameplay.WastedCount += report.Gameplay.WastedCount;
             original.Gameplay.WeaponSwapped += report.Gameplay.WeaponSwapped;
             // Damage Summary
             var dictionary = new Dictionary<String, int?>();
@@ -389,6 +189,7 @@ namespace Gw2LogParser.ExportModels
             for (var i = 0; i < original.BoonStats.Count; i++)
             {
                 var originalBoon = original.BoonStats[i];
+                
                 if (report.BoonStats.Count > i)
                 {
                     var reportBoon = report.BoonStats[i];
@@ -446,7 +247,27 @@ namespace Gw2LogParser.ExportModels
                     originalBoon.Extended += reportBoon.Extended;
                 }
             }
-
+            if (report.healing != null)
+            {
+                if (original.healing == null)
+                {
+                    original.healing = report.healing;
+                } else
+                {
+                    original.healing.IncomingConversion += report.healing.IncomingConversion;
+                    original.healing.IncomingDowned += report.healing.IncomingDowned;
+                    original.healing.IncomingHealed += report.healing.IncomingHealed;
+                    original.healing.IncomingHealingPower += report.healing.IncomingHealingPower;
+                    original.healing.OutgoingAll += report.healing.OutgoingAll;
+                    original.healing.OutgoingAllConversion += report.healing.OutgoingAllConversion;
+                    original.healing.OutgoingAllDowned += report.healing.OutgoingAllDowned;
+                    original.healing.OutgoingAllHealingPower += report.healing.OutgoingAllHealingPower;
+                    original.healing.OutgoingTargetAll += report.healing.OutgoingTargetAll;
+                    original.healing.OutgoingTargetConversion += report.healing.OutgoingTargetConversion;
+                    original.healing.OutgoingTargetDowned += report.healing.OutgoingTargetDowned;
+                    original.healing.OutgoingTargetHealingPower += report.healing.OutgoingTargetHealingPower;
+                }
+            }
         }
 
         private T Parse<T>(object value)
@@ -474,7 +295,7 @@ namespace Gw2LogParser.ExportModels
                 {
                     playerReport.TakenSummary.Add(BuildSummary(item, data));
                 }
-
+                //var count = data.Wvw ? 1 : data.Phases.Count;
                 for (int phaseIndex = 0; phaseIndex < data.Phases.Count; phaseIndex++)
                 {
                     var phase = data.Phases[phaseIndex];
@@ -484,9 +305,18 @@ namespace Gw2LogParser.ExportModels
                     playerReport.Damage.AllDamage = Parse<long>(phase.DpsStats[playerIndex][0]);
                     playerReport.Damage.Power = Parse<long>(phase.DpsStats[playerIndex][1]);
                     playerReport.Damage.Condi = Parse<long>(phase.DpsStats[playerIndex][2]);
-                    playerReport.Damage.TargetDamage = Parse<long>(phase.DpsStatsTargets[playerIndex][0][0]);
-                    playerReport.Damage.TargetPower = Parse<long>(phase.DpsStatsTargets[playerIndex][0][1]);
-                    playerReport.Damage.TargetCondi = Parse<long>(phase.DpsStatsTargets[playerIndex][0][2]);
+                    var sumstates = new int[3];
+                    var dpsStatsTargetsForPlayer = phase.DpsStatsTargets[playerIndex];
+                    for (int i = 0; i < dpsStatsTargetsForPlayer.Count; i++)
+                    {
+                        var forTarget = dpsStatsTargetsForPlayer[i];
+                        sumstates[0] += (int)forTarget[0];
+                        sumstates[1] += (int)forTarget[1];
+                        sumstates[2] += (int)forTarget[2];
+                    }
+                    playerReport.Damage.TargetDamage = sumstates[0];
+                    playerReport.Damage.TargetPower = sumstates[1];
+                    playerReport.Damage.TargetCondi = sumstates[2];
 
                     playerReport.Support.CleanseOnOther = Parse<int>(phase.SupportStats[playerIndex][0]);
                     playerReport.Support.CleanseOnSelf = Parse<int>(phase.SupportStats[playerIndex][2]);
@@ -510,95 +340,39 @@ namespace Gw2LogParser.ExportModels
                     playerReport.setBoonGenSelfStats(phase.BoonGenSelfStats[playerIndex].Data);
                     playerReport.setBoonGenOGroupStats(phase.BoonGenOGroupStats[playerIndex].Data);
                     playerReport.setBoonGenGroupStats(phase.BoonGenGroupStats[playerIndex].Data);
+                    if (data.HealingStatsExtension != null)
+                    {
+                        var healingReport = new HealingReport();
+                        healingReport.IncomingHealed = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][0]);
+                        healingReport.IncomingHealingPower = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][1]);
+                        healingReport.IncomingConversion = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][2]);
+                        healingReport.IncomingDowned = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][3]);
+                        healingReport.OutgoingAll = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][0]);
+                        healingReport.OutgoingAllHealingPower = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][1]);
+                        healingReport.OutgoingAllConversion = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][2]);
+                        healingReport.OutgoingAllDowned = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][3]);
+                        int OutgoingTargetAll = 0;
+                        int OutgoingTargetHealingPower = 0;
+                        int OutgoingTargetConversion = 0;
+                        int OutgoingTargetDowned = 0;
+                        var targetStats = data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStatsTargets[playerIndex];
+                        for (int target = 0; target < targetStats.Count; target++)
+                        {   
+                            OutgoingTargetAll += Parse<int>(targetStats[target][0]);
+                            OutgoingTargetHealingPower += Parse<int>(targetStats[target][1]);
+                            OutgoingTargetConversion += Parse<int>(targetStats[target][2]);
+                            OutgoingTargetDowned += Parse<int>(targetStats[target][3]);
+                        }
+                        healingReport.OutgoingTargetAll = OutgoingTargetAll;
+                        healingReport.OutgoingTargetHealingPower = OutgoingTargetHealingPower;
+                        healingReport.OutgoingTargetConversion = OutgoingTargetConversion;
+                        healingReport.OutgoingTargetDowned = OutgoingTargetDowned;
+                        playerReport.healing = healingReport;
+                    }
+                    
                 }
                 report.players[playerReport.Name] = playerReport;
             }
-        }
-
-        private static Dictionary<string, List<Buff>> BuildPersonalBoonData(ParsedLog log, Dictionary<string, List<long>> dict, Dictionary<long, Buff> usedBuffs)
-        {
-            var boonsBySpec = new Dictionary<string, List<Buff>>();
-            // Collect all personal buffs by spec
-            foreach (KeyValuePair<string, List<Player>> pair in log.PlayerListBySpec)
-            {
-                List<Player> players = pair.Value;
-                var specBoonIds = new HashSet<long>(log.Buffs.GetRemainingBuffsList(pair.Key).Select(x => x.ID));
-                var boonToUse = new HashSet<Buff>();
-                foreach (Player player in players)
-                {
-                    for (int i = 0; i < log.FightData.GetPhases(log).Count; i++)
-                    {
-                        Dictionary<long, FinalPlayerBuffs> boons = player.GetBuffs(log, i, BuffEnum.Self);
-                        foreach (Buff boon in log.Statistics.PresentPersonalBuffs[player])
-                        {
-                            if (boons.TryGetValue(boon.ID, out FinalPlayerBuffs uptime))
-                            {
-                                if (uptime.Uptime > 0 && specBoonIds.Contains(boon.ID))
-                                {
-                                    boonToUse.Add(boon);
-                                }
-                            }
-                        }
-                    }
-                }
-                boonsBySpec[pair.Key] = boonToUse.ToList();
-            }
-            foreach (KeyValuePair<string, List<Buff>> pair in boonsBySpec)
-            {
-                dict[pair.Key] = new List<long>();
-                foreach (Buff boon in pair.Value)
-                {
-                    dict[pair.Key].Add(boon.ID);
-                    usedBuffs[boon.ID] = boon;
-                }
-            }
-            return boonsBySpec;
-        }
-
-        private static Dictionary<string, List<DamageModifier>> BuildPersonalDamageModData(ParsedLog log, Dictionary<string, List<long>> dict, HashSet<DamageModifier> usedDamageMods)
-        {
-            var damageModBySpecs = new Dictionary<string, List<DamageModifier>>();
-            // Collect all personal damage mods by spec
-            foreach (KeyValuePair<string, List<Player>> pair in log.PlayerListBySpec)
-            {
-                var specDamageModsName = new HashSet<string>(log.DamageModifiers.GetModifiersPerProf(pair.Key).Select(x => x.Name));
-                var damageModsToUse = new HashSet<DamageModifier>();
-                foreach (Player player in pair.Value)
-                {
-                    var presentDamageMods = new HashSet<string>(player.GetPresentDamageModifier(log).Intersect(specDamageModsName));
-                    foreach (string name in presentDamageMods)
-                    {
-                        damageModsToUse.Add(log.DamageModifiers.DamageModifiersByName[name]);
-                    }
-                }
-                damageModBySpecs[pair.Key] = damageModsToUse.ToList();
-            }
-            foreach (KeyValuePair<string, List<DamageModifier>> pair in damageModBySpecs)
-            {
-                dict[pair.Key] = new List<long>();
-                foreach (DamageModifier mod in pair.Value)
-                {
-                    dict[pair.Key].Add(mod.ID);
-                    usedDamageMods.Add(mod);
-                }
-            }
-            return damageModBySpecs;
-        }
-
-        private static bool HasBoons(ParsedLog log, int phaseIndex, NPC target)
-        {
-            Dictionary<long, FinalBuffs> conditions = target.GetBuffs(log, phaseIndex);
-            foreach (Buff boon in log.Statistics.PresentBoons)
-            {
-                if (conditions.TryGetValue(boon.ID, out FinalBuffs uptime))
-                {
-                    if (uptime.Uptime > 0.0)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
         }
 
         private GameplayReport BuildGameplayReport(List<object> DmgStats)
@@ -614,11 +388,15 @@ namespace Gw2LogParser.ExportModels
             report.Invulnerable = Parse<int>(DmgStats[8]);
             report.Evaded = Parse<int>(DmgStats[9]);
             report.Blocked = Parse<int>(DmgStats[10]);
-            report.Wasted = Parse<float>(DmgStats[12]);
-            report.Saved = Parse<float>(DmgStats[14]);
-            report.WeaponSwapped = Parse<int>(DmgStats[16]);
-            report.AvgDistanceToSquad = Parse<double>(DmgStats[17]);
-            report.AvgDistanceToTag = Parse<double>(DmgStats[18]);
+            report.Killed = Parse<int>(DmgStats[12]);
+            report.Downed = Parse<int>(DmgStats[13]);
+            report.Wasted = Parse<float>(DmgStats[17]);
+            report.WastedCount = Parse<int>(DmgStats[18]);
+            report.Saved = Parse<float>(DmgStats[19]);
+            report.SavedCount = Parse<int>(DmgStats[20]);
+            report.WeaponSwapped = Parse<int>(DmgStats[21]);
+            report.AvgDistanceToSquad = Parse<double>(DmgStats[22]);
+            report.AvgDistanceToTag = Parse<double>(DmgStats[23]);
             return report;
         }
     }

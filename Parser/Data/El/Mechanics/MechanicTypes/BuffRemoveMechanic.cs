@@ -4,11 +4,11 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
 {
     internal abstract class BuffRemoveMechanic : Mechanic
     {
-        public delegate bool BuffRemoveChecker(BuffRemoveManualEvent rme, ParsedLog log);
+        public delegate bool BuffRemoveChecker(BuffRemoveAllEvent rme, ParsedLog log);
 
         private readonly BuffRemoveChecker _triggerCondition = null;
 
-        protected bool Keep(BuffRemoveManualEvent c, ParsedLog log)
+        protected bool Keep(BuffRemoveAllEvent c, ParsedLog log)
         {
             if (_triggerCondition != null)
             {

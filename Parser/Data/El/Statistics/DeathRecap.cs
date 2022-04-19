@@ -21,7 +21,7 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
         public List<DeathRecapDamageItem> ToDown { get; }
         public List<DeathRecapDamageItem> ToKill { get; }
 
-        internal DeathRecap(List<AbstractDamageEvent> damageLogs, DeadEvent dead, List<DownEvent> downs, List<AliveEvent> ups, long lastDeathTime)
+        internal DeathRecap(ParsedLog log, IReadOnlyList<AbstractHealthDamageEvent> damageLogs, DeadEvent dead, IReadOnlyList<DownEvent> downs, IReadOnlyList<AliveEvent> ups, long lastDeathTime)
         {
             DeathTime = dead.Time;
             DownEvent downed;
@@ -36,41 +36,41 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
             }
             if (downed != null)
             {
-                var damageToDown = damageLogs.Where(x => x.Time > lastDeathTime && x.Time <= downed.Time && x.HasHit && x.Damage > 0).ToList();
+                var damageToDown = damageLogs.Where(x => x.Time > lastDeathTime && x.Time <= downed.Time && (x.HasHit || x.HasDowned)).ToList();
                 ToDown = damageToDown.Count > 0 ? new List<DeathRecapDamageItem>() : null;
                 int damage = 0;
                 for (int i = damageToDown.Count - 1; i >= 0; i--)
                 {
-                    AbstractDamageEvent dl = damageToDown[i];
+                    AbstractHealthDamageEvent dl = damageToDown[i];
                     Agent ag = dl.From;
                     var item = new DeathRecapDamageItem()
                     {
                         Time = (int)dl.Time,
-                        IndirectDamage = dl is NonDirectDamageEvent,
+                        IndirectDamage = dl is NonDirectHealthDamageEvent,
                         ID = dl.SkillId,
-                        Damage = dl.Damage,
-                        Src = ag != null ? ag.Name.Replace("\u0000", "").Split(':')[0] : ""
+                        Damage = dl.HealthDamage,
+                        Src = log.FindActor(ag)?.Character
                     };
-                    damage += dl.Damage;
+                    damage += dl.HealthDamage;
                     ToDown.Add(item);
                     if (damage > 20000)
                     {
                         break;
                     }
                 }
-                var damageToKill = damageLogs.Where(x => x.Time > downed.Time && x.Time <= dead.Time && x.HasHit && x.Damage > 0).ToList();
+                var damageToKill = damageLogs.Where(x => x.Time > downed.Time && x.Time <= dead.Time && (x.HasHit || x.HasKilled)).ToList();
                 ToKill = damageToKill.Count > 0 ? new List<DeathRecapDamageItem>() : null;
                 for (int i = damageToKill.Count - 1; i >= 0; i--)
                 {
-                    AbstractDamageEvent dl = damageToKill[i];
+                    AbstractHealthDamageEvent dl = damageToKill[i];
                     Agent ag = dl.From;
                     var item = new DeathRecapDamageItem()
                     {
                         Time = (int)dl.Time,
-                        IndirectDamage = dl is NonDirectDamageEvent,
+                        IndirectDamage = dl is NonDirectHealthDamageEvent,
                         ID = dl.SkillId,
-                        Damage = dl.Damage,
-                        Src = ag != null ? ag.Name.Replace("\u0000", "").Split(':')[0] : ""
+                        Damage = dl.HealthDamage,
+                        Src = log.FindActor(ag)?.Character
                     };
                     ToKill.Add(item);
                 }
@@ -78,22 +78,22 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
             else
             {
                 ToDown = null;
-                var damageToKill = damageLogs.Where(x => x.Time > lastDeathTime && x.Time <= dead.Time && x.HasHit && x.Damage > 0).ToList();
+                var damageToKill = damageLogs.Where(x => x.Time > lastDeathTime && x.Time <= dead.Time && (x.HasHit || x.HasKilled)).ToList();
                 ToKill = damageToKill.Count > 0 ? new List<DeathRecapDamageItem>() : null;
                 int damage = 0;
                 for (int i = damageToKill.Count - 1; i >= 0; i--)
                 {
-                    AbstractDamageEvent dl = damageToKill[i];
+                    AbstractHealthDamageEvent dl = damageToKill[i];
                     Agent ag = dl.From;
                     var item = new DeathRecapDamageItem()
                     {
                         Time = (int)dl.Time,
-                        IndirectDamage = dl is NonDirectDamageEvent,
+                        IndirectDamage = dl is NonDirectHealthDamageEvent,
                         ID = dl.SkillId,
-                        Damage = dl.Damage,
-                        Src = ag != null ? ag.Name.Replace("\u0000", "").Split(':')[0] : ""
+                        Damage = dl.HealthDamage,
+                        Src = log.FindActor(ag)?.Character
                     };
-                    damage += dl.Damage;
+                    damage += dl.HealthDamage;
                     ToKill.Add(item);
                     if (damage > 20000)
                     {

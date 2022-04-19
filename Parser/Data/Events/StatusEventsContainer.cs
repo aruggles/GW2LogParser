@@ -14,12 +14,15 @@ namespace Gw2LogParser.Parser.Data.Events
         public Dictionary<Agent, List<EnterCombatEvent>> EnterCombatEvents { get; } = new Dictionary<Agent, List<EnterCombatEvent>>();
         public Dictionary<Agent, List<ExitCombatEvent>> ExitCombatEvents { get; } = new Dictionary<Agent, List<ExitCombatEvent>>();
         public Dictionary<Agent, List<HealthUpdateEvent>> HealthUpdateEvents { get; } = new Dictionary<Agent, List<HealthUpdateEvent>>();
+        public Dictionary<Agent, List<BarrierUpdateEvent>> BarrierUpdateEvents { get; } = new Dictionary<Agent, List<BarrierUpdateEvent>>();
         public Dictionary<Agent, List<MaxHealthUpdateEvent>> MaxHealthUpdateEvents { get; } = new Dictionary<Agent, List<MaxHealthUpdateEvent>>();
         public Dictionary<Agent, List<SpawnEvent>> SpawnEvents { get; } = new Dictionary<Agent, List<SpawnEvent>>();
         public Dictionary<Agent, List<TargetableEvent>> TargetableEvents { get; } = new Dictionary<Agent, List<TargetableEvent>>();
         public Dictionary<Agent, List<TeamChangeEvent>> TeamChangeEvents { get; } = new Dictionary<Agent, List<TeamChangeEvent>>();
         public Dictionary<Agent, List<BreakbarStateEvent>> BreakbarStateEvents { get; } = new Dictionary<Agent, List<BreakbarStateEvent>>();
         public Dictionary<Agent, List<BreakbarPercentEvent>> BreakbarPercentEvents { get; } = new Dictionary<Agent, List<BreakbarPercentEvent>>();
+        public Dictionary<Agent, List<AbstractMovementEvent>> MovementEvents { get; } = new Dictionary<Agent, List<AbstractMovementEvent>>();
+        //public Dictionary<AgentItem, List<TagEvent>> TagEvents { get; } = new Dictionary<AgentItem, List<TagEvent>>();
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using Gw2LogParser.Parser.Data.Events.MetaData;
+﻿using Gw2LogParser.GW2Api;
+using Gw2LogParser.Parser.Data.Events.MetaData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +12,13 @@ namespace Gw2LogParser.Parser.Data.Skills
     {
         // Fields
         private readonly Dictionary<long, Skill> _skills = new Dictionary<long, Skill>();
+        private readonly GW2APIController _apiController;
 
         // Public Methods
 
-        internal SkillData()
+        internal SkillData(GW2APIController apiController)
         {
-
+            _apiController = apiController;
         }
 
         public Skill Get(long ID)
@@ -25,9 +27,8 @@ namespace Gw2LogParser.Parser.Data.Skills
             {
                 return value;
             }
-            var item = new Skill(ID, "UNKNOWN");
-            Add(item);
-            return item;
+            Add(ID, Skill.DefaultName);
+            return _skills[ID];
         }
 
         internal HashSet<long> NotAccurate = new HashSet<long>();
@@ -37,11 +38,11 @@ namespace Gw2LogParser.Parser.Data.Skills
             return NotAccurate.Contains(ID);
         }
 
-        internal void Add(Skill Skill)
+        internal void Add(long id, string name)
         {
-            if (!_skills.ContainsKey(Skill.ID))
+            if (!_skills.ContainsKey(id))
             {
-                _skills.Add(Skill.ID, Skill);
+                _skills.Add(id, new Skill(id, name, _apiController));
             }
         }
 

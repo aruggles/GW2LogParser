@@ -8,7 +8,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
 
         public PointOfViewEvent(Combat evtcItem, AgentData agentData) : base(evtcItem)
         {
-            PoV = agentData.GetAgent(evtcItem.SrcAgent);
+            PoV = agentData.GetAgent(evtcItem.SrcAgent, evtcItem.Time);
         }
 
     }

@@ -1,24 +1,20 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
 using Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Gw2LogParser.Parser.Data.El.Simulator.AbstractBuffSimulator;
 
 namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID.EffectStackingLogic
 {
     internal class ForceOverrideLogic : StackingLogic
     {
-        public override void Sort(ParsedLog log, List<BuffStackItem> stacks)
+        protected override void Sort(ParsedLog log, List<BuffStackItem> stacks)
         {
             // no sort
         }
 
-        public override bool StackEffect(ParsedLog log, BuffStackItem stackItem, List<BuffStackItem> stacks, List<BuffSimulationItemWasted> wastes)
+        public override bool FindLowestValue(ParsedLog log, BuffStackItem stackItem, List<BuffStackItem> stacks, List<BuffSimulationItemWasted> wastes)
         {
-            if (stacks.Count == 0)
+            if (!stacks.Any())
             {
                 return false;
             }
@@ -33,6 +29,11 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID.EffectStacking
             }
             stacks[0] = stackItem;
             return true;
+        }
+
+        public override bool IsFull(List<BuffStackItem> stacks, int capacity)
+        {
+            return stacks.Count == 1;
         }
     }
 }

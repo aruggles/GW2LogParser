@@ -14,6 +14,7 @@ namespace Gw2LogParser.Parser.Data.El.Professions
         {
             new BuffGainCastFinder(31869,31508,InstantCastFinders.InstantCastFinder.DefaultICD), // Celestial Avatar
             new BuffLossCastFinder(31411,31508,InstantCastFinders.InstantCastFinder.DefaultICD), // Release Celestial Avatar
+            new DamageCastFinder(31658, 31658, InstantCastFinders.InstantCastFinder.DefaultICD), // Glyph of Equality (non-CA)
         };
 
         internal static readonly List<DamageModifier> DamageMods = new List<DamageModifier>

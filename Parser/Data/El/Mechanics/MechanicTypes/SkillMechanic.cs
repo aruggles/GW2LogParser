@@ -4,11 +4,11 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
 {
     internal abstract class SkillMechanic : Mechanic
     {
-        public delegate bool SkillChecker(AbstractDamageEvent d, ParsedLog log);
+        public delegate bool SkillChecker(AbstractHealthDamageEvent d, ParsedLog log);
 
         private readonly SkillChecker _triggerCondition = null;
 
-        protected virtual bool Keep(AbstractDamageEvent c, ParsedLog log)
+        protected virtual bool Keep(AbstractHealthDamageEvent c, ParsedLog log)
         {
             if (_triggerCondition != null)
             {

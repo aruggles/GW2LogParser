@@ -2,11 +2,8 @@
 using Gw2LogParser.Parser.Data.Events.Buffs.BuffApplies;
 using Gw2LogParser.Parser.Data.Events.Cast;
 using Gw2LogParser.Parser.Data.Skills;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
 {
@@ -14,6 +11,11 @@ namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
     {
         public delegate bool BuffGainCastChecker(BuffApplyEvent evt, CombatData combatData);
         private readonly BuffGainCastChecker _triggerCondition;
+
+        protected virtual Agent GetCasterAgent(Agent agent)
+        {
+            return agent;
+        }
 
         public BuffGainCastFinder(long skillID, long buffID, long icd, BuffGainCastChecker checker = null) : base(skillID, buffID, icd)
         {
@@ -34,6 +36,10 @@ namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
                 long lastTime = int.MinValue;
                 foreach (BuffApplyEvent bae in pair.Value)
                 {
+                    if (bae.Initial)
+                    {
+                        continue;
+                    }
                     if (bae.Time - lastTime < ICD)
                     {
                         lastTime = bae.Time;
@@ -44,13 +50,13 @@ namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
                         if (_triggerCondition(bae, combatData))
                         {
                             lastTime = bae.Time;
-                            res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), bae.To));
+                            res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), GetCasterAgent(bae.To)));
                         }
                     }
                     else
                     {
                         lastTime = bae.Time;
-                        res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), bae.To));
+                        res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), GetCasterAgent(bae.To)));
                     }
                 }
             }

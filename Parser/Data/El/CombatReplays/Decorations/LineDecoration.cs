@@ -12,9 +12,9 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
             ConnectedFrom = targetConnector;
         }
 
-        public override GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log)
+        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log)
         {
-            return new LineDecorationSerializable(log, this, map);
+            return new LineDecorationCombatReplayDescription(log, this, map);
         }
     }
 }

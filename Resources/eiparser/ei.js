@@ -4,7 +4,7 @@ function compileTemplates() {
     Vue.component("graph-component", {
         props: ['id', 'layout', 'data'],
         template: '<div :id="id" class="d-flex flex-row justify-content-center"></div>',
-        mounted: function () {
+        activated: function () {
             var div = document.querySelector(this.queryID);
             Plotly.react(div, this.data, this.layout, { showEditInChartStudio: true, plotlyServerURL: "https://chart-studio.plotly.com" });
             var _this = this;
@@ -21,6 +21,9 @@ function compileTemplates() {
             layout: {
                 handler: function () {
                     var div = document.querySelector(this.queryID);
+                    if (!div) {
+                        return;
+                    }
                     var duration = 1000;
                     Plotly.animate(div, {
                         data: this.data
@@ -30,12 +33,44 @@ function compileTemplates() {
                             easing: 'cubic-in-out'
                         },
                         frame: {
-                            duration: 1.5 * duration
+                            duration: 0.75 * duration
                         }
                     });
                 },
                 deep: true
             }
+        }
+    });
+    Vue.component("custom-numberform-component", {
+        props: ["minValue", "maxValue", "id", "placeholderValue"],
+        template: `
+        <div>
+            <input class="form-control" type="number" :id="id"
+                @onkeypress="return isNumber(event)" onpaste="return false;" step="2" 
+                    :value="placeholderValue" data-bind="value:replyNumber, fireChange: true"
+                    :min="minValue" :max="maxValue">
+        </div>
+        `,
+        methods: {
+            isNumber: function (evt) {
+                evt = (evt) ? evt : window.event;
+                var charCode = (evt.which) ? evt.which : evt.keyCode;
+                if ((charCode > 31 && charCode < 48) || charCode > 57) {
+                    return false;
+                }
+                return true;
+            }
+        },
+        mounted() {
+            $("#" + this.id).on("input ", function () {
+                var max = parseInt($(this).attr('max')) || 1e12;
+                var min = parseInt($(this).attr('min'));
+                if ($(this).val() > max) {
+                    $(this).val(max);
+                } else if ($(this).val() < min) {
+                    $(this).val(min);
+                }
+            });
         }
     });
     TEMPLATE_COMPILE
@@ -44,7 +79,8 @@ function compileTemplates() {
 function mainLoad() {
     // make some additional variables reactive
     var i;
-
+    var nonDummyPhases = logData.phases.filter(x => !x.dummy);
+    var firstActive = nonDummyPhases[0];
     for (i = 0; i < logData.phases.length; i++) {
         var phase = logData.phases[i];
         phase.durationS = phase.duration / 1000.0
@@ -60,7 +96,7 @@ function mainLoad() {
         }
         phase.times = times;
         simpleLogData.phases.push({
-            active: i === 0,
+            active: firstActive === phase,
             focus: -1
         });
     }
@@ -74,19 +110,27 @@ function mainLoad() {
     for (i = 0; i < logData.players.length; i++) {
         var playerData = logData.players[i];
         simpleLogData.players.push({
-            active: !!playerData.isPoV
+            active: !!playerData.isPoV,
+            targetActive: !playerData.isFake
         });
         playerData.dpsGraphCache = new Map();
-        playerData.icon = urls[playerData.profession];
         playerData.id = i;
     }
     compileTemplates()
+    if (!!crData) {
+        compileCRTemplates();
+    }
+    if (!!healingStatsExtension) {
+        compileHealingExtTemplates();
+    }
     new Vue({
         el: "#content",
         data: {
             light: typeof (window.theme) !== "undefined" ? (window.theme === 'yeti') : logData.lightTheme,
             mode: 0,
-            cr: !!logData.crData
+            cr: !!crData,
+            healingExtShow: !!healingStatsExtension || logData.evtcVersion >= 20210701,
+            healingExt: !!healingStatsExtension
         },
         methods: {
             switchTheme: function (state) {
@@ -117,10 +161,6 @@ function mainLoad() {
                         url: "" 
                     },
                     { 
-                        key: "DPS Reports Link (RH)", 
-                        url: "" 
-                    },
-                    { 
                         key: "Raidar Link", 
                         url: "" 
                     }
@@ -134,6 +174,12 @@ function mainLoad() {
                     }
                 }
                 return hasAny ? res : null;
+            },
+            usedExtensions: function () {
+                if (!logData.usedExtensions) {
+                    return null;
+                }
+                return logData.usedExtensions;
             }
         },
         mounted() {
@@ -148,7 +194,7 @@ function mainLoad() {
 };
 
 window.onload = function () {
-    Vue.config.devtools = true
+    Vue.config.devtools = true;
     // trick from
     var img = document.createElement("img");
     img.style.display = "none";

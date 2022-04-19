@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using static Gw2LogParser.Parser.Data.El.Simulator.AbstractBuffSimulator;
 
 namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID.EffectStackingLogic
 {
@@ -19,7 +18,7 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID.EffectStacking
             }
         }
 
-        public override void Sort(ParsedLog log, List<BuffStackItem> stacks)
+        protected override void Sort(ParsedLog log, List<BuffStackItem> stacks)
         {
             stacks.Sort(CompareHealing.Compare);
         }

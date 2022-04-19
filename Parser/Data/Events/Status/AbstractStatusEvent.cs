@@ -8,7 +8,7 @@ namespace Gw2LogParser.Parser.Data.Events.Status
 
         protected AbstractStatusEvent(Combat evtcItem, AgentData agentData) : base(evtcItem.Time)
         {
-            Src = agentData.GetAgent(evtcItem.SrcAgent);
+            Src = agentData.GetAgent(evtcItem.SrcAgent, evtcItem.Time);
         }
 
         protected AbstractStatusEvent(Agent src, long time) : base(time)

@@ -16,11 +16,18 @@ using Gw2LogParser.ExportModels.Report;
 using Gw2LogParser.Parser.Helper;
 using System.Windows.Forms;
 using Gw2LogParser.GW2EIBuilders;
+using Gw2LogParser.GW2Api;
 
 namespace Gw2LogParser
 {
     public static class ProcessManager
     {
+        internal static readonly string SkillAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/SkillList.json";
+        internal static readonly string SpecAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/SpecList.json";
+        internal static readonly string TraitAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/TraitList.json";
+        internal static Version ParserVersion { get; } = new Version(Application.ProductVersion);
+
+        internal static readonly GW2APIController apiController = new GW2APIController(SkillAPICacheLocation, SpecAPICacheLocation, TraitAPICacheLocation);
         public static ConcurrentBag<ParsedLog> CompletedLogs { get; set; } = new ConcurrentBag<ParsedLog>();
         /// <summary>
         /// Reports a status update for a log, updating the background worker and the related row with the new status
@@ -77,16 +84,26 @@ namespace Gw2LogParser
             Thread.CurrentThread.CurrentCulture =
                     new System.Globalization.CultureInfo("en-US");
             var fInfo = new FileInfo(row.Location);
-            var operation = new FormOperationController(new Version(Application.ProductVersion), fInfo.FullName, "Ready to parse", dgv);
+            var operation = new FormOperationController(fInfo.FullName, "Ready to parse", dgv);
             try
             {
                 if (!fInfo.Exists)
                 {
                     throw new FileNotFoundException("File " + fInfo.FullName + " does not exist");
                 }
-                var parser = new EvtcParser(new ParserSettings(Properties.Settings.Default.Anonymous, Properties.Settings.Default.SkipFailedTries, Properties.Settings.Default.ParsePhases, Properties.Settings.Default.ParseCombatReplay, Properties.Settings.Default.ComputeDamageModifiers));
+                var parser = new EvtcParser(new ParserSettings(Properties.Settings.Default.Anonymous,
+                                                Properties.Settings.Default.SkipFailedTries,
+                                                Properties.Settings.Default.ParsePhases,
+                                                Properties.Settings.Default.ParseCombatReplay,
+                                                Properties.Settings.Default.ComputeDamageModifiers,
+                                                Properties.Settings.Default.CustomTooShort,
+                                                Properties.Settings.Default.DetailledWvW), apiController);
                 //Process evtc here
-                ParsedLog log = parser.ParseLog(operation, fInfo);
+                ParsedLog log = parser.ParseLog(operation, fInfo, out ParsingFailureReason failureReason);
+                if (failureReason != null)
+                {
+                    failureReason.Throw();
+                }
                 log.evctFile = fInfo;
                 /*
                 string fName = fInfo.Name.Split('.')[0];
@@ -176,6 +193,7 @@ namespace Gw2LogParser
             {
                 return;
             }
+            var uploadResults = new UploadResults("", "", "");
             var htmlAssets = new GW2EIBuilders.HTMLAssets();
             string outputFile = Path.Combine(
                 saveFolder.FullName,
@@ -184,19 +202,26 @@ namespace Gw2LogParser
             using (var fs = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
             using (var sw = new StreamWriter(fs))
             {
-                var builder = new GW2EIBuilders.HTMLBuilder(log, new GW2EIBuilders.HTMLSettings(Properties.Settings.Default.LightTheme, Properties.Settings.Default.HtmlExternalScripts), htmlAssets);
-                builder.CreateHTML(sw, outputFile, logData);
+                var builder = new GW2EIBuilders.HTMLBuilder(log,
+                    new HTMLSettings(Properties.Settings.Default.LightTheme,
+                            Properties.Settings.Default.HtmlExternalScripts,
+                            Properties.Settings.Default.HtmlExternalScriptsPath,
+                            Properties.Settings.Default.HtmlExternalScriptsCdn,
+                            Properties.Settings.Default.HtmlCompressJson),
+                    htmlAssets, ParserVersion, uploadResults);
+                builder.CreateHTML(sw, saveFolder.FullName);
             }
         }
 
         public static void GenerateFile(BackgroundWorker worker)
         {
             var report = new Report();
+            var uploadResults = new UploadResults("", "", "");
             var count = 0;
             var total = CompletedLogs.Count;
             FileInfo fileInfo = null;
             DirectoryInfo saveFolder = null;
-            var sorted = CompletedLogs.OrderBy(c => c.LogData.LogEndtRaw);
+            var sorted = CompletedLogs.OrderBy(c => c.LogData.LogEndRaw);
             var _firstLog = sorted.First<ParsedLog>();
             var _lastLog = sorted.Last<ParsedLog>();
             if (_firstLog != null)
@@ -218,10 +243,11 @@ namespace Gw2LogParser
             {
                 var logReport = new LogReport();
                 var exporter = new LogBuilder(parsedLog);
-                var data = exporter.BuildLogData();
+                var data = exporter.BuildLogData(ParserVersion, uploadResults);
                 logReport.Name = parsedLog.evctFile.Name;
                 fileInfo = parsedLog.evctFile;
                 logReport.LogsStart = parsedLog.LogData.LogStart;
+                logReport.lengthInSeconds = parsedLog.LogData.LogEndRaw - parsedLog.LogData.LogStartRaw;
                 logReport.LogsEnd = parsedLog.LogData.LogEnd;
                 logReport.PointOfView = data.RecordedBy;
                 exporter.UpdateLogReport(logReport, data);

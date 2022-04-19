@@ -2,10 +2,6 @@
 using Gw2LogParser.Parser.Data.Skills;
 using Gw2LogParser.Parser.Helper;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.Events.Cast
 {
@@ -24,16 +20,8 @@ namespace Gw2LogParser.Parser.Data.Events.Cast
             //_effectHappenedDuration = startItem.Value;
         }
 
-        internal AnimatedCastEvent(Combat startItem, Combat endItem, AgentData agentData, SkillData skillData) : this(startItem, agentData, skillData)
+        private void SetAcceleration(Combat endItem)
         {
-            ActualDuration = endItem.Value;
-            _scaledActualDuration = endItem.BuffDmg;
-            if (Skill.ID == Skill.DodgeId)
-            {
-                ExpectedDuration = 750;
-                ActualDuration = 750;
-                _scaledActualDuration = 0;
-            }
             double nonScaledToScaledRatio = 1.0;
             if (_scaledActualDuration > 0)
             {
@@ -41,41 +29,89 @@ namespace Gw2LogParser.Parser.Data.Events.Cast
                 if (nonScaledToScaledRatio > 1.0)
                 {
                     // faster
-                    Acceleration = (nonScaledToScaledRatio - 1.0) / 0.66;
+                    Acceleration = (nonScaledToScaledRatio - 1.0) / 0.5;
                 }
                 else
                 {
-                    Acceleration = -(1.0 - nonScaledToScaledRatio) / 0.5;
+                    Acceleration = -(1.0 - nonScaledToScaledRatio) / 0.6;
                 }
                 Acceleration = Math.Max(Math.Min(Acceleration, 1.0), -1.0);
             }
-            switch (endItem.IsActivation)
+            if (SkillId != Skill.ResurrectId)
             {
-                case ArcDPSEnums.Activation.CancelCancel:
-                    Status = AnimationStatus.Iterrupted;
-                    SavedDuration = -ActualDuration;
-                    break;
-                case ArcDPSEnums.Activation.Reset:
-                    Status = AnimationStatus.Full;
-                    break;
-                case ArcDPSEnums.Activation.CancelFire:
-                    int nonScaledExpectedDuration = (int)Math.Round(ExpectedDuration / nonScaledToScaledRatio);
-                    SavedDuration = Math.Max(nonScaledExpectedDuration - ActualDuration, 0);
-                    Status = AnimationStatus.Reduced;
-                    break;
+                switch (endItem.IsActivation)
+                {
+                    case ArcDPSEnums.Activation.CancelCancel:
+                        Status = AnimationStatus.Interrupted;
+                        SavedDuration = -ActualDuration;
+                        break;
+                    case ArcDPSEnums.Activation.Reset:
+                        Status = AnimationStatus.Full;
+                        break;
+                    case ArcDPSEnums.Activation.CancelFire:
+                        int scaledExpectedDuration = (int)Math.Round(ExpectedDuration / nonScaledToScaledRatio);
+                        SavedDuration = Math.Max(scaledExpectedDuration - ActualDuration, 0);
+                        Status = AnimationStatus.Reduced;
+                        break;
+                }
             }
+            Acceleration = Math.Round(Acceleration, ParserHelper.AccelerationDigit);
         }
 
-        internal AnimatedCastEvent(Combat startItem, AgentData agentData, SkillData skillData, long logEnd) : this(startItem, agentData, skillData)
+        // Start missing
+        internal AnimatedCastEvent(AgentData agentData, SkillData skillData, Combat endItem) : base(endItem, agentData, skillData)
+        {
+            ActualDuration = endItem.Value;
+            ExpectedDuration = ActualDuration;
+            _scaledActualDuration = endItem.BuffDmg;
+            if (Skill.ID == Skill.DodgeId)
+            {
+                // dodge animation start item has always 0 as expected duration
+                ExpectedDuration = ActualDuration;
+                _scaledActualDuration = 0;
+            }
+            Time -= ActualDuration;
+            SetAcceleration(endItem);
+        }
+
+        // Start and End both present
+        internal AnimatedCastEvent(Combat startItem, AgentData agentData, SkillData skillData, Combat endItem) : this(startItem, agentData, skillData)
+        {
+            ActualDuration = endItem.Value;
+            _scaledActualDuration = endItem.BuffDmg;
+            int expectedActualDuration = (int)(endItem.Time - startItem.Time);
+            // Sanity check, sometimes the difference is massive
+            if (Math.Abs(ActualDuration - expectedActualDuration) > ParserHelper.ServerDelayConstant)
+            {
+                ActualDuration = expectedActualDuration;
+                _scaledActualDuration = 0;
+            }
+            if (Skill.ID == Skill.DodgeId)
+            {
+                // dodge animation start item has always 0 as expected duration
+                ExpectedDuration = ActualDuration;
+                _scaledActualDuration = 0;
+            }
+            SetAcceleration(endItem);
+        }
+
+        // End missing
+        internal AnimatedCastEvent(Combat startItem, AgentData agentData, SkillData skillData, long maxEnd) : this(startItem, agentData, skillData)
         {
             if (Skill.ID == Skill.DodgeId)
             {
+                // TODO: vindicator dodge duration
                 ExpectedDuration = 750;
             }
             ActualDuration = ExpectedDuration;
-            if (ActualDuration + Time > logEnd)
+            CutAt(maxEnd);
+        }
+
+        internal void CutAt(long maxEnd)
+        {
+            if (EndTime > maxEnd && Status == AnimationStatus.Unknown)
             {
-                ActualDuration = (int)(logEnd - Time);
+                ActualDuration = (int)(maxEnd - Time);
             }
         }
     }

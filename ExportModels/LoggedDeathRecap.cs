@@ -31,11 +31,11 @@ namespace Gw2LogParser.ExportModels
             }
             return data;
         }
-
-        internal static List<LoggedDeathRecap> BuildDeathRecap(ParsedLog log, Player p)
+        
+        internal static List<LoggedDeathRecap> BuildDeathRecap(ParsedLog log, AbstractSingleActor actor)
         {
             var res = new List<LoggedDeathRecap>();
-            List<DeathRecap> recaps = p.GetDeathRecaps(log);
+            IReadOnlyList<DeathRecap> recaps = actor.GetDeathRecaps(log);
             if (!recaps.Any())
             {
                 return null;

@@ -2,59 +2,41 @@
 using Gw2LogParser.Parser.Data.El.Buffs;
 using System.Collections.Generic;
 using System.Linq;
-using static Gw2LogParser.Parser.Data.El.Simulator.AbstractBuffSimulator;
 
 namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems
 {
-    internal class BuffSimulationItemIntensity : BuffSimulationItem
+    internal class BuffSimulationItemIntensity : BuffSimulationItemStack
     {
-        private readonly List<BuffSimulationItemDuration> _stacks = new List<BuffSimulationItemDuration>();
-        private readonly List<Agent> _sources;
-
-        public BuffSimulationItemIntensity(List<BuffStackItem> stacks) : base(stacks[0].Start, 0)
+        public BuffSimulationItemIntensity(IEnumerable<BuffStackItem> stacks) : base(stacks)
         {
-            foreach (BuffStackItem stack in stacks)
-            {
-                _stacks.Add(new BuffSimulationItemDuration(stack));
-            }
-            Duration = _stacks.Max(x => x.Duration);
-            _sources = new List<Agent>();
-            foreach (BuffSimulationItemDuration item in _stacks)
-            {
-                _sources.AddRange(item.GetSources());
-            }
+            Duration = Stacks.Max(x => x.Duration);
         }
 
         public override void OverrideEnd(long end)
         {
-            foreach (BuffSimulationItemDuration stack in _stacks)
+            foreach (BuffSimulationItemBase stack in Stacks)
             {
                 stack.OverrideEnd(end);
             }
-            Duration = _stacks.Max(x => x.Duration);
+            Duration = Stacks.Max(x => x.Duration);
         }
 
-        public override int GetStack()
+        public override int GetActiveStacks()
         {
-            return _stacks.Count;
+            return Stacks.Count;
         }
 
-        public override void SetBuffDistributionItem(BuffDistribution distribs, long start, long end, long boonid, ParsedLog log)
+        public override void SetBuffDistributionItem(BuffDistribution distribs, long start, long end, long boonid)
         {
             long cDur = GetClampedDuration(start, end);
             if (cDur == 0)
             {
                 return;
             }
-            foreach (BuffSimulationItemDuration item in _stacks)
+            foreach (BuffSimulationItemBase item in Stacks)
             {
-                item.SetBuffDistributionItem(distribs, start, end, boonid, log);
+                item.SetBuffDistributionItem(distribs, start, end, boonid);
             }
-        }
-
-        public override List<Agent> GetSources()
-        {
-            return _sources;
         }
     }
 }

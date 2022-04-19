@@ -5,7 +5,7 @@ namespace Gw2LogParser.Parser.Data.Events.Cast
 {
     public abstract class AbstractCastEvent : AbstractTimeCombatEvent
     {
-        public enum AnimationStatus { Unknown, Reduced, Iterrupted, Full, Instant };
+        public enum AnimationStatus { Unknown, Reduced, Interrupted, Full, Instant };
 
         // start item
         public Skill Skill { get; protected set; }
@@ -23,13 +23,13 @@ namespace Gw2LogParser.Parser.Data.Events.Cast
 
         public double Acceleration { get; protected set; } = 0;
 
-        protected AbstractCastEvent(Combat startItem, AgentData agentData, SkillData skillData) : base(startItem.Time)
+        internal AbstractCastEvent(Combat baseItem, AgentData agentData, SkillData skillData) : base(baseItem.Time)
         {
-            Skill = skillData.Get(startItem.SkillID);
-            Caster = agentData.GetAgent(startItem.SrcAgent);
+            Skill = skillData.Get(baseItem.SkillID);
+            Caster = agentData.GetAgent(baseItem.SrcAgent, baseItem.Time);
         }
 
-        protected AbstractCastEvent(long time, Skill skill, Agent caster) : base(time)
+        internal AbstractCastEvent(long time, Skill skill, Agent caster) : base(time)
         {
             Skill = skill;
             Caster = caster;

@@ -8,49 +8,47 @@ namespace Gw2LogParser.Parser.Data.Events.Damage
     public abstract class AbstractDamageEvent : AbstractTimeCombatEvent
     {
         public Agent From { get; }
+        public Agent CreditedFrom => From.GetFinalMaster();
         public Agent To { get; }
 
         public Skill Skill { get; }
         public long SkillId => Skill.ID;
-        public ArcDPSEnums.IFF IFF { get; }
+        private readonly ArcDPSEnums.IFF _iff;
+
+        public bool ToFriendly => _iff == ArcDPSEnums.IFF.Friend;
+        public bool ToFoe => _iff == ArcDPSEnums.IFF.Foe;
+        public bool ToUnknown => _iff == ArcDPSEnums.IFF.Unknown;
 
         //private int _damage;
-        public int Damage { get; protected set; }
-        public int ShieldDamage { get; protected set; }
         public bool IsOverNinety { get; }
         public bool AgainstUnderFifty { get; }
         public bool IsMoving { get; }
+        public bool AgainstMoving { get; }
         public bool IsFlanking { get; }
-        public bool HasHit { get; protected set; }
-        public bool DoubleProcHit { get; protected set; }
-        public bool HasCrit { get; protected set; }
-        public bool HasGlanced { get; protected set; }
-        public bool IsBlind { get; protected set; }
-        public bool IsAbsorbed { get; protected set; }
-        public bool HasInterrupted { get; protected set; }
-        public bool HasDowned { get; protected set; }
-        public bool HasKilled { get; protected set; }
-        public bool IsBlocked { get; protected set; }
-        public bool IsEvaded { get; protected set; }
+        public bool AgainstDowned { get; protected set; }
 
         protected AbstractDamageEvent(Combat evtcItem, AgentData agentData, SkillData skillData) : base(evtcItem.Time)
         {
-            From = agentData.GetAgent(evtcItem.SrcAgent);
-            To = agentData.GetAgent(evtcItem.DstAgent);
+            From = agentData.GetAgent(evtcItem.SrcAgent, evtcItem.Time);
+            To = agentData.GetAgent(evtcItem.DstAgent, evtcItem.Time);
             Skill = skillData.Get(evtcItem.SkillID);
             IsOverNinety = evtcItem.IsNinety > 0;
             AgainstUnderFifty = evtcItem.IsFifty > 0;
-            IsMoving = evtcItem.IsMoving > 0;
+            IsMoving = (evtcItem.IsMoving & 1) > 0;
+            AgainstMoving = (evtcItem.IsMoving & 2) > 0;
             IsFlanking = evtcItem.IsFlanking > 0;
-            IFF = evtcItem.IFF;
+            _iff = evtcItem.IFF;
         }
 
-        internal void NegateShieldDamage()
+        /*public bool AgainstDowned(ParsedEvtcLog log)
         {
-            //_damage = Damage;
-            Damage = Math.Max(Damage - ShieldDamage, 0);
-        }
+            if (AgainstDownedInternal == -1)
+            {
+                AgainstDownedInternal = To.IsDowned(log, Time) ? 1 : 0;
+            }        
+            return AgainstDownedInternal == 1;
+        }*/
 
-        public abstract bool IsCondi(ParsedLog log);
+        public abstract bool ConditionDamageBased(ParsedLog log);
     }
 }

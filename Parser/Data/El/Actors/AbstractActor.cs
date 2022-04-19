@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Gw2LogParser.Parser.Data.Agents;
 using Gw2LogParser.Parser.Data.Events.Cast;
 using Gw2LogParser.Parser.Data.Events.Damage;
 using Gw2LogParser.Parser.Helper;
+using Gw2LogParser.Parser.Helper.CachingCollections;
 
 namespace Gw2LogParser.Parser.Data.El.Actors
 {
@@ -12,27 +14,32 @@ namespace Gw2LogParser.Parser.Data.El.Actors
         public Agent AgentItem { get; }
         public string Character { get; protected set; }
 
+        public int UniqueID => AgentItem.UniqueID;
         public uint Toughness => AgentItem.Toughness;
         public uint Condition => AgentItem.Condition;
         public uint Concentration => AgentItem.Concentration;
         public uint Healing => AgentItem.Healing;
-        public ushort InstID => AgentItem.InstID;
-        public string Prof => AgentItem.Prof;
-        public ulong Agent => AgentItem.AgentValue;
+        public ParserHelper.Spec Spec => AgentItem.Spec;
+        public ParserHelper.Spec BaseSpec => AgentItem.BaseSpec;
         public long LastAware => AgentItem.LastAware;
         public long FirstAware => AgentItem.FirstAware;
         public int ID => AgentItem.ID;
         public uint HitboxHeight => AgentItem.HitboxHeight;
         public uint HitboxWidth => AgentItem.HitboxWidth;
-        public bool IsFakeActor { get; protected set; }
+        public bool IsFakeActor => AgentItem.IsFake;
         // Damage
-        protected List<AbstractDamageEvent> DamageLogs { get; set; }
-        protected Dictionary<Agent, List<AbstractDamageEvent>> DamageLogsByDst { get; set; }
-        private Dictionary<PhaseData, Dictionary<AbstractActor, List<AbstractDamageEvent>>> _damageLogsPerPhasePerTarget { get; } = new Dictionary<PhaseData, Dictionary<AbstractActor, List<AbstractDamageEvent>>>();
-        protected List<AbstractDamageEvent> DamageTakenlogs { get; set; }
-        protected Dictionary<Agent, List<AbstractDamageEvent>> DamageTakenLogsBySrc { get; set; }
+        protected List<AbstractHealthDamageEvent> DamageEvents { get; set; }
+        protected Dictionary<Agent, List<AbstractHealthDamageEvent>> DamageEventByDst { get; set; }
+        private readonly Dictionary<ParserHelper.DamageType, CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>> _typedHitDamageEvents = new Dictionary<ParserHelper.DamageType, CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>>();
+        protected List<AbstractHealthDamageEvent> DamageTakenEvents { get; set; }
+        protected Dictionary<Agent, List<AbstractHealthDamageEvent>> DamageTakenEventsBySrc { get; set; }
+        // Breakbar Damage
+        protected List<AbstractBreakbarDamageEvent> BreakbarDamageEvents { get; set; }
+        protected Dictionary<Agent, List<AbstractBreakbarDamageEvent>> BreakbarDamageEventsByDst { get; set; }
+        protected List<AbstractBreakbarDamageEvent> BreakbarDamageTakenEvents { get; set; }
+        protected Dictionary<Agent, List<AbstractBreakbarDamageEvent>> BreakbarDamageTakenEventsBySrc { get; set; }
         // Cast
-        protected List<AbstractCastEvent> CastLogs { get; set; }
+        protected List<AbstractCastEvent> CastEvents { get; set; }
 
         protected AbstractActor(Agent agent)
         {
@@ -42,31 +49,54 @@ namespace Gw2LogParser.Parser.Data.El.Actors
         }
         // Getters
         // Damage logs
-        public abstract List<AbstractDamageEvent> GetDamageLogs(AbstractActor target, ParsedLog log, long start, long end);
+        public abstract IReadOnlyList<AbstractHealthDamageEvent> GetDamageEvents(AbstractSingleActor target, ParsedLog log, long start, long end);
 
-        /// <summary>
-        /// cached method for damage modifiers
-        /// </summary>
-        internal List<AbstractDamageEvent> GetHitDamageLogs(AbstractActor target, ParsedLog log, PhaseData phase)
+        public abstract IReadOnlyList<AbstractBreakbarDamageEvent> GetBreakbarDamageEvents(AbstractSingleActor target, ParsedLog log, long start, long end);
+
+        public IReadOnlyList<AbstractHealthDamageEvent> GetHitDamageEvents(AbstractSingleActor target, ParsedLog log, long start, long end, ParserHelper.DamageType damageType)
         {
-            if (!_damageLogsPerPhasePerTarget.TryGetValue(phase, out Dictionary<AbstractActor, List<AbstractDamageEvent>> targetDict))
+            if (!_typedHitDamageEvents.TryGetValue(damageType, out CachingCollectionWithTarget<List<AbstractHealthDamageEvent>> hitDamageEventsPerPhasePerTarget))
             {
-                targetDict = new Dictionary<AbstractActor, List<AbstractDamageEvent>>();
-                _damageLogsPerPhasePerTarget[phase] = targetDict;
+                hitDamageEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>(log);
+                _typedHitDamageEvents[damageType] = hitDamageEventsPerPhasePerTarget;
             }
-            if (!targetDict.TryGetValue(target ?? ParserHelper._nullActor, out List<AbstractDamageEvent> dls))
+            if (!hitDamageEventsPerPhasePerTarget.TryGetValue(start, end, target, out List<AbstractHealthDamageEvent> dls))
             {
-                dls = GetDamageLogs(target, log, phase.Start, phase.End).Where(x => x.HasHit).ToList();
-                targetDict[target ?? ParserHelper._nullActor] = dls;
+                dls = GetDamageEvents(target, log, start, end).Where(x => x.HasHit).ToList();
+                switch (damageType)
+                {
+                    case ParserHelper.DamageType.Power:
+                        dls.RemoveAll(x => x.ConditionDamageBased(log));
+                        break;
+                    case ParserHelper.DamageType.Strike:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent);
+                        break;
+                    case ParserHelper.DamageType.Condition:
+                        dls.RemoveAll(x => !x.ConditionDamageBased(log));
+                        break;
+                    case ParserHelper.DamageType.StrikeAndCondition:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent && !x.ConditionDamageBased(log));
+                        break;
+                    case ParserHelper.DamageType.StrikeAndConditionAndLifeLeech:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent ndhd && !x.ConditionDamageBased(log) && !ndhd.IsLifeLeech);
+                        break;
+                    case ParserHelper.DamageType.All:
+                        break;
+                    default:
+                        throw new NotImplementedException("Not implemented damage type " + damageType);
+                }
+                hitDamageEventsPerPhasePerTarget.Set(start, end, target, dls);
             }
             return dls;
         }
 
-        public abstract List<AbstractDamageEvent> GetDamageTakenLogs(AbstractActor target, ParsedLog log, long start, long end);
+        public abstract IReadOnlyList<AbstractHealthDamageEvent> GetDamageTakenEvents(AbstractSingleActor target, ParsedLog log, long start, long end);
+
+        public abstract IReadOnlyList<AbstractBreakbarDamageEvent> GetBreakbarDamageTakenEvents(AbstractSingleActor target, ParsedLog log, long start, long end);
 
         // Cast logs
-        public abstract List<AbstractCastEvent> GetCastLogs(ParsedLog log, long start, long end);
-        public abstract List<AbstractCastEvent> GetIntersectingCastLogs(ParsedLog log, long start, long end);
+        public abstract IReadOnlyList<AbstractCastEvent> GetCastEvents(ParsedLog log, long start, long end);
+        public abstract IReadOnlyList<AbstractCastEvent> GetIntersectingCastEvents(ParsedLog log, long start, long end);
         // privates
 
         protected static bool KeepIntersectingCastLog(AbstractCastEvent evt, long start, long end)
@@ -74,18 +104,6 @@ namespace Gw2LogParser.Parser.Data.El.Actors
             return (evt.Time >= start && evt.Time <= end) || // start inside
                 (evt.EndTime >= start && evt.EndTime <= end) || // end inside
                 (evt.Time <= start && evt.EndTime >= end); // start before, end after
-        }
-
-        protected static void Add<T>(Dictionary<T, long> dictionary, T key, long value)
-        {
-            if (dictionary.TryGetValue(key, out long existing))
-            {
-                dictionary[key] = existing + value;
-            }
-            else
-            {
-                dictionary.Add(key, value);
-            }
         }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
 using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Data.Events.MetaData;
+using Gw2LogParser.Parser.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Gw2LogParser.Parser.Data
 {
@@ -11,7 +13,8 @@ namespace Gw2LogParser.Parser.Data
         private const string DefaultTimeValue = "MISSING";
 
         // Fields
-        public string ArcVersion { get; } = "N/A";
+        public string ArcVersion => "EVTC" + EvtcVersion;
+        public long EvtcVersion { get; } = -1;
         public string Language { get; } = "N/A";
         public LanguageEvent.LanguageEnum LanguageID { get; }
         public ulong GW2Build { get; } = 0;
@@ -20,18 +23,21 @@ namespace Gw2LogParser.Parser.Data
         private readonly string _dateFormat = "yyyy-MM-dd HH:mm:ss zz";
         private readonly string _dateFormatStd = "yyyy-MM-dd HH:mm:ss zzz";
         public double LogStartRaw { get; private set; } = 0;
-        public double LogEndtRaw { get; private set; } = 0;
+        public double LogEndRaw { get; private set; } = 0;
         public string LogStart { get; private set; } = DefaultTimeValue;
         public string LogEnd { get; private set; } = DefaultTimeValue;
         public string LogStartStd { get; private set; } = DefaultTimeValue;
         public string LogEndStd { get; private set; } = DefaultTimeValue;
 
-        public List<string> LogErrors { get; } = new List<string>();
+        public IReadOnlyList<AbstractExtensionHandler> UsedExtensions { get; }
+
+        public IReadOnlyList<string> LogErrors => _logErrors;
+        private readonly List<string> _logErrors = new List<string>();
 
         // Constructors
-        internal LogData(string buildVersion, CombatData combatData, long evtcLogDuration, List<Player> playerList, ParserController operation)
+        internal LogData(long evtcVersion, CombatData combatData, long evtcLogDuration, List<Player> playerList, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions, ParserController operation)
         {
-            ArcVersion = buildVersion;
+            EvtcVersion = evtcVersion;
             double unixStart = 0;
             double unixEnd = 0;
             //
@@ -60,17 +66,17 @@ namespace Gw2LogParser.Parser.Data
             LogStartEvent logStr = combatData.GetLogStartEvent();
             if (logStr != null)
             {
-                SetLogStart(logStr.LocalUnixTimeStamp);
-                SetLogStartStd(logStr.LocalUnixTimeStamp);
-                unixStart = logStr.LocalUnixTimeStamp;
+                SetLogStart(logStr.ServerUnixTimeStamp);
+                SetLogStartStd(logStr.ServerUnixTimeStamp);
+                unixStart = logStr.ServerUnixTimeStamp;
             }
             //
             LogEndEvent logEnd = combatData.GetLogEndEvent();
             if (logEnd != null)
             {
-                SetLogEnd(logEnd.LocalUnixTimeStamp);
-                SetLogEndStd(logEnd.LocalUnixTimeStamp);
-                unixEnd = logEnd.LocalUnixTimeStamp;
+                SetLogEnd(logEnd.ServerUnixTimeStamp);
+                SetLogEndStd(logEnd.ServerUnixTimeStamp);
+                unixEnd = logEnd.ServerUnixTimeStamp;
             }
             // log end event is missing, log start is present
             if (LogEnd == DefaultTimeValue && LogStart != DefaultTimeValue)
@@ -94,8 +100,10 @@ namespace Gw2LogParser.Parser.Data
             foreach (ErrorEvent evt in combatData.GetErrorEvents())
             {
                 operation.UpdateProgressWithCancellationCheck("Error " + evt.Message);
-                LogErrors.Add(evt.Message);
+                _logErrors.Add(evt.Message);
             }
+            //
+            UsedExtensions = extensions.Values.ToList();
         }
 
         // Setters
@@ -131,7 +139,7 @@ namespace Gw2LogParser.Parser.Data
 
         private void SetLogEnd(double unixSeconds)
         {
-            LogEndtRaw = unixSeconds;
+            LogEndRaw = unixSeconds;
             LogEnd = GetDateTime(unixSeconds);
         }
 

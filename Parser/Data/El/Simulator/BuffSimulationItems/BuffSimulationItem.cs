@@ -1,5 +1,4 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
-using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.El.Statistics;
 using System;
 using System.Collections.Generic;
@@ -32,13 +31,15 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems
 
         public Segment ToSegment()
         {
-            return new Segment(Start, End, GetStack());
+            return new Segment(Start, End, GetActiveStacks());
         }
 
         public abstract void OverrideEnd(long end);
+        public abstract IReadOnlyList<long> GetActualDurationPerStack();
 
         public abstract List<Agent> GetSources();
 
-        public abstract int GetStack();
+        public abstract int GetActiveStacks();
+        public abstract int GetStacks();
     }
 }

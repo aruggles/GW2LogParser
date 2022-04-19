@@ -38,6 +38,7 @@
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnClear = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
+            this.btnRefreshAPI = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridBindingSource)).BeginInit();
             this.SuspendLayout();
@@ -136,11 +137,23 @@
             this.label1.TabIndex = 4;
             this.label1.Text = "Drag and Drop Log files below";
             // 
+            // btnRefreshAPI
+            // 
+            this.btnRefreshAPI.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRefreshAPI.Location = new System.Drawing.Point(520, 372);
+            this.btnRefreshAPI.Name = "btnRefreshAPI";
+            this.btnRefreshAPI.Size = new System.Drawing.Size(105, 23);
+            this.btnRefreshAPI.TabIndex = 4;
+            this.btnRefreshAPI.Text = "Reresh API Cache";
+            this.btnRefreshAPI.UseVisualStyleBackColor = true;
+            this.btnRefreshAPI.Click += new System.EventHandler(this.btnRefreshAPI_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.btnRefreshAPI);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnClear);
             this.Controls.Add(this.btnCancel);
@@ -166,6 +179,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn locationDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn statusDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn buttonTextDataGridViewTextBoxColumn;
+        private System.Windows.Forms.Button btnRefreshAPI;
     }
 }
 

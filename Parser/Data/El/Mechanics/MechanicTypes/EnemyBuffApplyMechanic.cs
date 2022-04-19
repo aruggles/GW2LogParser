@@ -35,7 +35,7 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
                 {
                     if (!regroupedMobs.TryGetValue(ba.To.ID, out amp))
                     {
-                        amp = log.FindActor(ba.To, false);
+                        amp = log.FindActor(ba.To, true);
                         if (amp == null)
                         {
                             continue;

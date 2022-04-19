@@ -8,23 +8,30 @@ using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels
 {
-    public abstract class LoggedActor
+    internal abstract class LoggedActor
     {
-        public int CombatReplayID { get; internal set; }
-        public string Name { get; internal set; }
-        public uint Tough { get; internal set; }
+        public int UniqueID { get; set; }
+        public string Name { get; set; }
+        public uint Tough { get; set; }
+        public uint Condi { get; set; }
+        public uint Conc { get; set; }
+        public uint Heal { get; set; }
+        public string Icon { get; set; }
+        public long Health { get; set; }
         public List<LoggedMinion> Minions { get; } = new List<LoggedMinion>();
         public LoggedActorDetails Details { get; internal set; }
 
-        protected LoggedActor(AbstractSingleActor actor, ParsedLog log, bool cr, LoggedActorDetails details)
+        protected LoggedActor(AbstractSingleActor actor, ParsedLog log, LoggedActorDetails details)
         {
+            Health = actor.GetHealth(log.CombatData);
+            Condi = actor.Condition;
+            Conc = actor.Concentration;
+            Heal = actor.Healing;
+            Icon = actor.GetIcon();
             Name = actor.Character;
             Tough = actor.Toughness;
             Details = details;
-            if (cr)
-            {
-                CombatReplayID = actor.CombatReplayID;
-            }
+            UniqueID = actor.UniqueID;
             foreach (KeyValuePair<long, Minions> pair in actor.GetMinions(log))
             {
                 Minions.Add(new LoggedMinion()

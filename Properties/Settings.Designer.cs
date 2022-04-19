@@ -12,7 +12,7 @@ namespace Gw2LogParser.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.7.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -368,6 +368,78 @@ namespace Gw2LogParser.Properties {
             }
             set {
                 this["DPSReportUserToken"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool DetailledWvW {
+            get {
+                return ((bool)(this["DetailledWvW"]));
+            }
+            set {
+                this["DetailledWvW"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HtmlCompressJson {
+            get {
+                return ((bool)(this["HtmlCompressJson"]));
+            }
+            set {
+                this["HtmlCompressJson"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ApplicationTraces {
+            get {
+                return ((bool)(this["ApplicationTraces"]));
+            }
+            set {
+                this["ApplicationTraces"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HtmlExternalScriptsPath {
+            get {
+                return ((string)(this["HtmlExternalScriptsPath"]));
+            }
+            set {
+                this["HtmlExternalScriptsPath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HtmlExternalScriptsCdn {
+            get {
+                return ((string)(this["HtmlExternalScriptsCdn"]));
+            }
+            set {
+                this["HtmlExternalScriptsCdn"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2200")]
+        public long CustomTooShort {
+            get {
+                return ((long)(this["CustomTooShort"]));
+            }
+            set {
+                this["CustomTooShort"] = value;
             }
         }
     }

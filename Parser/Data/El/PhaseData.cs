@@ -3,8 +3,6 @@ using Gw2LogParser.Parser.Data.Events.Status;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.El
 {
@@ -23,7 +21,10 @@ namespace Gw2LogParser.Parser.Data.El
         public bool CanBeSubPhase { get; internal set; } = true;
 
         public bool BreakbarPhase { get; internal set; } = false;
-        public List<NPC> Targets { get; } = new List<NPC>();
+
+        public bool Dummy { get; internal set; } = false;
+        public IReadOnlyList<AbstractSingleActor> Targets => _targets;
+        private readonly List<AbstractSingleActor> _targets = new List<AbstractSingleActor>();
 
         internal PhaseData(long start, long end)
         {
@@ -42,6 +43,21 @@ namespace Gw2LogParser.Parser.Data.El
         public bool InInterval(long time)
         {
             return Start <= time && time <= End;
+        }
+
+        internal void AddTarget(AbstractSingleActor target)
+        {
+            _targets.Add(target);
+        }
+
+        internal void RemoveTarget(AbstractSingleActor target)
+        {
+            _targets.Remove(target);
+        }
+
+        internal void AddTargets(IEnumerable<AbstractSingleActor> targets)
+        {
+            _targets.AddRange(targets);
         }
 
         internal void OverrideStart(long start)
@@ -70,7 +86,7 @@ namespace Gw2LogParser.Parser.Data.El
             {
                 long end = long.MinValue;
                 long start = long.MaxValue;
-                foreach (NPC target in Targets)
+                foreach (AbstractSingleActor target in Targets)
                 {
                     long startTime = target.FirstAware;
                     SpawnEvent spawned = log.CombatData.GetSpawnEvents(target.AgentItem).FirstOrDefault();
@@ -98,35 +114,6 @@ namespace Gw2LogParser.Parser.Data.El
             DurationInM = (End - Start) / 60000;
             DurationInMS = (End - Start);
             DurationInS = (End - Start) / 1000;
-        }
-
-        public long GetActorActiveDuration(AbstractSingleActor p, ParsedLog log)
-        {
-            var dead = new List<(long start, long end)>();
-            var down = new List<(long start, long end)>();
-            var dc = new List<(long start, long end)>();
-            p.AgentItem.GetAgentStatus(dead, down, dc, log);
-            return DurationInMS -
-                dead.Sum(x =>
-                {
-                    if (x.start <= End && x.end >= Start)
-                    {
-                        long s = Math.Max(x.start, Start);
-                        long e = Math.Min(x.end, End);
-                        return e - s;
-                    }
-                    return 0;
-                }) -
-                dc.Sum(x =>
-                {
-                    if (x.start <= End && x.end >= Start)
-                    {
-                        long s = Math.Max(x.start, Start);
-                        long e = Math.Min(x.end, End);
-                        return e - s;
-                    }
-                    return 0;
-                });
         }
     }
 }

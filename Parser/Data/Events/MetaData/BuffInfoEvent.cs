@@ -1,6 +1,7 @@
 ﻿using Gw2LogParser.Parser.Helper;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
         public bool ProbablyResistance { get; private set; }
 
         public ushort MaxStacks { get; private set; }
+        public uint DurationCap { get; private set; }
         public List<BuffFormula> Formulas { get; } = new List<BuffFormula>();
 
         internal BuffInfoEvent(Combat evtcItem) : base(evtcItem)
@@ -46,7 +48,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                     BuildFromBuffInfo(evtcItem);
                     break;
                 default:
-                    throw new InvalidOperationException("Invalid combat event in BuffDataEvent complete method");
+                    throw new InvalidDataException("Invalid combat event in BuffDataEvent complete method");
             }
         }
 
@@ -56,6 +58,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             ProbablyInvert = evtcItem.IsShields > 0;
             Category = ArcDPSEnums.GetBuffCategory(evtcItem.IsOffcycle);
             MaxStacks = evtcItem.SrcMasterInstid;
+            DurationCap = evtcItem.OverstackValue;
             StackingTypeByte = evtcItem.Pad1;
             StackingType = ArcDPSEnums.GetBuffStackType(StackingTypeByte);
             ProbablyResistance = evtcItem.Pad2 > 0;
@@ -63,7 +66,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
 
         internal void AdjustBuffInfo(Dictionary<byte, ArcDPSEnums.BuffAttribute> solved)
         {
-            Formulas.Sort((x, y) => (x.TraitSelf + x.TraitSrc).CompareTo(y.TraitSrc + y.TraitSelf));
+            Formulas.Sort((x, y) => (x.SortKey).CompareTo(y.SortKey));
             if (solved.Count == 0)
             {
                 return;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Gw2LogParser.Parser.Helper;
+using System;
 
 namespace Gw2LogParser.Parser.Data.El.Statistics
 {
@@ -20,11 +21,21 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
             return distance;
         }
 
-        public Point3D(float x, float y, float z, long time)
+        public float Length()
+        {
+            float length = (float)Math.Sqrt(X * X + Y * Y + Z * Z);
+            return length;
+        }
+
+        public Point3D(float x, float y, float z)
         {
             X = x;
             Y = y;
             Z = z;
+        }
+
+        public Point3D(float x, float y, float z, long time) : this(x, y, z)
+        {
             Time = time;
         }
 
@@ -36,10 +47,14 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
             Time = time;
         }
 
-        public static int GetRotationFromFacing(Point3D facing)
+        public static float GetRotationFromFacing(Point3D facing)
         {
-            int rotation = (int)Math.Round(Math.Atan2(facing.Y, facing.X) * 180 / Math.PI);
-            return rotation;
+            return (float)Math.Round(Math.Atan2(facing.Y, facing.X) * 180 / Math.PI, ParserHelper.CombatReplayDataDigit);
+        }
+
+        public static Point3D Substract(Point3D a, Point3D b)
+        {
+            return new Point3D(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
         }
     }
 }

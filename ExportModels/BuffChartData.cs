@@ -38,7 +38,7 @@ namespace Gw2LogParser.ExportModels
             return new BuffChartData(bgm, bChart, phase);
         }
 
-        private static void BuildBoonGraphData(List<BuffChartData> list, List<Buff> listToUse, Dictionary<long, BuffsGraphModel> boonGraphData, PhaseData phase, Dictionary<long, Buff> usedBuffs)
+        private static void BuildBoonGraphData(List<BuffChartData> list, IReadOnlyList<Buff> listToUse, Dictionary<long, BuffsGraphModel> boonGraphData, PhaseData phase, Dictionary<long, Buff> usedBuffs)
         {
             foreach (Buff buff in listToUse)
             {
@@ -54,16 +54,16 @@ namespace Gw2LogParser.ExportModels
             }
         }
 
-        internal static List<BuffChartData> BuildBoonGraphData(ParsedLog log, AbstractSingleActor p, int phaseIndex, Dictionary<long, Buff> usedBuffs)
+        internal static List<BuffChartData> BuildBoonGraphData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Buff> usedBuffs)
         {
             var list = new List<BuffChartData>();
-            PhaseData phase = log.FightData.GetPhases(log)[phaseIndex];
             var boonGraphData = p.GetBuffGraphs(log).ToDictionary(x => x.Key, x => x.Value);
-            BuildBoonGraphData(list, log.Statistics.PresentBoons, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.Statistics.PresentConditions, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.Statistics.PresentOffbuffs, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.Statistics.PresentSupbuffs, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.Statistics.PresentDefbuffs, boonGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentBoons, boonGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentConditions, boonGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentOffbuffs, boonGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentSupbuffs, boonGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentDefbuffs, boonGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentGearbuffs, boonGraphData, phase, usedBuffs);
             foreach (BuffsGraphModel bgm in boonGraphData.Values)
             {
                 BuffChartData graph = BuildBuffGraph(bgm, phase, usedBuffs);
@@ -74,7 +74,7 @@ namespace Gw2LogParser.ExportModels
             }
             if (p.GetType() == typeof(Player))
             {
-                foreach (NPC mainTarget in log.FightData.GetMainTargets(log))
+                foreach (AbstractSingleActor mainTarget in log.FightData.GetMainTargets(log))
                 {
                     boonGraphData = mainTarget.GetBuffGraphs(log);
                     foreach (BuffsGraphModel bgm in boonGraphData.Values.Reverse().Where(x => x.Buff.Name == "Compromised" || x.Buff.Name == "Unnatural Signet" || x.Buff.Name == "Fractured - Enemy" || x.Buff.Name == "Erratic Energy"))

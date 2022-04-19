@@ -3,7 +3,16 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
 {
     public class LanguageEvent : AbstractMetaDataEvent
     {
-        public enum LanguageEnum : byte { English = 0, Missing = 1, French = 2, German = 3, Spanish = 4, Unknown = 5 }
+        public enum LanguageEnum : byte
+        {
+            English = 0,
+            Missing = 1,
+            French = 2,
+            German = 3,
+            Spanish = 4,
+            Chinese = 5,
+            Unknown = 6
+        }
 
         public LanguageEnum Language { get; }
 
@@ -27,6 +36,8 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                     return "German";
                 case LanguageEnum.Spanish:
                     return "Spanish";
+                case LanguageEnum.Chinese:
+                    return "Chinese";
             }
             return "Unknown";
         }

@@ -9,7 +9,7 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
     {
         public Dictionary<long, (int count, long time)> Removals { get; } = new Dictionary<long, (int count, long time)>();
 
-        internal FinalSupport(ParsedLog log, PhaseData phase, AbstractSingleActor actor, AbstractSingleActor to)
+        internal FinalSupport(ParsedLog log, long start, long end, AbstractSingleActor actor, AbstractSingleActor to)
         {
             foreach (long buffID in log.Buffs.BuffsByIds.Keys)
             {
@@ -17,7 +17,7 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
                 long time = 0;
                 foreach (BuffRemoveAllEvent brae in log.CombatData.GetBuffRemoveAllData(buffID))
                 {
-                    if (phase.InInterval(brae.Time) && brae.By == actor.AgentItem)
+                    if (brae.Time >= start && brae.Time <= end && brae.CreditedBy == actor.AgentItem)
                     {
                         if (to != null && brae.To != to.AgentItem)
                         {

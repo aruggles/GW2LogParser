@@ -13,6 +13,7 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
         public int Width { get; }
         public int Height { get; }
         public string Color { get; }
+        public int Translation { get; }
         public FacingRectangleDecoration((int start, int end) lifespan, AgentConnector connector, List<Point3D> facings, int width, int height, string color) : base(lifespan, connector, facings)
         {
             Width = width;
@@ -20,9 +21,15 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
             Color = color;
         }
 
-        public override GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log)
+        public FacingRectangleDecoration((int start, int end) lifespan, AgentConnector connector, List<Point3D> facings, int width, int height, int translation, string color) : this(lifespan, connector, facings, width, height, color)
         {
-            return new FacingRectangleDecorationSerializable(log, this, map);
+            Translation = translation;
+        }
+        //
+
+        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log)
+        {
+            return new FacingRectangleDecorationCombatReplayDescription(log, this, map);
         }
     }
 }

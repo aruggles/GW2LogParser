@@ -1,11 +1,7 @@
 ﻿using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Data.Events.Cast;
 using Gw2LogParser.Parser.Data.Skills;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.El.Statistics
 {
@@ -17,7 +13,7 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
 
         private static long[] GetReses(ParsedLog log, AbstractSingleActor actor, long start, long end)
         {
-            List<AbstractCastEvent> cls = actor.GetCastLogs(log, start, end);
+            IReadOnlyList<AbstractCastEvent> cls = actor.GetCastEvents(log, start, end);
             long[] reses = { 0, 0 };
             foreach (AbstractCastEvent cl in cls)
             {
@@ -30,9 +26,9 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
             return reses;
         }
 
-        internal FinalSupportAll(ParsedLog log, PhaseData phase, AbstractSingleActor actor) : base(log, phase, actor, null)
+        internal FinalSupportAll(ParsedLog log, long start, long end, AbstractSingleActor actor) : base(log, start, end, actor, null)
         {
-            long[] resArray = GetReses(log, actor, phase.Start, phase.End);
+            long[] resArray = GetReses(log, actor, start, end);
             Resurrects = (int)resArray[0];
             ResurrectTime = resArray[1];
         }

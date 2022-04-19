@@ -1,55 +1,64 @@
-﻿<div style="margin: 20px;">
-    <a id="<!-- Account Name -->" name="<!-- Account Name -->"><h3><!-- Player Name --></h3></a>
-    <nav class="players">
-        <div class="nav nav-tabs" role="tablist">
-            <a class="nav-item nav-link active" data-toggle="tab" href="#nav-<!-- Account Name -->-damage" role="tab">Damage Distribution</a>
-            <a class="nav-item nav-link" data-toggle="tab" href="#nav-<!-- Account Name -->-defense" role="tab">Damage Taken</a>
-        </div>
-    </nav>
-    <div class="tab-content">
-        <div class="tab-pane fade show active" id="nav-<!-- Account Name -->-damage" role="tabpanel">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Skill</th>
-                        <th>Damage</th>
-                        <th>Barrier Dmg</th>
-                        <th>Min</th>
-                        <th>Max</th>
-                        <th>Casts</th>
-                        <th>Hits</th>
-                        <th>Hits per Cast</th>
-                        <th>Crit</th>
-                        <th>Flank</th>
-                        <th>Glance</th>
-                        <th>Wasted</th>
-                        <th>Saved</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Player Damage Data -->
-                </tbody>
-            </table>
-        </div>
-        <div class="tab-pane" id="nav-<!-- Account Name -->-defense" role="tabpanel">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Skill</th>
-                        <th>Damage</th>
-                        <th>Barrier Dmg</th>
-                        <th>Min</th>
-                        <th>Max</th>
-                        <th>Hits</th>
-                        <th>Crit</th>
-                        <th>Flank</th>
-                        <th>Glance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Player Taken Data -->
-                </tbody>
-            </table>
+﻿<div class="card" style="margin: 20px;">
+    <div class="card-header" id="headingOne">
+        <a id="<!-- Player Identifier -->" name="<!-- Player Identifier -->"><h4><!-- Player Name --></h4></a>
+        <h5 class="mb-0">
+            <button class="btn btn-link" data-toggle="collapse" href="#<!-- Player Identifier -->_collapse">
+                Toggle Statistics
+            </button>
+        </h5>
+    </div>
+    <div class="collapse" id="<!-- Player Identifier -->_collapse" style="margin: 5px;">
+        <nav class="players">
+            <div class="nav nav-tabs" role="tablist">
+                <a class="nav-item nav-link active" data-toggle="tab" href="#nav-<!-- Player Identifier -->-damage" role="tab">Damage Distribution</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-<!-- Player Identifier -->-defense" role="tab">Damage Taken</a>
+            </div>
+        </nav>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="nav-<!-- Player Identifier -->-damage" role="tabpanel">
+                <table class="table table-striped" id="table-<!-- Player Identifier -->-damage">
+                    <thead>
+                        <tr>
+                            <th>Skill</th>
+                            <th>Damage</th>
+                            <th>Barrier Dmg</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>Casts</th>
+                            <th>Hits</th>
+                            <th>Hits per Cast</th>
+                            <th>Crit</th>
+                            <th>Flank</th>
+                            <th>Glance</th>
+                            <th>Wasted</th>
+                            <th>Saved</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Player Damage Data -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane" id="nav-<!-- Player Identifier -->-defense" role="tabpanel">
+                <table class="table table-striped" id="table-<!-- Player Identifier -->-defense">
+                    <thead>
+                        <tr>
+                            <th>Skill</th>
+                            <th>Damage</th>
+                            <th>Barrier Dmg</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>Hits</th>
+                            <th>Crit</th>
+                            <th>Flank</th>
+                            <th>Glance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Player Taken Data -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

@@ -23,10 +23,10 @@ namespace Gw2LogParser.ExportModels
             Dimished = (consume.Buff.ID == 46587 || consume.Buff.ID == 46668);
         }
 
-        internal static List<Food> BuildPlayerFoodData(ParsedLog log, Player p, Dictionary<long, Buff> usedBuffs)
+        internal static List<Food> BuildFoodData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, Buff> usedBuffs)
         {
             var list = new List<Food>();
-            List<Consumable> consume = p.GetConsumablesList(log, 0, log.FightData.FightEnd);
+            IReadOnlyList<Consumable> consume = actor.GetConsumablesList(log, 0, log.FightData.FightEnd);
 
             foreach (Consumable entry in consume)
             {

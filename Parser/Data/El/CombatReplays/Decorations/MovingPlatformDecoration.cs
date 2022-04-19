@@ -8,8 +8,8 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
         public int Width { get; }
         public int Height { get; }
 
-        public List<(double x, double y, double z, double angle, double opacity, int time)> Positions { get; } =
-            new List<(double x, double y, double z, double angle, double opacity, int time)>();
+        public List<(float x, float y, float z, float angle, float opacity, int time)> Positions { get; } =
+            new List<(float x, float y, float z, float angle, float opacity, int time)>();
 
         public MovingPlatformDecoration(string image, int width, int height, (int start, int end) lifespan) : base(lifespan)
         {
@@ -18,14 +18,14 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
             Height = height;
         }
 
-        public void AddPosition(double x, double y, double z, double angle, double opacity, int time)
+        public void AddPosition(float x, float y, float z, double angle, double opacity, int time)
         {
-            Positions.Add((x, y, z, angle, opacity, time));
+            Positions.Add((x, y, z, (float)angle, (float)opacity, time));
         }
 
-        public override GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log)
+        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log)
         {
-            return new MovingPlatformDecorationSerializable(this, map);
+            return new MovingPlatformDecorationCombatReplayDescription(this, map);
         }
     }
 }

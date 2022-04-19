@@ -8,7 +8,7 @@
                 <li class="nav-item">
                     <a class="nav-link" @click="mode = 1" :class="{active: mode === 1 }">Generation Self</a>
                 </li>
-                <li class="nav-item">
+                <li v-if="!singlePlayer" class="nav-item">
                     <a class="nav-link" @click="mode = 2" :class="{active: mode === 2 }"
                         data-original-title="Self excluded">Generation Group</a>
                 </li>
@@ -23,24 +23,24 @@
             </ul>
         </div>
         <keep-alive>
-            <buff-table-component v-if="datatype === datatypes.boonTable" :key="'boon-stats-table'" :condition="false"
-                :generation="mode > 0" :id="'boon-stats-table'" :buffs="boons" :playerdata="buffData.boonsData[mode]"
-                :sums="mode === 0 ? buffData.boonsData[5] : []" :playerindex="playerindex">
+            <buff-table-component v-if="type === 0" :key="'boon-stats-table'" :condition="false" :generation="mode > 0"
+                :id="'boon-stats-table'" :buffs="boons" :playerdata="buffData.boonsData[mode]"
+                :sums="mode === 0 ? buffData.boonsData[5] : []" :playerindex="playerindex" :hidecustom="mode > 1">
             </buff-table-component>
-            <buff-table-component v-if="datatype === datatypes.offensiveBuffTable" :key="'offensivebuff-stats-table'"
-                :condition="false" :generation="mode > 0" :id="'offensivebuff-stats-table'" :buffs="offs"
+            <buff-table-component v-if="type === 1" :key="'offensivebuff-stats-table'" :condition="false"
+                :generation="mode > 0" :id="'offensivebuff-stats-table'" :buffs="offs"
                 :playerdata="buffData.offsData[mode]" :sums="mode === 0 ? buffData.offsData[5] : []"
-                :playerindex="playerindex">
+                :playerindex="playerindex" :hidecustom="mode > 1">
             </buff-table-component>
-            <buff-table-component v-if="datatype === datatypes.defensiveBuffTable" :key="'defensivebuff-stats-table'"
-                :condition="false" :generation="mode > 0" :id="'defensivebuff-stats-table'" :buffs="defs"
-                :playerdata="buffData.defsData[mode]" :sums="mode === 0 ? buffData.defsData[5] : []"
-                :playerindex="playerindex">
-            </buff-table-component>
-            <buff-table-component v-if="datatype === datatypes.supportBuffTable" :key="'supportbuff-stats-table'"
-                :condition="false" :generation="mode > 0" :id="'supportbuff-stats-table'" :buffs="sups"
+            <buff-table-component v-if="type === 2" :key="'supportbuff-stats-table'" :condition="false"
+                :generation="mode > 0" :id="'supportbuff-stats-table'" :buffs="sups"
                 :playerdata="buffData.supsData[mode]" :sums="mode === 0 ? buffData.supsData[5] : []"
-                :playerindex="playerindex">
+                :playerindex="playerindex" :hidecustom="mode > 1">
+            </buff-table-component>
+            <buff-table-component v-if="type === 3" :key="'defensivebuff-stats-table'" :condition="false"
+                :generation="mode > 0" :id="'defensivebuff-stats-table'" :buffs="defs"
+                :playerdata="buffData.defsData[mode]" :sums="mode === 0 ? buffData.defsData[5] : []"
+                :playerindex="playerindex" :hidecustom="mode > 1">
             </buff-table-component>
         </keep-alive>
     </div>
@@ -48,7 +48,7 @@
 
 <script>
     Vue.component("buff-stats-component", {
-        props: ['datatypes', 'datatype', 'phaseindex', 'playerindex', 'active'],
+        props: ['type', 'phaseindex', 'playerindex', 'activeduration'],
         template: `${template}`,
         data: function () {
             return {
@@ -59,6 +59,9 @@
         computed: {
             singleGroup: function () {
                 return logData.singleGroup;
+            },
+            singlePlayer: function () {
+                return logData.players.filter(x => !x.isFake).length <= 1;
             },
             phase: function () {
                 return logData.phases[this.phaseindex];
@@ -92,92 +95,95 @@
                 return data;
             },
             buffData: function () {
-                var id = this.phaseindex + '-' + this.active;
+                var id = this.phaseindex + '-' + this.activeduration;
                 if (this.cache.has(id)) {
                     return this.cache.get(id);
                 }
-                var active = this.active;
+                var activeduration = this.activeduration;
                 var activeTimes = this.phase.playerActiveTimes;
-                var getData = function (stats, genself, gengroup, genoffgr, gensquad) {
+
+                var getData = function (uptimesStats, genSelfStats, genGroupStats, genOffGroupStats, genSquadStats) {
                     var uptimes = [],
-                        gens = [],
-                        gengr = [],
-                        genoff = [],
-                        gensq = [];
+                        genSelf = [],
+                        genGroup = [],
+                        genOffGroup = [],
+                        genSquad = [];
                     var avg = [],
-                        gravg = [],
-                        totalavg = [];
-                    var grcount = [],
-                        totalcount = 0;
-                    var grBoonAvg = [],
+                        groupAvg = [],
+                        totalAvg = [];
+                    var groupCount = [],
+                        totalCount = 0;
+                    var groupBoonAvg = [],
                         totalBoonAvg = 0;
-                    var i, k;
-                    for (i = 0; i < logData.players.length; i++) {
+                    for (var i = 0; i < logData.players.length; i++) {
                         var player = logData.players[i];
-                        if (player.isConjure) {
+                        if (player.isFake) {
                             continue;
                         }
                         uptimes.push({
                             player: player,
-                            data: stats[i]
+                            data: uptimesStats[i]
                         });
-                        gens.push({
+                        genSelf.push({
                             player: player,
-                            data: genself[i]
+                            data: genSelfStats[i]
                         });
-                        gengr.push({
+                        genGroup.push({
                             player: player,
-                            data: gengroup[i]
+                            data: genGroupStats[i]
                         });
-                        genoff.push({
+                        genOffGroup.push({
                             player: player,
-                            data: genoffgr[i]
+                            data: genOffGroupStats[i]
                         });
-                        gensq.push({
+                        genSquad.push({
                             player: player,
-                            data: gensquad[i]
+                            data: genSquadStats[i]
                         });
-                        if (active && activeTimes[i] < 1e-6) {
+                        if (activeduration && activeTimes[i] < 1e-6) {
                             continue;
                         }
-                        if (!gravg[player.group]) {
-                            gravg[player.group] = [];
-                            grcount[player.group] = 0;
-                            grBoonAvg[player.group] = 0;
+                        if (player.notInSquad) {
+                            continue;
                         }
-                        totalcount++;
-                        totalBoonAvg += stats[i].avg;
-                        grBoonAvg[player.group] += stats[i].avg;
-                        grcount[player.group]++;
-                        for (var j = 0; j < stats[i].data.length; j++) {
-                            totalavg[j] = (totalavg[j] || 0) + (stats[i].data[j][0] || 0);
-                            gravg[player.group][j] = (gravg[player.group][j] || 0) + (stats[i].data[j][0] || 0);
+                        if (!groupAvg[player.group]) {
+                            groupAvg[player.group] = [];
+                            groupCount[player.group] = 0;
+                            groupBoonAvg[player.group] = 0;
+                        }
+                        totalCount++;
+                        totalBoonAvg += uptimesStats[i].avg;
+                        groupBoonAvg[player.group] += uptimesStats[i].avg;
+                        groupCount[player.group]++;
+                        for (var j = 0; j < uptimesStats[i].data.length; j++) {
+                            totalAvg[j] = (totalAvg[j] || 0) + (uptimesStats[i].data[j][0] || 0);
+                            groupAvg[player.group][j] = (groupAvg[player.group][j] || 0) + (uptimesStats[i].data[j][0] || 0);
                         }
                     }
-                    for (i = 0; i < gravg.length; i++) {
-                        if (gravg[i]) {
-                            for (k = 0; k < gravg[i].length; k++) {
-                                gravg[i][k] = Math.round(1000 * gravg[i][k] / grcount[i]) / 1000;
+                    for (var i = 0; i < groupAvg.length; i++) {
+                        if (groupAvg[i]) {
+                            for (var k = 0; k < groupAvg[i].length; k++) {
+                                groupAvg[i][k] = Math.round(1000 * groupAvg[i][k] / groupCount[i]) / 1000;
                             }
                             avg.push({
                                 name: "Group " + i,
-                                data: gravg[i],
-                                avg: Math.round(1000 * grBoonAvg[i] / grcount[i]) / 1000
+                                data: groupAvg[i],
+                                avg: Math.round(1000 * groupBoonAvg[i] / groupCount[i]) / 1000
                             });
                         }
                     }
-                    for (k = 0; k < totalavg.length; k++) {
-                        totalavg[k] = Math.round(1000 * totalavg[k] / totalcount) / 1000;
+                    for (var k = 0; k < totalAvg.length; k++) {
+                        totalAvg[k] = Math.round(1000 * totalAvg[k] / totalCount) / 1000;
                     }
                     avg.push({
                         name: "Total",
-                        data: totalavg,
-                        avg: Math.round(1000 * totalBoonAvg / totalcount) / 1000
+                        data: totalAvg,
+                        avg: Math.round(1000 * totalBoonAvg / totalCount) / 1000
                     });
-                    return [uptimes, gens, gengr, genoff, gensq, avg];
+                    return [uptimes, genSelf, genGroup, genOffGroup, genSquad, avg];
                 };
                 var res;
-                if (this.active) {
+                if (this.activeduration) {
                     res = {
                         boonsData: getData(this.phase.boonActiveStats, this.phase.boonGenActiveSelfStats,
                             this.phase.boonGenActiveGroupStats, this.phase.boonGenActiveOGroupStats, this.phase.boonGenActiveSquadStats),

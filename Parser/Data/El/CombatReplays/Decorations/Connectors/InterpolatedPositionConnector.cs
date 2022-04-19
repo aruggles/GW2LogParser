@@ -5,7 +5,7 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations.Connectors
 {
     internal class InterpolatedPositionConnector : PositionConnector
     {
-        public InterpolatedPositionConnector(Point3D prev, Point3D next, int time) : base()
+        public InterpolatedPositionConnector(Point3D prev, Point3D next, int time) : base(prev)
         {
             if (prev != null && next != null)
             {

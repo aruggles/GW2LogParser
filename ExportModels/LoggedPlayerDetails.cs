@@ -1,5 +1,6 @@
 ﻿using Gw2LogParser.GW2EIBuilders;
 using Gw2LogParser.Parser.Data;
+using Gw2LogParser.Parser.Data.El;
 using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.Skills;
@@ -11,20 +12,20 @@ using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels
 {
-    public class LoggedPlayerDetails
+    internal class LoggedPlayerDetails
     {
-        public List<DamageDistribution> DamageDistribution { get; internal set; }
+        public List<DamageDistribution> DamageDistribution { get; set; }
         public List<List<DamageDistribution>> DamageDistributionTargets { get; set; }
         public List<DamageDistribution> DamageDistributionTaken { get; set; }
-        public List<Food> Foods { get; internal set; }
-        public List<List<object[]>> Rotation { get; internal set; }
-        public List<List<BuffChartDataDto>> BoonGraph { get; internal set; }
-        public List<LoggedPlayerDetails> Minions { get; internal set; }
-        public List<DeathRecapDto> DeathRecap { get; internal set; }
+        public List<Food> Foods { get; set; }
+        public List<List<object[]>> Rotation { get; set; }
+        public List<List<BuffChartDataDto>> BoonGraph { get; set; }
+        public List<LoggedPlayerDetails> Minions { get; set; }
+        public List<DeathRecapDto> DeathRecap { get; set; }
 
         // helpers
 
-        internal static LoggedPlayerDetails BuildPlayerData(ParsedLog log, Player player, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static LoggedPlayerDetails BuildPlayerData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new LoggedPlayerDetails
             {
@@ -33,53 +34,54 @@ namespace Gw2LogParser.ExportModels
                 DamageDistributionTaken = new List<DamageDistribution>(),
                 BoonGraph = new List<List<BuffChartDataDto>>(),
                 Rotation = new List<List<object[]>>(),
-                Foods = Food.BuildPlayerFoodData(log, player, usedBuffs),
+                Foods = Food.BuildFoodData(log, actor, usedBuffs),
                 Minions = new List<LoggedPlayerDetails>(),
-                DeathRecap = DeathRecapDto.BuildDeathRecap(log, player)
+                DeathRecap = DeathRecapDto.BuildDeathRecap(log, actor)
             };
-            for (int i = 0; i < log.FightData.GetPhases(log).Count; i++)
+            
+            foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
-                dto.Rotation.Add(SkillDto.BuildRotationData(log, player, i, usedSkills));
                 
-                dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildPlayerDMGDistData(log, player, null, i, usedSkills, usedBuffs));
+                dto.Rotation.Add(SkillDto.BuildRotationData(log, actor, phase, usedSkills));
+                dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildFriendlyDMGDistData(log, actor, null, phase, usedSkills, usedBuffs));
                 var dmgTargetsDto = new List<DamageDistribution>();
-                foreach (NPC target in log.FightData.GetPhases(log)[i].Targets)
+                foreach (AbstractSingleActor target in phase.Targets)
                 {
-                    dmgTargetsDto.Add(ExportModels.DamageDistribution.BuildPlayerDMGDistData(log, player, target, i, usedSkills, usedBuffs));
+                    dmgTargetsDto.Add(ExportModels.DamageDistribution.BuildFriendlyDMGDistData(log, actor, target, phase, usedSkills, usedBuffs));
                 }
                 dto.DamageDistributionTargets.Add(dmgTargetsDto);
-                dto.DamageDistributionTaken.Add(ExportModels.DamageDistribution.BuildDMGTakenDistData(log, player, i, usedSkills, usedBuffs));
-                dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, player, i, usedBuffs));
+                dto.DamageDistributionTaken.Add(ExportModels.DamageDistribution.BuildDMGTakenDistData(log, actor, phase, usedSkills, usedBuffs));
+                dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, actor, phase, usedBuffs));
             }
-            foreach (KeyValuePair<long, Minions> pair in player.GetMinions(log))
+            foreach (KeyValuePair<long, Minions> pair in actor.GetMinions(log))
             {
-                dto.Minions.Add(BuildPlayerMinionsData(log, player, pair.Value, usedSkills, usedBuffs));
+                dto.Minions.Add(BuildFriendlyMinionsData(log, actor, pair.Value, usedSkills, usedBuffs));
             }
 
             return dto;
         }
 
-        private static LoggedPlayerDetails BuildPlayerMinionsData(ParsedLog log, Player player, Minions minion, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static LoggedPlayerDetails BuildFriendlyMinionsData(ParsedLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new LoggedPlayerDetails
             {
                 DamageDistribution = new List<DamageDistribution>(),
                 DamageDistributionTargets = new List<List<DamageDistribution>>()
             };
-            for (int i = 0; i < log.FightData.GetPhases(log).Count; i++)
+            foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
                 var dmgTargetsDto = new List<DamageDistribution>();
-                foreach (NPC target in log.FightData.GetPhases(log)[i].Targets)
+                foreach (AbstractSingleActor target in phase.Targets)
                 {
-                    dmgTargetsDto.Add(ExportModels.DamageDistribution.BuildPlayerMinionDMGDistData(log, player, minion, target, i, usedSkills, usedBuffs));
+                    dmgTargetsDto.Add(ExportModels.DamageDistribution.BuildFriendlyMinionDMGDistData(log, actor, minion, target, phase, usedSkills, usedBuffs));
                 }
                 dto.DamageDistributionTargets.Add(dmgTargetsDto);
-                dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildPlayerMinionDMGDistData(log, player, minion, null, i, usedSkills, usedBuffs));
+                dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildFriendlyMinionDMGDistData(log, actor, minion, null, phase, usedSkills, usedBuffs));
             }
             return dto;
         }
 
-        internal static LoggedPlayerDetails BuildTargetData(ParsedLog log, NPC target, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs, bool cr)
+        public static LoggedPlayerDetails BuildTargetData(ParsedLog log, AbstractSingleActor target, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs, bool cr)
         {
             var dto = new LoggedPlayerDetails
             {
@@ -88,27 +90,29 @@ namespace Gw2LogParser.ExportModels
                 BoonGraph = new List<List<BuffChartDataDto>>(),
                 Rotation = new List<List<object[]>>()
             };
-            for (int i = 0; i < log.FightData.GetPhases(log).Count; i++)
+            IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+            for (int i = 0; i < phases.Count; i++)
             {
-                if (log.FightData.GetPhases(log)[i].Targets.Contains(target))
+                PhaseData phase = phases[i];
+                if (phase.Targets.Contains(target))
                 {
-                    dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildTargetDMGDistData(log, target, i, usedSkills, usedBuffs));
-                    dto.DamageDistributionTaken.Add(ExportModels.DamageDistribution.BuildDMGTakenDistData(log, target, i, usedSkills, usedBuffs));
-                    dto.Rotation.Add(SkillDto.BuildRotationData(log, target, i, usedSkills));
-                    dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, target, i, usedBuffs));
+                    dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildTargetDMGDistData(log, target, phase, usedSkills, usedBuffs));
+                    dto.DamageDistributionTaken.Add(ExportModels.DamageDistribution.BuildDMGTakenDistData(log, target, phase, usedSkills, usedBuffs));
+                    dto.Rotation.Add(SkillDto.BuildRotationData(log, target, phase, usedSkills));
+                    dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, target, phase, usedBuffs));
                 }
                 // rotation + buff graph for CR
                 else if (i == 0 && cr)
                 {
-                    dto.DamageDistribution.Add(new DamageDistribution());
-                    dto.DamageDistributionTaken.Add(new DamageDistribution());
-                    dto.Rotation.Add(SkillDto.BuildRotationData(log, target, i, usedSkills));
-                    dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, target, i, usedBuffs));
+                    dto.DamageDistribution.Add(new ExportModels.DamageDistribution());
+                    dto.DamageDistributionTaken.Add(new ExportModels.DamageDistribution());
+                    dto.Rotation.Add(SkillDto.BuildRotationData(log, target, phase, usedSkills));
+                    dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, target, phase, usedBuffs));
                 }
                 else
                 {
-                    dto.DamageDistribution.Add(new DamageDistribution());
-                    dto.DamageDistributionTaken.Add(new DamageDistribution());
+                    dto.DamageDistribution.Add(new ExportModels.DamageDistribution());
+                    dto.DamageDistributionTaken.Add(new ExportModels.DamageDistribution());
                     dto.Rotation.Add(new List<object[]>());
                     dto.BoonGraph.Add(new List<BuffChartDataDto>());
                 }
@@ -122,21 +126,21 @@ namespace Gw2LogParser.ExportModels
             return dto;
         }
 
-        private static LoggedPlayerDetails BuildTargetsMinionsData(ParsedLog log, NPC target, Minions minion, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static LoggedPlayerDetails BuildTargetsMinionsData(ParsedLog log, AbstractSingleActor target, Minions minion, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new LoggedPlayerDetails
             {
                 DamageDistribution = new List<DamageDistribution>()
             };
-            for (int i = 0; i < log.FightData.GetPhases(log).Count; i++)
+            foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
-                if (log.FightData.GetPhases(log)[i].Targets.Contains(target))
+                if (phase.Targets.Contains(target))
                 {
-                    dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildTargetMinionDMGDistData(log, target, minion, i, usedSkills, usedBuffs));
+                    dto.DamageDistribution.Add(ExportModels.DamageDistribution.BuildTargetMinionDMGDistData(log, target, minion, phase, usedSkills, usedBuffs));
                 }
                 else
                 {
-                    dto.DamageDistribution.Add(new DamageDistribution());
+                    dto.DamageDistribution.Add(new ExportModels.DamageDistribution());
                 }
             }
             return dto;

@@ -11,7 +11,7 @@ namespace Gw2LogParser.Parser.Data.Skills
     public class Skill
     {
         public const long DodgeId = 65001;
-        public const long MirageCloakDodgeId = 65002;
+        public const long MirageCloakDodgeId = -17;
         public const long ResurrectId = 1066;
         public const long BandageId = 1175;
         public const long WeaponSwapId = -2;
@@ -21,10 +21,13 @@ namespace Gw2LogParser.Parser.Data.Skills
         public const long AliveId = -6;
         public const long RespawnId = -7;
 
-        private const int FirstLandSet = 4;
-        private const int SecondLandSet = 5;
-        private const int FirstWaterSet = 0;
-        private const int SecondWaterSet = 1;
+        public const int FirstLandSet = 4;
+        public const int SecondLandSet = 5;
+        public const int FirstWaterSet = 0;
+        public const int SecondWaterSet = 1;
+        public const int TransformSet = 3;
+        public const int KitSet = 2;
+
         private static readonly Dictionary<long, string> _overrideNames = new Dictionary<long, string>()
         {
             {ResurrectId, "Resurrect"},
@@ -32,6 +35,11 @@ namespace Gw2LogParser.Parser.Data.Skills
             {DodgeId, "Dodge" },
             {MirageCloakDodgeId, "Mirage Cloak" },
             {WeaponSwapId, "Weapon Swap" },
+            {13594, "Selfless Daring"}, // The game maps this name incorrectly to "Selflessness Daring"
+	        {14024, "Natural Healing"}, // The game does not map this one at all
+	        {26558, "Energy Expulsion"},
+            {29863, "Live Vicariously"}, // The game maps this name incorrectly to "Vigorous Recovery"
+	        {30313, "Escapist's Fortitude"}, // The game maps this to the wrong skill
             // Gorseval
             {31834,"Ghastly Rampage" },
             {31759,"Protective Shadow" },
@@ -92,6 +100,8 @@ namespace Gw2LogParser.Parser.Data.Skills
             {51675, "True Nature - Dwarf" },
             {51667, "True Nature - Assassin" },
             {51713, "True Nature - Centaur" },
+            {49052, "Soul Stone Venom" },
+            {49077, "Soul Stone Venom Strike" },
         };
         private static readonly Dictionary<long, string> _overrideIcons = new Dictionary<long, string>()
         {
@@ -125,6 +135,7 @@ namespace Gw2LogParser.Parser.Data.Skills
             {56885, "https://wiki.guildwars2.com/images/e/e2/Earthen_Blast.png"},
             {40071, "https://wiki.guildwars2.com/images/4/40/Garish_Pillar.png" },
             {46726, "https://wiki.guildwars2.com/images/0/08/Desert_Shroud.png" },
+            {54870, "https://wiki.guildwars2.com/images/3/34/Sandstorm_Shroud.png" },
             {41968,  "https://wiki.guildwars2.com/images/7/79/Chapter_2-_Daring_Challenge.png"},
             {46616, "https://wiki.guildwars2.com/images/7/7e/Flame_Surge.png" },
             {42449,  "https://wiki.guildwars2.com/images/e/e7/Chapter_3-_Heated_Rebuke.png"},
@@ -145,26 +156,35 @@ namespace Gw2LogParser.Parser.Data.Skills
             {43630, "https://wiki.guildwars2.com/images/0/0c/Thermal_Release_Valve.png" },
             {22499, "https://wiki.guildwars2.com/images/d/d0/Shattered_Aegis.png" },
             {29604, "https://wiki.guildwars2.com/images/8/82/Chilling_Nova.png" },
+            {13594, "https://wiki.guildwars2.com/images/9/9c/Selfless_Daring.png" },
+            {12538, "https://wiki.guildwars2.com/images/1/11/Signet_of_Renewal.png" },
+            {13980, "https://wiki.guildwars2.com/images/8/84/Windborne_Notes.png" },
+            {43558, "https://wiki.guildwars2.com/images/7/73/Rugged_Growth.png" },
+            {12836, "https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/30px-Healing.png" }, // Water Blast Combo
+            {46508, "https://wiki.guildwars2.com/images/f/ff/Echo_of_Truth.png" }, // Echo of Truth
+            {54935, "https://render.guildwars2.com/file/E60C094A2349552EA6F6250D9B14E69BE91E4468/1128595.png" }, // Shredder Gyro damage
+            {49052, "https://wiki.guildwars2.com/images/d/d6/Soul_Stone_Venom.png" }, // Soul Stone Venom
+            {49077, "https://wiki.guildwars2.com/images/d/d6/Soul_Stone_Venom.png" }, // Soul Stone Venom Strike
             // Weaver attunements
             {Buff.FireDual, "https://wiki.guildwars2.com/images/b/b4/Fire_Attunement.png" },
-            {Buff.FireWater, "https://i.imgur.com/ihqKuUJ.png" },
-            {Buff.FireAir, "https://i.imgur.com/kKFJ8cT.png" },
-            {Buff.FireEarth, "https://i.imgur.com/T4187h0.png" },
+            {Buff.FireWater, "https://i.imgur.com/ar8Hn8G.png" },
+            {Buff.FireAir, "https://i.imgur.com/YU31LwG.png" },
+            {Buff.FireEarth, "https://i.imgur.com/64g3rto.png" },
 
             {Buff.WaterDual, "https://wiki.guildwars2.com/images/3/31/Water_Attunement.png" },
-            {Buff.WaterFire, "https://i.imgur.com/vMUkzxH.png" },
-            {Buff.WaterAir, "https://i.imgur.com/5G5OFud.png" },
-            {Buff.WaterEarth, "https://i.imgur.com/QKEtF2P.png" },
+            {Buff.WaterFire, "https://i.imgur.com/H1peqpz.png" },
+            {Buff.WaterAir, "https://i.imgur.com/Gz1XwEw.png" },
+            {Buff.WaterEarth, "https://i.imgur.com/zqX3y4c.png" },
 
             {Buff.AirDual, "https://wiki.guildwars2.com/images/9/91/Air_Attunement.png" },
-            {Buff.AirFire, "https://i.imgur.com/vf68GJm.png" },
-            {Buff.AirWater, "https://i.imgur.com/Tuj5Sro.png" },
-            {Buff.AirEarth, "https://i.imgur.com/lHcOSwk.png" },
+            {Buff.AirFire, "https://i.imgur.com/4ekncW5.png" },
+            {Buff.AirWater, "https://i.imgur.com/HIcUaXG.png" },
+            {Buff.AirEarth, "https://i.imgur.com/MCCrMls.png" },
 
             {Buff.EarthDual, "https://wiki.guildwars2.com/images/a/a8/Earth_Attunement.png" },
-            {Buff.EarthFire, "https://i.imgur.com/aJWvE0I.png" },
-            {Buff.EarthWater, "https://i.imgur.com/jtjj2TG.png" },
-            {Buff.EarthAir, "https://i.imgur.com/4Eti7Pb.png" },
+            {Buff.EarthFire, "https://i.imgur.com/Vgu0B54.png" },
+            {Buff.EarthWater, "https://i.imgur.com/exrTKSW.png" },
+            {Buff.EarthAir, "https://i.imgur.com/Z3P8cPa.png" },
         };
 
         private static readonly Dictionary<long, ulong> _nonCritable = new Dictionary<long, ulong>
@@ -193,25 +213,70 @@ namespace Gw2LogParser.Parser.Data.Skills
         private const string DefaultIcon = "https://render.guildwars2.com/file/1D55D34FB4EE20B1962E315245E40CA5E1042D0E/62248.png";
 
         // Fields
-        public long ID { get; private set; }
+        public long ID { get; }
         //public int Range { get; private set; } = 0;
-        public bool AA => _apiSkill?.Slot == "Weapon_1" || _apiSkill?.Slot == "Downed_1";
+        public bool AA { get; }
 
         public bool IsSwap => ID == WeaponSwapId || ElementalistHelper.IsElementalSwap(ID) || RevenantHelper.IsLegendSwap(ID);
-        public string Name { get; private set; }
-        public string Icon { get; private set; }
-        private WeaponDescriptor _weaponDescriptor;
-        private readonly GW2APISkill _apiSkill;
+        public bool IsDodge => ID == DodgeId || ID == MirageCloakDodgeId;
+        public string Name { get; }
+        public string Icon { get; }
+        private readonly WeaponDescriptor _weaponDescriptor;
+        public bool IsWeaponSkill => _weaponDescriptor != null;
+        internal GW2APISkill ApiSkill { get; }
         private SkillInfoEvent _skillInfo { get; set; }
+
+        internal const string DefaultName = "UNKNOWN";
+
+        public bool UnknownSkill => Name == DefaultName;
 
         // Constructor
 
-        public Skill(long ID, string name)
+        internal Skill(long ID, string name, GW2APIController apiController)
         {
             this.ID = ID;
             Name = name.Replace("\0", "");
-            _apiSkill = GW2APIController.GetAPISkill(ID);
-            CompleteItem();
+            ApiSkill = apiController.GetAPISkill(ID);
+            //
+            if (_overrideNames.TryGetValue(ID, out string overrideName))
+            {
+                Name = overrideName;
+            }
+            else if (ApiSkill != null && UnknownSkill)
+            {
+                Name = ApiSkill.Name;
+            }
+            if (_overrideIcons.TryGetValue(ID, out string icon))
+            {
+                Icon = icon;
+            }
+            else
+            {
+                Icon = ApiSkill != null ? ApiSkill.Icon : DefaultIcon;
+            }
+            if (ApiSkill != null && ApiSkill.Type == "Weapon"
+                && ApiSkill.WeaponType != "None" && ApiSkill.Professions.Count > 0
+                && (ApiSkill.Categories == null || ApiSkill.Categories.Count == 0
+                    || ApiSkill.Categories.Contains("Clone") || ApiSkill.Categories.Contains("Phantasm")
+                    || ApiSkill.Categories.Contains("DualWield")))
+            {
+                _weaponDescriptor = new WeaponDescriptor(ApiSkill);
+            }
+            AA = (ApiSkill?.Slot == "Weapon_1" || ApiSkill?.Slot == "Downed_1");
+            if (AA)
+            {
+                if (ApiSkill.Categories != null)
+                {
+                    AA = AA && !ApiSkill.Categories.Contains("StealthAttack") && !ApiSkill.Categories.Contains("Ambush"); // Ambush in case one day it's added
+                }
+                if (ApiSkill.Description != null)
+                {
+                    AA = AA && !ApiSkill.Description.Contains("Ambush.");
+                }
+            }
+#if DEBUG
+            Name += " (" + ID + ")";
+#endif
         }
 
         public static bool CanCrit(long id, ulong gw2Build)
@@ -247,7 +312,7 @@ namespace Gw2LogParser.Parser.Data.Skills
                     // if the first swap is not a water set that means the next time we get to a water set was the first set to begin with
                     if (firstSwap != FirstWaterSet && firstSwap != SecondWaterSet)
                     {
-                        swapped = swaps.Exists(x => x == FirstWaterSet || x == FirstWaterSet) ? swaps.First(x => x == FirstWaterSet || x == SecondWaterSet) : FirstWaterSet;
+                        swapped = swaps.Exists(x => x == FirstWaterSet || x == SecondWaterSet) ? swaps.First(x => x == FirstWaterSet || x == SecondWaterSet) : FirstWaterSet;
                     }
                     else
                     {
@@ -258,34 +323,34 @@ namespace Gw2LogParser.Parser.Data.Skills
             return swapped;
         }
 
-        internal bool EstimateWeapons(string[] weapons, int swapped, bool swapCheck)
+        internal bool EstimateWeapons(string[] weapons, int swapped, bool validForCurrentSwap)
         {
             if (weapons.Length != 8)
             {
                 throw new InvalidOperationException("Invalid count in weapons array");
             }
             int id = swapped == FirstLandSet ? 0 : swapped == SecondLandSet ? 2 : swapped == FirstWaterSet ? 4 : swapped == SecondWaterSet ? 6 : -1;
-            if (_weaponDescriptor == null || id == -1 || !swapCheck)
+            if (_weaponDescriptor == null || id == -1 || !validForCurrentSwap)
             {
                 return false;
             }
             if (_weaponDescriptor.WeaponSlot == WeaponDescriptor.Hand.Dual)
             {
-                weapons[id] = _apiSkill.WeaponType;
-                weapons[id + 1] = _apiSkill.DualWield;
+                weapons[id] = ApiSkill.WeaponType;
+                weapons[id + 1] = ApiSkill.DualWield;
             }
             else if (_weaponDescriptor.WeaponSlot == WeaponDescriptor.Hand.TwoHand)
             {
-                weapons[id] = _apiSkill.WeaponType;
+                weapons[id] = ApiSkill.WeaponType;
                 weapons[id + 1] = "2Hand";
             }
             else if (_weaponDescriptor.WeaponSlot == WeaponDescriptor.Hand.MainHand)
             {
-                weapons[id] = _apiSkill.WeaponType;
+                weapons[id] = ApiSkill.WeaponType;
             }
             else
             {
-                weapons[id + 1] = _apiSkill.WeaponType;
+                weapons[id + 1] = ApiSkill.WeaponType;
             }
             return true;
         }
@@ -298,41 +363,141 @@ namespace Gw2LogParser.Parser.Data.Skills
             }
         }
 
-        private void CompleteItem()
+        // Public Methods
+
+        /*public void SetCCAPI()//this is 100% off the GW2 API is not a reliable source of finding skill CC
         {
-            if (_overrideNames.TryGetValue(ID, out string name))
+            CC = 0;
+            if (_apiSkill != null)
             {
-                Name = name;
-            }
-            else if (_apiSkill != null)
-            {
-                Name = _apiSkill.Name;
-                /*if (_apiSkill.Facts != null)
+                GW2APISkillDetailed apiskilldet = (GW2APISkillDetailed)_apiSkill;
+                GW2APISkillCheck apiskillchec = (GW2APISkillCheck)_apiSkill;
+                GW2APIfacts[] factsList = apiskilldet != null ? apiskilldet.facts : apiskillchec.facts;
+                bool daze = false;
+                bool stun = false;
+                bool knockdown = false;
+                bool flaot = false;
+                bool knockback = false;
+                bool launch = false;
+                bool pull = false;
+               
+                foreach (GW2APIfacts fact in factsList)
                 {
-                    foreach (GW2APIFact fact in _apiSkill.Facts)
+                    if (daze == false)
                     {
-                        if (fact.Text != null && fact.Text == "Range" && fact.Value != null)
+                        if (fact.text == "Daze" || fact.status == "Daze")
                         {
-                            Range = Convert.ToInt32(fact.Value);
+                            if (fact.duration < 1)
+                            {
+                                CC += 100;
+                            }
+                            else
+                            {
+                                CC += fact.duration * 100;
+                            }
+                            daze = true;
+                        }
+
+                    }
+                    if (stun == false)
+                    {
+                        if (fact.text == "Stun" || fact.status == "Stun")
+                        {
+                            if (fact.duration < 1)
+                            {
+                                CC += 100;
+                            }
+                            else
+                            {
+                                CC += fact.duration * 100;
+                            }
+                            stun = true;
                         }
                     }
-                }*/
+                    if (knockdown == false)
+                    {
+                        if (fact.text == "Knockdown" || fact.status == "Knockdown")
+                        {
+                            if (fact.duration < 1)
+                            {
+                                CC += 100;
+                            }
+                            else
+                            {
+                                CC += fact.duration * 100;
+                            }
+                            knockdown = true;
+                        }
+                    }
+                    if (launch == false)
+                    {
+                        if (fact.text == "Launch" || fact.status == "Launch")
+                        {
+
+                            CC += 232;//Wiki says either 232 or 332 based on duration? launch doesn't provide duration in api however
+                           
+                            launch = true;
+                        }
+                    }
+                    if (knockback == false)
+                    {
+                        if (fact.text == "Knockback" || fact.status == "Knockback")
+                        {
+
+                            CC += 150;//always 150 unless special case of 232 for ranger pet?
+                            knockback = true;
+                        }
+                    }
+                    if (pull == false)
+                    {
+                        if (fact.text == "Pull" || fact.status == "Pull")
+                        {
+
+                            CC += 150;
+
+                            pull = true;
+                        }
+                    }
+                    if (flaot == false)
+                    {
+                        if (fact.text == "Float" || fact.status == "Float")
+                        {
+                            if (fact.duration < 1)
+                            {
+                                CC += 100;
+                            }
+                            else
+                            {
+                                CC += fact.duration * 100;
+                            }
+                            flaot = true;
+                        }
+                    }
+                    if (fact.text == "Stone Duration" || fact.status == "Stone Duration")
+                    {
+                        if (fact.duration < 1)
+                        {
+                            CC += 100;
+                        }
+                        else
+                        {
+                            CC += fact.duration * 100;
+                        }
+                        
+                    }
+
+                
+                }
+                if (ID == 30725)//toss elixir x
+                {
+                    CC = 300;
+                }
+                if (ID == 29519)//MOA signet
+                {
+                    CC = 1000;
+                }
+               
             }
-            if (_overrideIcons.TryGetValue(ID, out string icon))
-            {
-                Icon = icon;
-            }
-            else
-            {
-                Icon = _apiSkill != null ? _apiSkill.Icon : DefaultIcon;
-            }
-            if (_apiSkill != null && _apiSkill.Type == "Weapon" && _apiSkill.WeaponType != "None" && _apiSkill.Professions.Count() > 0 && (_apiSkill.Categories == null || (_apiSkill.Categories.Count() == 1 && (_apiSkill.Categories[0] == "Phantasm" || _apiSkill.Categories[0] == "DualWield"))))
-            {
-                _weaponDescriptor = new WeaponDescriptor(_apiSkill);
-            }
-#if DEBUG
-            Name += " (" + ID + ")";
-#endif
-        }
+        }*/
     }
 }

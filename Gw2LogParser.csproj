@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -22,10 +23,10 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationRevision>1</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -47,6 +48,18 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ManifestCertificateThumbprint>A2D0E6772E3E560A6B4EE0E6C7C910F94A1CE7A9</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestKeyFile>Gw2LogParser_TemporaryKey.pfx</ManifestKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>true</SignManifests>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -65,10 +78,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\EIBuffSimulatorIDException.cs" />
+    <Compile Include="Exceptions\EIException.cs" />
+    <Compile Include="Exceptions\EINonFatalException.cs" />
+    <Compile Include="Exceptions\EvtcContentException\EvtcAgentException.cs" />
+    <Compile Include="Exceptions\EvtcContentException\EvtcCombatEventException.cs" />
+    <Compile Include="Exceptions\EvtcContentException.cs" />
+    <Compile Include="Exceptions\EvtcContentException\EvtcFileException.cs" />
     <Compile Include="Exceptions\IncompleteLogException.cs" />
-    <Compile Include="Exceptions\SkipException.cs" />
-    <Compile Include="Exceptions\TooLongException.cs" />
-    <Compile Include="Exceptions\TooShortException.cs" />
+    <Compile Include="Exceptions\EvtcContentException\MissingKeyActorsException.cs" />
+    <Compile Include="Exceptions\EINonFatalException\SkipException.cs" />
+    <Compile Include="Exceptions\EINonFatalException\TooLongException.cs" />
+    <Compile Include="Exceptions\EINonFatalException\TooShortException.cs" />
     <Compile Include="ExportModels\BuffChartData.cs" />
     <Compile Include="ExportModels\CombinedData.cs" />
     <Compile Include="ExportModels\DamageDistribution.cs" />
@@ -79,6 +100,7 @@
     <Compile Include="ExportModels\LoggedTarget.cs" />
     <Compile Include="ExportModels\Report\BoonInfo.cs" />
     <Compile Include="ExportModels\Report\GameplayReport.cs" />
+    <Compile Include="ExportModels\Report\HealingReport.cs" />
     <Compile Include="ExportModels\Report\HTMLBuilder.cs" />
     <Compile Include="ExportModels\LogBuilder.cs" />
     <Compile Include="ExportModels\Food.cs" />
@@ -96,64 +118,128 @@
     <Compile Include="ExportModels\Report\SummaryItem.cs" />
     <Compile Include="ExportModels\Report\SupportReport.cs" />
     <Compile Include="GeneralHelper.cs" />
-    <Compile Include="GW2Api\GW2ApiController.cs" />
-    <Compile Include="GW2Api\GW2APIFact.cs" />
-    <Compile Include="GW2Api\GW2APISkill.cs" />
-    <Compile Include="GW2Api\GW2APISpec.cs" />
-    <Compile Include="GW2Api\GW2APITrait.cs" />
-    <Compile Include="GW2Api\GW2APITraitedFact.cs" />
+    <Compile Include="GW2Api\Models\GW2APIBaseItem.cs" />
+    <Compile Include="GW2Api\Controllers\GW2ApiController.cs" />
+    <Compile Include="GW2Api\Models\GW2APIFact.cs" />
+    <Compile Include="GW2Api\Models\GW2APISkill.cs" />
+    <Compile Include="GW2Api\Models\GW2APISpec.cs" />
+    <Compile Include="GW2Api\Models\GW2APITrait.cs" />
+    <Compile Include="GW2Api\Models\GW2APITraitedFact.cs" />
+    <Compile Include="GW2Api\Controllers\GW2APIUtilities.cs" />
+    <Compile Include="GW2Api\Controllers\GW2SkillAPIController.cs" />
+    <Compile Include="GW2Api\Controllers\GW2SpecAPIController.cs" />
+    <Compile Include="GW2Api\Controllers\GW2TraitAPIController.cs" />
     <Compile Include="GW2EIBuilders\HTMLAssets.cs" />
     <Compile Include="GW2EIBuilders\HTMLBuilder.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\CombatReplayDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlActors\ActorDetailsDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlActors\ActorDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlActors\EnemyDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlActors\MinionDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlActors\PlayerDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlActors\TargetDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\AreaLabelDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\BuffChartDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\ChartDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\MechanicChartDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\PhaseChartDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\PlayerChartDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlCharts\TargetChartDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\BuffData.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\BuffDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\DamageModData.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\DamageModDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\DeathRecapDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\DmgDistributionDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\HtmlStats\FoodDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\LogDataDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\MechanicDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\PhaseDto.cs" />
-    <Compile Include="GW2EIBuilders\HtmlModels\SkillDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\CombatReplayDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Extensions\HealingStats\EXTHealingStatsHealingDistributionDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Extensions\HealingStats\EXTHealingStatsPhaseDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Extensions\HealingStatsExtension.cs" />
+    <Compile Include="GW2EIBuilders\Html\Extensions\HealingStats\EXTHealingStatsPlayerChartDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Extensions\HealingStats\EXTHealingStatsPlayerDetailsDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Actors\ActorDetailsDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Actors\ActorDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Actors\EnemyDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Actors\MinionDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Actors\PlayerDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Actors\TargetDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\ActorChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\AreaLabelDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\BuffChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\ChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\MechanicChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\PhaseChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\PlayerChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\PlayerDamageChartDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Charts\TargetChartDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Stats\BuffData.cs" />
+    <Compile Include="GW2EIBuilders\Html\MetaData\AbstractSkillDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\MetaData\BuffDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Stats\DamageModData.cs" />
+    <Compile Include="GW2EIBuilders\Html\MetaData\DamageModDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Stats\DeathRecapDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Stats\DmgDistributionDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\Stats\FoodDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\LogDataDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\MechanicDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\PhaseDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\MetaData\SkillDto.cs" />
+    <Compile Include="GW2EIBuilders\Html\UploadResults.cs" />
     <Compile Include="GW2EIBuilders\HTMLSettings.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActors\JsonActor.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActors\JsonMinions.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActors\JsonNPC.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActors\JsonPlayer.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonBuffsUptime.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonDamageDist.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonPlayerUtilities\JsonConsumable.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonPlayerUtilities\JsonDamageModifierData.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonPlayerUtilities\JsonDeathRecap.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonPlayerUtilities\JsonPlayerBuffsGeneration.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonRotation.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonActorUtilities\JsonStatistics.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonLog.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonMechanics.cs" />
-    <Compile Include="GW2EIBuilders\JsonModels\JsonPhase.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Actors\JsonActorBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Actors\JsonMinionsBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Actors\JsonNPCBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Actors\JsonPlayerBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\JsonCombatReplayMetaDataBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\Extensions\EXTHealingStats\EXTJsonMinionsHealingStatsBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\Extensions\EXTHealingStats\EXTJsonPlayerHealingStatsBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\Extensions\EXTHealingStats\EXTJsonStatsBuilderCommons.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonActorCombatReplayDataBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonBuffsUptimeBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonConsumableBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonDamageDistBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonDamageModifierDataBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonDeathRecapBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonPlayerBuffsGenerationBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonRotationBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\Utilities\JsonStatisticsBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Actors\JsonActor.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Actors\JsonMinions.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Actors\JsonNPC.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Actors\JsonPlayer.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Extensions\EXTHealingStats\EXTJsonHealingDist.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Extensions\EXTHealingStats\EXTJsonHealingStatistics.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Extensions\EXTHealingStats\EXTJsonMinionsHealingStats.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Extensions\EXTHealingStats\EXTJsonPlayerHealingStats.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\JsonCombatReplayMetaData.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\JsonActorCombatReplayData.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\JsonBuffsUptime.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\JsonDamageDist.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\PlayerUtilities\JsonConsumable.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\PlayerUtilities\JsonDamageModifierData.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\PlayerUtilities\JsonDeathRecap.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\PlayerUtilities\JsonPlayerBuffsGeneration.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\JsonRotation.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\Utilities\JsonStatistics.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\JsonLog.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\JsonLogBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\JsonMechanics.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\JsonMechanicsBuilder.cs" />
+    <Compile Include="GW2EIBuilders\Json\Models\JsonPhase.cs" />
+    <Compile Include="GW2EIBuilders\Json\Builders\JsonPhaseBuilder.cs" />
     <Compile Include="GW2EIBuilders\RawFormatBuilder.cs" />
     <Compile Include="GW2EIBuilders\RawFormatSettings.cs" />
     <Compile Include="Parser\Combat.cs" />
     <Compile Include="Parser\Data\Agents\Agent.cs" />
     <Compile Include="Parser\Data\Agents\AgentData.cs" />
     <Compile Include="Parser\Data\CombatData.cs" />
+    <Compile Include="Parser\Data\El\Actors\AbstractPlayer.cs" />
+    <Compile Include="Parser\Data\El\Actors\ActorsHelper\AbstractSingleActorHelper.cs" />
+    <Compile Include="Parser\Data\El\Actors\ActorsHelper\SingleActorBuffsHelper.cs" />
+    <Compile Include="Parser\Data\El\Actors\ActorsHelper\SingleActorDamageModifierHelper.cs" />
+    <Compile Include="Parser\Data\El\Actors\ActorsHelper\SingleActorGraphsHelper.cs" />
+    <Compile Include="Parser\Data\El\Actors\ActorsHelper\SingleActorStatusHelper.cs" />
+    <Compile Include="Parser\Data\El\Actors\PlayerNonSquad.cs" />
     <Compile Include="Parser\Data\El\Buffs\BuffInfoSolver.cs" />
+    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder20210511.cs" />
+    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder20210921.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Actors\AbstractSingleActorCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Actors\NPCCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Actors\PlayerCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\BackgroundDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\CircleDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\DoughnutDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\FacingDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\FacingRectangleDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\FormDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\GenericAttachedDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\GenericDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\LineDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\MovingPlatformDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\PieDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\RectangleDecorationCombatReplayDescription.cs" />
+    <Compile Include="Parser\Data\El\CombatReplays\CombatReplayDescription\Decorations\RotatedRectangleDecorationCombatReplayDescription.cs" />
     <Compile Include="Parser\Data\El\CombatReplays\Decorations\GenericAttachedDecoration.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Actors\AbstractSingleActorSerializable.cs" />
     <Compile Include="Parser\Data\El\Actors\AbstractActor.cs" />
     <Compile Include="Parser\Data\El\Actors\AbstractSingleActor.cs" />
     <Compile Include="Parser\Data\El\Actors\Minions.cs" />
@@ -161,14 +247,13 @@
     <Compile Include="Parser\Data\El\Actors\Player.cs" />
     <Compile Include="Parser\Data\El\Buffs\Buff.cs" />
     <Compile Include="Parser\Data\El\Buffs\BuffDictionary.cs" />
-    <Compile Include="Parser\Data\El\Buffs\BuffDistributionItem.cs" />
+    <Compile Include="Parser\Data\El\Buffs\BuffDistribution.cs" />
     <Compile Include="Parser\Data\El\Buffs\BuffsContainer.cs" />
-    <Compile Include="Parser\Data\El\Buffs\BuffSegment.cs" />
     <Compile Include="Parser\Data\El\Buffs\BuffsGraphModel.cs" />
     <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder.cs" />
-    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder01102019.cs" />
-    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder05032019.cs" />
-    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder11122018.cs" />
+    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder20191001.cs" />
+    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder20190305.cs" />
+    <Compile Include="Parser\Data\El\Buffs\BuffSourceFinders\BuffSourceFinder20181211.cs" />
     <Compile Include="Parser\Data\El\CombatReplays\CombatReplay.cs" />
     <Compile Include="Parser\Data\El\CombatReplays\CombatReplayMap.cs" />
     <Compile Include="Parser\Data\El\CombatReplays\Decorations\BackgroundDecoration.cs" />
@@ -187,41 +272,32 @@
     <Compile Include="Parser\Data\El\CombatReplays\Decorations\PieDecoration.cs" />
     <Compile Include="Parser\Data\El\CombatReplays\Decorations\RectangleDecoration.cs" />
     <Compile Include="Parser\Data\El\CombatReplays\Decorations\RotatedRectangleDecoration.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Actors\NPCSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Actors\PlayerSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\BackgroundDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\CircleDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\DoughnutDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\FacingDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\FacingRectangleDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\FormDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\GenericAttachedDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\GenericDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\LineDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\MovingPlatformDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\PieDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\RectangleDecorationSerializable.cs" />
-    <Compile Include="Parser\Data\El\CombatReplays\Serializable\Decorations\RotatedRectangleDecorationSerializable.cs" />
+    <Compile Include="Parser\Data\El\DamageModifiers\BuffApproximateDamageModifier.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\BuffDamageModifier.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\BuffDamageModifierTarget.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\BuffTrackers\BuffsTracker.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\BuffTrackers\BuffsTrackerMulti.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\BuffTrackers\BuffsTrackerSingle.cs" />
+    <Compile Include="Parser\Data\El\DamageModifiers\DamageLogApproximateDamageModifier.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\DamageLogDamageModifier.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\DamageModifier.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\DamageModifiersContainer.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputer.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerByAbsence.cs" />
+    <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerByMultiplyingStack.cs" />
+    <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerByMultiPresence.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerByPresence.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerBySkill.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerByStack.cs" />
     <Compile Include="Parser\Data\El\DamageModifiers\GainComputers\GainComputerNonMultiplier.cs" />
     <Compile Include="Parser\Data\El\InstantCastFinders\BuffCastFinder.cs" />
     <Compile Include="Parser\Data\El\InstantCastFinders\BuffGainCastFinder.cs" />
+    <Compile Include="Parser\Data\El\InstantCastFinders\BuffGainWithMinionsCastFinder.cs" />
     <Compile Include="Parser\Data\El\InstantCastFinders\BuffGiveCastFinder.cs" />
     <Compile Include="Parser\Data\El\InstantCastFinders\BuffLossCastFinder.cs" />
     <Compile Include="Parser\Data\El\InstantCastFinders\DamageCastFinder.cs" />
     <Compile Include="Parser\Data\El\InstantCastFinders\InstantCastFinder.cs" />
+    <Compile Include="Parser\Data\El\InstantCastFinders\WeaponSwapCastFinder.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicData.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\BuffApplyMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\BuffRemoveMechanic.cs" />
@@ -240,25 +316,30 @@
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\PlayerBuffRemoveMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\PlayerCastEndMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\PlayerCastStartMechanic.cs" />
-    <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\PlayerOnPlayerMechanic.cs" />
+    <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\PlayerOnPlayerBuffApplyMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\PlayerStatusMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\SkillByEnemyMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\SkillMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\SkillOnPlayerMechanic.cs" />
     <Compile Include="Parser\Data\El\Mechanics\MechanicTypes\SpawnMechanic.cs" />
     <Compile Include="Parser\Data\El\PhaseData.cs" />
+    <Compile Include="Parser\Data\El\Professions\Elementalist\CatalystHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Elementalist\ElementalistHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Elementalist\TempestHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Elementalist\WeaverHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Engineer\EngineerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Engineer\HolosmithHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Engineer\MechanistHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Engineer\ScrapperHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Guardian\DragonhunterHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Guardian\FirebrandHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Guardian\GuardianHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Guardian\WillbenderHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Mesmer\ChronomancerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Mesmer\MesmerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Mesmer\MirageHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Mesmer\VirtuosoHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Necromancer\HarbingerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Necromancer\NecromancerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Necromancer\ReaperHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Necromancer\ScourgeHelper.cs" />
@@ -266,18 +347,23 @@
     <Compile Include="Parser\Data\El\Professions\Ranger\DruidHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Ranger\RangerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Ranger\SoulbeastHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Ranger\UntamedHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Revenant\HeraldHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Revenant\RenegadeHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Revenant\RevenantHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Revenant\VindicatorHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Thief\DaredevilHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Thief\DeadeyeHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Thief\SpecterHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Thief\ThiefHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Warrior\BerserkerHelper.cs" />
+    <Compile Include="Parser\Data\El\Professions\Warrior\BladeswornHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Warrior\SpellbreakerHelper.cs" />
     <Compile Include="Parser\Data\El\Professions\Warrior\WarriorHelper.cs" />
     <Compile Include="Parser\Data\El\Simulator\AbstractBuffSimulator.cs" />
     <Compile Include="Parser\Data\El\Simulator\AbstractSimulationItem.cs" />
-    <Compile Include="Parser\Data\El\Simulator\BuffSimulationItems\AbstractBuffSimulationItem.cs" />
+    <Compile Include="Parser\Data\El\Simulator\BuffSimulationItems\BuffSimulationItemBase.cs" />
+    <Compile Include="Parser\Data\El\Simulator\BuffSimulationItems\BuffSimulationItemStack.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulationWasteItems\AbstractBuffSimulationItemWasted.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulationItems\BuffSimulationItem.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulationItems\BuffSimulationItemDuration.cs" />
@@ -290,33 +376,29 @@
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\BuffSimulator.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\BuffSimulatorDuration.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\BuffSimulatorIntensity.cs" />
+    <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\EffectStackingLogic\CappedDurationLogic.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\EffectStackingLogic\ForceOverrideLogic.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\EffectStackingLogic\HealingLogic.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\EffectStackingLogic\OverrideLogic.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\EffectStackingLogic\QueueLogic.cs" />
     <Compile Include="Parser\Data\El\Simulator\BuffSimulatorNoID\EffectStackingLogic\StackingLogic.cs" />
-    <Compile Include="Parser\Data\El\Simulator\EffectStackingLogic\ForceOverrideLogic.cs" />
-    <Compile Include="Parser\Data\El\Simulator\EffectStackingLogic\HealingLogic.cs" />
-    <Compile Include="Parser\Data\El\Simulator\EffectStackingLogic\OverrideLogic.cs" />
-    <Compile Include="Parser\Data\El\Simulator\EffectStackingLogic\QueueLogic.cs" />
-    <Compile Include="Parser\Data\El\Simulator\EffectStackingLogic\StackingLogic.cs" />
+    <Compile Include="Parser\Data\El\Simulator\BuffStackItem.cs" />
     <Compile Include="Parser\Data\El\Statistics\Consumable.cs" />
     <Compile Include="Parser\Data\El\Statistics\DamageModifierStat.cs" />
     <Compile Include="Parser\Data\El\Statistics\DeathRecap.cs" />
-    <Compile Include="Parser\Data\El\Statistics\FinalBuffs.cs" />
+    <Compile Include="Parser\Data\El\Statistics\FinalActorBuffs.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalBuffsDictionary.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalDefenses.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalDefensesAll.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalDPS.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalGameplayStats.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalGameplayStatsAll.cs" />
-    <Compile Include="Parser\Data\El\Statistics\FinalPlayerBuffs.cs" />
-    <Compile Include="Parser\Data\El\Statistics\FinalPlayerSupport.cs" />
+    <Compile Include="Parser\Data\El\Statistics\FinalToPlayersSupport.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalSupport.cs" />
     <Compile Include="Parser\Data\El\Statistics\FinalSupportAll.cs" />
-    <Compile Include="Parser\Data\El\Statistics\GeneralStatistics.cs" />
     <Compile Include="Parser\Data\El\Statistics\Point3D.cs" />
     <Compile Include="Parser\Data\El\Statistics\Segment.cs" />
+    <Compile Include="Parser\Data\El\Statistics\StatisticsHelper.cs" />
     <Compile Include="Parser\Data\Events\Buffs\BuffApplies\AbstractBuffApplyEvent.cs" />
     <Compile Include="Parser\Data\Events\Buffs\BuffStacks\AbstractBuffStackEvent.cs" />
     <Compile Include="Parser\Data\Events\Buffs\BuffStacks\BuffStackActiveEvent.cs" />
@@ -325,9 +407,14 @@
     <Compile Include="Parser\Data\Events\Cast\AnimatedCastEvent.cs" />
     <Compile Include="Parser\Data\Events\Cast\InstantCastEvent.cs" />
     <Compile Include="Parser\Data\Events\Cast\WeaponSwapEvent.cs" />
+    <Compile Include="Parser\Data\Events\DamageModifier\DamageModifierEvent.cs" />
+    <Compile Include="Parser\Data\Events\Damage\AbstractBreakbarDamageEvent.cs" />
     <Compile Include="Parser\Data\Events\Damage\AbstractDamageEvent.cs" />
-    <Compile Include="Parser\Data\Events\Damage\DirectDamageEvent.cs" />
-    <Compile Include="Parser\Data\Events\Damage\NonDirectDamageEvent.cs" />
+    <Compile Include="Parser\Data\Events\Damage\AbstractHealthDamageEvent.cs" />
+    <Compile Include="Parser\Data\Events\Damage\DirectBreakbarDamageEvent.cs" />
+    <Compile Include="Parser\Data\Events\Damage\DirectHealthDamageEvent.cs" />
+    <Compile Include="Parser\Data\Events\Damage\NonDirectBreakbarDamageEvent.cs" />
+    <Compile Include="Parser\Data\Events\Damage\NonDirectHealthDamageEvent.cs" />
     <Compile Include="Parser\Data\Events\Mechanics\MechanicEvent.cs" />
     <Compile Include="Parser\Data\Events\MetaData\AbstractMetaDataEvent.cs" />
     <Compile Include="Parser\Data\Events\MetaData\BuffFormula.cs" />
@@ -345,10 +432,11 @@
     <Compile Include="Parser\Data\Events\MetaData\SkillInfoEvent.cs" />
     <Compile Include="Parser\Data\Events\MetaData\SkillTiming.cs" />
     <Compile Include="Parser\Data\Events\MetaData\TagEvent.cs" />
-    <Compile Include="Parser\Data\Events\Movement\AbstractMovementEvent.cs" />
-    <Compile Include="Parser\Data\Events\Movement\PositionEvent.cs" />
-    <Compile Include="Parser\Data\Events\Movement\RotationEvent.cs" />
-    <Compile Include="Parser\Data\Events\Movement\VelocityEvent.cs" />
+    <Compile Include="Parser\Data\Events\Status\BarrierUpdateEvent.cs" />
+    <Compile Include="Parser\Data\Events\Status\Movement\AbstractMovementEvent.cs" />
+    <Compile Include="Parser\Data\Events\Status\Movement\PositionEvent.cs" />
+    <Compile Include="Parser\Data\Events\Status\Movement\RotationEvent.cs" />
+    <Compile Include="Parser\Data\Events\Status\Movement\VelocityEvent.cs" />
     <Compile Include="Parser\Data\Events\RewardEvent.cs" />
     <Compile Include="Parser\Data\Events\StatusEventsContainer.cs" />
     <Compile Include="Parser\Data\Events\Status\AbstractStatusEvent.cs" />
@@ -382,59 +470,87 @@
     <Compile Include="Parser\Data\Events\Buffs\BuffRemoves\BuffRemoveSingleEvent.cs" />
     <Compile Include="Parser\Data\Events\EventFactory.cs" />
     <Compile Include="Parser\Data\Events\MetaEventsContainer.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W1\SpiritVale.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W2\SalvationPass.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W3\StrongholdOfTheFaithful.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W4\BastionOfThePenitent.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\HallOfChains.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W6\MythwrightGambit.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W7\TheKeyOfAhdashim.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Bjora\Bjora.cs" />
+    <Compile Include="Parser\Extensions\ExtensionActorHelpers\HealingStats\EXTAbstractSingleActorHealingHelper.cs" />
+    <Compile Include="Parser\Extensions\ExtensionActorHelpers\HealingStats\EXTActorHealingHelper.cs" />
+    <Compile Include="Parser\Extensions\ExtensionActorHelpers\HealingStats\EXTMinionsHealingHelper.cs" />
+    <Compile Include="Parser\Extensions\ExtensionCombatEvents\EXTHealingCombatData.cs" />
+    <Compile Include="Parser\Extensions\ExtensionCombatEvents\HealingStats\EXTAbstractHealingEvent.cs" />
+    <Compile Include="Parser\Extensions\ExtensionCombatEvents\HealingStats\EXTDirectHealingEvent.cs" />
+    <Compile Include="Parser\Extensions\ExtensionCombatEvents\HealingStats\EXTNonDirectHealingEvent.cs" />
+    <Compile Include="Parser\Extensions\ExtensionHandlers\AbstractExtensionHandler.cs" />
+    <Compile Include="Parser\Extensions\ExtensionHandlers\HealingStats\HealingStatsExtensionHandler.cs" />
+    <Compile Include="Parser\Extensions\ExtensionHelper.cs" />
+    <Compile Include="Parser\Extensions\ExtensionInstantCastFinder\EXTHealingCastFinder.cs" />
+    <Compile Include="Parser\Extensions\ExtensionStatistics\EXTFinalIncomingHealingStat.cs" />
+    <Compile Include="Parser\Extensions\ExtensionStatistics\EXTFinalOutgoingHealingStat.cs" />
     <Compile Include="Parser\Helper\ArcDPSEnums.cs" />
+    <Compile Include="Parser\Helper\CachingCollections\AbstractCachingCollection.cs" />
+    <Compile Include="Parser\Helper\CachingCollections\CachingCollection.cs" />
+    <Compile Include="Parser\Helper\CachingCollections\CachingCollectionCustom.cs" />
+    <Compile Include="Parser\Helper\CachingCollections\CachingCollectionWithTarget.cs" />
     <Compile Include="Parser\Helper\ParserHelper.cs" />
     <Compile Include="Parser\Helper\ParserSettings.cs" />
+    <Compile Include="Parser\Helper\ParsingFailureReason.cs" />
     <Compile Include="Parser\Interfaces\IStateable.cs" />
     <Compile Include="Parser\Interfaces\IVersionable.cs" />
-    <Compile Include="Parser\Logic\Raids\W7\Adina.cs" />
-    <Compile Include="Parser\Logic\Fractals\Shattered\Arkk.cs" />
-    <Compile Include="Parser\Logic\Fractals\Shattered\Artsariiv.cs" />
-    <Compile Include="Parser\Logic\Raids\W2\BanditTrio.cs" />
-    <Compile Include="Parser\Logic\Raids\W5\BrokenKing.cs" />
-    <Compile Include="Parser\Logic\Raids\W4\Cairn.cs" />
-    <Compile Include="Parser\Logic\Raids\W6\ConjuredAmalgamate.cs" />
-    <Compile Include="Parser\Logic\Raids\W5\DarkMaze.cs" />
-    <Compile Include="Parser\Logic\Raids\W4\Deimos.cs" />
-    <Compile Include="Parser\Logic\Raids\W5\Dhuum.cs" />
-    <Compile Include="Parser\Logic\Raids\W5\EaterOfSouls.cs" />
-    <Compile Include="Parser\Logic\Fractals\Nightmare\Ensolyss.cs" />
-    <Compile Include="Parser\Logic\Raids\W3\Escort.cs" />
-    <Compile Include="Parser\Logic\FightLogic.cs" />
-    <Compile Include="Parser\Logic\Fractals\FractalLogic.cs" />
-    <Compile Include="Parser\Logic\Fractals\Nightmare\NightmareFractal.cs" />
-    <Compile Include="Parser\Logic\Fractals\Shattered\ShatteredFractal.cs" />
-    <Compile Include="Parser\Logic\Freezie.cs" />
-    <Compile Include="Parser\Logic\Golem.cs" />
-    <Compile Include="Parser\Logic\Raids\W1\Gorseval.cs" />
-    <Compile Include="Parser\Logic\Strikes\Bjora2\WhisperOfJormag.cs" />
-    <Compile Include="Parser\Logic\Strikes\Bjora\Boneskinner.cs" />
-    <Compile Include="Parser\Logic\Strikes\Bjora\FraenirOfJormag.cs" />
-    <Compile Include="Parser\Logic\Strikes\Bjora\SuperKodanBrothers.cs" />
-    <Compile Include="Parser\Logic\Strikes\Drizzlewood\ColdWar.cs" />
-    <Compile Include="Parser\Logic\Strikes\Grothmar\IcebroodConstruct.cs" />
-    <Compile Include="Parser\Logic\Raids\W3\KeepConstruct.cs" />
-    <Compile Include="Parser\Logic\Fractals\Nightmare\MAMA.cs" />
-    <Compile Include="Parser\Logic\Raids\W2\Matthias.cs" />
-    <Compile Include="Parser\Logic\Raids\W4\MursaatOverseer.cs" />
-    <Compile Include="Parser\Logic\Raids\W7\PeerlessQadim.cs" />
-    <Compile Include="Parser\Logic\Raids\W6\Qadim.cs" />
-    <Compile Include="Parser\Logic\Raids\RaidLogic.cs" />
-    <Compile Include="Parser\Logic\Raids\W5\River.cs" />
-    <Compile Include="Parser\Logic\Raids\W1\Sabetha.cs" />
-    <Compile Include="Parser\Logic\Raids\W7\Sabir.cs" />
-    <Compile Include="Parser\Logic\Raids\W4\Samarog.cs" />
-    <Compile Include="Parser\Logic\Fractals\Nightmare\Siax.cs" />
-    <Compile Include="Parser\Logic\Fractals\Shattered\Skorvald.cs" />
-    <Compile Include="Parser\Logic\Raids\W2\Slothasor.cs" />
-    <Compile Include="Parser\Logic\Raids\W5\SoullessHorror.cs" />
-    <Compile Include="Parser\Logic\Strikes\StrikeMissionLogic.cs" />
-    <Compile Include="Parser\Logic\Raids\W6\TwinLargos.cs" />
-    <Compile Include="Parser\Logic\Raids\W3\TwistedCastle.cs" />
-    <Compile Include="Parser\Logic\UnknownFightLogic.cs" />
-    <Compile Include="Parser\Logic\Raids\W1\ValeGuardian.cs" />
-    <Compile Include="Parser\Logic\WvWFight.cs" />
-    <Compile Include="Parser\Logic\Raids\W3\Xera.cs" />
+    <Compile Include="Parser\EncounterLogic\EncounterCategory.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\SunquaPeak\AiKeeperOfThePeak.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W7\Adina.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Shattered\Arkk.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Shattered\Artsariiv.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W2\BanditTrio.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\BrokenKing.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W4\Cairn.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W6\ConjuredAmalgamate.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\DarkMaze.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W4\Deimos.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\Dhuum.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\EaterOfSouls.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Nightmare\Ensolyss.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W3\Escort.cs" />
+    <Compile Include="Parser\EncounterLogic\FightLogic.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\FractalLogic.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Nightmare\Nightmare.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Shattered\ShatteredObservatory.cs" />
+    <Compile Include="Parser\EncounterLogic\Freezie.cs" />
+    <Compile Include="Parser\EncounterLogic\Golem.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W1\Gorseval.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Bjora\WhisperOfJormag.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Bjora\Boneskinner.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Bjora\FraenirOfJormag.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Bjora\SuperKodanBrothers.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Drizzlewood\ColdWar.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\Grothmar\IcebroodConstruct.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W3\KeepConstruct.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Nightmare\MAMA.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W2\Matthias.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W4\MursaatOverseer.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W7\PeerlessQadim.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W6\Qadim.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\RaidLogic.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\River.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W1\Sabetha.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W7\Sabir.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W4\Samarog.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Nightmare\Siax.cs" />
+    <Compile Include="Parser\EncounterLogic\Fractals\Shattered\Skorvald.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W2\Slothasor.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W5\SoullessHorror.cs" />
+    <Compile Include="Parser\EncounterLogic\Strikes\StrikeMissionLogic.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W6\TwinLargos.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W3\TwistedCastle.cs" />
+    <Compile Include="Parser\EncounterLogic\UnknownFightLogic.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W1\ValeGuardian.cs" />
+    <Compile Include="Parser\EncounterLogic\WvWFight.cs" />
+    <Compile Include="Parser\EncounterLogic\Raids\W3\Xera.cs" />
     <Compile Include="Parser\Controllers\FormOperationController.cs" />
     <Compile Include="Parser\Controllers\OperationController.cs" />
     <Compile Include="Parser\ParserController.cs" />
@@ -454,7 +570,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
@@ -463,6 +579,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="Gw2LogParser_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\.editorconfig" />
     <None Include="Properties\DataSources\GridRow.datasource" />
@@ -498,18 +615,34 @@
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerStats.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerStatus.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayStatusData.html" />
+    <None Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetSelect.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetsStats.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetStats.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetStatus.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayUI.html" />
-    <Content Include="Resources\eiparser\CR-JS\actors.js" />
-    <Content Include="Resources\eiparser\CR-JS\animator.js" />
-    <Content Include="Resources\eiparser\CR-JS\decorations.js" />
+    <None Include="Resources\eiparser\compressionUtils.html" />
     <Content Include="Resources\eiparser\ei.css" />
     <Content Include="Resources\eiparser\ei.js" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplAdvancedRotation.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingDistPlayer.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingDistTable.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingExtensionView.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingGraphStats.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingStatTables.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingTaken.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHPSGraph.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHPSGraphModeSelector.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplIncomingHealingTable.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplOutgoingHealingTable.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingStats.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingTab.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingTabGraph.html" />
+    <None Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplTargetPlayers.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplBuffStats.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplBuffStatsTarget.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplBuffTable.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplBuffTables.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplConditionsTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplDamageDistPlayer.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplDamageDistTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplDamageDistTarget.html" />
@@ -521,9 +654,11 @@
     <Content Include="Resources\eiparser\htmlTemplates\tmplDeathRecap.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplDefenseTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplDPSGraph.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplDPSGraphModeSelector.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplEncounter.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplFood.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplGameplayTable.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplGearBuffTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplGeneralLayout.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplGraphStats.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplMainView.html" />
@@ -531,19 +666,27 @@
     <Content Include="Resources\eiparser\htmlTemplates\tmplPersonalBuffTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplPhase.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplPlayers.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplPlayersRotation.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplPlayersRotationTab.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerStats.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerTab.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerTabGraph.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplRotationLegend.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplSimpleRotation.html" />
+    <None Include="Resources\eiparser\htmlTemplates\tmplStatTables.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplSupportTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetData.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargets.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetStats.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetTab.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetTabGraph.html" />
+    <None Include="Resources\eiparser\JS\CR-JS\actors.js" />
+    <None Include="Resources\eiparser\JS\CR-JS\animator.js" />
+    <None Include="Resources\eiparser\JS\CR-JS\decorations.js" />
     <Content Include="Resources\eiparser\JS\functions.js" />
     <Content Include="Resources\eiparser\JS\global.js" />
+    <None Include="Resources\eiparser\JS\HealingExt-JS\healingExtFunctions.js" />
+    <None Include="Resources\eiparser\JS\HealingExt-JS\healingExtGlobals.js" />
     <Content Include="Resources\eiparser\JS\mixins.js" />
     <Content Include="Resources\eiparser\template.html" />
     <Content Include="Resources\player_summary.html" />

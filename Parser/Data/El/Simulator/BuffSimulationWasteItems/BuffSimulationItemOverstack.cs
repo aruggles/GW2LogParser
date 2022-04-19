@@ -1,10 +1,6 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
 using Gw2LogParser.Parser.Data.El.Buffs;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems
 {
@@ -15,19 +11,18 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems
         {
         }
 
-        public override void SetBuffDistributionItem(BuffDistribution distribs, long start, long end, long boonid, ParsedLog log)
+        public override void SetBuffDistributionItem(BuffDistribution distribs, long start, long end, long buffID)
         {
-            Dictionary<Agent, BuffDistributionItem> distrib = GetDistrib(distribs, boonid);
+            Dictionary<Agent, BuffDistributionItem> distrib = distribs.GetDistrib(buffID);
             Agent agent = Src;
-            var value = GetValue(start, end);
+            long value = GetValue(start, end);
             if (value == 0)
             {
                 return;
             }
             if (distrib.TryGetValue(agent, out BuffDistributionItem toModify))
             {
-                toModify.Overstack += value;
-                distrib[agent] = toModify;
+                toModify.IncrementOverstack(value);
             }
             else
             {

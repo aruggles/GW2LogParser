@@ -1,73 +1,89 @@
 <template>
     <div>
-        <div v-if="actor !== null">
+        <div v-if="actor !== null" class="mb-1 mt-1">
             <div v-if="isminion">
-                {{actor.name}} did {{round3(100*dmgdist.contributedDamage/dmgdist.totalDamage)}}% of its master's total
-                {{istarget ? 'Target' :''}} dps
+                <p style="display: table-row;">
+                    {{actor.name}} did {{round3(100*dmgdist.contributedDamage/dmgdist.totalDamage)}}% of its master's total
+                    {{istarget ? 'Target' :''}} damage ({{dmgdist.contributedDamage}})
+                </p>
+                <p v-if="hasBreakbarDamage && dmgdist.contributedBreakbarDamage > 0" style="display: table-row;">
+                    {{actor.name}} did {{round3(100*dmgdist.contributedBreakbarDamage/dmgdist.totalBreakbarDamage)}}% of its master's total
+                    {{istarget ? 'Target' :''}} breakbar damage ({{round1(dmgdist.contributedBreakbarDamage)}})
+                </p>
             </div>
             <div v-else>
-                {{actor.name}} did {{round3(100*dmgdist.contributedDamage/dmgdist.totalDamage)}}% of its total {{istarget ?
-                'Target' :''}} dps
+                <p style="display: table-row;">
+                    {{actor.name}} did {{round3(100*dmgdist.contributedDamage/dmgdist.totalDamage)}}% of their total {{istarget ?
+                        'Target' :''}} damage ({{dmgdist.contributedDamage}})
+                </p>              
+                <p v-if="hasBreakbarDamage && dmgdist.contributedBreakbarDamage > 0" style="display: table-row;">
+                    {{actor.name}} did {{round3(100*dmgdist.contributedBreakbarDamage/dmgdist.totalBreakbarDamage)}}% of their total
+                    {{istarget ? 'Target' :''}} breakbar damage ({{round1(dmgdist.contributedBreakbarDamage)}})
+                </p>
             </div>
         </div>
         <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" :id="tableid">
             <thead>
                 <tr>
                     <th class="text-left">Skill</th>
-                    <th>
+                    <th class="damage-dist-cell">
                         %
                     </th>
-                    <th data-original-title="Damage">
+                    <th class="damage-dist-cell" data-original-title="Damage">
                         <img src="https://wiki.guildwars2.com/images/thumb/6/6a/Damage.png/30px-Damage.png" alt="Damage"
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Damage against barrier. Not necessarily included in total damage">
+                    <th class="damage-dist-cell" data-original-title="Damage against barrier. Not necessarily included in total damage">
                         <img src="https://wiki.guildwars2.com/images/thumb/c/cc/Barrier.png/30px-Barrier.png"
                             alt="Barrier Damage" class="icon icon-hover">
                     </th>
-                    <th data-original-title="Minimum">
+                    <th class="damage-dist-cell" data-original-title="Minimum">
                         Min
                     </th>
-                    <th data-original-title="Average">
+                    <th class="damage-dist-cell" data-original-title="Average">
                         Avg
                     </th>
-                    <th data-original-title="Maximum">
+                    <th class="damage-dist-cell" data-original-title="Maximum">
                         Max
                     </th>
-                    <th v-if="actor !== null">
+                    <th class="damage-dist-cell" v-if="actor !== null">
                         Cast
                     </th>
-                    <th>
+                    <th class="damage-dist-cell">
                         Hits
                     </th>
-                    <th v-if="actor !== null" data-original-title="Hits per Cast">
+                    <th class="damage-dist-cell" v-if="actor !== null" data-original-title="Hits per Cast">
                         <img src="https://wiki.guildwars2.com/images/thumb/5/53/Number_of_targets.png/20px-Number_of_targets.png"
                             alt="Hits per Cast" class="icon icon-hover">
                     </th>
-                    <th v-if="actor !== null" data-original-title="Damage divided by time spent in animation">
+                    <th class="damage-dist-cell" v-if="actor !== null" data-original-title="Damage divided by time spent in animation">
                         <img src="https://wiki.guildwars2.com/images/thumb/6/6a/Damage.png/30px-Damage.png" alt="Damage"
                             class="icon">
                         /
                         <img src="https://wiki.guildwars2.com/images/6/6e/Activation.png" alt="Activation Time"
                             class="icon">
                     </th>
-                    <th data-original-title="Percent time hits critical">
+                    <th class="damage-dist-cell" data-original-title="Percent time hits critical">
                         <img src="https://wiki.guildwars2.com/images/9/95/Critical_Chance.png" alt="Crits"
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Percent time hits while flanking">
+                    <th class="damage-dist-cell" data-original-title="Percent time hits while flanking">
                         <img src="https://wiki.guildwars2.com/images/b/bb/Hunter%27s_Tactics.png" alt="Flank"
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Percent time hits while glancing">
+                    <th class="damage-dist-cell" data-original-title="Percent time hits while glancing">
                         <img src="https://wiki.guildwars2.com/images/f/f9/Weakness.png" alt="Glance"
                             class="icon icon-hover">
                     </th>
-                    <th v-if="actor !== null" data-original-title="Time wasted interupting skill casts">
+                    <th class="damage-dist-cell" data-original-title="Damage against moving">
+                        <img src="https://i.imgur.com/11uAbd4.png"
+                            alt="Against Moving" class="icon icon-hover">
+                    </th>
+                    <th class="damage-dist-cell" v-if="actor !== null" data-original-title="Time wasted interupting skill casts">
                         <img src="https://wiki.guildwars2.com/images/b/b3/Out_Of_Health_Potions.png" alt="Wasted"
                             class="icon icon-hover">
                     </th>
-                    <th v-if="actor !== null" data-original-title="Time saved(in seconds) interupting skill casts">
+                    <th class="damage-dist-cell" v-if="actor !== null" data-original-title="Time saved(in seconds) interupting skill casts">
                         <img src="https://wiki.guildwars2.com/images/e/eb/Ready.png" alt="Saved"
                             class="icon icon-hover">
                     </th>
@@ -89,29 +105,32 @@
                     <td>{{ Math.max(row[3],0) }}</td>
                     <td>{{ round(row[2]/row[6]) }}</td>
                     <td>{{ row[4] }}</td>
-                    <td v-if="actor !== null">
-                        {{ !getSkill(row[0], row[1]).condi && row[5] ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '>= ' : '') + row[5] : ''}}
+                    <td :class="{higherOrEqual: (!getSkill(row[0], row[1]).condi && row[5]) && showInequality(getSkill(row[0], row[1]),row[15])}" v-if="actor !== null">
+                        {{ (!getSkill(row[0], row[1]).condi && row[5]) ? row[5] : ''}}
                     </td>
                     <td :data-original-title="(row[14] - row[6]) + ' hit(s) not connected'">
                         {{ row[6] }}
                     </td>
-                    <td v-if="actor !== null" :data-original-title=" (!getSkill(row[0], row[1]).condi && row[14] && row[5]) ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '<= ' : '') + round2(row[14]/row[5]) + ' with missed hits' : false" >
-                        {{(!getSkill(row[0], row[1]).condi && row[6] && row[5]) ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '<= ' : '') + round2(row[6]/row[5]) : ''}}
+                    <td :class="{lowerOrEqual: (!getSkill(row[0], row[1]).condi && row[6] && row[5]) && showInequality(getSkill(row[0], row[1]),row[15])}" v-if="actor !== null" :data-original-title=" (!getSkill(row[0], row[1]).condi && row[14] && row[5]) ? (showInequality(getSkill(row[0], row[1]),row[15]) ? '<= ' : '') + round2(row[14]/row[5]) + ' with missed hits' : false" >
+                        {{(!getSkill(row[0], row[1]).condi && row[6] && row[5]) ? round2(row[6]/row[5]) : ''}}
                     </td>
                     <td v-if="actor !== null">
                         {{(!getSkill(row[0], row[1]).condi && row[6] && row[15]) ? round2(row[2]/(0.001 * row[15])) : ''}}
                     </td>
                     <td
-                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[7] +' out of ' + row[6] + ' hit(s) <br> Damage: ' + row[13] : false">
+                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[7] +' out of ' + row[6] + ' connected hit(s) <br> Damage: ' + row[13] : false">
                         {{(!getSkill(row[0], row[1]).condi && row[6]) ? round2(row[7]*100/row[6]) + '%' : ''}}
                     </td>
                     <td
-                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[8] +' out of ' + row[6] + ' hit(s)': false">
+                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[8] +' out of ' + row[6] + ' connected hit(s)': false">
                         {{(!getSkill(row[0], row[1]).condi && row[6]) ? round2(row[8]*100/row[6]) + '%' : ''}}
                     </td>
                     <td
-                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[9] +' out of ' + row[6] + ' hit(s)': false">
+                        :data-original-title="(!getSkill(row[0], row[1]).condi && row[6]) ? row[9] +' out of ' + row[6] + ' connected hit(s)': false">
                         {{(!getSkill(row[0], row[1]).condi && row[6]) ? round2(row[9]*100/row[6]) + '%' : ''}}
+                    </td>
+                    <td :data-original-title="row[16] +' out of ' + row[6] + ' connected hit(s)'">
+                        {{row[6] ? (round2(100 * row[16]/row[6]) + '%') : ''}}
                     </td>
                     <td v-if="actor !== null"
                         :data-original-title="row[10] ? round2(100.0 * row[10]/phase.durationS) + '% of the phase' : false">
@@ -143,6 +162,7 @@
                     <td></td>
                     <td></td>
                     <td></td>
+                    <td></td>
                     <td v-if="actor !== null"></td>
                     <td v-if="actor !== null"></td>
                 </tr>
@@ -153,51 +173,34 @@
 
 <script>
     Vue.component("damagedist-table-component", {
-        props: ["dmgdist", "tableid", "actor", "isminion", "istarget", "phaseindex"],
+        props: ["dmgdist", "tableid", "actorindex", "minionindex", "istarget", "phaseindex", "player"],
         template: `${template}`,
         data: function () {
             return {
                 sortdata: {
                     order: "desc",
                     index: 2
-                }
+                },
+                divElement: null
             };
         },
-        mixins: [roundingComponent],
+        mixins: [numberComponent],
         mounted() {
-            var _this = this;
-            initTable(
-                "#" + this.tableid,
-                this.sortdata.index,
-                this.sortdata.order,
-                function () {
-                    var order = $("#" + _this.tableid)
-                        .DataTable()
-                        .order();
-                    _this.sortdata.order = order[0][1];
-                    _this.sortdata.index = order[0][0];
-                }
-            );
+            initializeTable(this.tableid, this.sortdata);
+            this.divElement =  $("#" + this.tableid);
         },
         beforeUpdate() {
-            $("#" + this.tableid)
+            this.divElement
                 .DataTable()
                 .destroy();
         },
         updated() {
-            var _this = this;
-            initTable(
-                "#" + this.tableid,
-                this.sortdata.index,
-                this.sortdata.order,
-                function () {
-                    var order = $("#" + _this.tableid)
-                        .DataTable()
-                        .order();
-                    _this.sortdata.order = order[0][1];
-                    _this.sortdata.index = order[0][0];
-                }
-            );
+            initializeTable(this.tableid, this.sortdata);
+            this.divElement =  $("#" + this.tableid);
+        },
+        activated() {
+            initializeTable(this.tableid, this.sortdata);
+            this.divElement =  $("#" + this.tableid);
         },
         methods: {
             getSkill: function (isBoon, id) {
@@ -210,7 +213,23 @@
         computed: {
             phase: function () {
                 return logData.phases[this.phaseindex];
-            }
+            },
+            isminion: function() {
+                return this.minionindex > -1;
+            },
+            actor: function() {
+                if (this.actorindex < 0) {
+                    return null;
+                }
+                var master = !this.player ? logData.targets[this.actorindex] : logData.players[this.actorindex];
+                if (this.isminion) {
+                    return master.minions[this.minionindex];
+                }
+                return master;
+            },
+            hasBreakbarDamage: function() {
+                return logData.hasBreakbarDamage;
+            },
         }
     });
 </script>

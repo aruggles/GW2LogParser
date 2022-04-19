@@ -31,9 +31,9 @@ namespace Gw2LogParser.ExportModels
             Start = phaseData.Start / 1000.0;
             End = phaseData.End / 1000.0;
             PlayerActiveTimes = new List<long>();
-            foreach (Player p in log.PlayerList)
+            foreach (AbstractSingleActor actor in log.Friendlies)
             {
-                PlayerActiveTimes.Add(phaseData.GetActorActiveDuration(p, log));
+                PlayerActiveTimes.Add(actor.GetActiveDuration(log, phaseData.Start, phaseData.End));
             }
         }
 
@@ -90,7 +90,7 @@ namespace Gw2LogParser.ExportModels
             return data;
         }
 
-        public static List<object> GetSupportStatData(FinalPlayerSupport support)
+        public static List<object> GetSupportStatData(FinalToPlayersSupport support)
         {
             var data = new List<object>()
                 {

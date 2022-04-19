@@ -1,39 +1,77 @@
-﻿using Gw2LogParser.Parser.Data.Agents;
+﻿using Gw2LogParser.Exceptions;
+using Gw2LogParser.Parser.Data.Agents;
+using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems;
-using Gw2LogParser.Parser.Data.Events.Buffs;
 using Gw2LogParser.Parser.Data.Events.Buffs.BuffRemoves;
 using Gw2LogParser.Parser.Helper;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorID
 {
     internal abstract class BuffSimulatorID : AbstractBuffSimulator
     {
-        protected List<(long duration, Agent src)> OverrideCandidates { get; } = new List<(long duration, Agent src)>();
+        protected class BuffStackItemID : BuffStackItem
+        {
+
+            public long StackID { get; protected set; } = 0;
+
+            public bool Active { get; protected set; } = false;
+
+            public BuffStackItemID(long start, long boonDuration, Agent src, bool active, long stackID) : base(start, boonDuration, src)
+            {
+                Active = active;
+                StackID = stackID;
+            }
+
+            public void Activate()
+            {
+                Active = true;
+            }
+
+            public void Disable()
+            {
+                Active = false;
+            }
+
+            public override void Shift(long startShift, long durationShift)
+            {
+                if (!Active)
+                {
+                    base.Shift(startShift, 0);
+                    return;
+                }
+                base.Shift(startShift, durationShift);
+            }
+        }
+
+        protected List<BuffStackItemID> BuffStack { get; set; } = new List<BuffStackItemID>();
 
         // Constructor
-        protected BuffSimulatorID(ParsedLog log) : base(log)
+        protected BuffSimulatorID(ParsedLog log, Buff buff) : base(log, buff)
         {
+        }
+
+        protected override void Clear()
+        {
+            BuffStack.Clear();
         }
 
         public override void Extend(long extension, long oldValue, Agent src, long time, uint stackID)
         {
-            BuffStackItem toExtend = BuffStack.Find(x => x.StackID == stackID);
+            BuffStackItem toExtend = BuffStack.FirstOrDefault(x => x.StackID == stackID);
             if (toExtend == null)
             {
-                throw new InvalidOperationException("Extend has failed");
+                throw new EIBuffSimulatorIDException("Extend has failed");
             }
             toExtend.Extend(extension, src);
-            //ExtendedSimulationResult.Add(new BuffCreationItem(src, extension, time, toExtend.ID));
         }
 
         public override void Remove(Agent by, long removedDuration, int removedStacks, long time, ArcDPSEnums.BuffRemove removeType, uint stackID)
         {
-            BuffStackItem toRemove;
+            BuffStackItemID toRemove;
             switch (removeType)
             {
                 case ArcDPSEnums.BuffRemove.All:
@@ -47,15 +85,14 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorID
                     {
                         if (BuffStack.Count < removedStacks)
                         {
-                            //removedStacks = BuffStack.Count;
-                            throw new InvalidOperationException("Remove all failed");
+                            throw new EIBuffSimulatorIDException("Remove all failed");
                         }
                         // buff cleanse all
-                        for (int i = 0; i < removedStacks; i++)
+                        for (int i = 0; i < BuffStack.Count; i++)
                         {
                             BuffStackItem stackItem = BuffStack[i];
                             WasteSimulationResult.Add(new BuffSimulationItemWasted(stackItem.Src, stackItem.Duration, time));
-                            if (stackItem.Extensions.Count > 0)
+                            if (stackItem.Extensions.Any())
                             {
                                 foreach ((Agent src, long value) in stackItem.Extensions)
                                 {
@@ -63,55 +100,65 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorID
                                 }
                             }
                         }
-                        BuffStack = BuffStack.GetRange(removedStacks, BuffStack.Count - removedStacks);
+                        BuffStack.Clear();
                         return;
                     }
                     toRemove = BuffStack[0];
                     break;
                 case ArcDPSEnums.BuffRemove.Single:
-                    toRemove = BuffStack.Find(x => x.StackID == stackID);
+                    toRemove = BuffStack.FirstOrDefault(x => x.StackID == stackID);
                     break;
                 default:
-                    throw new InvalidOperationException("Unknown remove type");
+                    throw new InvalidDataException("Unknown remove type");
             }
             if (toRemove == null)
             {
-                //return;
-                throw new InvalidOperationException("Remove has failed");
+                throw new EIBuffSimulatorIDException("Remove has failed");
             }
             BuffStack.Remove(toRemove);
-            // Removed due to override
-            (long duration, Agent src)? candidate = OverrideCandidates.Find(x => Math.Abs(x.duration - removedDuration) < 15);
-            if (candidate.Value.src != null)
+            if (removedDuration > ParserHelper.BuffSimulatorDelayConstant)
             {
-                (long duration, Agent candSrc) = candidate.Value;
-                OverrideCandidates.Remove(candidate.Value);
-                WasteSimulationResult.Add(new BuffSimulationItemWasted(toRemove.Src, toRemove.Duration, toRemove.Start));
-                if (toRemove.Extensions.Count > 0)
+                // safe checking, this can happen when an inactive stack is being removed but it was actually active
+                if (Math.Abs(removedDuration - toRemove.TotalDuration) > ParserHelper.BuffSimulatorDelayConstant && !toRemove.Active)
                 {
-                    foreach ((Agent src, long value) in toRemove.Extensions)
+                    toRemove.Activate();
+                    toRemove.Shift(0, Math.Abs(removedDuration - toRemove.TotalDuration));
+                }
+                // Removed due to override
+                if (by == ParserHelper._unknownAgent)
+                {
+                    WasteSimulationResult.Add(new BuffSimulationItemWasted(toRemove.Src, toRemove.Duration, time));
+                    if (toRemove.Extensions.Any())
                     {
-                        WasteSimulationResult.Add(new BuffSimulationItemWasted(src, value, toRemove.Start));
+                        foreach ((Agent src, long value) in toRemove.Extensions)
+                        {
+                            WasteSimulationResult.Add(new BuffSimulationItemWasted(src, value, time));
+                        }
                     }
                 }
-            }
-            // Removed due to a cleanse
-            else if (removedDuration > 50 && by != ParserHelper._unknownAgent)
-            {
-                WasteSimulationResult.Add(new BuffSimulationItemWasted(toRemove.Src, toRemove.Duration, time));
-                if (toRemove.Extensions.Count > 0)
+                // Removed due to a cleanse
+                else
                 {
-                    foreach ((Agent src, long value) in toRemove.Extensions)
+                    WasteSimulationResult.Add(new BuffSimulationItemWasted(toRemove.Src, toRemove.Duration, time));
+                    if (toRemove.Extensions.Any())
                     {
-                        WasteSimulationResult.Add(new BuffSimulationItemWasted(src, value, time));
+                        foreach ((Agent src, long value) in toRemove.Extensions)
+                        {
+                            WasteSimulationResult.Add(new BuffSimulationItemWasted(src, value, time));
+                        }
                     }
                 }
             }
         }
 
-        public override void Reset(uint id, long toDuration)
+        public override void Reset(uint stackID, long toDuration)
         {
-            // nothing to do? an activate should always accompany this
+            BuffStackItemID toDisable = BuffStack.FirstOrDefault(x => x.StackID == stackID);
+            if (toDisable == null)
+            {
+                throw new EIBuffSimulatorIDException("Reset has failed");
+            }
+            toDisable.Disable();
         }
     }
 }

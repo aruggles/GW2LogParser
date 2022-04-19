@@ -1,9 +1,5 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.Events.Status
 {
@@ -13,7 +9,11 @@ namespace Gw2LogParser.Parser.Data.Events.Status
 
         internal HealthUpdateEvent(Combat evtcItem, AgentData agentData) : base(evtcItem, agentData)
         {
-            HPPercent = evtcItem.DstAgent / 100.0;
+            HPPercent = Math.Round(evtcItem.DstAgent / 100.0, 2);
+            if (HPPercent > 100.0)
+            {
+                HPPercent = 100;
+            }
         }
 
         public (long start, double value) ToState()

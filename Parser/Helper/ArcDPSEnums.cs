@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Helper
 {
@@ -23,7 +19,7 @@ namespace Gw2LogParser.Parser.Helper
 
         internal static Activation GetActivation(byte bt)
         {
-            return Enum.IsDefined(typeof(Activation), bt) ? (Activation)bt : Activation.Unknown;
+            return bt < (byte)Activation.Unknown ? (Activation)bt : Activation.Unknown;
         }
 
         // Buff remove
@@ -39,7 +35,24 @@ namespace Gw2LogParser.Parser.Helper
 
         internal static BuffRemove GetBuffRemove(byte bt)
         {
-            return Enum.IsDefined(typeof(BuffRemove), bt) ? (BuffRemove)bt : BuffRemove.Unknown;
+            return bt < (byte)BuffRemove.Unknown ? (BuffRemove)bt : BuffRemove.Unknown;
+        }
+
+        // Buff cycle
+        public enum BuffCycle : byte
+        {
+            Cycle, // damage happened on tick timer
+            NotCycle, // damage happened outside tick timer (resistable)
+            NotCycle_NoResit, // BEFORE MAY 2021: the others were lumped here, now retired
+            NotCycle_DamageToTargetOnHit, // damage happened to target on hiting target
+            NotCycle_DamageToSourceOnHit, // damage happened to source on hiting target
+            NotCycle_DamageToTargetOnStackRemove, // damage happened to target on source losing a stack
+            Unknown
+        };
+
+        internal static BuffCycle GetBuffCycle(byte bt)
+        {
+            return bt < (byte)BuffCycle.Unknown ? (BuffCycle)bt : BuffCycle.Unknown;
         }
 
         // Result
@@ -56,13 +69,15 @@ namespace Gw2LogParser.Parser.Helper
             Blind = 7,
             KillingBlow = 8,
             Downed = 9,
+            BreakbarDamage = 10,
+            Activation = 11,
 
             Unknown
         };
 
         internal static PhysicalResult GetPhysicalResult(byte bt)
         {
-            return Enum.IsDefined(typeof(PhysicalResult), bt) ? (PhysicalResult)bt : PhysicalResult.Unknown;
+            return bt < (byte)PhysicalResult.Unknown ? (PhysicalResult)bt : PhysicalResult.Unknown;
         }
 
         public enum ConditionResult : byte
@@ -72,12 +87,13 @@ namespace Gw2LogParser.Parser.Helper
             InvulByPlayerSkill1 = 2,
             InvulByPlayerSkill2 = 3,
             InvulByPlayerSkill3 = 4,
+            //BreakbarDamage = 5,
 
             Unknown
         };
         internal static ConditionResult GetConditionResult(byte bt)
         {
-            return Enum.IsDefined(typeof(ConditionResult), bt) ? (ConditionResult)bt : ConditionResult.Unknown;
+            return bt < (byte)ConditionResult.Unknown ? (ConditionResult)bt : ConditionResult.Unknown;
         }
 
         // State Change    
@@ -121,42 +137,48 @@ namespace Gw2LogParser.Parser.Helper
             BreakbarPercent = 35,
             Error = 36,
             Tag = 37,
+            BarrierUpdate = 38,
+            StatReset = 39,
+            Extension = 40,
+            APIDelayed = 41,
             Unknown
         };
 
         internal static StateChange GetStateChange(byte bt)
         {
-            return Enum.IsDefined(typeof(StateChange), bt) ? (StateChange)bt : StateChange.Unknown;
+            return bt < (byte)StateChange.Unknown ? (StateChange)bt : StateChange.Unknown;
         }
         // Breakbar State
 
-        public enum BreakbarState
+        public enum BreakbarState : byte
         {
-            Active,
-            Recover,
-            Immune,
-            None,
+            Active = 0,
+            Recover = 1,
+            Immune = 2,
+            None = 3,
             Unknown
         };
         internal static BreakbarState GetBreakbarState(int value)
         {
-            return Enum.IsDefined(typeof(BreakbarState), value) ? (BreakbarState)value : BreakbarState.Unknown;
+            return value < (int)BreakbarState.Unknown ? (BreakbarState)value : BreakbarState.Unknown;
         }
 
         // Buff Formula
 
-        public enum BuffStackType : short
+        // this enum is updated regularly to match the in game enum. The matching between the two is simply cosmetic, for clarity while comparing against an updated skill defs
+        public enum BuffStackType : byte
         {
             StackingConditionalLoss = 0, // the same thing as Stacking
             Queue = 1,
-            Regeneration = 2,
-            Stacking = 3,
-            Force = 4,
-            Unknown = -1,
+            CappedDuration = 2,
+            Regeneration = 3,
+            Stacking = 4,
+            Force = 5,
+            Unknown,
         };
-        internal static BuffStackType GetBuffStackType(short bt)
+        internal static BuffStackType GetBuffStackType(byte bt)
         {
-            return Enum.IsDefined(typeof(BuffStackType), bt) ? (BuffStackType)bt : BuffStackType.Unknown;
+            return bt < (byte)BuffStackType.Unknown ? (BuffStackType)bt : BuffStackType.Unknown;
         }
 
         public enum BuffAttribute : short
@@ -180,8 +202,10 @@ namespace Gw2LogParser.Parser.Helper
             PhysRec = 16,
             CondRec = 17,
             AttackSpeed = 18,
+            //SiphonInc = 19,
+            SiphonRec = 20,
             //
-            Unknown = short.MinValue,
+            Unknown = short.MaxValue,
             //
             /*ConditionDurationIncrease = 24,
             RetaliationDamageOutput = 25,
@@ -205,28 +229,32 @@ namespace Gw2LogParser.Parser.Helper
             MagicFind = 92,
             ExperienceFromAll = 100,
             WXP = 112,*/
-            ConditionDurationIncrease = -1,
-            BuffPowerDamageFormula = -2,
+            // Custom Ids, matched using a very simple pattern detection, see BuffInfoSolver.cs
+            ConditionDurationInc = -1,
+            DamageFormulaSquaredLevel = -2,
             CriticalChance = -3,
-            PowerDamageToHP = -4,
+            StrikeDamageToHP = -4,
             ConditionDamageToHP = -5,
             GlancingBlow = -6,
-            ConditionSkillActivationFormula = -7,
-            ConditionDamageFormula = -8,
-            ConditionMovementActivationFormula = -9,
+            SkillActivationDamageFormula = -7,
+            DamageFormula = -8,
+            MovementActivationDamageFormula = -9,
             EnduranceRegeneration = -10,
-            IncomingHealingEffectiveness = -11,
-            OutgoingHealingEffectivenessFlatInc = -12,
-            OutgoingHealingEffectivenessConvInc = -13,
+            HealingEffectivenessRec = -11,
+            HealingEffectivenessFlatInc = -12,
+            HealingEffectivenessConvInc = -13,
             HealingOutputFormula = -14,
             ExperienceFromKills = -15,
             GoldFind = -16,
             MovementSpeed = -17,
             KarmaBonus = -18,
-            SkillCooldownReduction = -19,
+            SkillRechargeSpeedIncrease = -19,
             MagicFind = -20,
             ExperienceFromAll = -21,
             WXP = -22,
+            SiphonInc = -23,
+            PhysRec2 = -24,
+            CondRec2 = -25,
         }
         internal static BuffAttribute GetBuffAttribute(short bt)
         {
@@ -244,11 +272,22 @@ namespace Gw2LogParser.Parser.Helper
             Trait = 11,
             Enhancement = 13,
             Stance = 16,
-            Unknown
+            Unknown = byte.MaxValue
         }
         internal static BuffCategory GetBuffCategory(byte bt)
         {
             return Enum.IsDefined(typeof(BuffCategory), bt) ? (BuffCategory)bt : BuffCategory.Unknown;
+        }
+        // WIP
+        public enum SkillAction : byte
+        {
+            EffectHappened = 4,
+            AnimationCompleted = 5,
+            Unknown = byte.MaxValue,
+        }
+        internal static SkillAction GetSkillAction(byte bt)
+        {
+            return Enum.IsDefined(typeof(SkillAction), bt) ? (SkillAction)bt : SkillAction.Unknown;
         }
 
         // Friend of for
@@ -263,17 +302,25 @@ namespace Gw2LogParser.Parser.Helper
 
         internal static IFF GetIFF(byte bt)
         {
-            return Enum.IsDefined(typeof(IFF), bt) ? (IFF)bt : IFF.Unknown;
+            return bt < (byte)IFF.Unknown ? (IFF)bt : IFF.Unknown;
         }
 
         // Custom ids
-        private const int TwilightCastle = -1;
+        private const int DummyTarget = -1;
         private const int HandOfErosion = -2;
         private const int HandOfEruption = -3;
         private const int PyreGuardianProtect = -4;
         private const int PyreGuardianStab = -5;
         private const int PyreGuardianRetal = -6;
         private const int QadimLamp = -7;
+        private const int AiKeeperOfThePeak2 = -8;
+        private const int MatthiasSacrifice = -9;
+        private const int BloodstoneFragment = -10;
+        private const int BloodstoneShard = -11;
+        private const int ChargedBloodstone = -12;
+        private const int PyreGuardianResolution = -13;
+        private const int CASword = -14;
+        private const int SubArtsariiv = -15;
 
 
         //
@@ -323,6 +370,7 @@ namespace Gw2LogParser.Parser.Helper
             IcePatch = 16139,
             Storm = 16108,
             Tornado = 16068,
+            MatthiasSacrificeCrystal = MatthiasSacrifice,
             // KC
             Olson = 16244,
             Engul = 16274,
@@ -343,8 +391,9 @@ namespace Gw2LogParser.Parser.Helper
             HauntingStatue = 16247,
             //CastleFountain = 32951,
             // Xera
-            ChargedBloodstone = 8267,
-            BloodstoneFragment = 40724,
+            BloodstoneShard = ArcDPSEnums.BloodstoneShard,
+            ChargedBloodstone = ArcDPSEnums.ChargedBloodstone,
+            BloodstoneFragment = ArcDPSEnums.BloodstoneFragment,
             XerasPhantasm = 16225,
             WhiteMantleSeeker1 = 16238,
             WhiteMantleSeeker2 = 16283,
@@ -353,7 +402,6 @@ namespace Gw2LogParser.Parser.Helper
             WhiteMantleBattleMage1 = 16221,
             WhiteMantleBattleMage2 = 16226,
             ExquisiteConjunction = 16232,
-            //BloodStone Shard (Gadget)     = 13864,
             // MO
             Jade = 17181,
             // Samarog
@@ -401,6 +449,7 @@ namespace Gw2LogParser.Parser.Helper
             // CA
             ConjuredGreatsword = 21255,
             ConjuredShield = 21170,
+            ConjuredPlayerSword = CASword,
             // Qadim
             LavaElemental1 = 21236,
             LavaElemental2 = 21078,
@@ -411,6 +460,7 @@ namespace Gw2LogParser.Parser.Helper
             FireImp = 21100,
             PyreGuardian = 21050,
             PyreGuardianRetal = ArcDPSEnums.PyreGuardianRetal,
+            PyreGuardianResolution = ArcDPSEnums.PyreGuardianResolution,
             PyreGuardianProtect = ArcDPSEnums.PyreGuardianProtect,
             PyreGuardianStab = ArcDPSEnums.PyreGuardianStab,
             ReaperofFlesh = 21218,
@@ -492,9 +542,10 @@ namespace Gw2LogParser.Parser.Helper
             // Artsariiv
             TemporalAnomaly = 17870,
             Spark = 17630,
-            Artsariiv1 = 17811, // tiny adds
-            Artsariiv2 = 17694, // small adds
-            Artsariiv3 = 17937, // big adds
+            SmallArtsariiv = 17811, // tiny adds
+            MediumArtsariiv = 17694, // small adds
+            BigArtsariiv = 17937, // big adds
+            CloneArtsariiv = SubArtsariiv, // clone adds
             // Arkk
             TemporalAnomaly2 = 17720,
             Archdiviner = 17893,
@@ -505,8 +556,18 @@ namespace Gw2LogParser.Parser.Helper
             DOC = 16657,
             CHOP = 16552,
             ProjectionArkk = 17613,
+            // Ai
+            EnrageWaterSprite = 23270,
+            SorrowDemon1 = 23265,
+            SorrowDemon2 = 23242,
+            SorrowDemon3 = 23279,
+            SorrowDemon4 = 23245,
+            SorrowDemon5 = 23256,
+            DoubtDemon = 23268,
+            FearDemon = 23264,
+            GuiltDemon = 23252,
             //
-            Unknown
+            Unknown = int.MaxValue,
         };
         public static TrashID GetTrashID(int id)
         {
@@ -516,7 +577,7 @@ namespace Gw2LogParser.Parser.Helper
         public enum TargetID : int
         {
             WorldVersusWorld = 1,
-            TwistedCastle = TwilightCastle,
+            DummyTarget = ArcDPSEnums.DummyTarget,
             // Raid
             ValeGuardian = 15438,
             Gorseval = 15429,
@@ -567,96 +628,25 @@ namespace Gw2LogParser.Parser.Helper
             Skorvald = 17632,
             Artsariiv = 17949,
             Arkk = 17759,
+            AiKeeperOfThePeak = 23254,
+            AiKeeperOfThePeak2 = ArcDPSEnums.AiKeeperOfThePeak2,
             // Golems
-            MassiveGolem = 16202,
+            MassiveGolem10M = 16169,
+            MassiveGolem4M = 16202,
+            MassiveGolem1M = 16178,
+            VitalGolem = 16198,
             AvgGolem = 16177,
+            StdGolem = 16199,
             LGolem = 19676,
             MedGolem = 19645,
-            StdGolem = 16199,
+            ConditionGolem = 16174,
+            PowerGolem = 16176,
             //
-            Unknown
+            Unknown = int.MaxValue,
         };
         public static TargetID GetTargetID(int id)
         {
             return Enum.IsDefined(typeof(TargetID), id) ? (TargetID)id : TargetID.Unknown;
-        }
-
-    }
-
-    public static class PhysicalResultExtensions
-    {
-        public static bool IsHit(this ArcDPSEnums.PhysicalResult result)
-        {
-            return result == ArcDPSEnums.PhysicalResult.Normal || result == ArcDPSEnums.PhysicalResult.Crit || result == ArcDPSEnums.PhysicalResult.Glance || result == ArcDPSEnums.PhysicalResult.KillingBlow; //Downed and Interrupt omitted for now due to double procing mechanics || result == ParseEnum.Result.Downed || result == ParseEnum.Result.Interrupt; 
-        }
-    }
-
-    public static class ConditionResultExtensions
-    {
-        public static bool IsHit(this ArcDPSEnums.ConditionResult result)
-        {
-            return result == ArcDPSEnums.ConditionResult.ExpectedToHit;
-        }
-    }
-
-    public static class SpanwExtensions
-    {
-        public static bool IsSpawn(this ArcDPSEnums.StateChange state)
-        {
-            return state == ArcDPSEnums.StateChange.None || state == ArcDPSEnums.StateChange.Position || state == ArcDPSEnums.StateChange.Velocity || state == ArcDPSEnums.StateChange.Rotation || state == ArcDPSEnums.StateChange.MaxHealthUpdate || state == ArcDPSEnums.StateChange.Spawn || state == ArcDPSEnums.StateChange.TeamChange;
-        }
-    }
-
-    public static class StateChangeAgentExtensions
-    {
-        public static bool SrcIsAgent(this ArcDPSEnums.StateChange state)
-        {
-            return state == ArcDPSEnums.StateChange.None || state == ArcDPSEnums.StateChange.EnterCombat
-                || state == ArcDPSEnums.StateChange.ExitCombat || state == ArcDPSEnums.StateChange.ChangeUp
-                || state == ArcDPSEnums.StateChange.ChangeDead || state == ArcDPSEnums.StateChange.ChangeDown
-                || state == ArcDPSEnums.StateChange.Spawn || state == ArcDPSEnums.StateChange.Despawn
-                || state == ArcDPSEnums.StateChange.HealthUpdate || state == ArcDPSEnums.StateChange.WeaponSwap
-                || state == ArcDPSEnums.StateChange.MaxHealthUpdate || state == ArcDPSEnums.StateChange.PointOfView
-                || state == ArcDPSEnums.StateChange.BuffInitial || state == ArcDPSEnums.StateChange.Position
-                || state == ArcDPSEnums.StateChange.Velocity || state == ArcDPSEnums.StateChange.Rotation
-                || state == ArcDPSEnums.StateChange.TeamChange || state == ArcDPSEnums.StateChange.AttackTarget
-                || state == ArcDPSEnums.StateChange.Targetable || state == ArcDPSEnums.StateChange.StackActive
-                || state == ArcDPSEnums.StateChange.StackReset || state == ArcDPSEnums.StateChange.BreakbarState
-                || state == ArcDPSEnums.StateChange.BreakbarPercent;
-        }
-
-        public static bool DstIsAgent(this ArcDPSEnums.StateChange state)
-        {
-            return state == ArcDPSEnums.StateChange.None || state == ArcDPSEnums.StateChange.AttackTarget;
-        }
-
-        public static bool HasTime(this ArcDPSEnums.StateChange state)
-        {
-            return state == ArcDPSEnums.StateChange.None || state == ArcDPSEnums.StateChange.EnterCombat
-                || state == ArcDPSEnums.StateChange.ExitCombat || state == ArcDPSEnums.StateChange.ChangeUp
-                || state == ArcDPSEnums.StateChange.ChangeDead || state == ArcDPSEnums.StateChange.ChangeDown
-                || state == ArcDPSEnums.StateChange.Spawn || state == ArcDPSEnums.StateChange.Despawn
-                || state == ArcDPSEnums.StateChange.HealthUpdate || state == ArcDPSEnums.StateChange.WeaponSwap
-                || state == ArcDPSEnums.StateChange.MaxHealthUpdate || state == ArcDPSEnums.StateChange.BuffInitial
-                || state == ArcDPSEnums.StateChange.Position || state == ArcDPSEnums.StateChange.Velocity
-                || state == ArcDPSEnums.StateChange.Rotation || state == ArcDPSEnums.StateChange.TeamChange
-                || state == ArcDPSEnums.StateChange.AttackTarget || state == ArcDPSEnums.StateChange.Targetable
-                || state == ArcDPSEnums.StateChange.StackActive || state == ArcDPSEnums.StateChange.StackReset
-                || state == ArcDPSEnums.StateChange.Reward || state == ArcDPSEnums.StateChange.BreakbarState
-                || state == ArcDPSEnums.StateChange.BreakbarPercent;
-        }
-    }
-
-    public static class ActivationExtensions
-    {
-        public static bool StartCasting(this ArcDPSEnums.Activation activation)
-        {
-            return activation == ArcDPSEnums.Activation.Normal || activation == ArcDPSEnums.Activation.Quickness;
-        }
-
-        public static bool EndCasting(this ArcDPSEnums.Activation activation)
-        {
-            return activation == ArcDPSEnums.Activation.CancelFire || activation == ArcDPSEnums.Activation.Reset || activation == ArcDPSEnums.Activation.CancelCancel;
         }
     }
 }

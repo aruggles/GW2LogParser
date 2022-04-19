@@ -25,6 +25,10 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
 
         public bool Intersect(long start, long end)
         {
+            if (Start == End)
+            {
+                return false;
+            }
             long maxStart = Math.Max(start, Start);
             long minEnd = Math.Min(end, End);
             return minEnd - maxStart >= 0;
@@ -53,7 +57,7 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
             }
             res.Add(new Segment(res.Last().End, max, lastValue));
             res.RemoveAll(x => x.Start == x.End);
-            return Segment.FuseSegments(res);
+            return FuseSegments(res);
         }
 
 

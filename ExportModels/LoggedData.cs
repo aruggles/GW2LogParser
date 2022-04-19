@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels
 {
-    public class LoggedData
+    internal class LoggedData
     {
         public List<LoggedPlayer> Players { get; } = new List<LoggedPlayer>();
         public List<LoggedPhase> Phases { get; } = new List<LoggedPhase>();

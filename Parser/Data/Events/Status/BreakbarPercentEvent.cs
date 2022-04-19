@@ -18,6 +18,10 @@ namespace Gw2LogParser.Parser.Data.Events.Status
                 bytes[offset++] = bt;
             }
             BreakbarPercent = Math.Round(100.0 * BitConverter.ToSingle(bytes, 0), 2);
+            if (BreakbarPercent > 100.0)
+            {
+                BreakbarPercent = 100;
+            }
         }
 
         public (long start, double value) ToState()

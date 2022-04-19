@@ -6,9 +6,9 @@ using Gw2LogParser.Parser.Data.El.DamageModifiers;
 using Gw2LogParser.Parser.Data.El.Mechanics;
 using Gw2LogParser.Parser.Data.El.Statistics;
 using Gw2LogParser.Parser.Data.Skills;
+using Gw2LogParser.Parser.Extensions;
 using Gw2LogParser.Parser.Helper;
 using Gw2LogParser.Parser.Logic;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,26 +22,27 @@ namespace Gw2LogParser.Parser.Data
         public AgentData AgentData { get; }
         public SkillData SkillData { get; }
         public CombatData CombatData { get; }
-        public List<Player> PlayerList { get; }
-        public HashSet<Agent> PlayerAgents { get; }
+        public IReadOnlyList<Player> PlayerList { get; }
+        public IReadOnlyList<AbstractSingleActor> Friendlies { get; }
+        public IReadOnlyCollection<Agent> PlayerAgents { get; }
+        public IReadOnlyCollection<Agent> FriendlyAgents { get; }
         public bool IsBenchmarkMode => FightData.Logic.Mode == FightLogic.ParseMode.Benchmark;
-        public Dictionary<string, List<Player>> PlayerListBySpec { get; }
+        public IReadOnlyDictionary<ParserHelper.Spec, List<AbstractSingleActor>> FriendliesListBySpec { get; }
         public DamageModifiersContainer DamageModifiers { get; }
         public BuffsContainer Buffs { get; }
         public ParserSettings ParserSettings { get; }
         public bool CanCombatReplay => ParserSettings.ParseCombatReplay && CombatData.HasMovementData;
 
         public MechanicData MechanicData { get; }
-        public GeneralStatistics Statistics { get; }
+        public StatisticsHelper StatisticsHelper { get; }
 
         private readonly ParserController _operation;
 
         private Dictionary<Agent, AbstractSingleActor> _agentToActorDictionary;
-        public Version ParserVersion => _operation.ParserVersion;
         public FileInfo evctFile { get; set; }
 
-        public ParsedLog(string buildVersion, FightData fightData, AgentData agentData, SkillData skillData,
-                List<Combat> combatItems, List<Player> playerList, long evtcLogDuration, ParserSettings parserSettings, ParserController operation)
+        public ParsedLog(int evtcVersion, FightData fightData, AgentData agentData, SkillData skillData,
+                List<Combat> combatItems, List<Player> playerList, List<AbstractSingleActor> friendlies, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions, long evtcLogDuration, ParserSettings parserSettings, ParserController operation)
         {
             FightData = fightData;
             AgentData = agentData;
@@ -49,35 +50,35 @@ namespace Gw2LogParser.Parser.Data
             PlayerList = playerList;
             ParserSettings = parserSettings;
             _operation = operation;
+            Friendlies = friendlies;
             //
-            PlayerListBySpec = playerList.GroupBy(x => x.Prof).ToDictionary(x => x.Key, x => x.ToList());
+            FriendliesListBySpec = friendlies.GroupBy(x => x.Spec).ToDictionary(x => x.Key, x => x.ToList());
             PlayerAgents = new HashSet<Agent>(playerList.Select(x => x.AgentItem));
+            FriendlyAgents = new HashSet<Agent>(friendlies.Select(x => x.AgentItem));
             _operation.UpdateProgressWithCancellationCheck("Creating GW2EI Combat Events");
-            CombatData = new CombatData(combatItems, FightData, AgentData, SkillData, playerList, operation);
-            _operation.UpdateProgressWithCancellationCheck("Creating GW2EI Log Meta Data");
-            LogData = new LogData(buildVersion, CombatData, evtcLogDuration, playerList, operation);
+            CombatData = new CombatData(combatItems, FightData, AgentData, SkillData, playerList, operation, extensions, evtcVersion);
             //
             _operation.UpdateProgressWithCancellationCheck("Checking Success");
             FightData.Logic.CheckSuccess(CombatData, AgentData, FightData, PlayerAgents);
-            if (FightData.FightEnd <= 2200)
+            if (FightData.FightDuration <= ParserSettings.TooShortLimit)
             {
-                throw new TooShortException();
+                throw new TooShortException(FightData.FightDuration, ParserSettings.TooShortLimit);
             }
             if (ParserSettings.SkipFailedTries && !FightData.Success)
             {
                 throw new SkipException();
             }
-            _operation.UpdateProgressWithCancellationCheck("Checking CM");
-            FightData.SetCM(CombatData, AgentData, FightData);
+            _operation.UpdateProgressWithCancellationCheck("Creating GW2EI Log Meta Data");
+            LogData = new LogData(evtcVersion, CombatData, evtcLogDuration, playerList, extensions, operation);
             //
             _operation.UpdateProgressWithCancellationCheck("Creating Buff Container");
             Buffs = new BuffsContainer(LogData.GW2Build, CombatData, operation);
             _operation.UpdateProgressWithCancellationCheck("Creating Damage Modifier Container");
-            DamageModifiers = new DamageModifiersContainer(LogData.GW2Build, fightData.Logic.Mode);
+            DamageModifiers = new DamageModifiersContainer(LogData.GW2Build, fightData.Logic.Mode, parserSettings);
             _operation.UpdateProgressWithCancellationCheck("Creating Mechanic Data");
             MechanicData = FightData.Logic.GetMechanicData();
             _operation.UpdateProgressWithCancellationCheck("Creating General Statistics Container");
-            Statistics = new GeneralStatistics(CombatData, PlayerList, Buffs);
+            StatisticsHelper = new StatisticsHelper(CombatData, PlayerList, Buffs);
         }
 
         public void UpdateProgressWithCancellationCheck(string status)
@@ -88,13 +89,13 @@ namespace Gw2LogParser.Parser.Data
         private void AddToDictionary(AbstractSingleActor actor)
         {
             _agentToActorDictionary[actor.AgentItem] = actor;
-            foreach (Minions minions in actor.GetMinions(this).Values)
+            /*foreach (Minions minions in actor.GetMinions(this).Values)
             {
                 foreach (NPC npc in minions.MinionList)
                 {
                     AddToDictionary(npc);
                 }
-            }
+            }*/
         }
 
         private void InitActorDictionaries()
@@ -103,11 +104,11 @@ namespace Gw2LogParser.Parser.Data
             {
                 _operation.UpdateProgressWithCancellationCheck("Initializing Actor dictionary");
                 _agentToActorDictionary = new Dictionary<Agent, AbstractSingleActor>();
-                foreach (Player p in PlayerList)
+                foreach (AbstractSingleActor p in Friendlies)
                 {
                     AddToDictionary(p);
                 }
-                foreach (NPC npc in FightData.Logic.Targets)
+                foreach (AbstractSingleActor npc in FightData.Logic.Targets)
                 {
                     AddToDictionary(npc);
                 }
@@ -122,24 +123,28 @@ namespace Gw2LogParser.Parser.Data
         /// <summary>
         /// Find the corresponding actor, creates one otherwise
         /// </summary>
-        /// <param name="a"></param>
+        /// <param name="agentItem"><see cref="AgentItem"/> to find an <see cref="AbstractSingleActor"/> for</param>
+        /// <param name="excludePlayers">returns null if true and agentItem is a player or has a player master</param>
         /// <returns></returns>
-        public AbstractSingleActor FindActor(Agent a, bool searchPlayers)
+        public AbstractSingleActor FindActor(Agent agentItem, bool excludePlayers = false)
         {
-            if (a == null || (!searchPlayers && a.Type == Agent.AgentType.Player))
+            if (agentItem == null || (excludePlayers && agentItem.GetFinalMaster().Type == Agent.AgentType.Player))
             {
                 return null;
             }
             InitActorDictionaries();
-            if (!_agentToActorDictionary.TryGetValue(a, out AbstractSingleActor actor))
+            if (!_agentToActorDictionary.TryGetValue(agentItem, out AbstractSingleActor actor))
             {
-                actor = new NPC(a);
-                _agentToActorDictionary[a] = actor;
-                //throw new InvalidOperationException("Requested actor with id " + a.ID + " and name " + a.Name + " is missing");
-            }
-            if (a.Master != null && !searchPlayers && a.Master.Type == Agent.AgentType.Player)
-            {
-                return null;
+                if (agentItem.Type == Agent.AgentType.NonSquadPlayer)
+                {
+                    actor = new PlayerNonSquad(agentItem);
+                }
+                else
+                {
+                    actor = new NPC(agentItem);
+                }
+                _agentToActorDictionary[agentItem] = actor;
+                //throw new EIException("Requested actor with id " + a.ID + " and name " + a.Name + " is missing");
             }
             return actor;
         }

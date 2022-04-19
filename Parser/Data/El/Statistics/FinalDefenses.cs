@@ -1,6 +1,6 @@
 ﻿using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Data.Events.Damage;
-using Gw2LogParser.Parser.Data.Skills;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,6 +10,7 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
     {
         //public long allHealReceived;
         public long DamageTaken { get; }
+        public double BreakbarDamageTaken { get; }
         public int BlockedCount { get; }
         public int MissedCount { get; }
         public int EvadedCount { get; }
@@ -18,18 +19,17 @@ namespace Gw2LogParser.Parser.Data.El.Statistics
         public int DamageBarrier { get; }
         public int InterruptedCount { get; }
 
-        internal FinalDefenses(ParsedLog log, PhaseData phase, AbstractSingleActor actor, AbstractSingleActor from)
+        internal FinalDefenses(ParsedLog log, long start, long end, AbstractSingleActor actor, AbstractSingleActor from)
         {
-            long start = phase.Start;
-            long end = phase.End;
-            List<AbstractDamageEvent> damageLogs = actor.GetDamageTakenLogs(from, log, start, end);
+            IReadOnlyList<AbstractHealthDamageEvent> damageLogs = actor.GetDamageTakenEvents(from, log, start, end);
 
-            DamageTaken = damageLogs.Sum(x => (long)x.Damage);
+            DamageTaken = damageLogs.Sum(x => (long)x.HealthDamage);
+            BreakbarDamageTaken = Math.Round(actor.GetBreakbarDamageTakenEvents(from, log, start, end).Sum(x => x.BreakbarDamage), 1);
             BlockedCount = damageLogs.Count(x => x.IsBlocked);
             MissedCount = damageLogs.Count(x => x.IsBlind);
             InvulnedCount = damageLogs.Count(x => x.IsAbsorbed);
             EvadedCount = damageLogs.Count(x => x.IsEvaded);
-            DodgeCount = actor.GetCastLogs(log, start, end).Count(x => x.SkillId == Skill.DodgeId || x.SkillId == Skill.MirageCloakDodgeId);
+            DodgeCount = actor.GetCastEvents(log, start, end).Count(x => x.Skill.IsDodge);
             DamageBarrier = damageLogs.Sum(x => x.ShieldDamage);
             InterruptedCount = damageLogs.Count(x => x.HasInterrupted);
         }

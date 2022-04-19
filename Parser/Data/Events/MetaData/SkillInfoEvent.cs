@@ -1,9 +1,7 @@
 ﻿using Gw2LogParser.Parser.Helper;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace Gw2LogParser.Parser.Data.Events.MetaData
 {
@@ -42,7 +40,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                     BuildFromSkillInfo(evtcItem);
                     break;
                 default:
-                    throw new InvalidOperationException("Invalid combat event in BuffDataEvent complete method");
+                    throw new InvalidDataException("Invalid combat event in BuffDataEvent complete method");
             }
         }
 

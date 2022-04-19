@@ -24,12 +24,16 @@ namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
         public override List<InstantCastEvent> ComputeInstantCast(CombatData combatData, SkillData skillData, AgentData agentData)
         {
             var res = new List<InstantCastEvent>();
-            var applies = combatData.GetBuffData(BuffID).OfType<BuffApplyEvent>().GroupBy(x => x.By).ToDictionary(x => x.Key, x => x.ToList());
+            var applies = combatData.GetBuffData(BuffID).OfType<BuffApplyEvent>().GroupBy(x => x.CreditedBy).ToDictionary(x => x.Key, x => x.ToList());
             foreach (KeyValuePair<Agent, List<BuffApplyEvent>> pair in applies)
             {
                 long lastTime = int.MinValue;
                 foreach (BuffApplyEvent bae in pair.Value)
                 {
+                    if (bae.Initial)
+                    {
+                        continue;
+                    }
                     if (bae.Time - lastTime < ICD)
                     {
                         lastTime = bae.Time;
@@ -40,13 +44,13 @@ namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
                         if (_triggerCondition(bae, combatData))
                         {
                             lastTime = bae.Time;
-                            res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), bae.By));
+                            res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), bae.CreditedBy));
                         }
                     }
                     else
                     {
                         lastTime = bae.Time;
-                        res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), bae.By));
+                        res.Add(new InstantCastEvent(bae.Time, skillData.Get(SkillID), bae.CreditedBy));
                     }
                 }
             }

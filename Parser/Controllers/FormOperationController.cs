@@ -33,7 +33,7 @@ namespace Gw2LogParser.Parser
         /// </summary>
         public OperationState State { get; protected set; }
 
-        public FormOperationController(Version parserVersion, string location, string status, DataGridView dgv) : base(parserVersion, location, status)
+        public FormOperationController(string location, string status, DataGridView dgv) : base(location, status)
         {
             ButtonText = "Parse";
             State = OperationState.Ready;

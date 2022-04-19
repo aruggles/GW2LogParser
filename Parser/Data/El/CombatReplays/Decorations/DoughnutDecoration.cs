@@ -14,9 +14,9 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
         }
         //
 
-        public override GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log)
+        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log)
         {
-            return new DoughnutDecorationSerializable(log, this, map);
+            return new DoughnutDecorationCombatReplayDescription(log, this, map);
         }
 
     }

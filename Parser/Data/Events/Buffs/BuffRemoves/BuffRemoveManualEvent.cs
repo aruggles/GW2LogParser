@@ -1,7 +1,6 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
 using Gw2LogParser.Parser.Data.El.Simulator;
 using Gw2LogParser.Parser.Data.Skills;
-using System;
 
 namespace Gw2LogParser.Parser.Data.Events.Buffs.BuffRemoves
 {
@@ -22,10 +21,6 @@ namespace Gw2LogParser.Parser.Data.Events.Buffs.BuffRemoves
 
         internal override void UpdateSimulator(AbstractBuffSimulator simulator)
         {
-        }
-        internal override int CompareTo(AbstractBuffEvent abe)
-        {
-            throw new InvalidOperationException("Manual removes can't be sorted");
         }
     }
 }

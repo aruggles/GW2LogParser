@@ -12,10 +12,11 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
             Height = height;
             Width = width;
         }
+        //
 
-        public override GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log)
+        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log)
         {
-            return new RectangleDecorationSerializable(log, this, map);
+            return new RectangleDecorationCombatReplayDescription(log, this, map);
         }
     }
 }

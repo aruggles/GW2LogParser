@@ -24,6 +24,27 @@ namespace Gw2LogParser.ExportModels.Report
         public int Glance { get; set; }
         public float Wasted { get; set; }
         public float Saved { get; set; }
+        public double CritPercent
+        {
+            get
+            {
+                return (Hits == 0) ? 0 : ((double)Crit / (double)Hits) * 100.0;
+            }
+        }
+        public double FlankPercent
+        {
+            get
+            {
+                return (Hits == 0) ? 0 : ((double)Flank / (double)Hits) * 100.0;
+            }
+        }
+        public double GlancePercent
+        {
+            get
+            {
+                return (Hits == 0) ? 0 : ((double)Glance / (double)Hits) * 100.0;
+            }
+        }
 
         public SummaryItem() { }
         public SummaryItem(SummaryItem other)

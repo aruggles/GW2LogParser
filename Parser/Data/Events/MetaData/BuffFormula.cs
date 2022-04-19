@@ -34,39 +34,51 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                     return "Armor";
                 case Agony:
                     return "Agony";
+                case StatInc:
+                    return "Stat Increase";
+                case FlatInc:
+                    return "Flat Increase";
                 case PhysInc:
-                    return "Outgoing Physical Damage";
+                    return "Outgoing Strike Damage";
                 case CondInc:
                     return "Outgoing Condition Damage";
+                case SiphonInc:
+                    return "Outgoing Life Leech Damage";
+                case SiphonRec:
+                    return "Incoming Life Leech Damage";
                 case CondRec:
                     return "Incoming Condition Damage";
+                case CondRec2:
+                    return "Incoming Condition Damage (Mult)";
                 case PhysRec:
-                    return "Incoming Physical Damage";
+                    return "Incoming Strike Damage";
+                case PhysRec2:
+                    return "Incoming Strike Damage (Mult)";
                 case AttackSpeed:
                     return "Attack Speed";
-                case ConditionDurationIncrease:
-                    return "Condition Duration Increase";
-                case BuffPowerDamageFormula:
-                case ConditionDamageFormula:
+                case ConditionDurationInc:
+                    return "Outgoing Condition Duration";
+                case DamageFormulaSquaredLevel:
+                case DamageFormula:
                     return "Damage Formula";
                 case GlancingBlow:
                     return "Glancing Blow";
                 case CriticalChance:
                     return "Critical Chance";
-                case PowerDamageToHP:
-                    return "Physical Damage to Health";
+                case StrikeDamageToHP:
+                    return "Strike Damage to Health";
                 case ConditionDamageToHP:
                     return "Condition Damage to Health";
-                case ConditionSkillActivationFormula:
+                case SkillActivationDamageFormula:
                     return "Damage Formula on Skill Activation";
-                case ConditionMovementActivationFormula:
-                    return "Damage Formula on Movement";
+                case MovementActivationDamageFormula:
+                    return "Damage Formula based on Movement";
                 case EnduranceRegeneration:
                     return "Endurance Regeneration";
-                case IncomingHealingEffectiveness:
+                case HealingEffectivenessRec:
                     return "Incoming Healing Effectiveness";
-                case OutgoingHealingEffectivenessConvInc:
-                case OutgoingHealingEffectivenessFlatInc:
+                case HealingEffectivenessConvInc:
+                case HealingEffectivenessFlatInc:
                     return "Outgoing Healing Effectiveness";
                 case HealingOutputFormula:
                     return "Healing Formula";
@@ -80,8 +92,8 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                     return "Movement Speed";
                 case KarmaBonus:
                     return "Karma Bonus";
-                case SkillCooldownReduction:
-                    return "Skill Cooldown Reduction";
+                case SkillRechargeSpeedIncrease:
+                    return "Skill Recharge Speed Increase";
                 case MagicFind:
                     return "Magic Find";
                 case WXP:
@@ -93,16 +105,15 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             }
         }
 
-        private static string GetVariableStat(ArcDPSEnums.BuffAttribute attribute)
+        private static string GetVariableStat(ArcDPSEnums.BuffAttribute attribute, int type)
         {
             switch (attribute)
             {
-                case BuffPowerDamageFormula:
-                    return "Power";
-                case ConditionDamageFormula:
-                case ConditionSkillActivationFormula:
-                case ConditionMovementActivationFormula:
-                    return "Condition Damage";
+                case DamageFormulaSquaredLevel:
+                case DamageFormula:
+                case SkillActivationDamageFormula:
+                case MovementActivationDamageFormula:
+                    return type > 10 ? "Power" : "Condition Damage";
                 case HealingOutputFormula:
                     return "Healing Power";
                 case Unknown:
@@ -120,32 +131,37 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             }
             switch (attribute1)
             {
+                case FlatInc:
                 case PhysInc:
                 case CondInc:
                 case CondRec:
+                case CondRec2:
                 case PhysRec:
+                case PhysRec2:
                 case AttackSpeed:
-                case ConditionDurationIncrease:
+                case ConditionDurationInc:
                 case GlancingBlow:
                 case CriticalChance:
-                case PowerDamageToHP:
+                case StrikeDamageToHP:
                 case ConditionDamageToHP:
                 case EnduranceRegeneration:
-                case IncomingHealingEffectiveness:
-                case OutgoingHealingEffectivenessConvInc:
-                case OutgoingHealingEffectivenessFlatInc:
+                case HealingEffectivenessRec:
+                case SiphonInc:
+                case SiphonRec:
+                case HealingEffectivenessConvInc:
+                case HealingEffectivenessFlatInc:
                 case ExperienceFromKills:
                 case ExperienceFromAll:
                 case GoldFind:
                 case MovementSpeed:
                 case KarmaBonus:
-                case SkillCooldownReduction:
+                case SkillRechargeSpeedIncrease:
                 case MagicFind:
                 case WXP:
                     return "%";
-                case ConditionMovementActivationFormula:
+                case MovementActivationDamageFormula:
                     return " adds";
-                case ConditionSkillActivationFormula:
+                case SkillActivationDamageFormula:
                     return " replaces";
                 case Unknown:
                     return "Unknown";
@@ -167,6 +183,10 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
         // Effect Condition
         public int TraitSrc { get; }
         public int TraitSelf { get; }
+        public int BuffSrc { get; }
+        public int BuffSelf { get; }
+        internal long SortKey => TraitSrc + TraitSelf + BuffSrc + BuffSelf;
+        public bool IsConditional => SortKey > 0;
         // Meta data
         private bool Npc { get; }
         private bool Player { get; }
@@ -178,11 +198,13 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
         private bool IsExtraNumberNone => ExtraNumberState == 0;
         private bool IsExtraNumberSomething => ExtraNumberState == 1;
 
+        private bool IsFlippedFormula => Attr1 == PhysRec2 || Attr1 == CondRec2;
+
         private string _solvedDescription = null;
 
         private readonly BuffInfoEvent _buffInfoEvent;
 
-        private int Level => (_buffInfoEvent.Category == ArcDPSEnums.BuffCategory.Food || _buffInfoEvent.Category == ArcDPSEnums.BuffCategory.Enhancement) ? 0 : (Type == 12 ? 6400 : 80);
+        private int Level => (_buffInfoEvent.Category == ArcDPSEnums.BuffCategory.Food || _buffInfoEvent.Category == ArcDPSEnums.BuffCategory.Enhancement) ? 0 : (Attr1 == DamageFormulaSquaredLevel ? 6400 : 80);
 
         internal BuffFormula(Combat evtcItem, BuffInfoEvent buffInfoEvent)
         {
@@ -190,7 +212,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             Npc = evtcItem.IsFlanking == 0;
             Player = evtcItem.IsShields == 0;
             Break = evtcItem.IsOffcycle > 0;
-            byte[] formulaBytes = new byte[8 * sizeof(float)];
+            byte[] formulaBytes = new byte[10 * sizeof(float)];
             int offset = 0;
             // 2 
             foreach (byte bt in BitConverter.GetBytes(evtcItem.Time))
@@ -217,8 +239,28 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             {
                 formulaBytes[offset++] = bt;
             }
+            // 0.5
+            foreach (byte bt in BitConverter.GetBytes(evtcItem.SrcInstid))
+            {
+                formulaBytes[offset++] = bt;
+            }
+            // 0.5
+            foreach (byte bt in BitConverter.GetBytes(evtcItem.DstInstid))
+            {
+                formulaBytes[offset++] = bt;
+            }
+            // 0.5
+            foreach (byte bt in BitConverter.GetBytes(evtcItem.SrcMasterInstid))
+            {
+                formulaBytes[offset++] = bt;
+            }
+            // 0.5
+            foreach (byte bt in BitConverter.GetBytes(evtcItem.DstMasterInstid))
+            {
+                formulaBytes[offset++] = bt;
+            }
             //
-            float[] formulaFloats = new float[8];
+            float[] formulaFloats = new float[10];
             Buffer.BlockCopy(formulaBytes, 0, formulaFloats, 0, formulaBytes.Length);
             //
             Type = (int)formulaFloats[0];
@@ -231,6 +273,8 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             Variable = formulaFloats[5];
             TraitSrc = (int)formulaFloats[6];
             TraitSelf = (int)formulaFloats[7];
+            BuffSrc = (int)formulaFloats[8];
+            BuffSelf = (int)formulaFloats[9];
             ExtraNumber = evtcItem.OverstackValue;
             ExtraNumberState = evtcItem.Pad1;
         }
@@ -247,7 +291,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             }
         }
 
-        public string GetDescription(bool authorizeUnknowns, Dictionary<long, Buff> buffsByIds)
+        public string GetDescription(bool authorizeUnknowns, IReadOnlyDictionary<long, Buff> buffsByIds)
         {
             if (!authorizeUnknowns && (Attr1 == Unknown || Attr2 == Unknown))
             {
@@ -262,7 +306,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             {
                 return _solvedDescription;
             }
-            var stat1 = GetAttributeString(Attr1);
+            string stat1 = GetAttributeString(Attr1);
             if (Attr1 == Unknown)
             {
                 stat1 += " " + ByteAttr1;
@@ -274,19 +318,27 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                     stat1 += " (" + buff.Name + ")";
                 }
             }
-            var stat2 = GetAttributeString(Attr2);
+            string stat2 = GetAttributeString(Attr2);
             if (Attr2 == Unknown)
             {
                 stat2 += " " + ByteAttr2;
             }
             _solvedDescription += stat1;
+            double variable = Math.Round(Variable, 6);
+            double totalOffset = Math.Round(Level * LevelOffset + ConstantOffset, 6);
+            bool addParenthesis = totalOffset != 0 && Variable != 0;
             if (Attr2 != None)
             {
                 _solvedDescription += " from " + stat2;
+                totalOffset *= 100.0;
+                variable *= 100.0;
+            }
+            if (IsFlippedFormula)
+            {
+                variable = variable - 100.0;
+                totalOffset = totalOffset - 100.0;
             }
             _solvedDescription += ": ";
-            double totalOffset = Math.Round(Level * LevelOffset + ConstantOffset, 4);
-            bool addParenthesis = totalOffset != 0 && Variable != 0;
             if (addParenthesis)
             {
                 _solvedDescription += "(";
@@ -294,7 +346,7 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             bool prefix = false;
             if (Variable != 0)
             {
-                _solvedDescription += Variable + " * " + GetVariableStat(Attr1);
+                _solvedDescription += variable + " * " + GetVariableStat(Attr1, Type);
                 prefix = true;
             }
             if (totalOffset != 0)
@@ -313,6 +365,22 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
             if (!Npc && Player)
             {
                 _solvedDescription += ", on Players";
+            }
+            if (TraitSelf > 0)
+            {
+                _solvedDescription += ", using " + TraitSelf;
+            }
+            if (TraitSrc > 0)
+            {
+                _solvedDescription += ", source using " + TraitSrc;
+            }
+            if (BuffSelf > 0)
+            {
+                _solvedDescription += ", under " + BuffSelf;
+            }
+            if (BuffSrc > 0)
+            {
+                _solvedDescription += ", source under " + BuffSrc;
             }
             return _solvedDescription;
         }

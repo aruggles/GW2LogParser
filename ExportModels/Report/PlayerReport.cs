@@ -5,10 +5,24 @@ namespace Gw2LogParser.ExportModels.Report
 {
     public class PlayerReport: IComparer<PlayerReport>
     {
+        public string Identifier
+        {
+            get
+            {
+                return Name.Replace(' ', '_').ToLower();
+            }
+        }
         public string Name { get; set; }
         public int Group { get; set; }
         public string Account { get; set; }
         public string Profession { get; set; }
+        public double DPS
+        {
+            get
+            {
+                return Math.Round(Damage.AllDamage / TimeSpan.FromMilliseconds(TimeInCombat).TotalSeconds, 0);
+            }
+        }
         public long TimeInCombat { get; set; }
         public DamageReport Damage { get; set; } = new DamageReport();
         public DefenseReport Defense { get; set; } = new DefenseReport();
@@ -21,6 +35,7 @@ namespace Gw2LogParser.ExportModels.Report
         public List<BoonInfo> BoonGenGroupStats { get; internal set; } = new List<BoonInfo>();
         public List<BoonInfo> BoonGenOGroupStats { get; internal set; } = new List<BoonInfo>();
         public List<BoonInfo> BoonGenSquadStats { get; internal set; } = new List<BoonInfo>();
+        public HealingReport healing = null;
         public int numberOfFights { get; set; } = 1;
 
         public PlayerReport()
@@ -44,11 +59,11 @@ namespace Gw2LogParser.ExportModels.Report
                 var boonInfo = new BoonInfo();
                 if (boon.Count > 1)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Uptime = Parse<double>(boon[1]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Uptime = (Parse<double>(boon[1]) * TimeInCombat);
                 } else if (boon.Count > 0)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
                 }
                 BoonStats.Add(boonInfo);
             }
@@ -61,17 +76,17 @@ namespace Gw2LogParser.ExportModels.Report
                 var boonInfo = new BoonInfo();
                 if (boon.Count > 5)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
-                    boonInfo.Extended = Parse<double>(boon[5]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
+                    boonInfo.Extended = (Parse<double>(boon[5]) * TimeInCombat);
                 } else if (boon.Count > 2)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) *  TimeInCombat);
                 }
                 else if (boon.Count > 0)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
                 }
                 BoonGenSelfStats.Add(boonInfo);
             }
@@ -84,18 +99,18 @@ namespace Gw2LogParser.ExportModels.Report
                 var boonInfo = new BoonInfo();
                 if (boon.Count > 5)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
-                    boonInfo.Extended = Parse<double>(boon[5]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
+                    boonInfo.Extended = (Parse<double>(boon[5]) * TimeInCombat);
                 }
                 else if (boon.Count > 2)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
                 }
                 else if (boon.Count > 0)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
                 }
                 BoonGenGroupStats.Add(boonInfo);
             }
@@ -108,18 +123,18 @@ namespace Gw2LogParser.ExportModels.Report
                 var boonInfo = new BoonInfo();
                 if (boon.Count > 5)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
-                    boonInfo.Extended = Parse<double>(boon[5]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
+                    boonInfo.Extended = (Parse<double>(boon[5]) * TimeInCombat);
                 }
                 else if (boon.Count > 2)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
                 }
                 else if (boon.Count > 0)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
                 }
                 BoonGenOGroupStats.Add(boonInfo);
             }
@@ -132,18 +147,18 @@ namespace Gw2LogParser.ExportModels.Report
                 var boonInfo = new BoonInfo();
                 if (boon.Count > 5)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
-                    boonInfo.Extended = Parse<double>(boon[5]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
+                    boonInfo.Extended = (Parse<double>(boon[5]) * TimeInCombat);
                 }
                 else if (boon.Count > 2)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
-                    boonInfo.Wasted = Parse<double>(boon[2]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
+                    boonInfo.Wasted = (Parse<double>(boon[2]) * TimeInCombat);
                 }
                 else if (boon.Count > 0)
                 {
-                    boonInfo.Value = Parse<double>(boon[0]);
+                    boonInfo.Value = (Parse<double>(boon[0]) * TimeInCombat);
                 }
                 BoonGenSquadStats.Add(boonInfo);
             }

@@ -32,11 +32,11 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
             foreach (AbstractBuffEvent c in log.CombatData.GetBuffData(SkillId))
             {
                 AbstractSingleActor amp = null;
-                if (c is BuffRemoveManualEvent rme && Keep(rme, log))
+                if (c is BuffRemoveAllEvent rea && Keep(rea, log))
                 {
-                    if (!regroupedMobs.TryGetValue(rme.To.ID, out amp))
+                    if (!regroupedMobs.TryGetValue(rea.To.ID, out amp))
                     {
-                        amp = log.FindActor(rme.To, false);
+                        amp = log.FindActor(rea.To, true);
                         if (amp == null)
                         {
                             continue;

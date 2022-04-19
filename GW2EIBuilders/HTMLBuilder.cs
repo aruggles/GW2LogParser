@@ -4,8 +4,9 @@ using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.El.DamageModifiers;
 using Gw2LogParser.Parser.Data.Skills;
 using Newtonsoft.Json;
-using System.Collections.Generic;
+using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace Gw2LogParser.GW2EIBuilders
@@ -16,22 +17,40 @@ namespace Gw2LogParser.GW2EIBuilders
 
         private readonly string _eiJS;
         private readonly string _eiCRJS;
+        private readonly string _eiHealingExtJS;
 
         private readonly string _scriptVersion;
         private readonly int _scriptVersionRev;
 
         private readonly ParsedLog _log;
+        private readonly Version _parserVersion;
         private readonly bool _cr;
         private readonly bool _light;
         private readonly bool _externalScripts;
+        private readonly string _externalScriptsPath;
+        private readonly string _externalScriptsCdn;
+        private readonly bool _compressJson;
 
         private readonly string[] _uploadLink;
 
-        private readonly Dictionary<long, Buff> _usedBuffs = new Dictionary<long, Buff>();
-        private readonly HashSet<DamageModifier> _usedDamageMods = new HashSet<DamageModifier>();
-        private readonly Dictionary<long, Skill> _usedSkills = new Dictionary<long, Skill>();
+        // https://point2blog.wordpress.com/2012/12/26/compressdecompress-a-string-in-c/
+        private static string CompressAndBase64(string s)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(s);
+            using (var msi = new MemoryStream(bytes))
+            {
+                using (var mso = new MemoryStream())
+                {
+                    using (var gs = new GZipStream(mso, CompressionMode.Compress))
+                    {
+                        msi.CopyTo(gs);
+                    }
+                    return Convert.ToBase64String(mso.ToArray());
+                }
+            }
+        }
 
-        public HTMLBuilder(ParsedLog log, HTMLSettings settings, HTMLAssets assets, string[] uploadString = null)
+        public HTMLBuilder(ParsedLog log, HTMLSettings settings, HTMLAssets assets, Version parserVersion, UploadResults uploadResults)
         {
             if (settings == null)
             {
@@ -39,18 +58,91 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             _eiJS = assets.EIJavascriptCode;
             _eiCRJS = assets.EICRJavascriptCode;
-            _scriptVersion = log.ParserVersion.Major + "." + log.ParserVersion.Minor;
+            _eiHealingExtJS = assets.EIHealingExtJavascriptCode;
+            _parserVersion = parserVersion;
+            _scriptVersion = parserVersion.Major + "." + parserVersion.Minor;
 #if !DEBUG
-            _scriptVersion += "." + log.ParserVersion.Build;
+            _scriptVersion += "." + parserVersion.Build;
+#else
+            _scriptVersion += "-debug";
 #endif
-            _scriptVersionRev = log.ParserVersion.Revision;
+            _scriptVersionRev = parserVersion.Revision;
             _log = log;
 
-            _uploadLink = uploadString ?? new string[] { "", "", "" };
+            _uploadLink = uploadResults.ToArray();
 
             _cr = _log.CanCombatReplay;
             _light = settings.HTMLLightTheme;
             _externalScripts = settings.ExternalHTMLScripts;
+            _externalScriptsPath = settings.ExternalHtmlScriptsPath;
+            _externalScriptsCdn = settings.ExternalHtmlScriptsCdn;
+            _compressJson = settings.CompressJson;
+        }
+
+        private (string, string) BuildAssetPaths(string path)
+        {
+            string cdn = null;
+            string external = null;
+            if (_externalScripts && !string.IsNullOrWhiteSpace(path))
+            {
+                if (!string.IsNullOrWhiteSpace(_externalScriptsCdn))
+                {
+                    cdn = (_externalScriptsCdn.EndsWith("/") && _externalScriptsCdn.Length > 1 ? _externalScriptsCdn.Substring(0, _externalScriptsCdn.Length - 1) : _externalScriptsCdn);
+                }
+                external = path;
+                // Setting: External Scripts Path
+                // overwrite jsPath (create directory) if files should be placed on different location
+                // settings.externalHtmlScriptsPath is set by the user
+                if (!string.IsNullOrWhiteSpace(_externalScriptsPath))
+                {
+                    bool validPath = false;
+
+                    if (!Directory.Exists(_externalScriptsPath))
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(_externalScriptsPath);
+                            validPath = true;
+                        }
+                        catch
+                        {
+                            // something went wrong on creating the external folder (invalid chars?)      
+                            // this will skip the saving in this path and continue with jsscript files in the root path for the report
+                            _log.UpdateProgressWithCancellationCheck("HTML Warning: can't create external script folder");
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            // Verify write access
+                            // https://stackoverflow.com/a/6371533
+                            using (FileStream fs = File.Create(
+                                   Path.Combine(
+                                       _externalScriptsPath,
+                                       "EI-" + Path.GetRandomFileName()
+                                   ),
+                                   1,
+                                   FileOptions.DeleteOnClose)
+                               )
+                            { }
+                            validPath = true;
+                        }
+                        catch
+                        {
+                            _log.UpdateProgressWithCancellationCheck("HTML Warning: can't write in external script folder");
+                            // couldn't write to directory
+                        }
+                    }
+
+                    // if the creation of the folder did not fail or the folder already exists use it to include within the report
+                    if (validPath)
+                    {
+                        external = _externalScriptsPath;
+                    }
+                }
+            }
+            return (external, cdn);
         }
 
         /// <summary>
@@ -59,53 +151,89 @@ namespace Gw2LogParser.GW2EIBuilders
         /// <param name="p"></param>
         /// <param name="phaseIndex"></param>
 
-        public void CreateHTML(StreamWriter sw, string path, LogDataDto logData)
+        public void CreateHTML(StreamWriter sw, string path)
         {
-            
             string html = Properties.Resources.tmplMain;
+            (string externalPath, string cdnPath) = BuildAssetPaths(path);
             _log.UpdateProgressWithCancellationCheck("HTML: replacing global variables");
             html = html.Replace("${bootstrapTheme}", !_light ? "slate" : "yeti");
 
             _log.UpdateProgressWithCancellationCheck("HTML: building CSS");
-            html = html.Replace("<!--${Css}-->", BuildCss(path));
+            html = html.Replace("<!--${Css}-->", BuildCss(externalPath, cdnPath));
             _log.UpdateProgressWithCancellationCheck("HTML: building JS");
-            html = html.Replace("<!--${Js}-->", BuildEIJs(path));
+            html = html.Replace("<!--${Js}-->", BuildEIJs(externalPath, cdnPath));
             _log.UpdateProgressWithCancellationCheck("HTML: building Combat Replay JS");
-            html = html.Replace("<!--${CombatReplayJS}-->", BuildCombatReplayJS(path));
+            html = html.Replace("<!--${CombatReplayJS}-->", BuildCombatReplayJS(externalPath, cdnPath));
+            html = html.Replace("<!--${HealingExtensionJS}-->", BuildHealingExtensionJS(externalPath, cdnPath));
 
-            html = html.Replace("'${logDataJson}'", ToJson(logData));
+            string json = ToJson(LogDataDto.BuildLogData(_log, _cr, _light, _parserVersion, _uploadLink));
 
-            _log.UpdateProgressWithCancellationCheck("HTML: building Graph Data");
-            html = html.Replace("'${graphDataJson}'", ToJson(ChartDataDto.BuildChartData(_log)));
+            html = html.Replace("'${logDataJson}'", _compressJson ? ("'" + CompressAndBase64(json) + "'") : json);
+            // Compression stuff
+            html = html.Replace("<!--${CompressionRequire}-->", _compressJson ? "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.10/pako.min.js\"></script>" : "");
+            html = html.Replace("<!--${CompressionUtils}-->", _compressJson ? Properties.Resources.compressionUtils : "");
 
             sw.Write(html);
             return;
         }
 
-        private string BuildCombatReplayJS(string path)
+        private static string CreateAssetFile(string externalPath, string cdnPath, string fileName, string content)
+        {
+            bool externalNull = string.IsNullOrEmpty(externalPath);
+            bool cdnNull = string.IsNullOrEmpty(cdnPath);
+            if (externalNull && cdnNull)
+            {
+                throw new InvalidDataException("Either externalPath or cdnPath must be non null");
+            }
+            string filePath = "";
+            // generate file if external is present
+            if (!externalNull)
+            {
+                filePath = Path.Combine(externalPath, fileName);
+
+                // always create file in DEBUG
+#if !DEBUG
+                // if the file already exists, skip creation
+                if (!File.Exists(filePath))
+                {
+#endif
+                try
+                {
+                    using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    using (var scriptWriter = new StreamWriter(fs, NoBOMEncodingUTF8))
+                    {
+                        scriptWriter.Write(content);
+                    }
+                }
+                catch (IOException)
+                {
+                }
+#if !DEBUG
+                }
+#endif
+            }
+            // Priority to cdn
+            if (!cdnNull)
+            {
+                filePath = cdnPath + "/" + fileName;
+            }
+            return filePath;
+        }
+
+        private string BuildCombatReplayJS(string externalPath, string cdnPath)
         {
             if (!_cr)
             {
                 return "";
             }
             string scriptContent = _eiCRJS;
-            if (_externalScripts && path != null)
+            bool externalNull = string.IsNullOrEmpty(externalPath);
+            bool cdnNull = string.IsNullOrEmpty(cdnPath);
+            if (!externalNull || !cdnNull)
             {
-                string jsFileName = "EliteInsights-CR-" + _scriptVersion + ".js";
-                string jsPath = Path.Combine(path, jsFileName);
-                try
-                {
-                    using (var fs = new FileStream(jsPath, FileMode.Create, FileAccess.Write))
-                    using (var scriptWriter = new StreamWriter(fs, NoBOMEncodingUTF8))
-                    {
-                        scriptWriter.Write(scriptContent);
-                    }
-                }
-                catch (IOException)
-                {
-                }
-                string content = "<script src=\"./" + jsFileName + "?version=" + _scriptVersionRev + "\"></script>\n";
-                return content;
+                string fileName = "EliteInsights-CR-" + _scriptVersion + ".js";
+                string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
+                return "<script src=\"" + path + "?version=" + _scriptVersionRev + "\"></script>\n";
             }
             else
             {
@@ -113,26 +241,37 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        private string BuildCss(string path)
+        private string BuildHealingExtensionJS(string externalPath, string cdnPath)
+        {
+            if (!_log.CombatData.HasEXTHealing)
+            {
+                return "";
+            }
+            string scriptContent = _eiHealingExtJS;
+            bool externalNull = string.IsNullOrEmpty(externalPath);
+            bool cdnNull = string.IsNullOrEmpty(cdnPath);
+            if (!externalNull || !cdnNull)
+            {
+                string fileName = "EliteInsights-HealingExt-" + _scriptVersion + ".js";
+                string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
+                return "<script src=\"" + path + "?version=" + _scriptVersionRev + "\"></script>\n";
+            }
+            else
+            {
+                return "<script>\r\n" + scriptContent + "\r\n</script>";
+            }
+        }
+
+        private string BuildCss(string externalPath, string cdnPath)
         {
             string scriptContent = Properties.Resources.css;
-
-            if (_externalScripts && path != null)
+            bool externalNull = string.IsNullOrEmpty(externalPath);
+            bool cdnNull = string.IsNullOrEmpty(cdnPath);
+            if (!externalNull || !cdnNull)
             {
-                string cssFilename = "EliteInsights-" + _scriptVersion + ".css";
-                string cssPath = Path.Combine(path, cssFilename);
-                try
-                {
-                    using (var fs = new FileStream(cssPath, FileMode.Create, FileAccess.Write))
-                    using (var scriptWriter = new StreamWriter(fs, NoBOMEncodingUTF8))
-                    {
-                        scriptWriter.Write(scriptContent);
-                    }
-                }
-                catch (IOException)
-                {
-                }
-                return "<link rel=\"stylesheet\" type=\"text/css\" href=\"./" + cssFilename + "?version=" + _scriptVersionRev + "\">";
+                string fileName = "EliteInsights-" + _scriptVersion + ".css";
+                string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
+                return "<link rel=\"stylesheet\" type=\"text/css\" href=\"" + path + "?version=" + _scriptVersionRev + "\">";
             }
             else
             {
@@ -140,26 +279,16 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        private string BuildEIJs(string path)
+        private string BuildEIJs(string externalPath, string cdnPath)
         {
             string scriptContent = _eiJS;
-
-            if (_externalScripts && path != null)
+            bool externalNull = string.IsNullOrEmpty(externalPath);
+            bool cdnNull = string.IsNullOrEmpty(cdnPath);
+            if (!externalNull || !cdnNull)
             {
-                string scriptFilename = "EliteInsights-" + _scriptVersion + ".js";
-                string scriptPath = Path.Combine(path, scriptFilename);
-                try
-                {
-                    using (var fs = new FileStream(scriptPath, FileMode.Create, FileAccess.Write))
-                    using (var scriptWriter = new StreamWriter(fs, NoBOMEncodingUTF8))
-                    {
-                        scriptWriter.Write(scriptContent);
-                    }
-                }
-                catch (IOException)
-                {
-                }
-                return "<script src=\"./" + scriptFilename + "?version=" + _scriptVersionRev + "\"></script>";
+                string fileName = "EliteInsights-" + _scriptVersion + ".js";
+                string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
+                return "<script src=\"" + path + "?version=" + _scriptVersionRev + "\"></script>";
             }
             else
             {
@@ -172,11 +301,11 @@ namespace Gw2LogParser.GW2EIBuilders
             var settings = new JsonSerializerSettings()
             {
                 NullValueHandling = NullValueHandling.Ignore,
-                ContractResolver = RawFormatBuilder.DefaultJsonContractResolver
+                ContractResolver = RawFormatBuilder.DefaultJsonContractResolver,
+                StringEscapeHandling = StringEscapeHandling.EscapeHtml
             };
             return JsonConvert.SerializeObject(value, settings);
         }
-
 
         internal static string GetLink(string name)
         {
@@ -240,6 +369,10 @@ namespace Gw2LogParser.GW2EIBuilders
                 case "Color-Firebrand": return "rgb(114,193,217)";
                 case "Color-Firebrand-NonBoss": return "rgb(88,147,165)";
                 case "Color-Firebrand-Total": return "rgb(62,101,113)";
+
+                case "Color-Willbender": return "rgb(114,193,217)";
+                case "Color-Willbender-NonBoss": return "rgb(88,147,165)";
+                case "Color-Willbender-Total": return "rgb(62,101,113)";
 
                 case "Color-Revenant": return "rgb(209,110,90)";
                 case "Color-Revenant-NonBoss": return "rgb(159,85,70)";
@@ -313,6 +446,10 @@ namespace Gw2LogParser.GW2EIBuilders
                 case "Color-Mirage-NonBoss": return "rgb(139,90,162)";
                 case "Color-Mirage-Total": return "rgb(96,60,111)";
 
+                case "Color-Virtuoso": return "rgb(182,121,213)";
+                case "Color-Virtuoso-NonBoss": return "rgb(139,90,162)";
+                case "Color-Virtuoso-Total": return "rgb(96,60,111)";
+
                 case "Color-Necromancer": return "rgb(82,167,111)";
                 case "Color-Necromancer-NonBoss": return "rgb(64,127,85)";
                 case "Color-Necromancer-Total": return "rgb(46,88,60)";
@@ -324,6 +461,10 @@ namespace Gw2LogParser.GW2EIBuilders
                 case "Color-Scourge": return "rgb(82,167,111)";
                 case "Color-Scourge-NonBoss": return "rgb(64,127,85)";
                 case "Color-Scourge-Total": return "rgb(46,88,60)";
+
+                case "Color-Harbinger": return "rgb(82,167,111)";
+                case "Color-Harbinger-NonBoss": return "rgb(64,127,85)";
+                case "Color-Harbinger-Total": return "rgb(46,88,60)";
 
                 case "Color-Boss": return "rgb(82,167,250)";
                 case "Color-Boss-NonBoss": return "rgb(92,177,250)";

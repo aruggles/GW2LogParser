@@ -1,5 +1,4 @@
-﻿using Gw2LogParser.Parser.Data.El.CombatReplays.Decorations.Connectors;
-
+﻿
 namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
 {
     public abstract class GenericDecoration
@@ -12,7 +11,7 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
         }
         //
 
-        public abstract GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log);
+        public abstract GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log);
 
     }
 }

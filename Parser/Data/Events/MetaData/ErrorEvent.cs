@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.Events.MetaData
 {
@@ -39,6 +35,11 @@ namespace Gw2LogParser.Parser.Data.Events.MetaData
                 bytes[offset++] = bt;
             }
             Message = System.Text.Encoding.UTF8.GetString(bytes);
+        }
+
+        internal ErrorEvent(string message)
+        {
+            Message = message;
         }
     }
 }

@@ -3,8 +3,8 @@ using Gw2LogParser.Parser.Data.El.Buffs.BuffSourceFinders;
 using Gw2LogParser.Parser.Data.El.Professions;
 using Gw2LogParser.Parser.Data.Events.MetaData;
 using Gw2LogParser.Parser.Helper;
-using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using static Gw2LogParser.Parser.Data.El.Buffs.Buff;
 using static Gw2LogParser.Parser.Helper.ArcDPSEnums;
@@ -13,9 +13,9 @@ namespace Gw2LogParser.Parser.Data.El.Buffs
 {
     public class BuffsContainer
     {
-        public Dictionary<long, Buff> BuffsByIds { get; }
-        public Dictionary<BuffNature, List<Buff>> BuffsByNature { get; }
-        public Dictionary<ParserHelper.Source, List<Buff>> BuffsBySource { get; }
+        public IReadOnlyDictionary<long, Buff> BuffsByIds { get; }
+        public IReadOnlyDictionary<BuffNature, IReadOnlyList<Buff>> BuffsByNature { get; }
+        public IReadOnlyDictionary<ParserHelper.Source, IReadOnlyList<Buff>> BuffsBySource { get; }
         private readonly Dictionary<string, Buff> _buffsByName;
 
         private readonly BuffSourceFinder _buffSourceFinder;
@@ -29,45 +29,58 @@ namespace Gw2LogParser.Parser.Data.El.Buffs
                 Conditions,
                 Commons,
                 Gear,
-                Consumables,
+                NormalFoods,
+                AscendedFood,
+                Utilities,
+                Potions,
+                Writs,
                 FightSpecific,
                 FractalInstabilities,
                 //
                 RevenantHelper.Buffs,
                 HeraldHelper.Buffs,
                 RenegadeHelper.Buffs,
+                VindicatorHelper.Buffs,
                 //
                 WarriorHelper.Buffs,
                 BerserkerHelper.Buffs,
                 SpellbreakerHelper.Buffs,
+                BladeswornHelper.Buffs,
                 //
                 GuardianHelper.Buffs,
                 DragonhunterHelper.Buffs,
                 FirebrandHelper.Buffs,
+                WillbenderHelper.Buffs,
                 //
                 RangerHelper.Buffs,
                 DruidHelper.Buffs,
                 SoulbeastHelper.Buffs,
+                UntamedHelper.Buffs,
                 //
                 ThiefHelper.Buffs,
                 DaredevilHelper.Buffs,
                 DeadeyeHelper.Buffs,
+                SpecterHelper.Buffs,
                 //
                 EngineerHelper.Buffs,
                 ScrapperHelper.Buffs,
                 HolosmithHelper.Buffs,
+                MechanistHelper.Buffs,
                 //
                 MesmerHelper.Buffs,
                 ChronomancerHelper.Buffs,
                 MirageHelper.Buffs,
+                VirtuosoHelper.Buffs,
                 //
                 NecromancerHelper.Buffs,
                 ReaperHelper.Buffs,
                 ScourgeHelper.Buffs,
+                HarbingerHelper.Buffs,
                 //
                 ElementalistHelper.Buffs,
                 TempestHelper.Buffs,
                 WeaverHelper.Buffs,
+                CatalystHelper.Buffs,
             };
             var currentBuffs = new List<Buff>();
             foreach (List<Buff> buffs in AllBuffs)
@@ -79,7 +92,7 @@ namespace Gw2LogParser.Parser.Data.El.Buffs
                 var list = x.ToList();
                 if (list.Count > 1)
                 {
-                    throw new InvalidOperationException("Same name present multiple times in buffs - " + x.First().Name);
+                    throw new InvalidDataException("Same name present multiple times in buffs - " + x.First().Name);
                 }
                 return x.First();
             });
@@ -93,13 +106,22 @@ namespace Gw2LogParser.Parser.Data.El.Buffs
                 {
                     string name = buffInfoEvent.Category == BuffCategory.Enhancement ? "Utility" : "Food";
                     string link = buffInfoEvent.Category == BuffCategory.Enhancement ? "https://wiki.guildwars2.com/images/2/23/Nourishment_utility.png" : "https://wiki.guildwars2.com/images/c/ca/Nourishment_food.png";
-                    operation.UpdateProgressWithCancellationCheck("Unknown " + name + " " + buffInfoEvent.BuffID);
+                    operation.UpdateProgressWithCancellationCheck("Creating consumable " + name + " " + buffInfoEvent.BuffID);
                     currentBuffs.Add(CreateCustomConsumable(name, buffInfoEvent.BuffID, link, buffInfoEvent.MaxStacks));
                 }
             }
             //
-            BuffsByIds = currentBuffs.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.First());
-            BuffInfoSolver.AdjustBuffs(combatData, BuffsByIds, operation);
+            BuffsByIds = currentBuffs.GroupBy(x => x.ID).ToDictionary(x => x.Key, x =>
+            {
+                var list = x.ToList();
+                if (list.Count > 1 && x.Key != Buff.NoBuff && x.Key != Buff.Unknown)
+                {
+                    throw new InvalidDataException("Same id present multiple times in buffs - " + x.First().ID);
+                }
+                return x.First();
+            });
+            operation.UpdateProgressWithCancellationCheck("Adjusting Buffs");
+            BuffInfoSolver.AdjustBuffs(combatData, BuffsByIds, operation, build);
             foreach (Buff buff in currentBuffs)
             {
                 BuffInfoEvent buffInfoEvt = combatData.GetBuffInfoEvent(buff.ID);
@@ -114,19 +136,15 @@ namespace Gw2LogParser.Parser.Data.El.Buffs
                     }
                 }
             }
-            BuffsByNature = currentBuffs.GroupBy(x => x.Nature).ToDictionary(x => x.Key, x => x.ToList());
-            BuffsBySource = currentBuffs.GroupBy(x => x.Source).ToDictionary(x => x.Key, x => x.ToList());
+            BuffsByNature = currentBuffs.GroupBy(x => x.Nature).ToDictionary(x => x.Key, x => (IReadOnlyList<Buff>)x.ToList());
+            BuffsBySource = currentBuffs.GroupBy(x => x.Source).ToDictionary(x => x.Key, x => (IReadOnlyList<Buff>)x.ToList());
             //
             _buffSourceFinder = GetBuffSourceFinder(build, new HashSet<long>(BuffsByNature[BuffNature.Boon].Select(x => x.ID)));
         }
 
-        public Buff GetBuffByName(string name)
+        public bool TryGetBuffByName(string name, out Buff buff)
         {
-            if (_buffsByName.TryGetValue(name, out Buff buff))
-            {
-                return buff;
-            }
-            throw new InvalidOperationException("Buff " + name + " does not exist");
+            return _buffsByName.TryGetValue(name, out buff);
         }
 
         internal Agent TryFindSrc(Agent dst, long time, long extension, ParsedLog log, long buffID)
@@ -135,12 +153,12 @@ namespace Gw2LogParser.Parser.Data.El.Buffs
         }
 
         // Non shareable buffs
-        public List<Buff> GetRemainingBuffsList(string source)
+        public IReadOnlyList<Buff> GetPersonalBuffsList(ParserHelper.Spec spec)
         {
             var result = new List<Buff>();
-            foreach (ParserHelper.Source src in ParserHelper.ProfToEnum(source))
+            foreach (ParserHelper.Source src in ParserHelper.SpecToSources(spec))
             {
-                if (BuffsBySource.TryGetValue(src, out List<Buff> list))
+                if (BuffsBySource.TryGetValue(src, out IReadOnlyList<Buff> list))
                 {
                     result.AddRange(list.Where(x => x.Nature == BuffNature.GraphOnlyBuff));
                 }

@@ -1,6 +1,7 @@
 ﻿using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes;
 using Gw2LogParser.Parser.Data.Events.Mechanics;
+using Gw2LogParser.Parser.Helper.CachingCollections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,10 +11,10 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics
     {
         private readonly Dictionary<Mechanic, List<MechanicEvent>> _mechanicLogs = new Dictionary<Mechanic, List<MechanicEvent>>();
 
-        private List<HashSet<Mechanic>> _presentOnPlayerMechanics;
-        private List<HashSet<Mechanic>> _presentOnEnemyMechanics;
-        private List<HashSet<Mechanic>> _presentMechanics;
-        private List<List<AbstractActor>> _enemyList;
+        private CachingCollection<HashSet<Mechanic>> _presentOnFriendliesMechanics;
+        private CachingCollection<HashSet<Mechanic>> _presentOnEnemyMechanics;
+        private CachingCollection<HashSet<Mechanic>> _presentMechanics;
+        private CachingCollection<List<AbstractSingleActor>> _enemyList;
 
         internal MechanicData(List<Mechanic> fightMechanics)
         {
@@ -23,7 +24,7 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics
             }
         }
 
-        private void CheckMechanics(ParsedLog log)
+        private void ComputeMechanics(ParsedLog log)
         {
             var regroupedMobs = new Dictionary<int, AbstractSingleActor>();
             foreach (Mechanic mech in _mechanicLogs.Keys)
@@ -57,53 +58,19 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics
             {
                 return;
             }
-            CheckMechanics(log);
-            _presentOnPlayerMechanics = new List<HashSet<Mechanic>>();
-            _presentOnEnemyMechanics = new List<HashSet<Mechanic>>();
-            _presentMechanics = new List<HashSet<Mechanic>>();
-            _enemyList = new List<List<AbstractActor>>();
-            // ready present mechanics
-            foreach (PhaseData phase in log.FightData.GetPhases(log))
-            {
-                var toAddPlayer = new HashSet<Mechanic>();
-                var toAddEnemy = new HashSet<Mechanic>();
-                var toAddAll = new HashSet<Mechanic>();
-                _presentOnPlayerMechanics.Add(toAddPlayer);
-                _presentOnEnemyMechanics.Add(toAddEnemy);
-                _presentMechanics.Add(toAddAll);
-                foreach (KeyValuePair<Mechanic, List<MechanicEvent>> pair in _mechanicLogs)
-                {
-                    if (pair.Value.Any(x => phase.InInterval(x.Time)))
-                    {
-                        toAddAll.Add(pair.Key);
-                        if (pair.Key.IsEnemyMechanic)
-                        {
-                            toAddEnemy.Add(pair.Key);
-                        }
-                        else if (pair.Key.ShowOnTable)
-                        {
-                            toAddPlayer.Add(pair.Key);
-                        }
-                    }
-                }
-                // ready enemy list
-                var toAdd = new List<AbstractActor>();
-                _enemyList.Add(toAdd);
-                foreach (Mechanic m in _mechanicLogs.Keys.Where(x => x.IsEnemyMechanic))
-                {
-                    foreach (AbstractActor p in _mechanicLogs[m].Where(x => phase.InInterval(x.Time)).Select(x => x.Actor).Distinct())
-                    {
-                        if (toAdd.FirstOrDefault(x => x.AgentItem == p.AgentItem) == null)
-                        {
-                            toAdd.Add(p);
-                        }
-                    }
-                }
-            }
+            _presentOnFriendliesMechanics = new CachingCollection<HashSet<Mechanic>>(log);
+            _presentOnEnemyMechanics = new CachingCollection<HashSet<Mechanic>>(log);
+            _presentMechanics = new CachingCollection<HashSet<Mechanic>>(log);
+            _enemyList = new CachingCollection<List<AbstractSingleActor>>(log);
+            ComputeMechanics(log);
             var emptyMechanic = _mechanicLogs.Where(pair => pair.Value.Count == 0).Select(pair => pair.Key).ToList();
             foreach (Mechanic m in emptyMechanic)
             {
                 _mechanicLogs.Remove(m);
+            }
+            foreach (KeyValuePair<Mechanic, List<MechanicEvent>> pair in _mechanicLogs)
+            {
+                pair.Value.Sort((x, y) => x.Time.CompareTo(y.Time));
             }
         }
 
@@ -113,7 +80,7 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics
             return _mechanicLogs.Values;
         }
 
-        public List<MechanicEvent> GetMechanicLogs(ParsedLog log, Mechanic mech)
+        public IReadOnlyList<MechanicEvent> GetMechanicLogs(ParsedLog log, Mechanic mech)
         {
             ProcessMechanics(log);
             if (_mechanicLogs.TryGetValue(mech, out List<MechanicEvent> list))
@@ -123,7 +90,7 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics
             return new List<MechanicEvent>();
         }
 
-        public List<MechanicEvent> GetMechanicLogs(ParsedLog log, long id)
+        internal IReadOnlyList<MechanicEvent> GetMechanicLogs(ParsedLog log, long id)
         {
             ProcessMechanics(log);
             Mechanic mech = _mechanicLogs.Keys.FirstOrDefault(x => x.SkillId == id);
@@ -134,26 +101,77 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics
             return new List<MechanicEvent>();
         }
 
-        public HashSet<Mechanic> GetPresentEnemyMechs(ParsedLog log, int phaseIndex)
+        private void ComputeMechanicData(long start, long end)
         {
-            ProcessMechanics(log);
-            return _presentOnEnemyMechanics[phaseIndex];
-        }
-        public HashSet<Mechanic> GetPresentPlayerMechs(ParsedLog log, int phaseIndex)
-        {
-            ProcessMechanics(log);
-            return _presentOnPlayerMechanics[phaseIndex];
-        }
-        public HashSet<Mechanic> GetPresentMechanics(ParsedLog log, int phaseIndex)
-        {
-            ProcessMechanics(log);
-            return _presentMechanics[phaseIndex];
+            var presentMechanics = new HashSet<Mechanic>();
+            var presentOnEnemyMechanics = new HashSet<Mechanic>();
+            var presentOnFriendliesMechanics = new HashSet<Mechanic>();
+            var enemyHash = new HashSet<AbstractSingleActor>();
+            foreach (KeyValuePair<Mechanic, List<MechanicEvent>> pair in _mechanicLogs)
+            {
+                if (pair.Value.Any(x => x.Time >= start && x.Time <= end))
+                {
+                    presentMechanics.Add(pair.Key);
+                    if (pair.Key.IsEnemyMechanic)
+                    {
+                        presentOnEnemyMechanics.Add(pair.Key);
+                    }
+                    else if (pair.Key.ShowOnTable)
+                    {
+                        presentOnFriendliesMechanics.Add(pair.Key);
+                    }
+                }
+            }
+            // ready enemy list
+            foreach (Mechanic m in _mechanicLogs.Keys.Where(x => x.IsEnemyMechanic))
+            {
+                foreach (MechanicEvent mechanicEvent in _mechanicLogs[m].Where(x => x.Time >= start && x.Time <= end))
+                {
+                    enemyHash.Add(mechanicEvent.Actor);
+                }
+            }
+            _presentMechanics.Set(start, end, presentMechanics);
+            _presentOnEnemyMechanics.Set(start, end, presentOnEnemyMechanics);
+            _presentOnFriendliesMechanics.Set(start, end, presentOnFriendliesMechanics);
+            _enemyList.Set(start, end, new List<AbstractSingleActor>(enemyHash));
         }
 
-        public List<AbstractActor> GetEnemyList(ParsedLog log, int phaseIndex)
+        public IReadOnlyCollection<Mechanic> GetPresentEnemyMechs(ParsedLog log, long start, long end)
         {
             ProcessMechanics(log);
-            return _enemyList[phaseIndex];
+            if (!_presentOnEnemyMechanics.HasKeys(start, end))
+            {
+                ComputeMechanicData(start, end);
+            }
+            return _presentOnEnemyMechanics.Get(start, end);
+        }
+        public IReadOnlyCollection<Mechanic> GetPresentFriendlyMechs(ParsedLog log, long start, long end)
+        {
+            ProcessMechanics(log);
+            if (!_presentOnFriendliesMechanics.HasKeys(start, end))
+            {
+                ComputeMechanicData(start, end);
+            }
+            return _presentOnFriendliesMechanics.Get(start, end);
+        }
+        public IReadOnlyCollection<Mechanic> GetPresentMechanics(ParsedLog log, long start, long end)
+        {
+            ProcessMechanics(log);
+            if (!_presentMechanics.HasKeys(start, end))
+            {
+                ComputeMechanicData(start, end);
+            }
+            return _presentMechanics.Get(start, end);
+        }
+
+        public IReadOnlyList<AbstractSingleActor> GetEnemyList(ParsedLog log, long start, long end)
+        {
+            ProcessMechanics(log);
+            if (!_enemyList.HasKeys(start, end))
+            {
+                ComputeMechanicData(start, end);
+            }
+            return _enemyList.Get(start, end);
         }
     }
 }

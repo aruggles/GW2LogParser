@@ -8,12 +8,9 @@ namespace Gw2LogParser.Parser
     {
         protected List<string> StatusList { get; }
 
-        public Version ParserVersion { get; }
-
-        public ParserController(Version parserVersion)
+        protected ParserController()
         {
             StatusList = new List<string>();
-            ParserVersion = parserVersion;
         }
 
         protected virtual void ThrowIfCanceled()

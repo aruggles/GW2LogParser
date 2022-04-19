@@ -1,12 +1,12 @@
 <template>
     <div>
-        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" :id="id">
+        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" :id="tableid">
             <thead>
                 <tr>
-                    <th>Sub</th>
-                    <th></th>
+                    <th class="sub-cell">Sub</th>
+                    <th class="prof-cell"></th>
                     <th class="text-left">Name</th>
-                    <th v-for="modifier in modifiers" :data-original-title="modifier.name + '<br>' + modifier.tooltip">
+                    <th class="stat-cell" v-for="modifier in modifiers" :data-original-title="modifier.name + '<br>' + modifier.tooltip">
                         <img :src="modifier.icon" :alt="modifier.name" class="icon icon-hover">
                     </th>
                 </tr>
@@ -20,7 +20,7 @@
                             style="display:none">{{row.player.profession}}</span>
                     </td>
                     <td class="text-left">{{row.player.name}}</td>
-                    <td v-for="(modifier, index) in modifiers"
+                    <td v-for="(modifier, index) in modifiers" :class="{approximate: modifier.approximate}"
                         :data-original-title="getTooltip(row.data[index], modifier)">
                         {{getCellValue(row.data[index], modifier)}}
                     </td>
@@ -31,7 +31,7 @@
                     <td></td>
                     <td></td>
                     <td class="text-left">{{row.name}}</td>
-                    <td v-for="(modifier, index) in modifiers"
+                    <td v-for="(modifier, index) in modifiers" :class="{approximate: modifier.approximate}"
                         :data-original-title="getTooltip(row.data[index], modifier)">
                         {{getCellValue(row.data[index], modifier)}}
                     </td>
@@ -44,15 +44,22 @@
 <script>
     Vue.component("dmgmodifier-table-component", {
         props: ['phaseindex', 'id', 'playerindex', 'playerindices', 'activetargets', 'modifiers', 'modifiersdata', 'mode', 'sum'],
-        mixins: [roundingComponent],
+        mixins: [numberComponent],
         template: `${template}`,
         data: function () {
             return {
                 cache: new Map(),
-                cacheTarget: new Map()
+                cacheTarget: new Map(),
+                sortdata: {
+                    order: "asc",
+                    index: 1
+                }
             };
         },
         computed: {
+            tableid: function() {
+                return this.id;
+            },
             phase: function () {
                 return logData.phases[this.phaseindex];
             },
@@ -84,10 +91,10 @@
                 for (var i = 0; i < this.indicesToUse.length; i++) {
                     var index = this.indicesToUse[i];
                     var player = logData.players[index];
-                    if (player.isConjure) {
+                    if (player.isFake) {
                         continue;
                     }
-                    if (!groups[player.group]) {
+                    if (!player.notInSquad && !groups[player.group]) {
                         groups[player.group] = {
                             name: "Group" + player.group,
                             data: []
@@ -97,16 +104,19 @@
                     var data = [];
                     for (j = 0; j < this.modifiers.length; j++) {
                         data[j] = dmgModifier[j];
-                        if (!groups[player.group].data[j]) {
-                            groups[player.group].data[j] = [0, 0, 0, 0];
+                        if (!player.notInSquad) {
+                            if (!groups[player.group].data[j]) {
+                                groups[player.group].data[j] = [0, 0, 0, 0];
+                            }
+                            if (!total.data[j]) {
+                                total.data[j] = [0, 0, 0, 0];
+                            }
+                            for (var k = 0; k < data[j].length; k++) {
+                                groups[player.group].data[j][k] += data[j][k];
+                                total.data[j][k] += data[j][k];
+                            }
                         }
-                        if (!total.data[j]) {
-                            total.data[j] = [0, 0, 0, 0];
-                        }
-                        for (var k = 0; k < data[j].length; k++) {
-                            groups[player.group].data[j][k] += data[j][k];
-                            total.data[j][k] += data[j][k];
-                        }
+                        
                     }
                     rows.push({
                         player: player,
@@ -143,10 +153,10 @@
                 for (var i = 0; i < this.indicesToUse.length; i++) {
                     var index = this.indicesToUse[i];
                     var player = logData.players[index];
-                    if (player.isConjure) {
+                    if (player.isFake) {
                         continue;
                     }
-                    if (!groups[player.group]) {
+                    if (!player.notInSquad && !groups[player.group]) {
                         groups[player.group] = {
                             name: "Group" + player.group,
                             data: []
@@ -155,11 +165,13 @@
                     var data = [];
                     for (j = 0; j < this.modifiers.length; j++) {
                         data[j] = [0, 0, 0, 0];
-                        if (!groups[player.group].data[j]) {
-                            groups[player.group].data[j] = [0, 0, 0, 0];
-                        }
-                        if (!total.data[j]) {
-                            total.data[j] = [0, 0, 0, 0];
+                        if (!player.notInSquad) {
+                            if (!groups[player.group].data[j]) {
+                                groups[player.group].data[j] = [0, 0, 0, 0];
+                            }
+                            if (!total.data[j]) {
+                                total.data[j] = [0, 0, 0, 0];
+                            }
                         }
                     }
                     var dmgModifier = this.modifiersdata[index].dataTarget;
@@ -173,12 +185,15 @@
                             }
                         }
                     }
-                    for (j = 0; j < this.modifiers.length; j++) {
-                        for (var k = 0; k < data[j].length; k++) {
-                            groups[player.group].data[j][k] += data[j][k];
-                            total.data[j][k] += data[j][k];
+                    if (!player.notInSquad) {
+                        for (j = 0; j < this.modifiers.length; j++) {
+                            for (var k = 0; k < data[j].length; k++) {
+                                groups[player.group].data[j][k] += data[j][k];
+                                total.data[j][k] += data[j][k];
+                            }
                         }
                     }
+
                     rows.push({
                         player: player,
                         data: data
@@ -216,7 +231,10 @@
                 } else {
                     gain = "Pure Damage: ";
                 }
-                gain += this.round3(item[2]);
+                gain += this.round(item[2]);
+                if (mod.nonMultiplier) {
+                    gain += "<br>Total Damage: " + this.round3(100.0 * item[2] / item[3]) + "%";
+                }
                 return hits + "<br>" + percent + "<br>" + gain;
             },
             getCellValue: function (item, mod) {
@@ -234,10 +252,13 @@
             }
         },
         mounted() {
-            initTable("#" + this.id, 1, "asc");
+            initializeTable(this.tableid, this.sortdata);
         },
         updated() {
-            updateTable("#" + this.id);
+            updateTable(this.tableid);
+        },
+        activated() {
+            initializeTable(this.tableid, this.sortdata);
         },
     });
 </script>

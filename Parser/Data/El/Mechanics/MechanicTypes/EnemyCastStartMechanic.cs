@@ -28,14 +28,14 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
 
         internal override void CheckMechanic(ParsedLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, AbstractSingleActor> regroupedMobs)
         {
-            foreach (AbstractCastEvent c in log.CombatData.GetCastData(SkillId))
+            foreach (AbstractCastEvent c in log.CombatData.GetAnimatedCastData(SkillId))
             {
                 AbstractSingleActor amp = null;
                 if (Keep(c, log))
                 {
                     if (!regroupedMobs.TryGetValue(c.Caster.ID, out amp))
                     {
-                        amp = log.FindActor(c.Caster, false);
+                        amp = log.FindActor(c.Caster, true);
                         if (amp == null)
                         {
                             continue;

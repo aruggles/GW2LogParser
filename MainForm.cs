@@ -268,5 +268,15 @@ namespace Gw2LogParser
                 }
             }
         }
+
+        private void btnRefreshAPI_Click(object sender, EventArgs e)
+        {
+            btnRefreshAPI.Enabled = false;
+            ProcessManager.apiController.WriteAPISkillsToFile(ProcessManager.SkillAPICacheLocation);
+            ProcessManager.apiController.WriteAPISpecsToFile(ProcessManager.SpecAPICacheLocation);
+            ProcessManager.apiController.WriteAPITraitsToFile(ProcessManager.TraitAPICacheLocation);
+            btnRefreshAPI.Enabled = true;
+            MessageBox.Show("API cache has been refreshed");
+        }
     }
 }

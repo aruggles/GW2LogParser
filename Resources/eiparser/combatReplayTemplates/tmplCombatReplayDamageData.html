@@ -1,6 +1,9 @@
 <template>
     <div class="d-flex flex-column justify-content-center">
-        <combat-replay-damage-stats-component :time="time" :playerindex="playerindex">
+        <dps-graph-mode-selector-component :data="graphdata"
+            :phaseduration="this.phase.end - this.phase.start" :phasehassubphases="false" :ignorebreakbar="false" :style="{'width': selectorWidth + 'px'}" :column="selectorWidth < 280">
+        </dps-graph-mode-selector-component>
+        <combat-replay-damage-stats-component :time="time" :playerid="selectedplayerid" :graphdata="graphdata">
         </combat-replay-damage-stats-component>
     </div>
 </template>
@@ -8,18 +11,26 @@
 <script>
     Vue.component("combat-replay-damage-data-component", {
         template: `${template}`,
-        props: ["time", "selectedplayer", "selectedplayerid"],
-        computed: {
-            playerindex: function () {
-                if (this.selectedplayer) {
-                    for (var i = 0; i < logData.players.length; i++) {
-                        if (logData.players[i].combatReplayID == this.selectedplayerid) {
-                            return i;
-                        }
-                    }
+        props: ["time", "selectedplayerid"],
+        data: function () {
+            return {
+                graphdata: {
+                    dpsmode: 0,
+                    graphmode: GraphType.DPS,
+                    damagemode: DamageType.All,
                 }
-                return -1;
-            }
+            };
+        },
+        computed: {
+            phase: function () {
+                return logData.phases[0];
+            },   
+            targets: function () {
+                return this.phase.dummy || logData.targetless ? [] : this.phase.targets;
+            },
+            selectorWidth: function () {
+                return  (273 + this.targets.length * 130);
+            },
         }
     });
 </script>

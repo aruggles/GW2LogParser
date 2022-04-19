@@ -11,21 +11,33 @@ $.extend($.fn.dataTable.defaults, {
     dom: "t"
 });
 
-const DataTypes = {
-    damageTable: 0,
-    defTable: 1,
-    supTable: 2,
-    gameplayTable: 3,
-    mechanicTable: 4,
-    boonTable: 5,
-    offensiveBuffTable: 6,
-    supportBuffTable: 7,
-    defensiveBuffTable: 8,
-    personalBuffTable: 9,
-    playerTab: 10,
-    targetTab: 11,
-    dpsGraph: 12,
-    dmgModifiersTable: 13,
+const quickColor = {
+    r: 220,
+    g: 20,
+    b: 220
+};
+const slowColor = {
+    r: 220,
+    g: 125,
+    b: 30
+};
+const normalColor = {
+    r: 125,
+    g: 125,
+    b: 125
+};
+
+const DamageType = {
+    All: 0,
+    Power: 1,
+    Condition: 2,
+    Breakbar: 3
+};
+
+const GraphType = {
+    DPS: 0,
+    Damage: 1,
+    CenteredDPS: 2
 };
 
 const simpleLogData = {
@@ -33,135 +45,6 @@ const simpleLogData = {
     players: [],
     targets: []
 };
-//
-class Layout {
-    constructor(desc) {
-        this.desc = desc;
-        this.tabs = null;
-    }
-    addTab(tab) {
-        if (this.tabs === null) {
-            this.tabs = [];
-        }
-        this.tabs.push(tab);
-    }
-}
-class Tab {
-    constructor(name, options) {
-        this.name = name;
-        options = options ? options : {};
-        this.layout = null;
-        this.desc = options.desc ? options.desc : null;
-        this.active = options.active ? options.active : false;
-        this.dataType =
-            typeof options.dataType !== "undefined" ? options.dataType : -1;
-    }
-}
-var buildLayout = function () {
-    //
-    var layout = new Layout("Summary");
-    // general stats
-    var stats = new Tab("General Stats", {
-        active: true
-    });
-    var statsLayout = new Layout(null);
-    statsLayout.addTab(
-        new Tab("Damage Stats", {
-            active: true,
-            dataType: DataTypes.damageTable
-        })
-    );
-    statsLayout.addTab(
-        new Tab("Gameplay Stats", {
-            dataType: DataTypes.gameplayTable
-        })
-    );
-    statsLayout.addTab(
-        new Tab("Defensive Stats", {
-            dataType: DataTypes.defTable
-        })
-    );
-    statsLayout.addTab(
-        new Tab("Support Stats", {
-            dataType: DataTypes.supTable
-        })
-    );
-    stats.layout = statsLayout;
-    layout.addTab(stats);
-    // buffs
-    var buffs = new Tab("Buffs");
-    var buffLayout = new Layout(null);
-    buffLayout.addTab(
-        new Tab("Boons", {
-            active: true,
-            dataType: DataTypes.boonTable
-        })
-    );
-    if (logData.offBuffs.length > 0) {
-        buffLayout.addTab(new Tab("Offensive Buffs", {
-            dataType: DataTypes.offensiveBuffTable
-        }));
-    }
-    if (logData.supBuffs.length > 0) {
-        buffLayout.addTab(new Tab("Support Buffs", {
-            dataType: DataTypes.supportBuffTable
-        }));
-    }
-    if (logData.defBuffs.length > 0) {
-        buffLayout.addTab(new Tab("Defensive Buffs", {
-            dataType: DataTypes.defensiveBuffTable
-        }));
-    } 
-    if (logData.persBuffs) {
-        var hasPersBuffs = false;
-        for (var prop in logData.persBuffs) {
-            if (logData.persBuffs.hasOwnProperty(prop) && logData.persBuffs[prop].length > 0) {
-                hasPersBuffs = true;
-                break;
-            }
-        }
-        if (hasPersBuffs) {
-            buffLayout.addTab(new Tab("Personal Buffs", {
-                dataType: DataTypes.personalBuffTable
-            }));
-        }
-    }
-    buffs.layout = buffLayout;
-    layout.addTab(buffs);
-    // damage modifiers
-    if (!logData.targetless) {
-        var damageModifiers = new Tab("Damage Modifiers", {
-            dataType: DataTypes.dmgModifiersTable
-        });
-        layout.addTab(damageModifiers);
-    }
-    // mechanics
-    if (logData.mechanicMap.length > 0 && !logData.noMechanics) {
-        var mechanics = new Tab("Mechanics", {
-            dataType: DataTypes.mechanicTable
-        });
-        layout.addTab(mechanics);
-    }
-    // graphs
-    var graphs = new Tab("Graph", {
-        dataType: DataTypes.dpsGraph
-    });
-    layout.addTab(graphs);
-    // targets
-    if (!logData.targetless && !logData.wvw) {
-        var targets = new Tab("Targets Summary", {
-            dataType: DataTypes.targetTab
-        });
-        layout.addTab(targets);
-    }
-    // player
-    var player = new Tab("Player Summary", {
-        dataType: DataTypes.playerTab
-    });
-    layout.addTab(player);
-    return layout;
-};
-const layout = buildLayout();
 //
 // polyfill for string include
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
@@ -201,35 +84,6 @@ const themes = {
 };
 
 const urls = {
-    Warrior: "https://wiki.guildwars2.com/images/4/43/Warrior_tango_icon_20px.png",
-    Berserker: "https://wiki.guildwars2.com/images/d/da/Berserker_tango_icon_20px.png",
-    Spellbreaker: "https://wiki.guildwars2.com/images/e/ed/Spellbreaker_tango_icon_20px.png",
-    Guardian: "https://wiki.guildwars2.com/images/8/8c/Guardian_tango_icon_20px.png",
-    Dragonhunter: "https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png",
-    DragonHunter: "https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png",
-    Firebrand: "https://wiki.guildwars2.com/images/0/02/Firebrand_tango_icon_20px.png",
-    Revenant: "https://wiki.guildwars2.com/images/b/b5/Revenant_tango_icon_20px.png",
-    Herald: "https://wiki.guildwars2.com/images/6/67/Herald_tango_icon_20px.png",
-    Renegade: "https://wiki.guildwars2.com/images/7/7c/Renegade_tango_icon_20px.png",
-    Engineer: "https://wiki.guildwars2.com/images/2/27/Engineer_tango_icon_20px.png",
-    Scrapper: "https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png",
-    Holosmith: "https://wiki.guildwars2.com/images/2/28/Holosmith_tango_icon_20px.png",
-    Ranger: "https://wiki.guildwars2.com/images/4/43/Ranger_tango_icon_20px.png",
-    Druid: "https://wiki.guildwars2.com/images/d/d2/Druid_tango_icon_20px.png",
-    Soulbeast: "https://wiki.guildwars2.com/images/7/7c/Soulbeast_tango_icon_20px.png",
-    Thief: "https://wiki.guildwars2.com/images/7/7a/Thief_tango_icon_20px.png",
-    Daredevil: "https://wiki.guildwars2.com/images/e/e1/Daredevil_tango_icon_20px.png",
-    Deadeye: "https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png",
-    Elementalist: "https://wiki.guildwars2.com/images/a/aa/Elementalist_tango_icon_20px.png",
-    Tempest: "https://wiki.guildwars2.com/images/4/4a/Tempest_tango_icon_20px.png",
-    Weaver: "https://wiki.guildwars2.com/images/f/fc/Weaver_tango_icon_20px.png",
-    Mesmer: "https://wiki.guildwars2.com/images/6/60/Mesmer_tango_icon_20px.png",
-    Chronomancer: "https://wiki.guildwars2.com/images/f/f4/Chronomancer_tango_icon_20px.png",
-    Mirage: "https://wiki.guildwars2.com/images/d/df/Mirage_tango_icon_20px.png",
-    Necromancer: "https://wiki.guildwars2.com/images/4/43/Necromancer_tango_icon_20px.png",
-    Reaper: "https://wiki.guildwars2.com/images/1/11/Reaper_tango_icon_20px.png",
-    Scourge: "https://wiki.guildwars2.com/images/0/06/Scourge_tango_icon_20px.png",
-
     Unknown: "https://wiki.guildwars2.com/images/thumb/d/de/Sword_slot.png/40px-Sword_slot.png",
     Sword: "https://wiki.guildwars2.com/images/0/07/Crimson_Antique_Blade.png",
     Axe: "https://wiki.guildwars2.com/images/d/d4/Crimson_Antique_Reaver.png",
@@ -253,37 +107,95 @@ const urls = {
 };
 
 const specs = [
-    "Warrior", "Berserker", "Spellbreaker", "Revenant", "Herald", "Renegade", "Guardian", "Dragonhunter", "Firebrand",
-    "Ranger", "Druid", "Soulbeast", "Engineer", "Scrapper", "Holosmith", "Thief", "Daredevil", "Deadeye",
-    "Mesmer", "Chronomancer", "Mirage", "Necromancer", "Reaper", "Scourge", "Elementalist", "Tempest", "Weaver"
+    "Warrior",
+    "Berserker",
+    "Spellbreaker",
+    "Bladesworn",
+    //
+    "Revenant",
+    "Herald",
+    "Renegade",
+    "Vindicator",
+    //
+    "Guardian",
+    "Dragonhunter",
+    "Firebrand",
+    "Willbender",
+    //
+    "Ranger",
+    "Druid",
+    "Soulbeast",
+    "Untamed",
+    //
+    "Engineer",
+    "Scrapper",
+    "Holosmith",
+    "Mechanist",
+    //
+    "Thief",
+    "Daredevil",
+    "Deadeye",
+    "Specter",
+    //
+    "Mesmer",
+    "Chronomancer",
+    "Mirage",
+    "Virtuoso",
+    //
+    "Necromancer",
+    "Reaper",
+    "Scourge",
+    "Harbinger",
+    //
+    "Elementalist",
+    "Tempest",
+    "Weaver",
+    "Catalyst"
 ];
 
 const specToBase = {
     Warrior: 'Warrior',
     Berserker: 'Warrior',
     Spellbreaker: 'Warrior',
+    Bladesworn: 'Warrior',
+    //
     Revenant: "Revenant",
     Herald: "Revenant",
     Renegade: "Revenant",
+    Vindicator: "Revenant",
+    //
     Guardian: "Guardian",
     Dragonhunter: "Guardian",
     Firebrand: "Guardian",
+    Willbender: "Guardian",
+    //
     Ranger: "Ranger",
     Druid: "Ranger",
     Soulbeast: "Ranger",
+    Untamed: "Ranger",
+    //
     Engineer: "Engineer",
     Scrapper: "Engineer",
     Holosmith: "Engineer",
+    Mechanist: "Engineer",
+    //
     Thief: "Thief",
     Daredevil: "Thief",
     Deadeye: "Thief",
+    Specter: "Thief",
+    //
     Mesmer: "Mesmer",
     Chronomancer: "Mesmer",
     Mirage: "Mesmer",
+    Virtuoso: "Mesmer",
+    //
     Necromancer: "Necromancer",
     Reaper: "Necromancer",
     Scourge: "Necromancer",
+    Harbinger: "Necromancer",
+    //
     Elementalist: "Elementalist",
     Tempest: "Elementalist",
-    Weaver: "Elementalist"
+    Weaver: "Elementalist",
+    Catalyst: "Elementalist"
 };

@@ -18,9 +18,11 @@ namespace Gw2LogParser.Parser.Data.El.CombatReplays.Decorations
             MinRadius = minRadius;
         }
 
-        public override GenericDecorationSerializable GetCombatReplayJSON(CombatReplayMap map, ParsedLog log)
+        //
+
+        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedLog log)
         {
-            return new CircleDecorationSerializable(log, this, map);
+            return new CircleDecorationCombatReplayDescription(log, this, map);
         }
     }
 }

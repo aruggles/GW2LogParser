@@ -4,12 +4,12 @@ using Gw2LogParser.Parser.Data.El.InstantCastFinders;
 using Gw2LogParser.Parser.Data.Events.Cast;
 using Gw2LogParser.Parser.Data.Events.Damage;
 using Gw2LogParser.Parser.Data.Skills;
+using Gw2LogParser.Parser.Extensions;
 using Gw2LogParser.Parser.Helper;
-using System;
+using Gw2LogParser.Parser.Logic;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using static Gw2LogParser.Parser.Helper.ParserHelper;
 
 namespace Gw2LogParser.Parser.Data.El.Professions
 {
@@ -21,18 +21,16 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             new DamageCastFinder(9433, 9433, 500), // Earth Sigil
             new DamageCastFinder(9292, 9292, 500), // Air Sigil
             new DamageCastFinder(9428, 9428, 500), // Hydro Sigil
+            new EXTHealingCastFinder(12836, 12836, InstantCastFinders.InstantCastFinder.DefaultICD), // Water Blast Combo
         };
 
-        internal static void AttachMasterToGadgetByCastData(Dictionary<long, List<AbstractCastEvent>> castData, HashSet<Agent> gadgets, List<long> castIDS, long castEndThreshold)
+        internal static void AttachMasterToGadgetByCastData(CombatData combatData, IReadOnlyCollection<Agent> gadgets, IReadOnlyList<long> castIDS, long castEndThreshold)
         {
             var possibleCandidates = new HashSet<Agent>();
-            var gadgetSpawnCastData = new List<AbstractCastEvent>();
+            var gadgetSpawnCastData = new List<AnimatedCastEvent>();
             foreach (long id in castIDS)
             {
-                if (castData.TryGetValue(id, out List<AbstractCastEvent> list))
-                {
-                    gadgetSpawnCastData.AddRange(list);
-                }
+                gadgetSpawnCastData.AddRange(combatData.GetAnimatedCastData(id));
             }
             gadgetSpawnCastData.Sort((x, y) => x.Time.CompareTo(y.Time));
             foreach (AbstractCastEvent castEvent in gadgetSpawnCastData)
@@ -66,25 +64,22 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             }
         }
 
-        internal static HashSet<Agent> GetOffensiveGadgetAgents(Dictionary<long, List<AbstractDamageEvent>> damageData, long damageSkillID, HashSet<Agent> playerAgents)
+        internal static HashSet<Agent> GetOffensiveGadgetAgents(CombatData combatData, long damageSkillID, IReadOnlyCollection<Agent> playerAgents)
         {
             var res = new HashSet<Agent>();
-            if (damageData.TryGetValue(damageSkillID, out List<AbstractDamageEvent> list))
+            foreach (AbstractHealthDamageEvent evt in combatData.GetDamageData(damageSkillID))
             {
-                foreach (AbstractDamageEvent evt in list)
+                // dst must no be a gadget nor a friendly player
+                // src must be a masterless gadget
+                if (!playerAgents.Contains(evt.To.GetFinalMaster()) && evt.To.Type != Agent.AgentType.Gadget && evt.From.Type == Agent.AgentType.Gadget && evt.From.Master == null)
                 {
-                    // dst must no be a gadget nor a friendly player
-                    // src must be a masterless gadget
-                    if (!playerAgents.Contains(evt.To.GetFinalMaster()) && evt.To.Type != Agent.AgentType.Gadget && evt.From.Type == Agent.AgentType.Gadget && evt.From.Master == null)
-                    {
-                        res.Add(evt.From);
-                    }
+                    res.Add(evt.From);
                 }
             }
             return res;
         }
 
-        internal static void SetGadgetMaster(HashSet<Agent> gadgets, Agent master)
+        internal static void SetGadgetMaster(IReadOnlyCollection<Agent> gadgets, Agent master)
         {
             foreach (Agent gadget in gadgets)
             {
@@ -92,134 +87,170 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             }
         }
 
-        internal static void AttachMasterToRacialGadgets(List<Player> players, Dictionary<long, List<AbstractDamageEvent>> damageData, Dictionary<long, List<AbstractCastEvent>> castData)
+        internal static void AttachMasterToRacialGadgets(IReadOnlyList<Player> players, CombatData combatData)
         {
             var playerAgents = new HashSet<Agent>(players.Select(x => x.AgentItem));
             // Sylvari stuff
-            HashSet<Agent> seedTurrets = GetOffensiveGadgetAgents(damageData, 12455, playerAgents);
-            HashSet<Agent> graspingWines = GetOffensiveGadgetAgents(damageData, 1290, playerAgents);
-            AttachMasterToGadgetByCastData(castData, seedTurrets, new List<long> { 12456, 12457 }, 1000);
-            AttachMasterToGadgetByCastData(castData, graspingWines, new List<long> { 12453 }, 1000);
+            HashSet<Agent> seedTurrets = GetOffensiveGadgetAgents(combatData, 12455, playerAgents);
+            HashSet<Agent> graspingWines = GetOffensiveGadgetAgents(combatData, 1290, playerAgents);
+            AttachMasterToGadgetByCastData(combatData, seedTurrets, new List<long> { 12456, 12457 }, 1000);
+            AttachMasterToGadgetByCastData(combatData, graspingWines, new List<long> { 12453 }, 1000);
             // melandru avatar works fine already
         }
 
         //
-        public static List<InstantCastEvent> ComputeInstantCastEvents(List<Player> players, CombatData combatData, SkillData skillData, AgentData agentData)
+        public static IReadOnlyList<InstantCastEvent> ComputeInstantCastEvents(IReadOnlyList<Player> players, CombatData combatData, SkillData skillData, AgentData agentData, FightLogic logic)
         {
             var instantCastFinders = new HashSet<InstantCastFinder>(_genericInstantCastFinders);
+            logic.GetInstantCastFinders().ForEach(x => instantCastFinders.Add(x));
             var res = new List<InstantCastEvent>();
             foreach (Player p in players)
             {
-                switch (p.Prof)
+                switch (p.Spec)
                 {
                     //
-                    case "Elementalist":
+                    case Spec.Elementalist:
                         ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Tempest":
+                    case Spec.Tempest:
                         ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         TempestHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Weaver":
+                    case Spec.Weaver:
                         ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         WeaverHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Catalyst:
+                        ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        CatalystHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Necromancer":
+                    case Spec.Necromancer:
                         NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Reaper":
+                    case Spec.Reaper:
                         NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         ReaperHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Scourge":
+                    case Spec.Scourge:
                         NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         ScourgeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Harbinger:
+                        NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        HarbingerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Mesmer":
+                    case Spec.Mesmer:
                         MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Chronomancer":
+                    case Spec.Chronomancer:
                         MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         ChronomancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Mirage":
+                    case Spec.Mirage:
                         MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         MirageHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                        res.AddRange(MirageHelper.TranslateMirageCloak(combatData.GetBuffData(40408), skillData));
+                        break;
+                    case Spec.Virtuoso:
+                        MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        VirtuosoHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
                     //
-                    case "Thief":
+                    case Spec.Thief:
                         ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Daredevil":
+                    case Spec.Daredevil:
                         ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         DaredevilHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Deadeye":
+                    case Spec.Deadeye:
                         ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         DeadeyeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Specter:
+                        ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        SpecterHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Engineer":
+                    case Spec.Engineer:
                         EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Scrapper":
+                    case Spec.Scrapper:
                         EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         ScrapperHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Holosmith":
+                    case Spec.Holosmith:
                         EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         HolosmithHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Mechanist:
+                        EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        MechanistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Ranger":
+                    case Spec.Ranger:
                         RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Druid":
+                    case Spec.Druid:
                         RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         DruidHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Soulbeast":
+                    case Spec.Soulbeast:
                         RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         SoulbeastHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Untamed:
+                        RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        UntamedHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Revenant":
+                    case Spec.Revenant:
                         RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Herald":
+                    case Spec.Herald:
                         RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         HeraldHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Renegade":
+                    case Spec.Renegade:
                         RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         RenegadeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Vindicator:
+                        RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        VindicatorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Guardian":
+                    case Spec.Guardian:
                         GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Dragonhunter":
+                    case Spec.Dragonhunter:
                         GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         DragonhunterHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Firebrand":
+                    case Spec.Firebrand:
                         GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         FirebrandHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
+                    case Spec.Willbender:
+                        GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        WillbenderHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
                     //
-                    case "Warrior":
+                    case Spec.Warrior:
                         WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Berserker":
+                    case Spec.Berserker:
                         WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         BerserkerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
-                    case "Spellbreaker":
+                    case Spec.Spellbreaker:
                         WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         SpellbreakerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        break;
+                    case Spec.Bladesworn:
+                        WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                        BladeswornHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
                         break;
                 }
             }
@@ -227,7 +258,7 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             return res;
         }
 
-        private static List<InstantCastEvent> ComputeInstantCastEvents(CombatData combatData, SkillData skillData, AgentData agentData, List<InstantCastFinder> instantCastFinders)
+        private static IReadOnlyList<InstantCastEvent> ComputeInstantCastEvents(CombatData combatData, SkillData skillData, AgentData agentData, IReadOnlyList<InstantCastFinder> instantCastFinders)
         {
             var res = new List<InstantCastEvent>();
             ulong build = combatData.GetBuildEvent().Build;

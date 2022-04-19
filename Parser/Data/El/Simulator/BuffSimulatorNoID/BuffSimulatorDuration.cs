@@ -1,6 +1,7 @@
-﻿using Gw2LogParser.Parser.Data.Agents;
+﻿using System.Linq;
+using Gw2LogParser.Parser.Data.Agents;
+using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.El.Simulator.BuffSimulationItems;
-using Gw2LogParser.Parser.Data.El.Simulator.EffectStackingLogic;
 using Gw2LogParser.Parser.Helper;
 
 namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID
@@ -9,13 +10,13 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID
     {
         private (Agent agent, bool extension) _lastSrcRemove = (ParserHelper._unknownAgent, false);
         // Constructor
-        public BuffSimulatorDuration(int capacity, ParsedLog log, StackingLogic logic) : base(capacity, log, logic)
+        public BuffSimulatorDuration(ParsedLog log, Buff buff, int capacity) : base(log, buff, capacity)
         {
         }
 
         public override void Extend(long extension, long oldValue, Agent src, long start, uint stackID)
         {
-            if ((BuffStack.Count > 0 && oldValue > 0) || BuffStack.Count == Capacity)
+            if ((BuffStack.Any() && oldValue > 0) || IsFull)
             {
                 BuffStack[0].Extend(extension, src);
             }
@@ -29,35 +30,32 @@ namespace Gw2LogParser.Parser.Data.El.Simulator.BuffSimulatorNoID
 
         protected override void Update(long timePassed)
         {
-            if (BuffStack.Count > 0 && timePassed > 0)
+            if (BuffStack.Any() && timePassed > 0)
             {
+                BuffStackItem activeStack = BuffStack[0];
                 _lastSrcRemove = (ParserHelper._unknownAgent, false);
-                var toAdd = new BuffSimulationItemDuration(BuffStack[0]);
+                var toAdd = new BuffSimulationItemDuration(BuffStack);
                 GenerationSimulation.Add(toAdd);
-                long timeDiff = BuffStack[0].Duration - timePassed;
-                long diff;
+                long timeDiff = activeStack.Duration - timePassed;
+                long diff = timePassed;
                 long leftOver = 0;
                 if (timeDiff < 0)
                 {
-                    diff = BuffStack[0].Duration;
+                    diff = activeStack.Duration;
                     leftOver = timePassed - diff;
-                }
-                else
-                {
-                    diff = timePassed;
                 }
                 if (toAdd.End > toAdd.Start + diff)
                 {
                     toAdd.OverrideEnd(toAdd.Start + diff);
                 }
-                BuffStack[0].Shift(diff, diff);
-                for (int i = 1; i < BuffStack.Count; i++)
+                activeStack.Shift(0, diff);
+                foreach (BuffStackItem buffStackItem in BuffStack)
                 {
-                    BuffStack[i].Shift(diff, 0);
+                    buffStackItem.Shift(diff, 0);
                 }
-                if (BuffStack[0].Duration == 0)
+                if (activeStack.Duration == 0)
                 {
-                    _lastSrcRemove = (BuffStack[0].SeedSrc, BuffStack[0].IsExtension);
+                    _lastSrcRemove = (activeStack.SeedSrc, activeStack.IsExtension);
                     BuffStack.RemoveAt(0);
                 }
                 Update(leftOver);

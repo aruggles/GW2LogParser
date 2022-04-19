@@ -2,11 +2,11 @@
 using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.El.DamageModifiers.BuffTrackers;
 using Gw2LogParser.Parser.Data.El.DamageModifiers.GainComputers;
-using Gw2LogParser.Parser.Data.El.Statistics;
+using Gw2LogParser.Parser.Data.Events;
 using Gw2LogParser.Parser.Data.Events.Damage;
 using Gw2LogParser.Parser.Helper;
 using System.Collections.Generic;
-using System.Linq;
+using static Gw2LogParser.Parser.Helper.ParserHelper;
 
 namespace Gw2LogParser.Parser.Data.El.DamageModifiers
 {
@@ -15,9 +15,9 @@ namespace Gw2LogParser.Parser.Data.El.DamageModifiers
         private readonly BuffsTracker _trackerPlayer = null;
         private readonly GainComputer _gainComputerPlayer = null;
 
-        protected double ComputeGainPlayer(int stack, AbstractDamageEvent dl)
+        protected double ComputeGainPlayer(int stack, AbstractHealthDamageEvent dl, ParsedLog log)
         {
-            if (DLChecker != null && !DLChecker(dl))
+            if (DLChecker != null && !DLChecker(dl, log))
             {
                 return -1.0;
             }
@@ -65,62 +65,39 @@ namespace Gw2LogParser.Parser.Data.El.DamageModifiers
             _gainComputerPlayer = gainComputerPlayer;
         }
 
-
-        internal override void ComputeDamageModifier(Dictionary<string, List<DamageModifierStat>> data, Dictionary<NPC, Dictionary<string, List<DamageModifierStat>>> dataTarget, Player p, ParsedLog log)
+        internal override List<DamageModifierEvent> ComputeDamageModifier(AbstractSingleActor actor, ParsedLog log)
         {
-            List<PhaseData> phases = log.FightData.GetPhases(log);
-            Dictionary<long, BuffsGraphModel> bgmsP = p.GetBuffGraphs(log);
+            Dictionary<long, BuffsGraphModel> bgmsP = actor.GetBuffGraphs(log);
             if (_trackerPlayer != null)
             {
                 if (!_trackerPlayer.Has(bgmsP) && _gainComputerPlayer != ByAbsence)
                 {
-                    return;
+                    return new List<DamageModifierEvent>();
                 }
             }
-            foreach (NPC target in log.FightData.Logic.Targets)
+            var res = new List<DamageModifierEvent>();
+            IReadOnlyList<AbstractHealthDamageEvent> typeHits = GetHitDamageEvents(actor, log, null, 0, log.FightData.FightEnd);
+            if (_trackerPlayer != null)
             {
-                Dictionary<long, BuffsGraphModel> bgms = target.GetBuffGraphs(log);
-                if (!Tracker.Has(bgms) && GainComputer != ByAbsence)
+                foreach (AbstractHealthDamageEvent evt in typeHits)
                 {
-                    continue;
-                }
-                if (!dataTarget.TryGetValue(target, out Dictionary<string, List<DamageModifierStat>> extra))
-                {
-                    dataTarget[target] = new Dictionary<string, List<DamageModifierStat>>();
-                }
-                Dictionary<string, List<DamageModifierStat>> dict = dataTarget[target];
-                if (!dict.TryGetValue(Name, out List<DamageModifierStat> list))
-                {
-                    var extraDataList = new List<DamageModifierStat>();
-                    for (int i = 0; i < phases.Count; i++)
-                    {
-                        int totalDamage = GetTotalDamage(p, log, target, i);
-                        List<AbstractDamageEvent> typedHits = GetHitDamageLogs(p, log, target, phases[i]);
-                        List<double> damages;
-                        if (_trackerPlayer != null)
-                        {
-                            damages = typedHits.Select(x =>
-                            {
-
-                                if (ComputeGainPlayer(_trackerPlayer.GetStack(bgmsP, x.Time), x) < 0.0)
-                                {
-                                    return -1.0;
-                                }
-                                return ComputeGain(Tracker.GetStack(bgms, x.Time), x);
-                            }).Where(x => x != -1.0).ToList();
-                        }
-                        else
-                        {
-                            damages = typedHits.Select(x =>
-                            {
-                                return ComputeGain(Tracker.GetStack(bgms, x.Time), x);
-                            }).Where(x => x != -1.0).ToList();
-                        }
-                        extraDataList.Add(new DamageModifierStat(damages.Count, typedHits.Count, damages.Sum(), totalDamage));
-                    }
-                    dict[Name] = extraDataList;
+                    AbstractSingleActor target = log.FindActor(evt.To);
+                    Dictionary<long, BuffsGraphModel> bgms = target.GetBuffGraphs(log);
+                    double gain = ComputeGainPlayer(_trackerPlayer.GetStack(bgmsP, evt.Time), evt, log) < 0.0 ? -1.0 : ComputeGain(Tracker.GetStack(bgms, evt.Time), evt, log);
+                    res.Add(new DamageModifierEvent(evt, this, gain));
                 }
             }
+            else
+            {
+                foreach (AbstractHealthDamageEvent evt in typeHits)
+                {
+                    AbstractSingleActor target = log.FindActor(evt.To);
+                    Dictionary<long, BuffsGraphModel> bgms = target.GetBuffGraphs(log);
+                    res.Add(new DamageModifierEvent(evt, this, ComputeGain(Tracker.GetStack(bgms, evt.Time), evt, log)));
+                }
+            }
+            res.RemoveAll(x => x.DamageGain == -1.0);
+            return res;
         }
     }
 }

@@ -10,14 +10,14 @@ namespace Gw2LogParser.Parser.Data.Events.Buffs.BuffRemoves
         internal AbstractBuffRemoveEvent(Combat evtcItem, AgentData agentData, SkillData skillData) : base(evtcItem, skillData)
         {
             RemovedDuration = evtcItem.Value;
-            InternalBy = agentData.GetAgent(evtcItem.DstAgent);
-            To = agentData.GetAgent(evtcItem.SrcAgent);
+            By = agentData.GetAgent(evtcItem.DstAgent, evtcItem.Time);
+            To = agentData.GetAgent(evtcItem.SrcAgent, evtcItem.Time);
         }
 
         internal AbstractBuffRemoveEvent(Agent by, Agent to, long time, int removedDuration, Skill buffSkill) : base(buffSkill, time)
         {
             RemovedDuration = removedDuration;
-            InternalBy = by;
+            By = by;
             To = to;
         }
 

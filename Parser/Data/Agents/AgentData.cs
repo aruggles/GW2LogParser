@@ -8,7 +8,7 @@ namespace Gw2LogParser.Parser.Data.Agents
     public class AgentData
     {
         private readonly List<Agent> _allAgentsList;
-        private Dictionary<ulong, Agent> _allAgentsByAgent;
+        private Dictionary<ulong, List<Agent>> _allAgentsByAgent;
         private Dictionary<ushort, List<Agent>> _allAgentsByInstID;
         private Dictionary<int, List<Agent>> _allNPCsByID;
         private Dictionary<int, List<Agent>> _allGadgetsByID;
@@ -23,7 +23,7 @@ namespace Gw2LogParser.Parser.Data.Agents
             Refresh();
         }
 
-        internal Agent AddCustomAgent(long start, long end, Agent.AgentType type, string name, string prof, int ID, uint toughness = 0, uint healing = 0, uint condition = 0, uint concentration = 0, uint hitboxWidth = 0, uint hitboxHeight = 0)
+        internal Agent AddCustomAgent(long start, long end, Agent.AgentType type, string name, ParserHelper.Spec spec, int ID, bool isFake, ushort toughness = 0, ushort healing = 0, ushort condition = 0, ushort concentration = 0, uint hitboxWidth = 0, uint hitboxHeight = 0)
         {
             var rnd = new Random();
             ulong agentValue = 0;
@@ -36,25 +36,31 @@ namespace Gw2LogParser.Parser.Data.Agents
             {
                 instID = (ushort)rnd.Next(ushort.MaxValue / 2, ushort.MaxValue);
             }
-            var agent = new Agent(agentValue, name, prof, ID, instID, type, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight, start, end);
+            var agent = new Agent(agentValue, name, spec, ID, instID, type, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight, start, end, isFake);
             _allAgentsList.Add(agent);
             Refresh();
             return agent;
         }
 
-        public Agent GetAgent(ulong agentAddress)
+        public Agent GetAgent(ulong agentAddress, long time)
         {
             if (agentAddress != 0)
             {
-                if (_allAgentsByAgent.TryGetValue(agentAddress, out Agent a))
+                if (_allAgentsByAgent.TryGetValue(agentAddress, out List<Agent> agents))
                 {
-                    return a;
+                    foreach (Agent a in agents)
+                    {
+                        if (a.InAwareTimes(time))
+                        {
+                            return a;
+                        }
+                    }
                 }
             }
             return ParserHelper._unknownAgent;
         }
 
-        public List<Agent> GetNPCsByID(int id)
+        public IReadOnlyList<Agent> GetNPCsByID(int id)
         {
             if (id != 0)
             {
@@ -66,7 +72,7 @@ namespace Gw2LogParser.Parser.Data.Agents
             return new List<Agent>();
         }
 
-        public List<Agent> GetGadgetsByID(int id)
+        public IReadOnlyList<Agent> GetGadgetsByID(int id)
         {
             if (id != 0)
             {
@@ -78,33 +84,45 @@ namespace Gw2LogParser.Parser.Data.Agents
             return new List<Agent>();
         }
 
-        public Agent GetAgentByInstID(ushort instid, long logTime)
+        public Agent GetAgentByInstID(ushort instid, long time)
         {
             if (instid != 0)
             {
-                if (_allAgentsByInstID.TryGetValue(instid, out List<Agent> list))
+                if (_allAgentsByInstID.TryGetValue(instid, out List<Agent> agents))
                 {
-                    Agent a = list.FirstOrDefault(x => x.FirstAware <= logTime && x.LastAware >= logTime);
-                    if (a != null)
+                    foreach (Agent a in agents)
                     {
-                        return a;
+                        if (a.InAwareTimes(time))
+                        {
+                            return a;
+                        }
                     }
-                    return ParserHelper._unknownAgent;
                 }
             }
             return ParserHelper._unknownAgent;
         }
 
-        internal void OverrideID(int ID, Agent Agent)
+        internal void ReplaceAgentsFromID(Agent agentItem)
         {
-            _allAgentsList.RemoveAll(x => x.ID == ID);
-            _allAgentsList.Add(Agent);
+            _allAgentsList.RemoveAll(x => x.ID == agentItem.ID);
+            _allAgentsList.Add(agentItem);
+            Refresh();
+        }
+
+        internal void RemoveAllFrom(HashSet<Agent> agents)
+        {
+            if (!agents.Any())
+            {
+                return;
+            }
+            _allAgentsList.RemoveAll(x => agents.Contains(x));
+
             Refresh();
         }
 
         internal void Refresh()
         {
-            _allAgentsByAgent = _allAgentsList.GroupBy(x => x.AgentValue).ToDictionary(x => x.Key, x => x.ToList().First());
+            _allAgentsByAgent = _allAgentsList.GroupBy(x => x.AgentValue).ToDictionary(x => x.Key, x => x.ToList());
             _allNPCsByID = _allAgentsList.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.Where(y => y.Type == Agent.AgentType.NPC).ToList());
             _allGadgetsByID = _allAgentsList.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.Where(y => y.Type == Agent.AgentType.Gadget).ToList());
             _allAgentsByInstID = _allAgentsList.GroupBy(x => x.InstID).ToDictionary(x => x.Key, x => x.ToList());
@@ -112,7 +130,7 @@ namespace Gw2LogParser.Parser.Data.Agents
             _allAgentsByName = _allAgentsList.GroupBy(x => x.Name).ToDictionary(x => x.Key, x => x.ToList());
         }
 
-        public List<Agent> GetAgentByType(Agent.AgentType type)
+        public IReadOnlyList<Agent> GetAgentByType(Agent.AgentType type)
         {
             if (_allAgentsByType.TryGetValue(type, out List<Agent> list))
             {

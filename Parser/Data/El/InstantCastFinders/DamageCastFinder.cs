@@ -31,10 +31,10 @@ namespace Gw2LogParser.Parser.Data.El.InstantCastFinders
         {
             var res = new List<InstantCastEvent>();
             var damages = combatData.GetDamageData(_damageSkillID).GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
-            foreach (KeyValuePair<Agent, List<AbstractDamageEvent>> pair in damages)
+            foreach (KeyValuePair<Agent, List<AbstractHealthDamageEvent>> pair in damages)
             {
                 long lastTime = int.MinValue;
-                foreach (AbstractDamageEvent de in pair.Value)
+                foreach (AbstractHealthDamageEvent de in pair.Value)
                 {
                     if (de.Time - lastTime < ICD)
                     {

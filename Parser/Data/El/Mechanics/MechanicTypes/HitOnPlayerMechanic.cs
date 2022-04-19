@@ -4,7 +4,7 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
 {
     internal class HitOnPlayerMechanic : SkillOnPlayerMechanic
     {
-        protected override bool Keep(AbstractDamageEvent c, ParsedLog log)
+        protected override bool Keep(AbstractHealthDamageEvent c, ParsedLog log)
         {
             if (!c.HasHit)
             {

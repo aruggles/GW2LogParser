@@ -3,9 +3,10 @@ using Gw2LogParser.Parser.Data.El;
 using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Helper;
 using Gw2LogParser.Parser.Logic;
+using Gw2LogParser.Parser.Logic.Fractals.SunquaPeak;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 
 namespace Gw2LogParser.Parser.Data
 {
@@ -13,16 +14,21 @@ namespace Gw2LogParser.Parser.Data
     {
         // Fields
         private List<PhaseData> _phases = new List<PhaseData>();
+        private List<PhaseData> _nonDummyPhases = new List<PhaseData>();
         public int TriggerID { get; }
         public FightLogic Logic { get; }
-        public long FightOffset { get; private set; }
-        public long FightStart { get; } = 0;
         public long FightEnd { get; private set; } = long.MaxValue;
+        public long FightDuration => FightEnd;
+
+        public long LogStart { get; private set; }
+        public long LogEnd { get; private set; }
+
+        public long FightStartOffset => -LogStart;
         public string DurationString
         {
             get
             {
-                var duration = TimeSpan.FromMilliseconds(FightEnd);
+                var duration = TimeSpan.FromMilliseconds(FightDuration);
                 string durationString = duration.ToString("mm") + "m " + duration.ToString("ss") + "s " + duration.Milliseconds + "ms";
                 if (duration.Hours > 0)
                 {
@@ -38,9 +44,10 @@ namespace Gw2LogParser.Parser.Data
         private CMStatus _isCM = CMStatus.NotSet;
         public bool IsCM => _isCM == CMStatus.CMnoName || _isCM == CMStatus.CM;
         // Constructors
-        internal FightData(int id, AgentData agentData, long start, long end)
+        internal FightData(int id, AgentData agentData, ParserSettings parserSettings, long start, long end)
         {
-            FightOffset = start;
+            LogStart = start;
+            LogEnd = end;
             FightEnd = end - start;
             TriggerID = id;
             switch (ArcDPSEnums.GetTargetID(id))
@@ -77,7 +84,7 @@ namespace Gw2LogParser.Parser.Data
                     if (agentData.GetNPCsByID((int)ArcDPSEnums.TrashID.HauntingStatue).Count > 0)
                     {
                         TriggerID = (int)ArcDPSEnums.TrashID.HauntingStatue;
-                        Logic = new TwistedCastle((int)ArcDPSEnums.TargetID.TwistedCastle);
+                        Logic = new TwistedCastle((int)ArcDPSEnums.TargetID.DummyTarget);
                         break;
                     }
                     Logic = new Xera(id);
@@ -98,7 +105,7 @@ namespace Gw2LogParser.Parser.Data
                     Logic = new SoullessHorror(id);
                     break;
                 case ArcDPSEnums.TargetID.Desmina:
-                    Logic = new River(id);
+                    Logic = new River((int)ArcDPSEnums.TargetID.DummyTarget);
                     break;
                 case ArcDPSEnums.TargetID.BrokenKing:
                     Logic = new BrokenKing(id);
@@ -182,16 +189,24 @@ namespace Gw2LogParser.Parser.Data
                 case ArcDPSEnums.TargetID.Arkk:
                     Logic = new Arkk(id);
                     break;
-                //
-                case ArcDPSEnums.TargetID.WorldVersusWorld:
-                    Logic = new WvWFight(id);
+                case ArcDPSEnums.TargetID.AiKeeperOfThePeak:
+                    Logic = new AiKeeperOfThePeak(id);
                     break;
                 //
-                case ArcDPSEnums.TargetID.MassiveGolem:
+                case ArcDPSEnums.TargetID.WorldVersusWorld:
+                    Logic = new WvWFight(id, parserSettings.DetailedWvWParse);
+                    break;
+                //
+                case ArcDPSEnums.TargetID.MassiveGolem10M:
+                case ArcDPSEnums.TargetID.MassiveGolem4M:
+                case ArcDPSEnums.TargetID.MassiveGolem1M:
+                case ArcDPSEnums.TargetID.VitalGolem:
                 case ArcDPSEnums.TargetID.AvgGolem:
+                case ArcDPSEnums.TargetID.StdGolem:
+                case ArcDPSEnums.TargetID.ConditionGolem:
+                case ArcDPSEnums.TargetID.PowerGolem:
                 case ArcDPSEnums.TargetID.LGolem:
                 case ArcDPSEnums.TargetID.MedGolem:
-                case ArcDPSEnums.TargetID.StdGolem:
                     Logic = new Golem(id);
                     break;
                 //
@@ -199,7 +214,7 @@ namespace Gw2LogParser.Parser.Data
                     switch (ArcDPSEnums.GetTrashID(id))
                     {
                         case ArcDPSEnums.TrashID.HauntingStatue:
-                            Logic = new TwistedCastle((int)ArcDPSEnums.TargetID.TwistedCastle);
+                            Logic = new TwistedCastle((int)ArcDPSEnums.TargetID.DummyTarget);
                             break;
                         default:
                             // Unknown
@@ -214,25 +229,42 @@ namespace Gw2LogParser.Parser.Data
         {
             return Logic.GetLogicName(log) + (_isCM == CMStatus.CM ? " CM" : "");
         }
-        public List<PhaseData> GetPhases(ParsedLog log)
+        public IReadOnlyList<PhaseData> GetPhases(ParsedLog log)
         {
 
-            if (_phases.Count == 0)
+            if (!_phases.Any())
             {
                 _phases = Logic.GetPhases(log, log.ParserSettings.ParsePhases);
                 _phases.AddRange(Logic.GetBreakbarPhases(log, log.ParserSettings.ParsePhases));
                 _phases.RemoveAll(x => x.Targets.Count == 0);
                 if (_phases.Exists(x => x.BreakbarPhase && x.Targets.Count != 1))
                 {
-                    throw new InvalidDataException("Breakbar phases can only have one target");
+                    throw new InvalidOperationException("Breakbar phases can only have one target");
                 }
                 _phases.RemoveAll(x => x.DurationInMS < ParserHelper.PhaseTimeLimit);
-                _phases.Sort((x, y) => x.Start.CompareTo(y.Start));
+                _phases.Sort((x, y) =>
+                {
+                    int startCompare = x.Start.CompareTo(y.Start);
+                    if (startCompare == 0)
+                    {
+                        return -x.DurationInMS.CompareTo(y.DurationInMS);
+                    }
+                    return startCompare;
+                });
             }
             return _phases;
         }
 
-        public List<NPC> GetMainTargets(ParsedLog log)
+        public IReadOnlyList<PhaseData> GetNonDummyPhases(ParsedLog log)
+        {
+            if (!_nonDummyPhases.Any())
+            {
+                _nonDummyPhases = GetPhases(log).Where(x => !x.Dummy).ToList();
+            }
+            return _nonDummyPhases;
+        }
+
+        public IReadOnlyList<AbstractSingleActor> GetMainTargets(ParsedLog log)
         {
             return GetPhases(log)[0].Targets;
         }
@@ -252,10 +284,11 @@ namespace Gw2LogParser.Parser.Data
             FightEnd = fightEnd;
         }
 
-        internal void OverrideOffset(long offset)
+        internal void ApplyOffset(long offset)
         {
-            FightEnd += FightOffset - offset;
-            FightOffset = offset;
+            FightEnd += LogStart - offset;
+            LogStart -= offset;
+            LogEnd -= offset;
         }
     }
 }

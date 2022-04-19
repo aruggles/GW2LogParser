@@ -15,7 +15,6 @@ namespace Gw2LogParser
         [STAThread]
         static void Main()
         {
-            GW2APIController.InitAPICache();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());

@@ -18,8 +18,12 @@ namespace Gw2LogParser.ExportModels.Report
         public int Invulnerable { get; set; }
         public int Evaded { get; set; }
         public int Blocked { get; set; }
+        public int Killed { get; set; }
+        public int Downed { get; set; }
         public float Wasted { get; set; }
+        public int WastedCount { get; set; }
         public float Saved { get; set; }
+        public float SavedCount { get; set; }
         public int WeaponSwapped { get; set; }
         public double AvgDistanceToSquad { get; set; }
         public double AvgDistanceToTag { get; set; }
@@ -37,7 +41,12 @@ namespace Gw2LogParser.ExportModels.Report
             Invulnerable = other.Invulnerable;
             Evaded = other.Evaded;
             Blocked = other.Blocked;
+            Downed = other.Downed;
+            Killed = other.Killed;
             Wasted = other.Wasted;
+            WastedCount = other.WastedCount;
+            Saved = other.Saved;
+            SavedCount = other.SavedCount;
             WeaponSwapped = other.WeaponSwapped;
             AvgDistanceToSquad = other.AvgDistanceToSquad;
             AvgDistanceToTag = other.AvgDistanceToTag;

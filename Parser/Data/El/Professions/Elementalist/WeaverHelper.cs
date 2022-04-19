@@ -6,12 +6,12 @@ using Gw2LogParser.Parser.Data.Events.Buffs;
 using Gw2LogParser.Parser.Data.Events.Buffs.BuffApplies;
 using Gw2LogParser.Parser.Data.Events.Buffs.BuffRemoves;
 using Gw2LogParser.Parser.Data.Skills;
-using Gw2LogParser.Parser.Helper;
-using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using static Gw2LogParser.Parser.Data.El.Buffs.Buff;
 using static Gw2LogParser.Parser.Data.El.DamageModifiers.DamageModifier;
+using static Gw2LogParser.Parser.Helper.ParserHelper;
 
 namespace Gw2LogParser.Parser.Data.El.Professions
 {
@@ -29,7 +29,7 @@ namespace Gw2LogParser.Parser.Data.El.Professions
         internal static readonly List<InstantCastFinder> InstantCastFinder = new List<InstantCastFinder>()
         {
             new BuffGainCastFinder(40183, 42086, InstantCastFinders.InstantCastFinder.DefaultICD), // Primordial Stance
-            //new BuffGainCastFinder(44926, ???, 500), // Stone Resonance, lesser stone resonance makes thing complicated
+            new BuffGainCastFinder(44926, 45097, 500), // Stone Resonance
             new BuffGainCastFinder(44612, 42683, InstantCastFinders.InstantCastFinder.DefaultICD), // Unravel
             // Fire       
             new BuffGainCastFinder(FireDual, FireDual, InstantCastFinders.InstantCastFinder.DefaultICD),
@@ -56,44 +56,47 @@ namespace Gw2LogParser.Parser.Data.El.Professions
 
         internal static readonly List<DamageModifier> DamageMods = new List<DamageModifier>
         {
-            new BuffDamageModifier(42061, "Weaver's Prowess", "10% cDam (8s) after switching element",  DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, ParserHelper.Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/7/75/Weaver%27s_Prowess.png", DamageModifierMode.All),
-            new BuffDamageModifier(42416, "Elements of Rage", "10% (8s) after double attuning", DamageSource.NoPets, 10.0, DamageType.Power, DamageType.All, ParserHelper.Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/a/a2/Elements_of_Rage.png", DamageModifierMode.All),
-            new BuffDamageModifier(45110, "Woven Fire", "20%", DamageSource.NoPets, 20.0, DamageType.Condition, DamageType.All, ParserHelper.Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/b/b1/Woven_Fire.png", DamageModifierMode.All),
-            new BuffDamageModifier(45267, "Perfect Weave", "20%", DamageSource.NoPets, 20.0, DamageType.Condition, DamageType.All, ParserHelper.Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/2/2a/Weave_Self.png", DamageModifierMode.All),
-            new BuffDamageModifier(new long[] { 719, 5974}, "Swift Revenge", "7% under swiftness/superspeed", DamageSource.NoPets, 7.0, DamageType.Power, DamageType.All, ParserHelper.Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/9/94/Swift_Revenge.png", 0, 97950, DamageModifierMode.PvE),
-            new BuffDamageModifier(new long[] { 719, 5974}, "Swift Revenge", "10% under swiftness/superspeed", DamageSource.NoPets, 10.0, DamageType.Power, DamageType.All, ParserHelper.Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/9/94/Swift_Revenge.png", 97950, ulong.MaxValue, DamageModifierMode.All)
+            new BuffDamageModifier(42061, "Weaver's Prowess", "10% cDam (8s) after switching element",  DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/7/75/Weaver%27s_Prowess.png", DamageModifierMode.All),
+            new BuffDamageModifier(42416, "Elements of Rage", "10% (8s) after double attuning", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/a/a2/Elements_of_Rage.png", 0, 115190, DamageModifierMode.All),
+            new BuffDamageModifier(42416, "Elements of Rage", "5% (8s) after double attuning", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/a/a2/Elements_of_Rage.png", 115190, ulong.MaxValue, DamageModifierMode.All),
+            new BuffDamageModifier(45110, "Woven Fire", "20%", DamageSource.NoPets, 20.0, DamageType.Condition, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/b/b1/Woven_Fire.png", DamageModifierMode.All),
+            new BuffDamageModifier(45267, "Perfect Weave", "20%", DamageSource.NoPets, 20.0, DamageType.Condition, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/2/2a/Weave_Self.png", DamageModifierMode.All),
+            new BuffDamageModifier(new long[] { 719, 5974}, "Swift Revenge", "7% under swiftness/superspeed", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/9/94/Swift_Revenge.png", 0, 97950, DamageModifierMode.PvE),
+            new BuffDamageModifier(new long[] { 719, 5974}, "Swift Revenge", "10% under swiftness/superspeed", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Weaver, ByPresence, "https://wiki.guildwars2.com/images/9/94/Swift_Revenge.png", 97950, ulong.MaxValue, DamageModifierMode.All)
         };
 
 
         internal static readonly List<Buff> Buffs = new List<Buff>
         {
-                new Buff("Dual Fire Attunement", FireDual, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/b/b4/Fire_Attunement.png"),
-                new Buff("Fire Water Attunement", FireWater, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/ihqKuUJ.png"),
-                new Buff("Fire Air Attunement", FireAir, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/kKFJ8cT.png"),
-                new Buff("Fire Earth Attunement", FireEarth, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/T4187h0.png"),
-                new Buff("Dual Water Attunement", WaterDual, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/3/31/Water_Attunement.png"),
-                new Buff("Water Fire Attunement", WaterFire, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/vMUkzxH.png"),
-                new Buff("Water Air Attunement", WaterAir, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/5G5OFud.png"),
-                new Buff("Water Earth Attunement", WaterEarth, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/QKEtF2P.png"),
-                new Buff("Dual Air Attunement", AirDual, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/9/91/Air_Attunement.png"),
-                new Buff("Air Fire Attunement", AirFire, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/vf68GJm.png"),
-                new Buff("Air Water Attunement", AirWater, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/Tuj5Sro.png"),
-                new Buff("Air Earth Attunement", AirEarth, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/lHcOSwk.png"),
-                new Buff("Dual Earth Attunement", EarthDual, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/a/a8/Earth_Attunement.png"),
-                new Buff("Earth Fire Attunement", EarthFire, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/aJWvE0I.png"),
-                new Buff("Earth Water Attunement", EarthWater, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/jtjj2TG.png"),
-                new Buff("Earth Air Attunement", EarthAir, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/4Eti7Pb.png"),
-                new Buff("Primordial Stance",42086, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/3/3a/Primordial_Stance.png"),
-                new Buff("Unravel",42683, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/4/4b/Unravel.png"),
-                new Buff("Weave Self",42951, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/2/2a/Weave_Self.png"),
-                new Buff("Woven Air",43038, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/b/bc/Woven_Air.png"),
-                new Buff("Woven Fire",45110, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/b/b1/Woven_Fire.png"),
-                new Buff("Woven Earth",45662, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/7/7a/Woven_Earth.png"),
-                new Buff("Woven Water",43499, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/a/a6/Woven_Water.png"),
-                new Buff("Perfect Weave",45267, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/2/2a/Weave_Self.png"),
-                new Buff("Molten Armor",43586, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/7/71/Lava_Skin.png"),
-                new Buff("Weaver's Prowess",42061, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/7/75/Weaver%27s_Prowess.png"),
-                new Buff("Elements of Rage",42416, ParserHelper.Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/a/a2/Elements_of_Rage.png"),
+                new Buff("Dual Fire Attunement", FireDual, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/b/b4/Fire_Attunement.png"),
+                new Buff("Fire Water Attunement", FireWater, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/ar8Hn8G.png"),
+                new Buff("Fire Air Attunement", FireAir, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/YU31LwG.png"),
+                new Buff("Fire Earth Attunement", FireEarth, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/64g3rto.png"),
+                new Buff("Dual Water Attunement", WaterDual, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/3/31/Water_Attunement.png"),
+                new Buff("Water Fire Attunement", WaterFire, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/H1peqpz.png"),
+                new Buff("Water Air Attunement", WaterAir, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/Gz1XwEw.png"),
+                new Buff("Water Earth Attunement", WaterEarth, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/zqX3y4c.png"),
+                new Buff("Dual Air Attunement", AirDual, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/9/91/Air_Attunement.png"),
+                new Buff("Air Fire Attunement", AirFire, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/4ekncW5.png"),
+                new Buff("Air Water Attunement", AirWater, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/HIcUaXG.png"),
+                new Buff("Air Earth Attunement", AirEarth, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/MCCrMls.png"),
+                new Buff("Dual Earth Attunement", EarthDual, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/a/a8/Earth_Attunement.png"),
+                new Buff("Earth Fire Attunement", EarthFire, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/Vgu0B54.png"),
+                new Buff("Earth Water Attunement", EarthWater, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/exrTKSW.png"),
+                new Buff("Earth Air Attunement", EarthAir, Source.Weaver, BuffNature.GraphOnlyBuff, "https://i.imgur.com/Z3P8cPa.png"),
+                new Buff("Primordial Stance",42086, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/3/3a/Primordial_Stance.png"),
+                new Buff("Unravel",42683, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/4/4b/Unravel.png"),
+                new Buff("Weave Self",42951, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/2/2a/Weave_Self.png"),
+                new Buff("Woven Air",43038, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/b/bc/Woven_Air.png"),
+                new Buff("Woven Fire",45110, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/b/b1/Woven_Fire.png"),
+                new Buff("Woven Earth",45662, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/7/7a/Woven_Earth.png"),
+                new Buff("Woven Water",43499, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/a/a6/Woven_Water.png"),
+                new Buff("Perfect Weave",45267, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/2/2a/Weave_Self.png"),
+                new Buff("Molten Armor",43586, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/7/71/Lava_Skin.png"),
+                new Buff("Weaver's Prowess",42061, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/7/75/Weaver%27s_Prowess.png"),
+                new Buff("Elements of Rage",42416, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/a/a2/Elements_of_Rage.png"),
+                new Buff("Stone Resonance",45097, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/5/57/Stone_Resonance.png"),
+                new Buff("Grinding Stones",51658, Source.Weaver, BuffNature.GraphOnlyBuff, "https://wiki.guildwars2.com/images/3/3d/Grinding_Stones.png"),
         };
 
 
@@ -120,7 +123,7 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             // removed the throw
             /*if (buffApplies.Select(x => x.BuffID).Distinct().Count() > 3)
             {
-                throw new InvalidOperationException("Too much buff apply events in TranslateWeaverAttunement");
+                throw new EIException("Too much buff apply events in TranslateWeaverAttunement");
             }*/
             var duals = new HashSet<long>
             {
@@ -153,12 +156,12 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             IEnumerable<long> inter = major.Intersect(minor);
             if (inter.Count() != 1)
             {
-                throw new InvalidOperationException("Intersection incorrect in TranslateWeaverAttunement");
+                throw new InvalidDataException("Intersection incorrect in TranslateWeaverAttunement");
             }
             return inter.First();
         }
 
-        public static List<AbstractBuffEvent> TransformWeaverAttunements(List<AbstractBuffEvent> buffs, Agent a, SkillData skillData)
+        public static List<AbstractBuffEvent> TransformWeaverAttunements(IReadOnlyList<AbstractBuffEvent> buffs, Dictionary<long, List<AbstractBuffEvent>> buffsByID, Agent a, SkillData skillData)
         {
             var res = new List<AbstractBuffEvent>();
             var attunements = new HashSet<long>
@@ -201,9 +204,11 @@ namespace Gw2LogParser.Parser.Data.El.Professions
                 airEarth,*/
             };
             // first we get rid of standard attunements
+            var toClean = new HashSet<long>();
             var attuns = buffs.Where(x => attunements.Contains(x.BuffID)).ToList();
             foreach (AbstractBuffEvent c in attuns)
             {
+                toClean.Add(c.BuffID);
                 c.Invalidate(skillData);
             }
             // get all weaver attunements ids and group them by time
@@ -212,22 +217,7 @@ namespace Gw2LogParser.Parser.Data.El.Professions
             {
                 return res;
             }
-            var groupByTime = new Dictionary<long, List<AbstractBuffEvent>>();
-            foreach (AbstractBuffEvent c in weaverAttuns)
-            {
-                long key = groupByTime.Keys.FirstOrDefault(x => Math.Abs(x - c.Time) < ParserHelper.ServerDelayConstant);
-                if (key != 0)
-                {
-                    groupByTime[key].Add(c);
-                }
-                else
-                {
-                    groupByTime[c.Time] = new List<AbstractBuffEvent>
-                            {
-                                c
-                            };
-                }
-            }
+            Dictionary<long, List<AbstractBuffEvent>> groupByTime = GroupByTime(weaverAttuns);
             long prevID = 0;
             foreach (KeyValuePair<long, List<AbstractBuffEvent>> pair in groupByTime)
             {
@@ -235,6 +225,7 @@ namespace Gw2LogParser.Parser.Data.El.Professions
                 long curID = TranslateWeaverAttunement(applies);
                 foreach (AbstractBuffEvent c in pair.Value)
                 {
+                    toClean.Add(c.BuffID);
                     c.Invalidate(skillData);
                 }
                 if (curID == 0)
@@ -249,6 +240,10 @@ namespace Gw2LogParser.Parser.Data.El.Professions
                     res.Add(new BuffRemoveAllEvent(a, a, pair.Key, int.MaxValue, skillData.Get(prevID), 1, int.MaxValue));
                 }
                 prevID = curID;
+            }
+            foreach (long buffID in toClean)
+            {
+                buffsByID[buffID].RemoveAll(x => x.BuffID == NoBuff);
             }
             return res;
         }

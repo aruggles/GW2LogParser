@@ -35,18 +35,19 @@
                 <a class="nav-item nav-link" data-toggle="tab" href="#nav-support" role="tab" aria-controls="nav-support" aria-selected="true">Support Stats</a>
                 <a class="nav-item nav-link" data-toggle="tab" href="#nav-gameplay" role="tab" aria-controls="nav-gameplay" aria-selected="true">Gameplay Stats</a>
                 <a class="nav-item nav-link" data-toggle="tab" href="#nav-boons" role="tab" aria-controls="nav-boons" aria-selected="true">Boon Stats</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-healing" role="tab" aria-controls="nav-healing" aria-selected="true">Healing Stats</a>
             </div>
         </nav>
         <div class="tab-content">
             <div class="tab-pane fade show active" id="nav-damage" role="tabpanel" aria-labelledby="nav-damage-tab">
-                <table class="table table-striped">
+                <table class="table table-striped" id="table-damagestats">
                     <thead>
                         <tr>
-                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                            <th>&nbsp;</th>
+                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                            <th style="width: 32px;">&nbsp;</th>
                             <th>Name</th>
                             <th>Account</th>
-                            <th>Combat Time (s)</th>
+                            <th>Combat Time</th>
                             <th>Total DPS</th>
                             <th>All Damage</th>
                             <th>Power</th>
@@ -56,17 +57,14 @@
                             <th>Condi</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Player Damage Stats -->
-                    </tbody>
                 </table>
             </div>
             <div class="tab-pane" id="nav-defense" role="tabpanel" aria-labelledby="nav-defense-tab">
-                <table class="table table-striped">
+                <table class="table table-striped" id="table-defensestats">
                     <thead>
                         <tr>
-                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                            <th>&nbsp;</th>
+                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                            <th style="width: 32px;">&nbsp;</th>
                             <th>Name</th>
                             <th>Account</th>
                             <th data-toggle="tooltip" title="Damage Taken">Dmg Taken</th>
@@ -81,17 +79,14 @@
                             <th data-toggle="tooltip" title="Times died">Dead</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Player Defense Stats -->
-                    </tbody>
                 </table>
             </div>
             <div class="tab-pane" id="nav-support" role="tabpanel" aria-labelledby="nav-support-tab">
-                <table class="table table-striped">
+                <table class="table table-striped" id="table-supportstats">
                     <thead>
                         <tr>
-                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                            <th>&nbsp;</th>
+                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                            <th style="width: 32px;">&nbsp;</th>
                             <th>Name</th>
                             <th>Account</th>
                             <th>Condi Cleanse on Others</th>
@@ -100,17 +95,14 @@
                             <th>Resurrects</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Player Support Stats -->
-                    </tbody>
                 </table>
             </div>
             <div class="tab-pane" id="nav-gameplay" role="tabpanel" aria-labelledby="nav-gameplay-tab">
-                <table class="table table-striped">
+                <table class="table table-striped" id="table-gameplaystats">
                     <thead>
                         <tr>
-                            <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                            <th>&nbsp;</th>
+                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                            <th style="width: 32px;">&nbsp;</th>
                             <th>Name</th>
                             <th>Account</th>
                             <th data-toggle="tooltip" title="Number of fights from the log you participated in; used for averages">
@@ -143,6 +135,12 @@
                             <th data-toggle="tooltip" title="Times the enemy blocked an attack">
                                 <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Blocked" class="icon icon-hover">
                             </th>
+                            <th data-toggle="tooltip" title="Number of times downed target">
+                                <img src="https://wiki.guildwars2.com/images/c/c6/Downed_enemy.png" alt="Downed" class="icon icon-hover">
+                            </th>
+                            <th data-toggle="tooltip" title="Number of times killed target">
+                                <img src="https://wiki.guildwars2.com/images/4/4a/Ally_death_%28interface%29.png" alt="Killed" class="icon icon-hover">
+                            </th>
                             <th data-toggle="tooltip" title="Time wasted(in seconds) interupting skill casts">
                                 <img src="https://wiki.guildwars2.com/images/b/b3/Out_Of_Health_Potions.png" alt="Wasted"
                                      class="icon icon-hover">
@@ -164,9 +162,6 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Player Gameplay Stats -->
-                    </tbody>
                 </table>
             </div>
             <div class="tab-pane" id="nav-boons" role="tabpanel" aria-labelledby="nav-boons-tab">
@@ -182,11 +177,11 @@
                 </nav>
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="nav-boon-uptime" role="tabpanel" aria-labelledby="nav-boon-uptime-tab">
-                        <table class="table table-striped">
+                        <table class="oldtable table table-striped">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                                    <th>&nbsp;</th>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
                                     <th data-toggle="tooltip" title="Might, Max Stack(s) 25, Condition Damage: +30, Power: +30">
@@ -223,12 +218,11 @@
                                     <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
                                         <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
-                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resistance, Max Stack(s) 99, Duration Cap: 30 seconds">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
-                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
-                                             class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resolution, Max Stack(s) 99, Duration Cap: 30 seconds, Incoming Condition Damage (Mult): -33%">
+                                        <img src="https://wiki.guildwars2.com/images/0/06/Resolution.png" alt="Resolution" class="icon icon-hover">
                                     </th>
                                 </tr>
                             </thead>
@@ -238,11 +232,11 @@
                         </table>
                     </div>
                     <div class="tab-pane" id="nav-boon-self" role="tabpanel" aria-labelledby="nav-boonself-tab">
-                        <table class="table table-striped">
+                        <table class="oldtable table table-striped">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                                    <th>&nbsp;</th>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
                                     <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
@@ -279,12 +273,11 @@
                                     <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
                                         <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
-                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resistance, Max Stack(s) 99, Duration Cap: 30 seconds">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
-                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
-                                             class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resolution, Max Stack(s) 99, Duration Cap: 30 seconds, Incoming Condition Damage (Mult): -33%">
+                                        <img src="https://wiki.guildwars2.com/images/0/06/Resolution.png" alt="Resolution" class="icon icon-hover">
                                     </th>
                                 </tr>
                             </thead>
@@ -294,11 +287,11 @@
                         </table>
                     </div>
                     <div class="tab-pane fade show" id="nav-boon-group" role="tabpanel" aria-labelledby="nav-boongroup-tab">
-                        <table class="table table-striped">
+                        <table class="oldtable table table-striped">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                                    <th>&nbsp;</th>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
                                     <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
@@ -335,12 +328,11 @@
                                     <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
                                         <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
-                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resistance, Max Stack(s) 99, Duration Cap: 30 seconds">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
-                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
-                                             class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resolution, Max Stack(s) 99, Duration Cap: 30 seconds, Incoming Condition Damage (Mult): -33%">
+                                        <img src="https://wiki.guildwars2.com/images/0/06/Resolution.png" alt="Resolution" class="icon icon-hover">
                                     </th>
                                 </tr>
                             </thead>
@@ -350,11 +342,11 @@
                         </table>
                     </div>
                     <div class="tab-pane fade show" id="nav-boon-offgroup" role="tabpanel" aria-labelledby="nav-boonoffgroup-tab">
-                        <table class="table table-striped">
+                        <table class="oldtable table table-striped">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                                    <th>&nbsp;</th>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
                                     <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
@@ -391,12 +383,11 @@
                                     <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
                                         <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
-                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resistance, Max Stack(s) 99, Duration Cap: 30 seconds">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
-                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
-                                             class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resolution, Max Stack(s) 99, Duration Cap: 30 seconds, Incoming Condition Damage (Mult): -33%">
+                                        <img src="https://wiki.guildwars2.com/images/0/06/Resolution.png" alt="Resolution" class="icon icon-hover">
                                     </th>
                                 </tr>
                             </thead>
@@ -406,11 +397,11 @@
                         </table>
                     </div>
                     <div class="tab-pane fade show" id="nav-boon-squad" role="tabpanel" aria-labelledby="nav-boonsquad-tab">
-                        <table class="table table-striped">
+                        <table class="oldtable table table-striped">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group">Grp</th>
-                                    <th>&nbsp;</th>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
                                     <th data-toggle="tooltip" title="Might,  Max Stack(s) 25, Condition Damage: +30, Power: +30">
@@ -447,18 +438,88 @@
                                     <th data-toggle="tooltip" title="Swiftness,  Max Stack(s) 9, Movement Speed:  +33%, Movement Speed:  +66%">
                                         <img src="https://wiki.guildwars2.com/images/a/af/Swiftness.png" alt="Swiftness" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Retaliation,  Max Stack(s) 5, Damage Formula: (0.0375 * Power + 5.2)">
-                                        <img src="https://wiki.guildwars2.com/images/5/53/Retaliation.png" alt="Retaliation" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resistance, Max Stack(s) 99, Duration Cap: 30 seconds">
+                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Resistance,  Max Stack(s) 5">
-                                        <img src="https://wiki.guildwars2.com/images/4/4b/Resistance.png" alt="Resistance"
-                                             class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Resolution, Max Stack(s) 99, Duration Cap: 30 seconds, Incoming Condition Damage (Mult): -33%">
+                                        <img src="https://wiki.guildwars2.com/images/0/06/Resolution.png" alt="Resolution" class="icon icon-hover">
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Player Boon Squad Stats -->
                             </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane" id="nav-healing" role="tabpanel" aria-labelledby="nav-healing-tab">
+                <h2>Healing Stats</h2>
+                <nav id="table-healing-tab">
+                    <div class="nav nav-tabs" role="tablist">
+                        <a class="nav-item nav-link active" data-toggle="tab" href="#nav-healing-outgoing" role="tab" aria-controls="nav-healing-outgoing" aria-selected="true">Outgoing Healing Stats</a>
+                        <a class="nav-item nav-link" data-toggle="tab" href="#nav-healing-incoming" role="tab" aria-controls="nav-healing-incoming" aria-selected="true">Incoming Healing Stats</a>
+                    </div>
+                </nav>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="nav-healing-outgoing" role="tabpanel" aria-labelledby="nav-healing-outgoing-tab">
+                        <table class="table table-striped" id="table-healing-outgoing">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="All">
+                                        Target <img src="https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/20px-Healing.png" alt="All" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Healing Power">
+                                        Target <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="Healing Power" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Conversion">
+                                        Target <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="Conversion" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Downed Healing">
+                                        Target <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Downed Healing" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="All">
+                                        All <img src="https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/20px-Healing.png" alt="All" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Healing Power">
+                                        All <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="Healing Power" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Conversion">
+                                        All <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="Conversion" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Downed Healing">
+                                        All <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Downed Healing" class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="tab-pane" id="nav-healing-incoming" role="tabpanel" aria-labelledby="nav-healingincoming-tab">
+                        <table class="table table-striped" id="table-healing-incoming">
+                            <thead>
+                                <tr>
+                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th style="width: 32px;">&nbsp;</th>
+                                    <th>Name</th>
+                                    <th>Account</th>
+                                    <th data-toggle="tooltip" title="Healed">
+                                        <img src="https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/20px-Healing.png" alt="Healed" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Healing Power Healed">
+                                        <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="Healing Power Healed" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Conversion Healed">
+                                        <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="Conversion Healed" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Downed Healed">
+                                        <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Downed Healing" class="icon icon-hover">
+                                    </th>
+                                </tr>
+                            </thead>
                         </table>
                     </div>
                 </div>
@@ -479,17 +540,501 @@
             <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
             <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
             <script>
+                function buildHealingData() {
+                    data = [];
+                    for (const [key, value] of Object.entries(playerData)) {
+                        data.push({
+                            group: value.group, profession: value.profession, name: key, account: value.account,
+                            incomingConversion: value.healing.incomingConversion,
+                            incomingDowned: value.healing.incomingDowned,
+                            incomingHealed: value.healing.incomingHealed,
+                            incomingHealingPower: value.healing.incomingHealingPower,
+                            outgoingAll: value.healing.outgoingAll,
+                            outgoingAllConversion: value.healing.outgoingAllConversion,
+                            outgoingAllDowned: value.healing.outgoingAllDowned,
+                            outgoingAllHealingPower: value.healing.outgoingAllHealingPower,
+                            outgoingTargetAll: value.healing.outgoingTargetAll,
+                            outgoingTargetConversion: value.healing.outgoingTargetConversion,
+                            outgoingTargetDowned: value.healing.outgoingTargetDowned,
+                            outgoingTargetHealingPower: value.healing.outgoingTargetHealingPower
+                        });
+                    }
+                    return data;
+                }
+                function getProfIcon(prof) {
+                    switch (prof) {
+                        case 'Warrior':
+                            return 'https://wiki.guildwars2.com/images/4/43/Warrior_tango_icon_20px.png';
+                        case 'Berserker':
+                            return 'https://wiki.guildwars2.com/images/d/da/Berserker_tango_icon_20px.png';
+                        case 'Spellbreaker':
+                            return 'https://wiki.guildwars2.com/images/e/ed/Spellbreaker_tango_icon_20px.png';
+                        case 'Guardian':
+                            return 'https://wiki.guildwars2.com/images/8/8c/Guardian_tango_icon_20px.png';
+                        case 'Dragonhunter':
+                            return 'https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png';
+                        case 'DragonHunter':
+                            return 'https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png';
+                        case 'Firebrand':
+                            return 'https://wiki.guildwars2.com/images/0/02/Firebrand_tango_icon_20px.png';
+                        case 'Revenant':
+                            return 'https://wiki.guildwars2.com/images/b/b5/Revenant_tango_icon_20px.png';
+                        case 'Herald':
+                            return 'https://wiki.guildwars2.com/images/6/67/Herald_tango_icon_20px.png';
+                        case 'Renegade':
+                            return 'https://wiki.guildwars2.com/images/7/7c/Renegade_tango_icon_20px.png';
+                        case 'Engineer':
+                            return 'https://wiki.guildwars2.com/images/2/27/Engineer_tango_icon_20px.png';
+                        case 'Scrapper':
+                            return 'https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png';
+                        case 'Holosmith':
+                            return 'https://wiki.guildwars2.com/images/2/28/Holosmith_tango_icon_20px.png';
+                        case 'Ranger':
+                            return 'https://wiki.guildwars2.com/images/4/43/Ranger_tango_icon_20px.png';
+                        case 'Druid':
+                            return 'https://wiki.guildwars2.com/images/d/d2/Druid_tango_icon_20px.png';
+                        case 'Soulbeast':
+                            return 'https://wiki.guildwars2.com/images/7/7c/Soulbeast_tango_icon_20px.png';
+                        case 'Thief':
+                            return 'https://wiki.guildwars2.com/images/7/7a/Thief_tango_icon_20px.png';
+                        case 'Daredevil':
+                            return 'https://wiki.guildwars2.com/images/e/e1/Daredevil_tango_icon_20px.png';
+                        case 'Deadeye':
+                            return 'https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png';
+                        case 'Elementalist':
+                            return 'https://wiki.guildwars2.com/images/a/aa/Elementalist_tango_icon_20px.png';
+                        case 'Tempest':
+                            return 'https://wiki.guildwars2.com/images/4/4a/Tempest_tango_icon_20px.png';
+                        case 'Weaver':
+                            return 'https://wiki.guildwars2.com/images/f/fc/Weaver_tango_icon_20px.png';
+                        case 'Mesmer':
+                            return 'https://wiki.guildwars2.com/images/6/60/Mesmer_tango_icon_20px.png';
+                        case 'Chronomancer':
+                            return 'https://wiki.guildwars2.com/images/f/f4/Chronomancer_tango_icon_20px.png';
+                        case 'Mirage':
+                            return 'https://wiki.guildwars2.com/images/d/df/Mirage_tango_icon_20px.png';
+                        case 'Necromancer':
+                            return 'https://wiki.guildwars2.com/images/4/43/Necromancer_tango_icon_20px.png';
+                        case 'Reaper':
+                            return 'https://wiki.guildwars2.com/images/1/11/Reaper_tango_icon_20px.png';
+                        case 'Scourge':
+                            return 'https://wiki.guildwars2.com/images/0/06/Scourge_tango_icon_20px.png';
+                        case 'Sword':
+                            return 'https://wiki.guildwars2.com/images/0/07/Crimson_Antique_Blade.png';
+                    }
+                    return '';
+                }
+                function nameFunction(data, type) {
+                    if (type === 'display') {
+                        return '<a href=\"#' + playerData[data].identifier + '\">' + data + '</a>';
+                    }
+                    return data;
+                }
+                function professionFunction(data, type) {
+                    if (type === 'display') {
+                        return '<img src=\"' + getProfIcon(data) + '\" alt=\"' + data + '\" class=\"icon icon-hover" data-toggle="tooltip" title=\"' + data + '\" />';
+                    }
+                    return data;
+                }
+                function formatPercent(number, digits = 2) {
+                    // return (Math.round(number * 100) / 100).toFixed(2);
+                    return new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(number)
+                }
+                var playerArray = [];
+                var playerData = ${logDataJson};
+                for (const [_, value] of Object.entries(playerData)) {
+                    value.gameplay.critPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.critableHits / value.gameplay.criticalHits) * 100.0) + '%';
+                    value.gameplay.flankPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.flanking / value.gameplay.criticalHits) * 100.0) + '%';
+                    value.gameplay.glancePercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.glancing / value.gameplay.criticalHits) * 100.0) + '%';
+                    value.gameplay.avgToSquad = formatPercent(value.gameplay.avgDistanceToSquad / value.numberOfFights);
+                    value.gameplay.avgToTag = formatPercent(value.gameplay.avgDistanceToTag / value.numberOfFights);
+                    playerArray.push(value);
+                }
+
                 $(document).ready(function () {
-                    $('[data-toggle="tooltip"]').tooltip();
-                    $('.table').DataTable({
-                        "paging": false,
-                        "searching": false,
-                        "info": false
+                    $.extend($.fn.dataTable.defaults, {
+                        searching: false,
+                        ordering: true,
+                        paging: false,
+                        info: false,
+                        retrieve: true,
+                        autoWidth: false,
+                        dom: "t"
                     });
+                    $('#table-damagestats').DataTable({
+                        data: playerArray,
+                        order: [[5, "desc"]],
+                        columns: [
+                            { data: 'group' },
+                            {
+                                data: 'profession',
+                                render: professionFunction
+                            },
+                            {
+                                data: 'name',
+                                render: nameFunction
+                            },
+                            { data: 'account' },
+                            {
+                                data: 'timeInCombat',
+                                render: function (data, type) {
+                                    if (type === 'display') {
+                                        var seconds = Math.floor(data / 1000);
+                                        if (seconds < 60) {
+                                            return '<span title=\"' + data + 'ms\" data-toggle="tooltip">' + seconds + 's</span>';
+                                        }
+                                        var minutes = Math.floor(seconds / 60);
+                                        seconds = seconds % 60;
+                                        if (minutes < 60) {
+                                            return '<span title=\"' + data + '\ms" data-toggle="tooltip">' + minutes + 'm ' + seconds + 's</span>';
+                                        }
+                                        hours = Math.floor(minutes / 60);
+                                        minutes = minutes % 60;
+                                        return '<span title=\"' + data + '\ms" data-toggle="tooltip">' + hours + 'h ' + minutes + 'm ' + seconds + 's</span>';
+                                    }
+                                    return data;
+                                }
+                            },
+                            { data: 'dps' },
+                            { data: 'damage.allDamage' },
+                            { data: 'damage.power' },
+                            { data: 'damage.condi' },
+                            { data: 'damage.targetDamage' },
+                            { data: 'damage.targetPower' },
+                            { data: 'damage.targetCondi' }
+                        ]
+                    });
+                    var healingData = buildHealingData();
                     $('#table-tab').tab('show');
                     $('nav.players').tab('show');
-                    $('.dataTables_length').addClass('bs-select');
                     $('#nav-boons').tab();
+                    $('#table-healing-outgoing').DataTable({
+                        data: healingData,
+                        order: [[4, "desc"]],
+                        columns: [
+                            { data: 'group' },
+                            {
+                                data: 'profession',
+                                render: professionFunction
+                            },
+                            {
+                                data: 'name',
+                                render: nameFunction
+                            },
+                            { data: 'account' },
+                            { data: 'outgoingTargetAll' },
+                            { data: 'outgoingTargetHealingPower' },
+                            { data: 'outgoingTargetConversion' },
+                            { data: 'outgoingTargetDowned' },
+                            { data: 'outgoingAll' },
+                            { data: 'outgoingAllHealingPower' },
+                            { data: 'outgoingAllConversion' },
+                            { data: 'outgoingAllDowned' }
+                        ]
+                    });
+                    $('#table-healing-incoming').DataTable({
+                        data: healingData,
+                        order: [[4, "desc"]],
+                        columns: [
+                            { data: 'group' },
+                            {
+                                data: 'profession',
+                                render: professionFunction
+                            },
+                            {
+                                data: 'name',
+                                render: nameFunction
+                            },
+                            { data: 'account' },
+                            { data: 'incomingHealed' },
+                            { data: 'incomingHealingPower' },
+                            { data: 'incomingConversion' },
+                            { data: 'incomingDowned' }
+                        ]
+                    });
+                    $('#table-defensestats').DataTable({
+                        data: playerArray,
+                        order: [[4, "desc"]],
+                        columns: [
+                            { data: 'group' },
+                            {
+                                data: 'profession',
+                                render: professionFunction
+                            },
+                            {
+                                data: 'name',
+                                render: nameFunction
+                            },
+                            { data: 'account' },
+                            { data: 'defense.damageTaken' },
+                            { data: 'defense.damageBarrier' },
+                            { data: 'defense.blocked' },
+                            { data: 'defense.invulned' },
+                            { data: 'defense.interrupted' },
+                            { data: 'defense.evaded' },
+                            { data: 'defense.dodges' },
+                            { data: 'defense.missed' },
+                            { data: 'defense.downed' },
+                            { data: 'defense.dead' },
+                        ]
+                    });
+                    $('#table-supportstats').DataTable({
+                        data: playerArray,
+                        order: [[4, "desc"]],
+                        columns: [
+                            { data: 'group' },
+                            {
+                                data: 'profession',
+                                render: professionFunction
+                            },
+                            {
+                                data: 'name',
+                                render: nameFunction
+                            },
+                            { data: 'account' },
+                            { data: 'support.cleanseOnOther' },
+                            { data: 'support.cleanseOnSelf' },
+                            { data: 'support.boonStrips' },
+                            { data: 'support.resurrects' },
+                        ]
+                    });
+                    $('#table-gameplaystats').DataTable({
+                        data: playerArray,
+                        order: [[5, "desc"]],
+                        columns: [
+                            { data: 'group' },
+                            {
+                                data: 'profession',
+                                render: professionFunction
+                            },
+                            {
+                                data: 'name',
+                                render: nameFunction
+                            },
+                            { data: 'account' },
+                            { data: 'numberOfFights' },
+                            {
+                                data: 'gameplay.critPercent',
+                                render: function (data, type, row) {
+                                    if (type === "display") {
+                                        return '<span data-toggle=\"tooltip\" title=\"' + row.gameplay.critableHits + ' out of ' + row.gameplay.criticalHits + ' critable hit(s) \">' + data + '</span>';
+                                    }
+                                    return data;
+                                }
+                            },
+                            {
+                                data: 'gameplay.flankPercent',
+                                render: function (data, type, row) {
+                                    if (type === "display") {
+                                        return '<span data-toggle=\"tooltip\" title=\"' + row.gameplay.flanking + ' out of ' + row.gameplay.criticalHits + ' critable hit(s) \">' + data + '</span>';
+                                    }
+                                    return data;
+                                }
+                            },
+                            {
+                                data: 'gameplay.glancePercent',
+                                render: function (data, type, row) {
+                                    if (type === "display") {
+                                        return '<span data-toggle=\"tooltip\" title=\"' + row.gameplay.glancing + ' out of ' + row.gameplay.criticalHits + ' critable hit(s) \">' + data + '</span>';
+                                    }
+                                    return data;
+                                }
+                            },
+                            { data: 'gameplay.blined' },
+                            { data: 'gameplay.interrupted' },
+                            { data: 'gameplay.invulnerable' },
+                            { data: 'gameplay.evaded' },
+                            { data: 'gameplay.blocked' },
+                            { data: 'gameplay.downed' },
+                            { data: 'gameplay.killed' },
+                            {
+                                data: 'gameplay.wasted',
+                                render: function (data, type) {
+                                    if (type === "display") {
+                                        return formatPercent(data, 3);
+                                    }
+                                    return data;
+                                }
+                            },
+                            {
+                                data: 'gameplay.saved',
+                                render: function (data, type) {
+                                    if (type === "display") {
+                                        return formatPercent(data, 3);
+                                    }
+                                    return data;
+                                }
+                            },
+                            { data: 'gameplay.weaponSwapped' },
+                            { data: 'gameplay.avgToSquad' },
+                            { data: 'gameplay.avgToTag' },
+                        ]
+                    });
+                    for (const player of playerArray) {
+                        $('#table-' + player.identifier + '-damage').DataTable({
+                            data: player.damageSummary,
+                            order: [[1, "desc"]],
+                            columns: [
+                                {
+                                    data: 'icon',
+                                    render: function (data, type, row) {
+                                        if (type === 'display') {
+                                            return '<img src=\"' + data + '\" class=\"icon\">' + row.skill;
+                                        }
+                                        return data;
+                                    }
+                                },
+                                { data: 'damage' },
+                                { data: 'barrierDamage' },
+                                { data: 'min' },
+                                { data: 'max' },
+                                {
+                                    data: 'casts',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return data;
+                                        }
+                                        return data;
+                                    }
+                                },
+                                { data: 'hits' },
+                                {
+                                    data: 'hitsPerCast',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data);
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'critPercent',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data) + '%';
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'flankPercent',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data) + '%';
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'glancePercent',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data) + '%';
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'wasted',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return data + 's';
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'saved',
+                                    render: function (data, type, row) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data, 3) + 's';
+                                        }
+                                        return data;
+                                    }
+                                }
+                            ]
+                        });
+                        $('#table-' + player.identifier + '-defense').DataTable({
+                            data: player.takenSummary,
+                            order: [[1, "desc"]],
+                            columns: [
+                                {
+                                    data: 'icon',
+                                    render: function (data, type, row) {
+                                        if (type === 'display') {
+                                            return '<img src=\"' + data + '\" class=\"icon\">' + row.skill;
+                                        }
+                                        return data;
+                                    }
+                                },
+                                { data: 'damage' },
+                                { data: 'barrierDamage' },
+                                { data: 'min' },
+                                { data: 'max' },
+                                { data: 'hits' },
+                                {
+                                    data: 'critPercent',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data) + '%';
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'flankPercent',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data) + '%';
+                                        }
+                                        return data;
+                                    }
+                                },
+                                {
+                                    data: 'glancePercent',
+                                    render: function (data, type) {
+                                        if (type === 'display') {
+                                            if (data === 0) {
+                                                return "";
+                                            }
+                                            return formatPercent(data) + '%';
+                                        }
+                                        return data;
+                                    }
+                                }
+                            ]
+                        });
+                    }
+                    $('.oldtable').DataTable();
+                    $('.dataTables_length').addClass('bs-select');
+                    $('[data-toggle="tooltip"]').tooltip();
                 });
             </script>
 </body>

@@ -11,10 +11,8 @@ namespace Gw2LogParser.Parser.Data.Events.Buffs
         public long BuffID => BuffSkill.ID;
         //private long _originalBuffID;
 
-        protected Agent InternalBy { get; set; }
-        public Agent By => InternalBy?.GetFinalMaster();
-
-        public Agent ByMinion => InternalBy != null && InternalBy.Master != null ? InternalBy : null;
+        public Agent By { get; protected set; }
+        public Agent CreditedBy => By.GetFinalMaster();
 
         public Agent To { get; protected set; }
 
@@ -42,7 +40,5 @@ namespace Gw2LogParser.Parser.Data.Events.Buffs
         internal abstract void TryFindSrc(ParsedLog log);
 
         internal abstract bool IsBuffSimulatorCompliant(long fightEnd, bool hasStackIDs);
-
-        internal abstract int CompareTo(AbstractBuffEvent abe);
     }
 }

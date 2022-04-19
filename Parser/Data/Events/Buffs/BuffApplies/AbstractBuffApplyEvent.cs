@@ -1,6 +1,7 @@
 ﻿using Gw2LogParser.Parser.Data.Agents;
 using Gw2LogParser.Parser.Data.El.Buffs;
 using Gw2LogParser.Parser.Data.Skills;
+using Gw2LogParser.Parser.Helper;
 
 namespace Gw2LogParser.Parser.Data.Events.Buffs.BuffApplies
 {
@@ -10,21 +11,21 @@ namespace Gw2LogParser.Parser.Data.Events.Buffs.BuffApplies
 
         internal AbstractBuffApplyEvent(Combat evtcItem, AgentData agentData, SkillData skillData) : base(evtcItem, skillData)
         {
-            InternalBy = agentData.GetAgent(evtcItem.SrcAgent);
-            To = agentData.GetAgent(evtcItem.DstAgent);
+            By = agentData.GetAgent(evtcItem.SrcAgent, evtcItem.Time);
+            To = agentData.GetAgent(evtcItem.DstAgent, evtcItem.Time);
             BuffInstance = evtcItem.Pad;
         }
 
         internal AbstractBuffApplyEvent(Agent by, Agent to, long time, Skill buffSkill, uint id) : base(buffSkill, time)
         {
-            InternalBy = by;
+            By = by;
             To = to;
             BuffInstance = id;
         }
 
         internal override bool IsBuffSimulatorCompliant(long fightEnd, bool hasStackIDs)
         {
-            return BuffID != Buff.NoBuff;
+            return BuffID != Buff.NoBuff && Time <= fightEnd - ParserHelper.BuffSimulatorDelayConstant;
         }
     }
 }

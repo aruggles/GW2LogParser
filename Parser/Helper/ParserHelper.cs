@@ -1,41 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using Gw2LogParser.Parser.Data.Agents;
-using Gw2LogParser.Parser.Data.El.Actors;
+using Gw2LogParser.Parser.Data.Events;
 
 namespace Gw2LogParser.Parser.Helper
 {
     public static class ParserHelper
     {
-        internal static Agent _unknownAgent = new Agent();
-        // use this for "null" in AbstractActor dictionaries
-        internal static NPC _nullActor = new NPC(_unknownAgent);
+        internal static readonly Agent _unknownAgent = new Agent();
 
-        internal static void SafeSkip(Stream stream, long bytesToSkip)
-        {
-            if (stream.CanSeek)
-            {
-                stream.Seek(bytesToSkip, SeekOrigin.Current);
-            }
-            else
-            {
-                while (bytesToSkip > 0)
-                {
-                    stream.ReadByte();
-                    --bytesToSkip;
-                }
-            }
-        }
-
-
-        internal const int PollingRate = 150;
+        public const int CombatReplayPollingRate = 150;
 
         internal const int BuffDigit = 3;
+        internal const int DamageModGainDigit = 3;
+        internal const int AccelerationDigit = 3;
+        internal const int CombatReplayDataDigit = 3;
         internal const int TimeDigit = 3;
 
         internal const long ServerDelayConstant = 10;
+        internal const long BuffSimulatorDelayConstant = 15;
+        internal const long BuffSimulatorStackActiveDelayConstant = 50;
+        internal const long WeaponSwapDelayConstant = 75;
+        internal const long MinimumInCombatDuration = 2200;
 
         internal const int PhaseTimeLimit = 1000;
 
@@ -43,20 +30,60 @@ namespace Gw2LogParser.Parser.Helper
         public enum Source
         {
             Common,
-            Item,
-            Necromancer, Reaper, Scourge,
-            Elementalist, Tempest, Weaver,
-            Mesmer, Chronomancer, Mirage,
-            Warrior, Berserker, Spellbreaker,
-            Revenant, Herald, Renegade,
-            Guardian, Dragonhunter, Firebrand,
-            Thief, Daredevil, Deadeye,
-            Ranger, Druid, Soulbeast,
-            Engineer, Scrapper, Holosmith,
+            Item, Gear,
+            Necromancer, Reaper, Scourge, Harbinger,
+            Elementalist, Tempest, Weaver, Catalyst,
+            Mesmer, Chronomancer, Mirage, Virtuoso,
+            Warrior, Berserker, Spellbreaker, Bladesworn,
+            Revenant, Herald, Renegade, Vindicator,
+            Guardian, Dragonhunter, Firebrand, Willbender,
+            Thief, Daredevil, Deadeye, Specter,
+            Ranger, Druid, Soulbeast, Untamed,
+            Engineer, Scrapper, Holosmith, Mechanist,
             FightSpecific,
             FractalInstability,
             Unknown
         };
+
+        public enum Spec
+        {
+            Necromancer, Reaper, Scourge, Harbinger,
+            Elementalist, Tempest, Weaver, Catalyst,
+            Mesmer, Chronomancer, Mirage, Virtuoso,
+            Warrior, Berserker, Spellbreaker, Bladesworn,
+            Revenant, Herald, Renegade, Vindicator,
+            Guardian, Dragonhunter, Firebrand, Willbender,
+            Thief, Daredevil, Deadeye, Specter,
+            Ranger, Druid, Soulbeast, Untamed,
+            Engineer, Scrapper, Holosmith, Mechanist,
+            NPC, Gadget,
+            Unknown
+        };
+
+        // TODO: add life leech stuff
+        public enum DamageType { All, Power, Strike, Condition, StrikeAndCondition, StrikeAndConditionAndLifeLeech };
+        public enum BuffEnum { Self, Group, OffGroup, Squad };
+
+        internal static Dictionary<long, List<T>> GroupByTime<T>(IReadOnlyList<T> list) where T : AbstractTimeCombatEvent
+        {
+            var groupByTime = new Dictionary<long, List<T>>();
+            foreach (T c in list)
+            {
+                long key = groupByTime.Keys.FirstOrDefault(x => Math.Abs(x - c.Time) < ServerDelayConstant);
+                if (key != 0)
+                {
+                    groupByTime[key].Add(c);
+                }
+                else
+                {
+                    groupByTime[c.Time] = new List<T>
+                            {
+                                c
+                            };
+                }
+            }
+            return groupByTime;
+        }
 
         internal static T MaxBy<T, TComparable>(this IEnumerable<T> en, Func<T, TComparable> evaluate) where TComparable : IComparable<TComparable>
         {
@@ -99,133 +126,435 @@ namespace Gw2LogParser.Parser.Helper
             return null;
         }
         */
-        public static List<Source> ProfToEnum(string prof)
+        public static Exception GetFinalException(Exception ex)
         {
-            switch (prof)
+            Exception final = ex;
+            while (final.InnerException != null)
             {
-                case "Druid":
-                    return new List<Source> { Source.Ranger, Source.Druid };
-                case "Soulbeast":
-                    return new List<Source> { Source.Ranger, Source.Soulbeast };
-                case "Ranger":
-                    return new List<Source> { Source.Ranger };
-                case "Scrapper":
-                    return new List<Source> { Source.Engineer, Source.Scrapper };
-                case "Holosmith":
-                    return new List<Source> { Source.Engineer, Source.Holosmith };
-                case "Engineer":
-                    return new List<Source> { Source.Engineer };
-                case "Daredevil":
-                    return new List<Source> { Source.Thief, Source.Daredevil };
-                case "Deadeye":
-                    return new List<Source> { Source.Thief, Source.Deadeye };
-                case "Thief":
-                    return new List<Source> { Source.Thief };
-                case "Weaver":
-                    return new List<Source> { Source.Elementalist, Source.Weaver };
-                case "Tempest":
-                    return new List<Source> { Source.Elementalist, Source.Tempest };
-                case "Elementalist":
-                    return new List<Source> { Source.Elementalist };
-                case "Mirage":
-                    return new List<Source> { Source.Mesmer, Source.Mirage };
-                case "Chronomancer":
-                    return new List<Source> { Source.Mesmer, Source.Chronomancer };
-                case "Mesmer":
-                    return new List<Source> { Source.Mesmer };
-                case "Scourge":
-                    return new List<Source> { Source.Necromancer, Source.Scourge };
-                case "Reaper":
-                    return new List<Source> { Source.Necromancer, Source.Reaper };
-                case "Necromancer":
-                    return new List<Source> { Source.Necromancer };
-                case "Spellbreaker":
-                    return new List<Source> { Source.Warrior, Source.Spellbreaker };
-                case "Berserker":
-                    return new List<Source> { Source.Warrior, Source.Berserker };
-                case "Warrior":
-                    return new List<Source> { Source.Warrior };
-                case "Firebrand":
-                    return new List<Source> { Source.Guardian, Source.Firebrand };
-                case "Dragonhunter":
-                    return new List<Source> { Source.Guardian, Source.Dragonhunter };
-                case "Guardian":
-                    return new List<Source> { Source.Guardian };
-                case "Renegade":
-                    return new List<Source> { Source.Revenant, Source.Renegade };
-                case "Herald":
-                    return new List<Source> { Source.Revenant, Source.Herald };
-                case "Revenant":
-                    return new List<Source> { Source.Revenant };
+                final = final.InnerException;
             }
-            return new List<Source> { Source.Unknown };
+            return final;
         }
 
-        internal static string GetProfIcon(string prof)
+        internal static Spec ProfToSpec(string prof)
         {
             switch (prof)
             {
-                case "Warrior":
-                    return "https://wiki.guildwars2.com/images/4/43/Warrior_tango_icon_20px.png";
-                case "Berserker":
-                    return "https://wiki.guildwars2.com/images/d/da/Berserker_tango_icon_20px.png";
-                case "Spellbreaker":
-                    return "https://wiki.guildwars2.com/images/e/ed/Spellbreaker_tango_icon_20px.png";
-                case "Guardian":
-                    return "https://wiki.guildwars2.com/images/8/8c/Guardian_tango_icon_20px.png";
-                case "Dragonhunter":
-                    return "https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png";
-                case "DragonHunter":
-                    return "https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png";
-                case "Firebrand":
-                    return "https://wiki.guildwars2.com/images/0/02/Firebrand_tango_icon_20px.png";
-                case "Revenant":
-                    return "https://wiki.guildwars2.com/images/b/b5/Revenant_tango_icon_20px.png";
-                case "Herald":
-                    return "https://wiki.guildwars2.com/images/6/67/Herald_tango_icon_20px.png";
-                case "Renegade":
-                    return "https://wiki.guildwars2.com/images/7/7c/Renegade_tango_icon_20px.png";
-                case "Engineer":
-                    return "https://wiki.guildwars2.com/images/2/27/Engineer_tango_icon_20px.png";
-                case "Scrapper":
-                    return "https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png";
-                case "Holosmith":
-                    return "https://wiki.guildwars2.com/images/2/28/Holosmith_tango_icon_20px.png";
-                case "Ranger":
-                    return "https://wiki.guildwars2.com/images/4/43/Ranger_tango_icon_20px.png";
+                //
+                case "NPC":
+                    return Spec.NPC;
+                case "GDG":
+                    return Spec.Gadget;
+                //
+                case "Untamed":
+                    return Spec.Untamed;
                 case "Druid":
-                    return "https://wiki.guildwars2.com/images/d/d2/Druid_tango_icon_20px.png";
+                    return Spec.Druid;
                 case "Soulbeast":
-                    return "https://wiki.guildwars2.com/images/7/7c/Soulbeast_tango_icon_20px.png";
-                case "Thief":
-                    return "https://wiki.guildwars2.com/images/7/7a/Thief_tango_icon_20px.png";
+                    return Spec.Soulbeast;
+                case "Ranger":
+                    return Spec.Ranger;
+                //
+                case "Scrapper":
+                    return Spec.Scrapper;
+                case "Holosmith":
+                    return Spec.Holosmith;
+                case "Mechanist":
+                    return Spec.Mechanist;
+                case "Engineer":
+                    return Spec.Engineer;
+                //
+                case "Specter":
+                    return Spec.Specter;
                 case "Daredevil":
-                    return "https://wiki.guildwars2.com/images/e/e1/Daredevil_tango_icon_20px.png";
+                    return Spec.Daredevil;
                 case "Deadeye":
-                    return "https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png";
-                case "Elementalist":
-                    return "https://wiki.guildwars2.com/images/a/aa/Elementalist_tango_icon_20px.png";
-                case "Tempest":
-                    return "https://wiki.guildwars2.com/images/4/4a/Tempest_tango_icon_20px.png";
+                    return Spec.Deadeye;
+                case "Thief":
+                    return Spec.Thief;
+                //
+                case "Catalyst":
+                    return Spec.Catalyst;
                 case "Weaver":
-                    return "https://wiki.guildwars2.com/images/f/fc/Weaver_tango_icon_20px.png";
-                case "Mesmer":
-                    return "https://wiki.guildwars2.com/images/6/60/Mesmer_tango_icon_20px.png";
-                case "Chronomancer":
-                    return "https://wiki.guildwars2.com/images/f/f4/Chronomancer_tango_icon_20px.png";
+                    return Spec.Weaver;
+                case "Tempest":
+                    return Spec.Tempest;
+                case "Elementalist":
+                    return Spec.Elementalist;
+                //
+                case "Virtuoso":
+                    return Spec.Virtuoso;
                 case "Mirage":
-                    return "https://wiki.guildwars2.com/images/d/df/Mirage_tango_icon_20px.png";
-                case "Necromancer":
-                    return "https://wiki.guildwars2.com/images/4/43/Necromancer_tango_icon_20px.png";
-                case "Reaper":
-                    return "https://wiki.guildwars2.com/images/1/11/Reaper_tango_icon_20px.png";
+                    return Spec.Mirage;
+                case "Chronomancer":
+                    return Spec.Chronomancer;
+                case "Mesmer":
+                    return Spec.Mesmer;
+                //
+                case "Harbinger":
+                    return Spec.Harbinger;
                 case "Scourge":
-                    return "https://wiki.guildwars2.com/images/0/06/Scourge_tango_icon_20px.png";
-                case "Sword":
-                    return "https://wiki.guildwars2.com/images/0/07/Crimson_Antique_Blade.png";
+                    return Spec.Scourge;
+                case "Reaper":
+                    return Spec.Reaper;
+                case "Necromancer":
+                    return Spec.Necromancer;
+                //
+                case "Bladesworn":
+                    return Spec.Bladesworn;
+                case "Spellbreaker":
+                    return Spec.Spellbreaker;
+                case "Berserker":
+                    return Spec.Berserker;
+                case "Warrior":
+                    return Spec.Warrior;
+                //
+                case "Willbender":
+                    return Spec.Willbender;
+                case "Firebrand":
+                    return Spec.Firebrand;
+                case "Dragonhunter":
+                    return Spec.Dragonhunter;
+                case "Guardian":
+                    return Spec.Guardian;
+                //
+                case "Vindicator":
+                    return Spec.Vindicator;
+                case "Renegade":
+                    return Spec.Renegade;
+                case "Herald":
+                    return Spec.Herald;
+                case "Revenant":
+                    return Spec.Revenant;
             }
-            return "";
+            return Spec.Unknown;
         }
+
+        internal static Spec SpecToBaseSpec(Spec spec)
+        {
+            switch (spec)
+            {
+                case Spec.Druid:
+                case Spec.Soulbeast:
+                case Spec.Untamed:
+                case Spec.Ranger:
+                    return Spec.Ranger;
+                //
+                case Spec.Scrapper:
+                case Spec.Holosmith:
+                case Spec.Mechanist:
+                case Spec.Engineer:
+                    return Spec.Engineer;
+                //
+                case Spec.Specter:
+                case Spec.Daredevil:
+                case Spec.Deadeye:
+                case Spec.Thief:
+                    return Spec.Thief;
+                //
+                case Spec.Catalyst:
+                case Spec.Weaver:
+                case Spec.Tempest:
+                case Spec.Elementalist:
+                    return Spec.Elementalist;
+                //
+                case Spec.Virtuoso:
+                case Spec.Mirage:
+                case Spec.Chronomancer:
+                case Spec.Mesmer:
+                    return Spec.Mesmer;
+                //
+                case Spec.Harbinger:
+                case Spec.Scourge:
+                case Spec.Reaper:
+                case Spec.Necromancer:
+                    return Spec.Necromancer;
+                //
+                case Spec.Bladesworn:
+                case Spec.Spellbreaker:
+                case Spec.Berserker:
+                case Spec.Warrior:
+                    return Spec.Warrior;
+                //
+                case Spec.Willbender:
+                case Spec.Firebrand:
+                case Spec.Dragonhunter:
+                case Spec.Guardian:
+                    return Spec.Guardian;
+                //
+                case Spec.Vindicator:
+                case Spec.Renegade:
+                case Spec.Herald:
+                case Spec.Revenant:
+                    return Spec.Revenant;
+            }
+            return spec;
+        }
+
+        public static IReadOnlyList<Source> SpecToSources(Spec spec)
+        {
+            switch (spec)
+            {
+                case Spec.Untamed:
+                    return new List<Source> { Source.Ranger, Source.Untamed };
+                case Spec.Druid:
+                    return new List<Source> { Source.Ranger, Source.Druid };
+                case Spec.Soulbeast:
+                    return new List<Source> { Source.Ranger, Source.Soulbeast };
+                case Spec.Ranger:
+                    return new List<Source> { Source.Ranger };
+                //
+                case Spec.Scrapper:
+                    return new List<Source> { Source.Engineer, Source.Scrapper };
+                case Spec.Holosmith:
+                    return new List<Source> { Source.Engineer, Source.Holosmith };
+                case Spec.Mechanist:
+                    return new List<Source> { Source.Engineer, Source.Mechanist };
+                case Spec.Engineer:
+                    return new List<Source> { Source.Engineer };
+                //
+                case Spec.Specter:
+                    return new List<Source> { Source.Thief, Source.Specter };
+                case Spec.Deadeye:
+                    return new List<Source> { Source.Thief, Source.Deadeye };
+                case Spec.Daredevil:
+                    return new List<Source> { Source.Thief, Source.Daredevil };
+                case Spec.Thief:
+                    return new List<Source> { Source.Thief };
+                //
+                case Spec.Catalyst:
+                    return new List<Source> { Source.Elementalist, Source.Catalyst };
+                case Spec.Weaver:
+                    return new List<Source> { Source.Elementalist, Source.Weaver };
+                case Spec.Tempest:
+                    return new List<Source> { Source.Elementalist, Source.Tempest };
+                case Spec.Elementalist:
+                    return new List<Source> { Source.Elementalist };
+                //
+                case Spec.Virtuoso:
+                    return new List<Source> { Source.Mesmer, Source.Virtuoso };
+                case Spec.Mirage:
+                    return new List<Source> { Source.Mesmer, Source.Mirage };
+                case Spec.Chronomancer:
+                    return new List<Source> { Source.Mesmer, Source.Chronomancer };
+                case Spec.Mesmer:
+                    return new List<Source> { Source.Mesmer };
+                //
+                case Spec.Harbinger:
+                    return new List<Source> { Source.Necromancer, Source.Harbinger };
+                case Spec.Scourge:
+                    return new List<Source> { Source.Necromancer, Source.Scourge };
+                case Spec.Reaper:
+                    return new List<Source> { Source.Necromancer, Source.Reaper };
+                case Spec.Necromancer:
+                    return new List<Source> { Source.Necromancer };
+                //
+                case Spec.Bladesworn:
+                    return new List<Source> { Source.Warrior, Source.Bladesworn };
+                case Spec.Spellbreaker:
+                    return new List<Source> { Source.Warrior, Source.Spellbreaker };
+                case Spec.Berserker:
+                    return new List<Source> { Source.Warrior, Source.Berserker };
+                case Spec.Warrior:
+                    return new List<Source> { Source.Warrior };
+                //
+                case Spec.Willbender:
+                    return new List<Source> { Source.Guardian, Source.Willbender };
+                case Spec.Firebrand:
+                    return new List<Source> { Source.Guardian, Source.Firebrand };
+                case Spec.Dragonhunter:
+                    return new List<Source> { Source.Guardian, Source.Dragonhunter };
+                case Spec.Guardian:
+                    return new List<Source> { Source.Guardian };
+                //
+                case Spec.Vindicator:
+                    return new List<Source> { Source.Revenant, Source.Vindicator };
+                case Spec.Renegade:
+                    return new List<Source> { Source.Revenant, Source.Renegade };
+                case Spec.Herald:
+                    return new List<Source> { Source.Revenant, Source.Herald };
+                case Spec.Revenant:
+                    return new List<Source> { Source.Revenant };
+            }
+            return new List<Source> { };
+        }
+
+        internal static string GetHighResolutionProfIcon(Spec spec)
+        {
+            switch (spec)
+            {
+                case Spec.Warrior:
+                    return "https://wiki.guildwars2.com/images/d/db/Warrior_tango_icon_200px.png";
+                case Spec.Berserker:
+                    return "https://wiki.guildwars2.com/images/8/80/Berserker_tango_icon_200px.png";
+                case Spec.Spellbreaker:
+                    return "https://wiki.guildwars2.com/images/7/78/Spellbreaker_tango_icon_200px.png";
+                case Spec.Bladesworn:
+                    return "https://wiki.guildwars2.com/images/c/c1/Bladesworn_tango_icon_200px.png";
+                //
+                case Spec.Guardian:
+                    return "https://wiki.guildwars2.com/images/6/6c/Guardian_tango_icon_200px.png";
+                case Spec.Dragonhunter:
+                    return "https://wiki.guildwars2.com/images/1/1f/Dragonhunter_tango_icon_200px.png";
+                case Spec.Firebrand:
+                    return "https://wiki.guildwars2.com/images/7/73/Firebrand_tango_icon_200px.png";
+                case Spec.Willbender:
+                    return "https://wiki.guildwars2.com/images/5/57/Willbender_tango_icon_200px.png";
+                //
+                case Spec.Revenant:
+                    return "https://wiki.guildwars2.com/images/a/a8/Revenant_tango_icon_200px.png";
+                case Spec.Herald:
+                    return "https://wiki.guildwars2.com/images/c/c7/Herald_tango_icon_200px.png";
+                case Spec.Renegade:
+                    return "https://wiki.guildwars2.com/images/b/bc/Renegade_tango_icon_200px.png";
+                case Spec.Vindicator:
+                    return "https://wiki.guildwars2.com/images/f/f0/Vindicator_tango_icon_200px.png";
+                //
+                case Spec.Engineer:
+                    return "https://wiki.guildwars2.com/images/2/2f/Engineer_tango_icon_200px.png";
+                case Spec.Scrapper:
+                    return "https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png";
+                case Spec.Holosmith:
+                    return "https://wiki.guildwars2.com/images/a/ae/Holosmith_tango_icon_200px.png";
+                case Spec.Mechanist:
+                    return "https://wiki.guildwars2.com/images/8/8a/Mechanist_tango_icon_200px.png";
+                //
+                case Spec.Ranger:
+                    return "https://wiki.guildwars2.com/images/5/51/Ranger_tango_icon_200px.png";
+                case Spec.Druid:
+                    return "https://wiki.guildwars2.com/images/6/6d/Druid_tango_icon_200px.png";
+                case Spec.Soulbeast:
+                    return "https://wiki.guildwars2.com/images/f/f6/Soulbeast_tango_icon_200px.png";
+                case Spec.Untamed:
+                    return "https://wiki.guildwars2.com/images/3/33/Untamed_tango_icon_200px.png";
+                //
+                case Spec.Thief:
+                    return "https://wiki.guildwars2.com/images/1/19/Thief_tango_icon_200px.png";
+                case Spec.Daredevil:
+                    return "https://wiki.guildwars2.com/images/c/ca/Daredevil_tango_icon_200px.png";
+                case Spec.Deadeye:
+                    return "https://wiki.guildwars2.com/images/b/b0/Deadeye_tango_icon_200px.png";
+                case Spec.Specter:
+                    return "https://i.imgur.com/UbvyFSt.png";
+                //
+                case Spec.Elementalist:
+                    return "https://wiki.guildwars2.com/images/a/a0/Elementalist_tango_icon_200px.png";
+                case Spec.Tempest:
+                    return "https://wiki.guildwars2.com/images/9/90/Tempest_tango_icon_200px.png";
+                case Spec.Weaver:
+                    return "https://wiki.guildwars2.com/images/3/31/Weaver_tango_icon_200px.png";
+                case Spec.Catalyst:
+                    return "https://i.imgur.com/UbvyFSt.png";
+                //
+                case Spec.Mesmer:
+                    return "https://wiki.guildwars2.com/images/7/73/Mesmer_tango_icon_200px.png";
+                case Spec.Chronomancer:
+                    return "https://wiki.guildwars2.com/images/8/8b/Chronomancer_tango_icon_200px.png";
+                case Spec.Mirage:
+                    return "https://wiki.guildwars2.com/images/a/a9/Mirage_tango_icon_200px.png";
+                case Spec.Virtuoso:
+                    return "https://wiki.guildwars2.com/images/c/cd/Virtuoso_tango_icon_200px.png";
+                //
+                case Spec.Necromancer:
+                    return "https://wiki.guildwars2.com/images/c/cd/Necromancer_tango_icon_200px.png";
+                case Spec.Reaper:
+                    return "https://wiki.guildwars2.com/images/9/95/Reaper_tango_icon_200px.png";
+                case Spec.Scourge:
+                    return "https://wiki.guildwars2.com/images/8/8a/Scourge_tango_icon_200px.png";
+                case Spec.Harbinger:
+                    return "https://wiki.guildwars2.com/images/b/b3/Harbinger_tango_icon_200px.png";
+            }
+            return "https://i.imgur.com/UbvyFSt.png";
+        }
+
+        internal static string GetProfIcon(Spec spec)
+        {
+            switch (spec)
+            {
+                case Spec.Warrior:
+                    return "https://wiki.guildwars2.com/images/4/43/Warrior_tango_icon_20px.png";
+                case Spec.Berserker:
+                    return "https://wiki.guildwars2.com/images/d/da/Berserker_tango_icon_20px.png";
+                case Spec.Spellbreaker:
+                    return "https://wiki.guildwars2.com/images/e/ed/Spellbreaker_tango_icon_20px.png";
+                case Spec.Bladesworn:
+                    return "https://wiki.guildwars2.com/images/thumb/c/c1/Bladesworn_tango_icon_200px.png/20px-Bladesworn_tango_icon_200px.png";
+                //
+                case Spec.Guardian:
+                    return "https://wiki.guildwars2.com/images/8/8c/Guardian_tango_icon_20px.png";
+                case Spec.Dragonhunter:
+                    return "https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png";
+                case Spec.Firebrand:
+                    return "https://wiki.guildwars2.com/images/0/02/Firebrand_tango_icon_20px.png";
+                case Spec.Willbender:
+                    return "https://wiki.guildwars2.com/images/3/3a/Willbender_tango_icon_20px.png";
+                //
+                case Spec.Revenant:
+                    return "https://wiki.guildwars2.com/images/b/b5/Revenant_tango_icon_20px.png";
+                case Spec.Herald:
+                    return "https://wiki.guildwars2.com/images/6/67/Herald_tango_icon_20px.png";
+                case Spec.Renegade:
+                    return "https://wiki.guildwars2.com/images/7/7c/Renegade_tango_icon_20px.png";
+                case Spec.Vindicator:
+                    return "https://wiki.guildwars2.com/images/5/5a/Vindicator_tango_icon_20px.png";
+                //
+                case Spec.Engineer:
+                    return "https://wiki.guildwars2.com/images/2/27/Engineer_tango_icon_20px.png";
+                case Spec.Scrapper:
+                    return "https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png";
+                case Spec.Holosmith:
+                    return "https://wiki.guildwars2.com/images/2/28/Holosmith_tango_icon_20px.png";
+                case Spec.Mechanist:
+                    return "https://wiki.guildwars2.com/images/thumb/8/8a/Mechanist_tango_icon_200px.png/20px-Mechanist_tango_icon_200px.png";
+                //
+                case Spec.Ranger:
+                    return "https://wiki.guildwars2.com/images/4/43/Ranger_tango_icon_20px.png";
+                case Spec.Druid:
+                    return "https://wiki.guildwars2.com/images/d/d2/Druid_tango_icon_20px.png";
+                case Spec.Soulbeast:
+                    return "https://wiki.guildwars2.com/images/7/7c/Soulbeast_tango_icon_20px.png";
+                case Spec.Untamed:
+                    return "https://wiki.guildwars2.com/images/thumb/3/33/Untamed_tango_icon_200px.png/20px-Untamed_tango_icon_200px.png";
+                //
+                case Spec.Thief:
+                    return "https://wiki.guildwars2.com/images/7/7a/Thief_tango_icon_20px.png";
+                case Spec.Daredevil:
+                    return "https://wiki.guildwars2.com/images/e/e1/Daredevil_tango_icon_20px.png";
+                case Spec.Deadeye:
+                    return "https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png";
+                case Spec.Specter:
+                    return "https://i.imgur.com/UbvyFSt.png";
+                //
+                case Spec.Elementalist:
+                    return "https://wiki.guildwars2.com/images/a/aa/Elementalist_tango_icon_20px.png";
+                case Spec.Tempest:
+                    return "https://wiki.guildwars2.com/images/4/4a/Tempest_tango_icon_20px.png";
+                case Spec.Weaver:
+                    return "https://wiki.guildwars2.com/images/f/fc/Weaver_tango_icon_20px.png";
+                case Spec.Catalyst:
+                    return "https://i.imgur.com/UbvyFSt.png";
+                //
+                case Spec.Mesmer:
+                    return "https://wiki.guildwars2.com/images/6/60/Mesmer_tango_icon_20px.png";
+                case Spec.Chronomancer:
+                    return "https://wiki.guildwars2.com/images/f/f4/Chronomancer_tango_icon_20px.png";
+                case Spec.Mirage:
+                    return "https://wiki.guildwars2.com/images/d/df/Mirage_tango_icon_20px.png";
+                case Spec.Virtuoso:
+                    return "https://wiki.guildwars2.com/images/6/62/Virtuoso_tango_icon_20px.png";
+                //
+                case Spec.Necromancer:
+                    return "https://wiki.guildwars2.com/images/4/43/Necromancer_tango_icon_20px.png";
+                case Spec.Reaper:
+                    return "https://wiki.guildwars2.com/images/1/11/Reaper_tango_icon_20px.png";
+                case Spec.Scourge:
+                    return "https://wiki.guildwars2.com/images/0/06/Scourge_tango_icon_20px.png";
+                case Spec.Harbinger:
+                    return "https://wiki.guildwars2.com/images/7/7f/Harbinger_tango_icon_20px.png";
+            }
+            return "https://i.imgur.com/UbvyFSt.png";
+        }
+
         internal static string GetNPCIcon(int id)
         {
             switch (ArcDPSEnums.GetTargetID(id))
@@ -321,18 +650,27 @@ namespace Gw2LogParser.Parser.Helper
                     return "https://wiki.guildwars2.com/images/b/b4/Artsariiv.jpg";
                 case ArcDPSEnums.TargetID.Arkk:
                     return "https://i.imgur.com/u6vv8cW.png";
+                case ArcDPSEnums.TargetID.AiKeeperOfThePeak:
+                    return "https://i.imgur.com/eCXjoAS.png";
+                case ArcDPSEnums.TargetID.AiKeeperOfThePeak2:
+                    return "https://i.imgur.com/I8nwhAw.png";
                 case ArcDPSEnums.TargetID.LGolem:
+                case ArcDPSEnums.TargetID.VitalGolem:
                     return "https://wiki.guildwars2.com/images/4/47/Mini_Baron_von_Scrufflebutt.png";
                 case ArcDPSEnums.TargetID.AvgGolem:
                     return "https://wiki.guildwars2.com/images/c/cb/Mini_Mister_Mittens.png";
                 case ArcDPSEnums.TargetID.StdGolem:
                     return "https://wiki.guildwars2.com/images/8/8f/Mini_Professor_Mew.png";
-                case ArcDPSEnums.TargetID.MassiveGolem:
+                case ArcDPSEnums.TargetID.MassiveGolem10M:
+                case ArcDPSEnums.TargetID.MassiveGolem4M:
+                case ArcDPSEnums.TargetID.MassiveGolem1M:
                     return "https://wiki.guildwars2.com/images/3/33/Mini_Snuggles.png";
+                case ArcDPSEnums.TargetID.PowerGolem:
+                case ArcDPSEnums.TargetID.ConditionGolem:
                 case ArcDPSEnums.TargetID.MedGolem:
                     return "https://wiki.guildwars2.com/images/c/cb/Mini_Mister_Mittens.png";
-                case ArcDPSEnums.TargetID.TwistedCastle:
-                    return "https://i.imgur.com/ZBm5Uga.png";
+                    //case ArcDPSEnums.TargetID.DummyTarget:
+                    //return "https://i.imgur.com/ZBm5Uga.png";
             }
             switch (ArcDPSEnums.GetTrashID(id))
             {
@@ -340,11 +678,17 @@ namespace Gw2LogParser.Parser.Helper
                 case ArcDPSEnums.TrashID.Spirit2:
                 case ArcDPSEnums.TrashID.ChargedSoul:
                 case ArcDPSEnums.TrashID.HollowedBomber:
+                case ArcDPSEnums.TrashID.GuiltDemon:
+                case ArcDPSEnums.TrashID.DoubtDemon:
                     return "https://i.imgur.com/sHmksvO.png";
                 case ArcDPSEnums.TrashID.Saul:
                     return "https://i.imgur.com/ck2IsoS.png";
                 case ArcDPSEnums.TrashID.GamblerClones:
                     return "https://i.imgur.com/zMsBWEx.png";
+                case ArcDPSEnums.TrashID.BloodstoneFragment:
+                case ArcDPSEnums.TrashID.ChargedBloodstone:
+                    return "https://i.imgur.com/PZ2VNAN.png";
+                case ArcDPSEnums.TrashID.BloodstoneShard:
                 case ArcDPSEnums.TrashID.GamblerReal:
                     return "https://i.imgur.com/J6oMITN.png";
                 case ArcDPSEnums.TrashID.Pride:
@@ -414,6 +758,8 @@ namespace Gw2LogParser.Parser.Helper
                     return "https://i.imgur.com/0LGKCn2.png";
                 case ArcDPSEnums.TrashID.ConjuredGreatsword:
                     return "https://i.imgur.com/vHka0QN.png";
+                case ArcDPSEnums.TrashID.ConjuredPlayerSword:
+                    return "https://wiki.guildwars2.com/images/0/07/Crimson_Antique_Blade.png";
                 case ArcDPSEnums.TrashID.ConjuredShield:
                     return "https://i.imgur.com/wUiI19S.png";
                 case ArcDPSEnums.TrashID.GreaterMagmaElemental1:
@@ -430,6 +776,8 @@ namespace Gw2LogParser.Parser.Helper
                     return "https://i.imgur.com/89Kjv0N.png";
                 case ArcDPSEnums.TrashID.PyreGuardianRetal:
                     return "https://i.imgur.com/WC6LRkO.png";
+                case ArcDPSEnums.TrashID.PyreGuardianResolution:
+                    return "https://i.imgur.com/26rY9IM.png";
                 case ArcDPSEnums.TrashID.PyreGuardianStab:
                     return "https://i.imgur.com/ISa0urR.png";
                 case ArcDPSEnums.TrashID.PyreGuardianProtect:
@@ -455,6 +803,12 @@ namespace Gw2LogParser.Parser.Helper
                 case ArcDPSEnums.TrashID.WhisperEcho:
                 case ArcDPSEnums.TrashID.CharrTank:
                 case ArcDPSEnums.TrashID.PropagandaBallon:
+                case ArcDPSEnums.TrashID.FearDemon:
+                case ArcDPSEnums.TrashID.SorrowDemon1:
+                case ArcDPSEnums.TrashID.SorrowDemon2:
+                case ArcDPSEnums.TrashID.SorrowDemon3:
+                case ArcDPSEnums.TrashID.SorrowDemon4:
+                case ArcDPSEnums.TrashID.SorrowDemon5:
                     return "https://i.imgur.com/k79t7ZA.png";
                 case ArcDPSEnums.TrashID.HandOfErosion:
                 case ArcDPSEnums.TrashID.HandOfEruption:
@@ -520,6 +874,8 @@ namespace Gw2LogParser.Parser.Helper
                 case ArcDPSEnums.TrashID.RedKnight:
                 case ArcDPSEnums.TrashID.BlueKnight:
                     return "https://i.imgur.com/lpBm4d6.png";
+                case ArcDPSEnums.TrashID.CloneArtsariiv:
+                    return "https://wiki.guildwars2.com/images/b/b4/Artsariiv.jpg";
             }
             return "https://i.imgur.com/HuJHqRZ.png";
         }
@@ -531,9 +887,14 @@ namespace Gw2LogParser.Parser.Helper
             ".evtc.zip",
         };
 
-        private static readonly HashSet<string> _tmpFiles = new HashSet<string>()
+        private static readonly HashSet<string> _tmpCompressedFiles = new HashSet<string>()
         {
             ".tmp.zip"
+        };
+
+        private static readonly HashSet<string> _tmpFiles = new HashSet<string>()
+        {
+            ""
         };
 
         private static readonly HashSet<string> _supportedFiles = new HashSet<string>(_compressedFiles)
@@ -553,7 +914,7 @@ namespace Gw2LogParser.Parser.Helper
             return false;
         }
 
-        public static List<string> GetSupportedFormats()
+        public static IReadOnlyList<string> GetSupportedFormats()
         {
             return new List<string>(_supportedFiles);
         }
@@ -561,6 +922,33 @@ namespace Gw2LogParser.Parser.Helper
         public static bool IsSupportedFormat(string fileName)
         {
             foreach (string format in _supportedFiles)
+            {
+                if (fileName.EndsWith(format, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static int IndexOf<T>(this IReadOnlyList<T> self, T elementToFind)
+        {
+            int i = 0;
+            foreach (T element in self)
+            {
+                if (Equals(element, elementToFind))
+                {
+                    return i;
+                }
+
+                i++;
+            }
+            return -1;
+        }
+
+        public static bool IsTemporaryCompressedFormat(string fileName)
+        {
+            foreach (string format in _tmpCompressedFiles)
             {
                 if (fileName.EndsWith(format, StringComparison.OrdinalIgnoreCase))
                 {
@@ -582,23 +970,30 @@ namespace Gw2LogParser.Parser.Helper
             return false;
         }
 
+    }
 
-        internal static string GetString(Stream stream, int length, bool nullTerminated = true)
-        {
-            byte[] bytes = new byte[length];
-            stream.Read(bytes, 0, length);
-            if (nullTerminated)
-            {
-                for (int i = 0; i < length; ++i)
-                {
-                    if (bytes[i] == 0)
-                    {
-                        length = i;
-                        break;
-                    }
-                }
-            }
-            return System.Text.Encoding.UTF8.GetString(bytes, 0, length);
-        }
+    public static class Colors
+    {
+        public const string Red = "rgb(255,0,0)";
+        public const string DarkRed = "rgb(128,0,0)";
+        public const string Orange = "rgb(255,100,0)";
+        public const string LightOrange = "rgb(255,160,0)";
+        public const string Yellow = "rgb(255,220,0)";
+        public const string Brown = "rgb(120,100,0)";
+        public const string Green = "rgb(0,255,0)";
+        public const string DarkGreen = "rgb(0,128,0)";
+        public const string Teal = "rgb(0,255,255)";
+        public const string DarkTeal = "rgb(0,160,150)";
+        public const string LightBlue = "rgb(0,140,255)";
+        public const string Purple = "rgb(150,0,255)";
+        public const string DarkPurple = "rgb(50,0,150)";
+        public const string LightPurple = "rgb(200, 140, 255)";
+        public const string Pink = "rgb(255,0,150)";
+        public const string Magenta = "rgb(255,0,255)";
+        public const string Blue = "rgb(0,0,255)";
+        public const string White = "rgb(255,255,255)";
+        public const string Grey = "rgb(60,60,60)";
+        public const string Black = "rgb(0,0,0)";
+        public const string LightRed = "rgb(255,128,128)";
     }
 }

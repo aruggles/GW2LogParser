@@ -44,12 +44,10 @@ namespace Gw2LogParser.ExportModels
             return rotEntry;
         }
 
-        internal static List<object[]> BuildRotationData(ParsedLog log, AbstractActor p, int phaseIndex, Dictionary<long, Skill> usedSkills)
+        internal static List<object[]> BuildRotationData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Skill> usedSkills)
         {
             var list = new List<object[]>();
-
-            PhaseData phase = log.FightData.GetPhases(log)[phaseIndex];
-            List<AbstractCastEvent> casting = p.GetIntersectingCastLogs(log, phase.Start, phase.End);
+            IReadOnlyList<AbstractCastEvent> casting = p.GetIntersectingCastEvents(log, phase.Start, phase.End);
             foreach (AbstractCastEvent cl in casting)
             {
                 if (!usedSkills.ContainsKey(cl.SkillId))

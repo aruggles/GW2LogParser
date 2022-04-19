@@ -1,6 +1,7 @@
 ﻿using Gw2LogParser.Parser.Data.El;
 using Gw2LogParser.Parser.Data.El.Actors;
 using Gw2LogParser.Parser.Data.El.Buffs;
+using Gw2LogParser.Parser.Data.El.Statistics;
 using Gw2LogParser.Parser.Data.Events.MetaData;
 using Gw2LogParser.Parser.Data.Events.Status;
 using Gw2LogParser.Parser.Helper;
@@ -13,7 +14,10 @@ namespace Gw2LogParser.Parser.Data.Agents
     public class Agent
     {
         private static int AgentCount = 0;
-        public enum AgentType { NPC, Gadget, Player, EnemyPlayer }
+        public enum AgentType { NPC, Gadget, Player, NonSquadPlayer }
+
+        public bool IsPlayer => Type == AgentType.Player || Type == AgentType.NonSquadPlayer;
+        public bool IsNPC => Type == AgentType.NPC || Type == AgentType.Gadget;
 
         // Fields
         public ulong AgentValue { get; }
@@ -25,23 +29,26 @@ namespace Gw2LogParser.Parser.Data.Agents
         public long FirstAware { get; protected set; }
         public long LastAware { get; protected set; } = long.MaxValue;
         public string Name { get; protected set; } = "UNKNOWN";
-        public string Prof { get; } = "UNKNOWN";
-        public uint Toughness { get; protected set; }
-        public uint Healing { get; }
-        public uint Condition { get; }
-        public uint Concentration { get; }
+        public ParserHelper.Spec Spec { get; } = ParserHelper.Spec.Unknown;
+        public ParserHelper.Spec BaseSpec { get; } = ParserHelper.Spec.Unknown;
+        public ushort Toughness { get; protected set; }
+        public ushort Healing { get; }
+        public ushort Condition { get; }
+        public ushort Concentration { get; }
         public uint HitboxWidth { get; }
         public uint HitboxHeight { get; }
-
+        public bool IsFake { get; }
+        public bool IsNotInSquadFriendlyPlayer { get; private set; }
         public bool HasCommanderTag { get; protected set; }
 
         // Constructors
-        internal Agent(ulong agent, string name, string prof, int id, AgentType type, uint toughness, uint healing, uint condition, uint concentration, uint hbWidth, uint hbHeight)
+        internal Agent(ulong agent, string name, ParserHelper.Spec spec, int id, AgentType type, ushort toughness, ushort healing, ushort condition, ushort concentration, uint hbWidth, uint hbHeight)
         {
             UniqueID = AgentCount++;
             AgentValue = agent;
             Name = name;
-            Prof = prof;
+            Spec = spec;
+            BaseSpec = ParserHelper.SpecToBaseSpec(spec);
             ID = id;
             Type = type;
             Toughness = toughness;
@@ -58,7 +65,15 @@ namespace Gw2LogParser.Parser.Data.Agents
                     string[] splitStr = Name.Split('\0');
                     if (splitStr.Length < 2 || (splitStr[1].Length == 0 || splitStr[2].Length == 0 || splitStr[0].Contains("-")))
                     {
-                        Type = AgentType.EnemyPlayer;
+                        if (!splitStr[0].Any(char.IsDigit))
+                        {
+                            IsNotInSquadFriendlyPlayer = true;
+                        }
+                        else
+                        {
+                            Name = Spec.ToString() + " " + Name;
+                        }
+                        Type = AgentType.NonSquadPlayer;
                     }
                 }
             }
@@ -68,11 +83,12 @@ namespace Gw2LogParser.Parser.Data.Agents
             }
         }
 
-        internal Agent(ulong agent, string name, string prof, int id, ushort instid, AgentType type, uint toughness, uint healing, uint condition, uint concentration, uint hbWidth, uint hbHeight, long firstAware, long lastAware) : this(agent, name, prof, id, type, toughness, healing, condition, concentration, hbWidth, hbHeight)
+        internal Agent(ulong agent, string name, ParserHelper.Spec spec, int id, ushort instid, AgentType type, ushort toughness, ushort healing, ushort condition, ushort concentration, uint hbWidth, uint hbHeight, long firstAware, long lastAware, bool isFake) : this(agent, name, spec, id, type, toughness, healing, condition, concentration, hbWidth, hbHeight)
         {
             InstID = instid;
             FirstAware = firstAware;
             LastAware = lastAware;
+            IsFake = isFake;
         }
 
         internal Agent(Agent other)
@@ -80,7 +96,8 @@ namespace Gw2LogParser.Parser.Data.Agents
             UniqueID = AgentCount++;
             AgentValue = other.AgentValue;
             Name = other.Name;
-            Prof = other.Prof;
+            Spec = other.Spec;
+            BaseSpec = other.BaseSpec;
             ID = other.ID;
             Type = other.Type;
             Toughness = other.Toughness;
@@ -92,10 +109,16 @@ namespace Gw2LogParser.Parser.Data.Agents
             InstID = other.InstID;
             Master = other.Master;
             HasCommanderTag = other.HasCommanderTag;
+            IsFake = other.IsFake;
         }
 
         internal Agent()
         {
+            UniqueID = AgentCount++;
+        }
+        internal void OverrideIsNotInSquadFriendlyPlayer(bool status)
+        {
+            IsNotInSquadFriendlyPlayer = status;
         }
 
         internal void OverrideType(AgentType type)
@@ -108,17 +131,17 @@ namespace Gw2LogParser.Parser.Data.Agents
             InstID = instid;
         }
 
-        internal void OverrideID(int id)
+        internal void OverrideID(ArcDPSEnums.TrashID id)
         {
-            ID = id;
+            ID = (int)id;
         }
 
-        internal void OverrideName(string name)
+        internal void OverrideID(ArcDPSEnums.TargetID id)
         {
-            Name = name;
+            ID = (int)id;
         }
 
-        internal void OverrideToughness(uint toughness)
+        internal void OverrideToughness(ushort toughness)
         {
             Toughness = toughness;
         }
@@ -131,6 +154,10 @@ namespace Gw2LogParser.Parser.Data.Agents
 
         internal void SetMaster(Agent master)
         {
+            if (IsPlayer)
+            {
+                return;
+            }
             Master = master;
         }
 
@@ -168,26 +195,26 @@ namespace Gw2LogParser.Parser.Data.Agents
             }
         }
 
-        public void GetAgentStatus(List<(long start, long end)> dead, List<(long start, long end)> down, List<(long start, long end)> dc, ParsedLog log)
+        internal void GetAgentStatus(List<(long start, long end)> dead, List<(long start, long end)> down, List<(long start, long end)> dc, CombatData combatData, FightData fightData)
         {
             var status = new List<AbstractStatusEvent>();
-            status.AddRange(log.CombatData.GetDownEvents(this));
-            status.AddRange(log.CombatData.GetAliveEvents(this));
-            status.AddRange(log.CombatData.GetDeadEvents(this));
-            status.AddRange(log.CombatData.GetSpawnEvents(this));
-            status.AddRange(log.CombatData.GetDespawnEvents(this));
+            status.AddRange(combatData.GetDownEvents(this));
+            status.AddRange(combatData.GetAliveEvents(this));
+            status.AddRange(combatData.GetDeadEvents(this));
+            status.AddRange(combatData.GetSpawnEvents(this));
+            status.AddRange(combatData.GetDespawnEvents(this));
             status = status.OrderBy(x => x.Time).ToList();
             for (int i = 0; i < status.Count - 1; i++)
             {
                 AbstractStatusEvent cur = status[i];
                 AbstractStatusEvent next = status[i + 1];
-                AddValueToStatusList(dead, down, dc, cur, next, log.FightData.FightEnd, i);
+                AddValueToStatusList(dead, down, dc, cur, next, fightData.FightEnd, i);
             }
             // check last value
             if (status.Count > 0)
             {
                 AbstractStatusEvent cur = status.Last();
-                AddValueToStatusList(dead, down, dc, cur, null, log.FightData.FightEnd, status.Count - 1);
+                AddValueToStatusList(dead, down, dc, cur, null, fightData.FightEnd, status.Count - 1);
             }
         }
 
@@ -201,8 +228,13 @@ namespace Gw2LogParser.Parser.Data.Agents
             return cur;
         }
 
+        public bool InAwareTimes(long time)
+        {
+            return FirstAware <= time && LastAware >= time;
+        }
+
         /// <summary>
-        /// Checks if a buff is present on the actor that corresponds to. Given buff id must be in the boon simulator
+        /// Checks if a buff is present on the actor that corresponds to. Given buff id must be in the buff simulator, throws <see cref="InvalidOperationException"/> otherwise
         /// </summary>
         /// <param name="log"></param>
         /// <param name="buffId"></param>
@@ -210,20 +242,62 @@ namespace Gw2LogParser.Parser.Data.Agents
         /// <returns></returns>
         public bool HasBuff(ParsedLog log, long buffId, long time)
         {
-            if (!log.Buffs.BuffsByIds.ContainsKey(buffId))
-            {
-                throw new InvalidOperationException("Buff id must be simulated");
-            }
-            AbstractSingleActor actor = log.FindActor(this, true);
-            Dictionary<long, BuffsGraphModel> bgms = actor.GetBuffGraphs(log);
-            if (bgms.TryGetValue(buffId, out BuffsGraphModel bgm))
-            {
-                return bgm.IsPresent(time, ParserHelper.ServerDelayConstant);
-            }
-            else
-            {
-                return false;
-            }
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.HasBuff(log, buffId, time);
+        }
+
+        /// <summary>
+        /// Checks if agent is downed at given time
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public bool IsDowned(ParsedLog log, long time)
+        {
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.IsDowned(log, time);
+        }
+
+        /// <summary>
+        /// Checks if agent is dead at given time
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public bool IsDead(ParsedLog log, long time)
+        {
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.IsDead(log, time);
+        }
+
+        /// <summary>
+        /// Checks if agent is dc/not spawned at given time
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public bool IsDC(ParsedLog log, long time)
+        {
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.IsDC(log, time);
+        }
+
+        public double GetCurrentHealthPercent(ParsedLog log, long time)
+        {
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.GetCurrentHealthPercent(log, time);
+        }
+
+        public double GetCurrentBarrierPercent(ParsedLog log, long time)
+        {
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.GetCurrentBarrierPercent(log, time);
+        }
+
+        public Point3D GetCurrentPosition(ParsedLog log, long time)
+        {
+            AbstractSingleActor actor = log.FindActor(this);
+            return actor.GetCurrentPosition(log, time);
         }
     }
 }

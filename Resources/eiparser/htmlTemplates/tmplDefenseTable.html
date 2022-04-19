@@ -1,50 +1,50 @@
 <template>
     <div>
-        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" id="def-table">
+        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" :id="tableid">
             <thead>
                 <tr>
-                    <th>Sub</th>
-                    <th></th>
+                    <th class="sub-cell">Sub</th>
+                    <th class="prof-cell"></th>
                     <th class="text-left">Name</th>
                     <th>Account</th>
-                    <th data-original-title="Damage taken" >
+                    <th class="damage-cell" data-original-title="Damage taken" >
                         <img src="https://wiki.guildwars2.com/images/thumb/6/6a/Damage.png/30px-Damage.png" alt="Damage Taken"
                         class="icon icon-hover">
                     </th>
-                    <th data-original-title="Damage absorbed by barrier">
+                    <th class="damage-cell" data-original-title="Damage absorbed by barrier">
                         <img src="https://wiki.guildwars2.com/images/thumb/c/cc/Barrier.png/30px-Barrier.png" alt="Damage Barrier"
                         class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of times blocked an attack" >
+                    <th class="stat-cell" data-original-title="Number of times blocked an attack" >
                         <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Blocked"
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of times was invulnerable to damage">
+                    <th class="stat-cell" data-original-title="Number of times was invulnerable to damage">
                         <img src="https://wiki.guildwars2.com/images/e/eb/Determined.png" alt="Ivuln"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of times interrupted">
+                    <th class="stat-cell" data-original-title="Number of times interrupted">
                         <img src="https://wiki.guildwars2.com/images/7/79/Daze.png" alt="Interrupted"
                             
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of evades">
+                    <th class="stat-cell" data-original-title="Number of evades">
                         <img src="https://wiki.guildwars2.com/images/e/e2/Evade.png" alt="Evaded"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of dodge + mirage cloak" >
+                    <th class="stat-cell" data-original-title="Number of dodge + mirage cloak" >
                         <img src="https://wiki.guildwars2.com/images/b/b2/Dodge.png" alt="Dodge"
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of hits missed against" >
+                    <th class="stat-cell" data-original-title="Number of hits missed against" >
                         <img src="https://wiki.guildwars2.com/images/3/33/Blinded.png" alt="Missed"
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Times downed">
+                    <th class="stat-cell" data-original-title="Times downed">
                         <img src="https://wiki.guildwars2.com/images/c/c6/Downed_enemy.png" alt="Downs"
                              class="icon icon-hover">
                     </th>
-                    <th  data-original-title="Times died">
+                    <th class="stat-cell" data-original-title="Times died">
                         <img src="https://wiki.guildwars2.com/images/4/4a/Ally_death_%28interface%29.png" alt="Dead"
                             class="icon icon-hover">
                     </th>
@@ -101,18 +101,29 @@
     Vue.component("defense-stats-component", {
         props: ["phaseindex", "playerindex"],
         template: `${template}`,
+        mixins: [numberComponent],
         data: function () {
             return {
-                cache: new Map()
+                cache: new Map(),
+                sortdata: {
+                    order: "desc",
+                    index: 4
+                }
             };
         },
         mounted() {
-            initTable("#def-table", 4, "desc");
+            initializeTable(this.tableid, this.sortdata);
         },
         updated() {
-            updateTable("#def-table");
+            updateTable(this.tableid);
+        },
+        activated() {
+            initializeTable(this.tableid, this.sortdata);
         },
         computed: {
+            tableid: function() {
+                return "def-table";
+            },
             phase: function () {
                 return logData.phases[this.phaseindex];
             },
@@ -128,7 +139,7 @@
                 for (i = 0; i < this.phase.defStats.length; i++) {
                     var def = this.phase.defStats[i];
                     var player = logData.players[i];
-                    if (player.isConjure) {
+                    if (player.isFake) {
                         continue;
                     }
                     rows.push({

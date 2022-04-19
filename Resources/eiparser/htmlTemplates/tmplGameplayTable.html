@@ -10,65 +10,79 @@
                 </li>
             </ul>
         </div>
-        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" id="dmg-table">
+        <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%" :id="tableid">
             <thead>
                 <tr>
-                    <th>Sub</th>
-                    <th></th>
+                    <th class="sub-cell">Sub</th>
+                    <th class="prof-cell"></th>
                     <th class="text-left">Name</th>
                     <th>Account</th>
-                    <th data-original-title="Percent time hits critical">
+                    <th class="stat-cell" data-original-title="Percent time hits critical">
                         <img src="https://wiki.guildwars2.com/images/9/95/Critical_Chance.png" alt="Crits"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Percent time hits while flanking">
+                    <th class="stat-cell" data-original-title="Percent time hits while flanking">
                         <img src="https://wiki.guildwars2.com/images/b/bb/Hunter%27s_Tactics.png" alt="Flank"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Percent time hits while glancing">
+                    <th class="stat-cell" data-original-title="Percent time hits while glancing">
                         <img src="https://wiki.guildwars2.com/images/f/f9/Weakness.png" alt="Glance"
                              class="icon icon-hover">
-                    </th>
-                    <th data-original-title="Number of hits while blinded">
+                    </th>    
+                    <th class="stat-cell" data-original-title="Times the target got hit while moving">
+                        <img src="https://i.imgur.com/11uAbd4.png" alt="Against Moving"
+                             class="icon icon-hover">
+                    </th>  
+                    <th class="stat-cell" data-original-title="Number of hits while blinded">
                         <img src="https://wiki.guildwars2.com/images/3/33/Blinded.png" alt="Miss"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Number of hits used to interupt">
+                    <th class="stat-cell" data-original-title="Number of hits used to interupt">
                         <img src="https://wiki.guildwars2.com/images/7/79/Daze.png" alt="Interupts"
                             
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Times the enemy was invulnerable to attacks">
+                    <th class="stat-cell" data-original-title="Times the enemy was invulnerable to attacks">
                         <img src="https://wiki.guildwars2.com/images/e/eb/Determined.png" alt="Ivuln"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Times the enemy evaded an attack">
+                    <th class="stat-cell" data-original-title="Times the enemy evaded an attack">
                         <img src="https://wiki.guildwars2.com/images/e/e2/Evade.png" alt="Evaded"
                              class="icon icon-hover">
                     </th>
-                    <th data-original-title="Times the enemy blocked an attack">
+                    <th class="stat-cell" data-original-title="Times the enemy blocked an attack">
                         <img src="https://wiki.guildwars2.com/images/e/e5/Aegis.png" alt="Blocked"
                              class="icon icon-hover">
+                    </th>             
+                    <th class="stat-cell" v-if="wvw" data-original-title="Number of times downed target">
+                        <img src="https://wiki.guildwars2.com/images/c/c6/Downed_enemy.png"
+                            alt="Downed" 
+                            class="icon icon-hover">
+                    </th>             
+                    <th class="stat-cell" v-if="wvw" data-original-title="Number of times killed target">
+                        <img src="https://wiki.guildwars2.com/images/4/4a/Ally_death_%28interface%29.png"
+                            alt="Killed" 
+                            class="icon icon-hover">
                     </th>
-                    <th data-original-title="Time wasted(in seconds) interupting skill casts">
+                    <th class="stat-cell" data-original-title="Time wasted(in seconds) interupting skill casts">
                         <img src="https://wiki.guildwars2.com/images/b/b3/Out_Of_Health_Potions.png" alt="Wasted"
                             
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Time saved(in seconds) interupting skill casts">
+                    <th class="stat-cell" data-original-title="Time saved(in seconds) interupting skill casts">
                         <img src="https://wiki.guildwars2.com/images/e/eb/Ready.png" alt="Saved"
                             
                             class="icon icon-hover">
                     </th>
-                    <th data-original-title="Times weapon swapped">
+                    <th class="stat-cell" data-original-title="Times weapon swapped">
                         <img src="https://wiki.guildwars2.com/images/c/ce/Weapon_Swap_Button.png" alt="Swap"
                              class="icon icon-hover">
                     </th>
-                    <th  data-original-title="Average Distance to the center of the squad">
+                    <th class="stat-cell" data-original-title="Average Distance to the center of the squad">
                         <img src="https://wiki.guildwars2.com/images/e/ef/Commander_arrow_marker.png" alt="Stack Center"
                             class="icon icon-hover">
                     </th>
-                    <th v-if="hasCommander" data-original-title="Average Distance to the commander">
+                    <th class="stat-cell" v-if="hasCommander" data-original-title="Average Distance to the commander">
                         <img src="https://wiki.guildwars2.com/images/5/54/Commander_tag_%28blue%29.png"
                             alt="Stack Commander" 
                             class="icon icon-hover">
@@ -89,26 +103,35 @@
                         :data-original-title="row.data[2] + ' out of ' + row.data[1] + ' critable hit(s)<br>Total Damage Critical Damage: ' + row.data[3]">
                         {{round2(100*row.data[2] / row.data[1])}}%
                     </td>
-                    <td :data-original-title="row.data[4] + ' out of ' + row.data[11] + ' connected hit(s)'">
+                    <td :data-original-title="row.data[4] + ' out of ' + row.data[11] + ' connected direct hit(s)'">
                         {{round2(100*row.data[4]/ row.data[11])}}%
                     </td>
-                    <td :data-original-title="row.data[5] + ' out of ' + row.data[11] + ' connected hit(s)'">
+                    <td :data-original-title="row.data[5] + ' out of ' + row.data[11] + ' connected direct hit(s)'">
                         {{round2(100*row.data[5]/ row.data[11])}}%
                     </td>
-                    <td :data-original-title="round2(100*row.data[6]/ row.data[0]) + '% of hit(s)'">
+                    <td :data-original-title="row.data[14] + ' out of ' + row.data[15] + ' connected hit(s)'">
+                        {{round2(100*row.data[14]/ row.data[15]) + '%' }}
+                    </td>
+                    <td :data-original-title="round2(100*row.data[6]/ row.data[0]) + '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[6]}}
                     </td>
-                    <td :data-original-title="round2(100*row.data[7]/ row.data[12]) + '% connected hit(s)'">
+                    <td>
                         {{row.data[7]}}
                     </td>
-                    <td>
+                    <td :data-original-title="round2(100*row.data[8]/ row.data[0]) + '% of '+ row.data[16] + ' hit(s)'">
                         {{row.data[8]}}
                     </td>
-                    <td :data-original-title="round2(100*row.data[9]/ row.data[0]) + '% of hit(s)'">
+                    <td :data-original-title="round2(100*row.data[9]/ row.data[0]) + '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[9]}}
                     </td>
-                    <td :data-original-title="round2(100*row.data[10]/ row.data[0]) + '% of hit(s)'">
+                    <td :data-original-title="round2(100*row.data[10]/ row.data[0]) + '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[10]}}
+                    </td>
+                    <td v-if="wvw">
+                        {{row.data[13]}}
+                    </td>
+                    <td v-if="wvw">
+                        {{row.data[12]}}
                     </td>
                     <td
                         :data-original-title="row.commons[1] + ' cancels <br>' + round2(100.0 * row.commons[0] / phase.durationS) + '% of the phase'">
@@ -133,26 +156,35 @@
                         :data-original-title="row.data[2] + ' out of ' + row.data[1] + ' critable hit(s)<br>Total Damage Critical Damage: ' + row.data[3]">
                         {{round2(100*row.data[2] / row.data[1])}}%
                     </td>
-                    <td :data-original-title="row.data[4] + ' out of ' + row.data[11] + ' connected hit(s)'">
+                    <td :data-original-title="row.data[4] + ' out of ' + row.data[11] + ' connected direct hit(s)'">
                         {{round2(100*row.data[4]/ row.data[11])}}%
                     </td>
-                    <td :data-original-title="row.data[5] + ' out of ' + row.data[11] + ' connected hit(s)'">
+                    <td :data-original-title="row.data[5] + ' out of ' + row.data[11] + ' connected direct hit(s)'">
                         {{round2(100*row.data[5]/ row.data[11])}}%
                     </td>
-                    <td :data-original-title="round2(100*row.data[6]/ row.data[0])+ '% of hit(s)'">
+                    <td :data-original-title="row.data[14] + ' out of ' + row.data[15] + ' connected hit(s)'">
+                        {{round2(100*row.data[14]/ row.data[15]) + '%' }}
+                    </td>
+                    <td :data-original-title="round2(100*row.data[6]/ row.data[0])+ '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[6]}}
                     </td>
-                    <td :data-original-title="round2(100*row.data[7]/ row.data[12]) + '% connected hit(s)'">
+                    <td>
                         {{row.data[7]}}
                     </td>
-                    <td>
+                    <td :data-original-title="round2(100*row.data[8]/ row.data[0])+ '% of '+ row.data[16] + ' hit(s)'">
                         {{row.data[8]}}
                     </td>
-                    <td :data-original-title="round2(100*row.data[9]/ row.data[0])+ '% of hit(s)'">
+                    <td :data-original-title="round2(100*row.data[9]/ row.data[0])+ '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[9]}}
                     </td>
-                    <td :data-original-title="round2(100*row.data[10]/ row.data[0]) + '% of hit(s)'">
+                    <td :data-original-title="round2(100*row.data[10]/ row.data[0]) + '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[10]}}
+                    </td>
+                    <td v-if="wvw">
+                        {{row.data[13]}}
+                    </td>
+                    <td v-if="wvw">
+                        {{row.data[12]}}
                     </td>
                     <td :data-original-title="row.commons[1] + ' cancels'">{{round3(row.commons[0])}}</td>
                     <td :data-original-title="row.commons[3] + ' cancels'">{{round3(row.commons[2])}}</td>
@@ -166,28 +198,39 @@
 </template>
 
 <script>
-    var commonOffset = 12;
+    var commonOffset = 17;
 
     Vue.component("gameplay-stats-component", {
         props: ["activetargets", "playerindex", "phaseindex"],
         template: `${template}`,
-        mixins: [roundingComponent],
+        mixins: [numberComponent],
         data: function () {
             return {
                 targetless: logData.targetless,
+                wvw: logData.wvw,
                 mode: logData.targetless ? 0 : 1,
                 hasCommander: logData.hasCommander,
                 cache: new Map(),
-                cacheTarget: new Map()
+                cacheTarget: new Map(),
+                sortdata: {
+                    order: "desc",
+                    index: 1
+                }
             };
         },
         mounted() {
-            initTable("#dmg-table", 1, "desc");
+            initializeTable(this.tableid, this.sortdata);
         },
         updated() {
-            updateTable("#dmg-table");
+            updateTable(this.tableid);
+        },
+        activated() {
+            initializeTable(this.tableid, this.sortdata);
         },
         computed: {
+            tableid: function() {
+                return "dmg-table";
+            },
             phase: function () {
                 return logData.phases[this.phaseindex];
             },
@@ -208,7 +251,7 @@
                     var commons = [];
                     var data = [];
                     var player = logData.players[i];
-                    if (player.isConjure) {
+                    if (player.isFake) {
                         continue;
                     }
                     if (!groups[player.group]) {
@@ -271,7 +314,7 @@
                     var commons = [];
                     var data = [];
                     var player = logData.players[i];
-                    if (player.isConjure) {
+                    if (player.isFake) {
                         continue;
                     }
                     if (!groups[player.group]) {
@@ -291,10 +334,14 @@
                             groups[player.group].commons[j - commonOffset] = (groups[player.group].commons[j - commonOffset] || 0) + commons[j - commonOffset];
                             total.commons[j - commonOffset] = (total.commons[j - commonOffset] || 0) + commons[j - commonOffset];
                         } else {
-                            for (var k = 0; k < this.activetargets.length; k++) {
-                                var tar = this.phase.dmgStatsTargets[i][this.activetargets[k]];
-                                data[j] = (data[j] || 0) + tar[j];
-                            }
+                            if (this.activetargets.length > 0) {
+                                for (var k = 0; k < this.activetargets.length; k++) {
+                                    var tar = this.phase.dmgStatsTargets[i][this.activetargets[k]];
+                                    data[j] = (data[j] || 0) + tar[j];
+                                }
+                            } else {
+                                data[j] = (data[j] || 0);
+                            }             
                             groups[player.group].data[j] = (groups[player.group].data[j] || 0) + data[j];
                             total.data[j] = (total.data[j] || 0) + data[j];
                         }

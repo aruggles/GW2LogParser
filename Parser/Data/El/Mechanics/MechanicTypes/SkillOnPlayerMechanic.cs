@@ -28,8 +28,8 @@ namespace Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes
         {
             foreach (Player p in log.PlayerList)
             {
-                List<AbstractDamageEvent> combatitems = p.GetDamageTakenLogs(null, log, 0, log.FightData.FightEnd);
-                foreach (AbstractDamageEvent c in combatitems)
+                IReadOnlyList<AbstractHealthDamageEvent> combatitems = p.GetDamageTakenEvents(null, log, 0, log.FightData.FightEnd);
+                foreach (AbstractHealthDamageEvent c in combatitems)
                 {
                     if (c.SkillId == SkillId && Keep(c, log))
                     {

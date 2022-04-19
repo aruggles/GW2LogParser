@@ -1,0 +1,84 @@
+<template>
+    <div class="d-flex flex-row justify-content-center mt-1 mb-1">     
+        <ul class="nav nav-pills d-flex flex-wrap justify-content-center mr-3 scale85" :class="{'flex-row': !column, 'flex-column': column}">
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.dpsmode = 0" :class="{active: data.dpsmode === 0}">Full</a>
+            </li>
+            <li v-if="phaseduration > 4" class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.dpsmode = 4" :class="{active: data.dpsmode === 4}">4s</a>
+            </li>
+            <li v-if="phaseduration > 10" class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.dpsmode = 10" :class="{active: data.dpsmode === 10}">10s</a>
+            </li>
+            <li v-if="phaseduration > 20" class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.dpsmode = 20" :class="{active: data.dpsmode === 20}">20s</a>
+            </li>
+            <li v-if="phaseduration > 30" class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.dpsmode = 30" :class="{active: data.dpsmode === 30}">30s</a>
+            </li>
+            <li v-if="phasehassubphases" class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.dpsmode = -1" :class="{active: data.dpsmode === -1}">Phase</a>
+            </li>
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <custom-numberform-component :minValue="0" :maxValue="Math.floor(phaseduration / 2) * 2" :id="'customDPS'"
+                                                   :placeholderValue="0"></custom-numberform-component>
+            </li>        
+        </ul>    
+        <ul class="nav nav-pills d-flex flex-wrap justify-content-center ml-3 scale85" :class="{'flex-row': !column, 'flex-column': column}">
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center" data-original-title="Power + Condition">
+                <a class="nav-link" @click="data.damagemode = damageModeEnum.All" :class="{active: data.damagemode === damageModeEnum.All}"><img src="https://wiki.guildwars2.com/images/thumb/6/6a/Damage.png/30px-Damage.png" alt="All"
+                    class="icon"></a>
+            </li>    
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center" data-original-title="Power">
+                <a class="nav-link" @click="data.damagemode = damageModeEnum.Power" :class="{active: data.damagemode === damageModeEnum.Power}"><img src="https://wiki.guildwars2.com/images/2/23/Power.png" alt="Power"
+                    class="icon"></a>
+            </li>                     
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center" data-original-title="Condition">
+                <a class="nav-link" @click="data.damagemode = damageModeEnum.Condition" :class="{active: data.damagemode === damageModeEnum.Condition}"><img src="https://wiki.guildwars2.com/images/5/54/Condition_Damage.png" alt="Condition"
+                    class="icon"></a>
+            </li>
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center" v-if="hasBreakbarDamage" data-original-title="Breakbar">
+                <a class="nav-link" @click="data.damagemode = damageModeEnum.Breakbar" :class="{active: data.damagemode === damageModeEnum.Breakbar}"> <img src="https://wiki.guildwars2.com/images/a/ae/Unshakable.png" alt="Breakbar"
+                    class="icon"></a>
+            </li>
+        </ul>
+        <ul class="nav nav-pills d-flex flex-wrap justify-content-center ml-3 scale85" :class="{'flex-row': !column, 'flex-column': column}">
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.graphmode = graphModeEnum.DPS" :class="{active: data.graphmode === graphModeEnum.DPS}">DPS</a>
+            </li>    
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center" data-original-title="Centered DPS">
+                <a class="nav-link" @click="data.graphmode = graphModeEnum.CenteredDPS" :class="{active: data.graphmode === graphModeEnum.CenteredDPS}">Ctrd.DPS</a>
+            </li>                     
+            <li class="nav-item d-flex flex-row justify-content-center align-items-center">
+                <a class="nav-link" @click="data.graphmode = graphModeEnum.Damage" :class="{active: data.graphmode === graphModeEnum.Damage}">Damage</a>
+            </li>
+        </ul>
+    </div>
+</template>
+
+<script>
+    Vue.component("dps-graph-mode-selector-component", {
+        props: ['data', 'phaseduration', 'phasehassubphases', 'ignorebreakbar', "column"],
+        template: `${template}`,
+        mounted() {
+            var _this = this;
+            $('#customDPS').on("input ", function () {
+                _this.data.dpsmode = Math.ceil($(this).val() / 2) * 2;
+            });
+            $('#customDPS').on("click ", function () {
+                _this.data.dpsmode = Math.ceil($(this).val() / 2) * 2;
+            });
+        },
+        computed: {
+            graphModeEnum: function() {
+                return GraphType;
+            },
+            damageModeEnum: function() {
+                return DamageType;
+            },
+            hasBreakbarDamage: function() {
+                return !this.ignorebreakbar && logData.hasBreakbarDamage;
+            }
+        }
+    });
+</script>
