@@ -1,8 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.CombatReplays;
-using Gw2LogParser.Parser.Data.El.CombatReplays.Decorations;
-using Gw2LogParser.Parser.Helper;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 

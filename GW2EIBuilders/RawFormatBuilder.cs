@@ -1,4 +1,4 @@
-﻿using Gw2LogParser.Parser.Data;
+﻿using Gw2LogParser.EvtcParserExtensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;

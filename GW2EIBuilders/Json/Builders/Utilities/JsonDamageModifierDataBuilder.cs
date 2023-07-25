@@ -1,8 +1,5 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.DamageModifiers;
-using Gw2LogParser.Parser.Data.El.Statistics;
+﻿using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 using static Gw2LogParser.GW2EIBuilders.JsonDamageModifierData;

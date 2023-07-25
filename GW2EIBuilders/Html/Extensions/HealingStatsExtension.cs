@@ -1,9 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.Skills;
-using System;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
@@ -16,7 +13,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         public List<List<EXTHealingStatsPlayerChartDto>> PlayerHealingCharts { get; }
 
-        public HealingStatsExtension(ParsedLog log, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public HealingStatsExtension(ParsedLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             HealingPhases = new List<EXTHealingStatsPhaseDto>();
             PlayerHealingCharts = new List<List<EXTHealingStatsPlayerChartDto>>();

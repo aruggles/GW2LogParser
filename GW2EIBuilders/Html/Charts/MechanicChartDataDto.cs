@@ -1,9 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Mechanics.MechanicTypes;
-using Gw2LogParser.Parser.Data.Events.Mechanics;
-using Gw2LogParser.Parser.Data.Skills;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,8 +19,8 @@ namespace Gw2LogParser.GW2EIBuilders
             Color = mech.PlotlySetting.Color;
             Symbol = mech.PlotlySetting.Symbol;
             Size = mech.PlotlySetting.Size;
-            Visible = (mech.SkillId == Skill.DeathId || mech.SkillId == Skill.DownId);
-            Points = BuildMechanicGraphPointData(log, log.MechanicData.GetMechanicLogs(log, mech), mech.IsEnemyMechanic);
+            Visible = !mech.ShowOnTable;
+            Points = BuildMechanicGraphPointData(log, log.MechanicData.GetMechanicLogs(log, mech, log.FightData.FightStart, log.FightData.FightEnd), mech.IsEnemyMechanic);
         }
 
         private static List<List<object>> GetMechanicChartPoints(IReadOnlyList<MechanicEvent> mechanicLogs, PhaseData phase, ParsedLog log, bool enemyMechanic)
@@ -84,7 +81,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public static List<MechanicChartDataDto> BuildMechanicsChartData(ParsedLog log)
         {
             var mechanicsChart = new List<MechanicChartDataDto>();
-            foreach (Mechanic mech in log.MechanicData.GetPresentMechanics(log, 0, log.FightData.FightEnd))
+            foreach (Mechanic mech in log.MechanicData.GetPresentMechanics(log, log.FightData.FightStart, log.FightData.FightEnd))
             {
                 mechanicsChart.Add(new MechanicChartDataDto(log, mech));
             }

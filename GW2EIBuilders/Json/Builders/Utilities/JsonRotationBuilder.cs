@@ -1,6 +1,5 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.Events.Cast;
-using Gw2LogParser.Parser.Data.Skills;
+﻿using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 using static Gw2LogParser.GW2EIBuilders.JsonRotation;
@@ -23,7 +22,7 @@ namespace Gw2LogParser.GW2EIBuilders
             var jsonRotation = new JsonRotation();
             if (!skillDesc.ContainsKey("s" + skillID))
             {
-                Skill skill = skillCasts.First().Skill;
+                SkillItem skill = skillCasts.First().Skill;
                 skillDesc["s" + skillID] = JsonLogBuilder.BuildSkillDesc(skill, log);
             }
             jsonRotation.Id = skillID;

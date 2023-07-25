@@ -1,7 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Extensions;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.Extensions;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders

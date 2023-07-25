@@ -1,28 +1,17 @@
-﻿using Gw2LogParser.ExportModels.Report;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
+using Gw2LogParser.ExportModels.Report;
 using Gw2LogParser.GW2EIBuilders;
-using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.El.DamageModifiers;
-using Gw2LogParser.Parser.Data.El.Statistics;
-using Gw2LogParser.Parser.Data.Events.Cast;
-using Gw2LogParser.Parser.Data.Events.Damage;
-using Gw2LogParser.Parser.Data.Skills;
-using Gw2LogParser.Parser.Helper;
-using Gw2LogParser.Parser.Logic;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels
 {
     internal class LogBuilder
     {
         private readonly ParsedLog log;
-        private readonly Dictionary<long, Skill> usedSkills = new Dictionary<long, Skill>();
+        private readonly Dictionary<long, SkillItem> usedSkills = new Dictionary<long, SkillItem>();
         private readonly Dictionary<long, Buff> usedBuffs = new Dictionary<long, Buff>();
         private readonly HashSet<DamageModifier> usedDamageMods = new HashSet<DamageModifier>();
         public bool cr = true;
@@ -286,6 +275,7 @@ namespace Gw2LogParser.ExportModels
                     Name = player.Name,
                     Profession = player.Profession,
                     Group = player.Group,
+                    Icon = player.Icon
                 };
                 foreach (object[] item in player.Details.DmgDistributions[0].Distribution)
                 {
@@ -325,15 +315,15 @@ namespace Gw2LogParser.ExportModels
 
                     playerReport.Defense.DamageTaken = Parse<long>(phase.DefStats[playerIndex][0]);
                     playerReport.Defense.DamageBarrier = Parse<long>(phase.DefStats[playerIndex][1]);
-                    playerReport.Defense.Blocked = Parse<int>(phase.DefStats[playerIndex][2]);
-                    playerReport.Defense.Invulned = Parse<int>(phase.DefStats[playerIndex][3]);
-                    playerReport.Defense.Interrupted = Parse<int>(phase.DefStats[playerIndex][4]);
+                    playerReport.Defense.Blocked = Parse<int>(phase.DefStats[playerIndex][6]);
+                    playerReport.Defense.Invulned = Parse<int>(phase.DefStats[playerIndex][4]);
+                    playerReport.Defense.Interrupted = Parse<int>(phase.DefStats[playerIndex][3]);
                     playerReport.Defense.Evaded = Parse<int>(phase.DefStats[playerIndex][5]);
-                    playerReport.Defense.Dodges = Parse<int>(phase.DefStats[playerIndex][6]);
-                    playerReport.Defense.Missed = Parse<int>(phase.DefStats[playerIndex][7]);
-                    playerReport.Defense.Downed = Parse<int>(phase.DefStats[playerIndex][8]);
-                    playerReport.Defense.Dead = Parse<int>(phase.DefStats[playerIndex][10]);
-                    playerReport.Gameplay = BuildGameplayReport(phase.DmgStats[playerIndex]);
+                    playerReport.Defense.Dodges = Parse<int>(phase.DefStats[playerIndex][7]);
+                    playerReport.Defense.Missed = Parse<int>(phase.DefStats[playerIndex][2]);
+                    playerReport.Defense.Downed = Parse<int>(phase.DefStats[playerIndex][12]);
+                    playerReport.Defense.Dead = Parse<int>(phase.DefStats[playerIndex][14]);
+                    playerReport.Gameplay = BuildGameplayReport(phase.GameplayStats[playerIndex], phase.OffensiveStats[playerIndex]);
                     
                     playerReport.setBoonStats(phase.BoonStats[playerIndex].Data);
                     playerReport.setBoonGenSquadStats(phase.BoonGenSquadStats[playerIndex].Data);
@@ -375,28 +365,29 @@ namespace Gw2LogParser.ExportModels
             }
         }
 
-        private GameplayReport BuildGameplayReport(List<object> DmgStats)
+        private GameplayReport BuildGameplayReport(List<object> DmgStats, List<object> OffStats)
         {
             var report = new GameplayReport();
-            report.CriticalHits = Parse<int>(DmgStats[1]);
-            report.CritableHits = Parse<int>(DmgStats[2]);
-            report.Flanking = Parse<int>(DmgStats[4]);
-            report.Glancing = Parse<int>(DmgStats[5]);
-            report.ConnectedHits = Parse<int>(DmgStats[11]);
-            report.Blined = Parse<int>(DmgStats[6]);
-            report.Interrupted = Parse<int>(DmgStats[7]);
-            report.Invulnerable = Parse<int>(DmgStats[8]);
-            report.Evaded = Parse<int>(DmgStats[9]);
-            report.Blocked = Parse<int>(DmgStats[10]);
-            report.Killed = Parse<int>(DmgStats[12]);
-            report.Downed = Parse<int>(DmgStats[13]);
-            report.Wasted = Parse<float>(DmgStats[17]);
-            report.WastedCount = Parse<int>(DmgStats[18]);
-            report.Saved = Parse<float>(DmgStats[19]);
-            report.SavedCount = Parse<int>(DmgStats[20]);
-            report.WeaponSwapped = Parse<int>(DmgStats[21]);
-            report.AvgDistanceToSquad = Parse<double>(DmgStats[22]);
-            report.AvgDistanceToTag = Parse<double>(DmgStats[23]);
+            report.Wasted = Parse<float>(DmgStats[0]);
+            report.WastedCount = Parse<int>(DmgStats[1]);
+            report.Saved = Parse<float>(DmgStats[2]);
+            report.SavedCount = Parse<int>(DmgStats[3]);
+            report.WeaponSwapped = Parse<int>(DmgStats[4]);
+            report.AvgDistanceToSquad = Parse<double>(DmgStats[5]);
+            report.AvgDistanceToTag = Parse<double>(DmgStats[6]);
+
+            report.CriticalHits = Parse<int>(OffStats[1]);
+            report.CritableHits = Parse<int>(OffStats[2]);
+            report.Flanking = Parse<int>(OffStats[4]);
+            report.Glancing = Parse<int>(OffStats[5]);
+            report.ConnectedHits = Parse<int>(OffStats[11]);
+            report.Blined = Parse<int>(OffStats[6]);
+            report.Interrupted = Parse<int>(OffStats[7]);
+            report.Invulnerable = Parse<int>(OffStats[8]);
+            report.Evaded = Parse<int>(OffStats[9]);
+            report.Blocked = Parse<int>(OffStats[10]);
+            report.Killed = Parse<int>(OffStats[12]);
+            report.Downed = Parse<int>(OffStats[13]);
             return report;
         }
     }

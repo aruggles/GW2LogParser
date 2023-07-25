@@ -1,4 +1,5 @@
-﻿using Gw2LogParser.Parser.Data.El.DamageModifiers;
+﻿
+using GW2EIEvtcParser.EIData;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders

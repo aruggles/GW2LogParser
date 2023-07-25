@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Gw2LogParser.GW2Api
+namespace GW2EIGW2API.GW2API
 {
     public class GW2APITrait : GW2APIBaseItem
     {

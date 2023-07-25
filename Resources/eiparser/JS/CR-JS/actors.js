@@ -5,7 +5,7 @@
 "use strict";
 //// ACTORS
 class IconDrawable {
-    constructor(pos, start, end, imgSrc, pixelSize, dead, down, dc) {
+    constructor(pos, start, end, imgSrc, pixelSize, dead, down, dc, breakbarActive, hitboxWidth) {
         this.pos = pos;
         this.start = start;
         this.end = end;
@@ -19,6 +19,8 @@ class IconDrawable {
         this.dead = typeof dead !== "undefined" ? dead : null;
         this.down = typeof down !== "undefined" ? down : null;
         this.dc = typeof dc !== "undefined" ? dc : null;
+        this.breakbarActive = typeof breakbarActive !== "undefined" ? breakbarActive : null;
+        this.hitboxWidth = hitboxWidth;
     }
 
     isSelected() {
@@ -68,6 +70,19 @@ class IconDrawable {
         return false;
     }
 
+    isBreakbarActive() {
+        if (this.breakbarActive === null || this.breakbarActive.length === 0) {
+            return false;
+        }
+        var time = animator.reactiveDataStatus.time;
+        for (let i = 0; i < this.breakbarActive.length; i += 2) {
+            if (this.breakbarActive[i] <= time && this.breakbarActive[i + 1] >= time) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     getIcon() {
         if (this.died()) {
             return deadIcon;
@@ -106,8 +121,12 @@ class IconDrawable {
         return pt;
     }
 
+    canDraw() {
+        return true;
+    }
+
     getPosition() {
-        if (this.pos === null || this.pos.length === 0) {
+        if (this.pos === null || this.pos.length === 0 || this.disconnected() || !this.canDraw()) {
             return null;
         }
         var time = animator.reactiveDataStatus.time;
@@ -126,17 +145,25 @@ class IconDrawable {
         return this.getInterpolatedPosition(startIndex, Math.max(currentIndex, startIndex));
     }
 
+    getSize() {
+        if (animator.displaySettings.useActorHitboxWidth && this.hitboxWidth > 0) {
+            return this.hitboxWidth;
+        } else {
+            return this.pixelSize / animator.scale;
+        }
+    }
+
     draw() {
         const pos = this.getPosition();
         if (pos === null) {
             return;
         }
         var ctx = animator.mainContext;
-        const fullSize = this.pixelSize / animator.scale;
+        const fullSize = this.getSize();
         const halfSize = fullSize / 2;
         var isSelected = this.isSelected();
         var inSelectedGroup = this.inSelectedGroup();
-        if (animator.highlightSelectedGroup && !isSelected && inSelectedGroup) {
+        if (animator.displaySettings.highlightSelectedGroup && !isSelected && inSelectedGroup) {
             ctx.beginPath();
             ctx.lineWidth = (2 / animator.scale).toString();
             ctx.strokeStyle = 'blue';
@@ -166,8 +193,8 @@ class IconDrawable {
 }
 
 class SquadIconDrawable extends IconDrawable {
-    constructor(start, end, imgSrc, pixelSize, group, pos, dead, down, dc) {
-        super(pos, start, end, imgSrc, pixelSize, dead, down, dc);
+    constructor(start, end, imgSrc, pixelSize, group, pos, dead, down, dc, breakbarActive, hitboxWidth) {
+        super(pos, start, end, imgSrc, pixelSize, dead, down, dc, breakbarActive, hitboxWidth);
         this.group = group;
     }
 
@@ -178,7 +205,19 @@ class SquadIconDrawable extends IconDrawable {
 }
 
 class NonSquadIconDrawable extends IconDrawable {
-    constructor(start, end, imgSrc, pixelSize, pos, dead, down, dc) {
-        super(pos, start, end, imgSrc, pixelSize, dead, down, dc);
+    constructor(start, end, imgSrc, pixelSize, pos, dead, down, dc, breakbarActive, masterID, hitboxWidth) {
+        super(pos, start, end, imgSrc, pixelSize, dead, down, dc, breakbarActive, hitboxWidth);
+        this.masterID = typeof masterID === "undefined" ? -1 : masterID;
+        this.master = null;
+    }
+
+    canDraw() {
+        if (this.master === null) {
+            this.master = animator.getActorData(this.masterID);
+        }
+        if (this.master && !animator.displaySettings.displayAllMinions) {
+            return this.master.isSelected() && animator.displaySettings.displaySelectedMinions;
+        }
+        return true;
     }
 }

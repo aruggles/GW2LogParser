@@ -1,7 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Extensions;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.Extensions;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -62,7 +61,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 alliedHealingDist.Add(allyHealingDist);
                 foreach (PhaseData phase in phases)
                 {
-                    outgoingHealingAlly.Add(EXTJsonStatsBuilderCommons.BuildOutgoingHealingStatistics(a.EXTHealing.GetOutgoingHealStats(friendly, log, phase.Start, phase.End)));
+                    outgoingHealingAlly.Add(EXTJsonHealingStatsBuilderCommons.BuildOutgoingHealingStatistics(a.EXTHealing.GetOutgoingHealStats(friendly, log, phase.Start, phase.End)));
                     if (settings.RawFormatTimelineArrays)
                     {
                         allyHealing1S.Add(a.EXTHealing.Get1SHealingList(log, phase.Start, phase.End, friendly, HealingStatsExtensionHandler.EXTHealingType.All));
@@ -70,13 +69,13 @@ namespace Gw2LogParser.GW2EIBuilders
                         allyConversionHealingHealing1S.Add(a.EXTHealing.Get1SHealingList(log, phase.Start, phase.End, friendly, HealingStatsExtensionHandler.EXTHealingType.ConversionBased));
                         allyHybridHealing1S.Add(a.EXTHealing.Get1SHealingList(log, phase.Start, phase.End, friendly, HealingStatsExtensionHandler.EXTHealingType.Hybrid));
                     }
-                    allyHealingDist.Add(EXTJsonStatsBuilderCommons.BuildHealingDistList(a.EXTHealing.GetOutgoingHealEvents(friendly, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
+                    allyHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(a.EXTHealing.GetOutgoingHealEvents(friendly, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
                 }
             }
             foreach (PhaseData phase in phases)
             {
-                outgoingHealing.Add(EXTJsonStatsBuilderCommons.BuildOutgoingHealingStatistics(a.EXTHealing.GetOutgoingHealStats(null, log, phase.Start, phase.End)));
-                incomingHealing.Add(EXTJsonStatsBuilderCommons.BuildIncomingHealingStatistics(a.EXTHealing.GetIncomingHealStats(null, log, phase.Start, phase.End)));
+                outgoingHealing.Add(EXTJsonHealingStatsBuilderCommons.BuildOutgoingHealingStatistics(a.EXTHealing.GetOutgoingHealStats(null, log, phase.Start, phase.End)));
+                incomingHealing.Add(EXTJsonHealingStatsBuilderCommons.BuildIncomingHealingStatistics(a.EXTHealing.GetIncomingHealStats(null, log, phase.Start, phase.End)));
                 if (settings.RawFormatTimelineArrays)
                 {
                     healing1S.Add(a.EXTHealing.Get1SHealingList(log, phase.Start, phase.End, null, HealingStatsExtensionHandler.EXTHealingType.All));
@@ -84,8 +83,8 @@ namespace Gw2LogParser.GW2EIBuilders
                     conversionHealingHealing1S.Add(a.EXTHealing.Get1SHealingList(log, phase.Start, phase.End, null, HealingStatsExtensionHandler.EXTHealingType.ConversionBased));
                     hybridHealing1S.Add(a.EXTHealing.Get1SHealingList(log, phase.Start, phase.End, null, HealingStatsExtensionHandler.EXTHealingType.Hybrid));
                 }
-                totalHealingDist.Add(EXTJsonStatsBuilderCommons.BuildHealingDistList(a.EXTHealing.GetOutgoingHealEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
-                totalIncomingHealingDist.Add(EXTJsonStatsBuilderCommons.BuildHealingDistList(a.EXTHealing.GetIncomingHealEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
+                totalHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(a.EXTHealing.GetOutgoingHealEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
+                totalIncomingHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(a.EXTHealing.GetIncomingHealEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
             }
             if (!settings.RawFormatTimelineArrays)
             {

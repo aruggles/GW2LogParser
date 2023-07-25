@@ -1,16 +1,12 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.El.DamageModifiers;
-using Gw2LogParser.Parser.Data.El.Statistics;
-using Gw2LogParser.Parser.Data.Skills;
-using Gw2LogParser.Parser.Helper;
-using Gw2LogParser.Parser.Logic;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.EncounterLogic;
+using GW2EIEvtcParser.Extensions;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Gw2LogParser.Parser.Helper.ParserHelper;
+using static GW2EIEvtcParser.ParserHelper;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
@@ -25,8 +21,12 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<long> OffBuffs { get; } = new List<long>();
         public List<long> SupBuffs { get; } = new List<long>();
         public List<long> DefBuffs { get; } = new List<long>();
+        public List<long> Debuffs { get; } = new List<long>();
         public List<long> GearBuffs { get; } = new List<long>();
-        public List<long> FractalInstabilities { get; } = new List<long>();
+        public List<long> Nourishments { get; } = new List<long>();
+        public List<long> Enhancements { get; } = new List<long>();
+        public List<long> OtherConsumables { get; } = new List<long>();
+        public List<object[]> InstanceBuffs { get; } = new List<object[]>();
         public List<long> DmgModifiersItem { get; } = new List<long>();
         public List<long> DmgModifiersCommon { get; } = new List<long>();
         public Dictionary<string, List<long>> DmgModifiersPers { get; } = new Dictionary<string, List<long>>();
@@ -41,6 +41,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public CombatReplayDto CrData { get; set; } = null;
         public ChartDataDto GraphData { get; set; } = null;
         public HealingStatsExtension HealingStatsExtension { get; set; } = null;
+        public BarrierStatsExtension BarrierStatsExtension { get; set; } = null;
         // meta data
         public string EncounterDuration { get; set; }
         public bool Success { get; set; }
@@ -59,11 +60,14 @@ namespace Gw2LogParser.GW2EIBuilders
         public string ArcVersion { get; set; }
         public long EvtcVersion { get; set; }
         public ulong Gw2Build { get; set; }
-        public long FightID { get; set; }
+        public long TriggerID { get; set; }
+        public long EncounterID { get; set; }
         public string Parser { get; set; }
         public string RecordedBy { get; set; }
+        public int FractalScale { get; set; }
         public List<string> UploadLinks { get; set; }
         public List<string> UsedExtensions { get; set; }
+        public List<List<string>> PlayersRunningExtensions { get; set; }
         //
         private LogDataDto(ParsedLog log, bool light, Version parserVersion, string[] uploadLinks)
         {
@@ -73,16 +77,37 @@ namespace Gw2LogParser.GW2EIBuilders
             ArcVersion = log.LogData.ArcVersion;
             EvtcVersion = log.LogData.EvtcVersion;
             Gw2Build = log.LogData.GW2Build;
-            FightID = log.FightData.TriggerID;
-            Parser = "GW2LogParser " + parserVersion.ToString();
+            TriggerID = log.FightData.TriggerID;
+            EncounterID = log.FightData.Logic.EncounterID;
+            Parser = "Elite Insights " + parserVersion.ToString();
             RecordedBy = log.LogData.PoVName;
+            FractalScale = log.CombatData.GetFractalScaleEvent() != null ? log.CombatData.GetFractalScaleEvent().Scale : 0;
             UploadLinks = uploadLinks.ToList();
-            UsedExtensions = log.LogData.UsedExtensions.Any() ? log.LogData.UsedExtensions.Select(x => x.Name + " - " + x.Version).ToList() : null;
+            if (log.LogData.UsedExtensions.Any())
+            {
+                UsedExtensions = new List<string>();
+                PlayersRunningExtensions = new List<List<string>>();
+                foreach (AbstractExtensionHandler extension in log.LogData.UsedExtensions)
+                {
+                    UsedExtensions.Add(extension.Name + " - " + extension.Version);
+                    var set = new HashSet<string>();
+                    if (log.LogData.PoV != null)
+                    {
+                        set.Add(log.FindActor(log.LogData.PoV).Character);
+                        foreach (AgentItem agent in extension.RunningExtension)
+                        {
+                            set.Add(log.FindActor(agent).Character);
+                        }
+                    }
+                    PlayersRunningExtensions.Add(set.ToList());
+                }
+            }
+
             EncounterDuration = log.FightData.DurationString;
             Success = log.FightData.Success;
             Wvw = log.FightData.Logic.Mode == FightLogic.ParseMode.WvW;
             Targetless = log.FightData.Logic.Targetless;
-            FightName = log.FightData.GetFightName(log);
+            FightName = log.FightData.FightName;
             FightIcon = log.FightData.Logic.Icon;
             LightTheme = light;
             SingleGroup = log.PlayerList.Select(x => x.Group).Distinct().Count() == 1;
@@ -224,44 +249,63 @@ namespace Gw2LogParser.GW2EIBuilders
                 logData.Boons.Add(boon.ID);
                 usedBuffs[boon.ID] = boon;
             }
-            foreach (Buff boon in statistics.PresentConditions)
+            foreach (Buff condition in statistics.PresentConditions)
             {
-                logData.Conditions.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
+                logData.Conditions.Add(condition.ID);
+                usedBuffs[condition.ID] = condition;
             }
-            foreach (Buff boon in statistics.PresentOffbuffs)
+            foreach (Buff offBuff in statistics.PresentOffbuffs)
             {
-                logData.OffBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
+                logData.OffBuffs.Add(offBuff.ID);
+                usedBuffs[offBuff.ID] = offBuff;
             }
-            foreach (Buff boon in statistics.PresentSupbuffs)
+            foreach (Buff supBuff in statistics.PresentSupbuffs)
             {
-                logData.SupBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
+                logData.SupBuffs.Add(supBuff.ID);
+                usedBuffs[supBuff.ID] = supBuff;
             }
-            foreach (Buff boon in statistics.PresentDefbuffs)
+            foreach (Buff defBuff in statistics.PresentDefbuffs)
             {
-                logData.DefBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
+                logData.DefBuffs.Add(defBuff.ID);
+                usedBuffs[defBuff.ID] = defBuff;
             }
-            foreach (Buff boon in statistics.PresentGearbuffs)
+            foreach (Buff debuff in statistics.PresentDebuffs)
             {
-                logData.GearBuffs.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
+                logData.Debuffs.Add(debuff.ID);
+                usedBuffs[debuff.ID] = debuff;
             }
-            foreach (Buff boon in statistics.PresentFractalInstabilities)
+            foreach (Buff gearBuff in statistics.PresentGearbuffs)
             {
-                logData.FractalInstabilities.Add(boon.ID);
-                usedBuffs[boon.ID] = boon;
+                logData.GearBuffs.Add(gearBuff.ID);
+                usedBuffs[gearBuff.ID] = gearBuff;
+            }
+            foreach (Buff nourishment in statistics.PresentNourishements)
+            {
+                logData.Nourishments.Add(nourishment.ID);
+                usedBuffs[nourishment.ID] = nourishment;
+            }
+            foreach (Buff enhancement in statistics.PresentEnhancements)
+            {
+                logData.Enhancements.Add(enhancement.ID);
+                usedBuffs[enhancement.ID] = enhancement;
+            }
+            foreach (Buff otherConsumables in statistics.PresentOtherConsumables)
+            {
+                logData.OtherConsumables.Add(otherConsumables.ID);
+                usedBuffs[otherConsumables.ID] = otherConsumables;
+            }
+            foreach ((Buff instanceBuff, int stack) in log.FightData.Logic.GetInstanceBuffs(log))
+            {
+                logData.InstanceBuffs.Add(new object[] { instanceBuff.ID, stack });
+                usedBuffs[instanceBuff.ID] = instanceBuff;
             }
         }
 
         public static LogDataDto BuildLogData(ParsedLog log, bool cr, bool light, Version parserVersion, string[] uploadLinks)
         {
-
             var usedBuffs = new Dictionary<long, Buff>();
             var usedDamageMods = new HashSet<DamageModifier>();
-            var usedSkills = new Dictionary<long, Skill>();
+            var usedSkills = new Dictionary<long, SkillItem>();
             log.UpdateProgressWithCancellationCheck("HTML: building Log Data");
             var logData = new LogDataDto(log, light, parserVersion, uploadLinks);
             if (cr)
@@ -274,12 +318,12 @@ namespace Gw2LogParser.GW2EIBuilders
             log.UpdateProgressWithCancellationCheck("HTML: building Players");
             foreach (AbstractSingleActor actor in log.Friendlies)
             {
-                logData.HasCommander = logData.HasCommander || actor.HasCommanderTag;
+                logData.HasCommander = logData.HasCommander || (actor is Player p && p.IsCommander(log));
                 logData.Players.Add(new PlayerDto(actor, log, ActorDetailsDto.BuildPlayerData(log, actor, usedSkills, usedBuffs)));
             }
 
             log.UpdateProgressWithCancellationCheck("HTML: building Enemies");
-            foreach (AbstractSingleActor enemy in log.MechanicData.GetEnemyList(log, 0, log.FightData.FightEnd))
+            foreach (AbstractSingleActor enemy in log.MechanicData.GetEnemyList(log, log.FightData.FightStart, log.FightData.FightEnd))
             {
                 logData.Enemies.Add(new EnemyDto() { Name = enemy.Character });
             }
@@ -312,12 +356,17 @@ namespace Gw2LogParser.GW2EIBuilders
             {
                 log.UpdateProgressWithCancellationCheck("HTML: building Healing Extension");
                 logData.HealingStatsExtension = new HealingStatsExtension(log, usedSkills, usedBuffs);
+                if (log.CombatData.HasEXTBarrier)
+                {
+                    log.UpdateProgressWithCancellationCheck("HTML: building Barrier Extension");
+                    logData.BarrierStatsExtension = new BarrierStatsExtension(log, usedSkills, usedBuffs);
+                }
             }
             //
             SkillDto.AssembleSkills(usedSkills.Values, logData.SkillMap, log);
             DamageModDto.AssembleDamageModifiers(usedDamageMods, logData.DamageModMap);
             BuffDto.AssembleBoons(usedBuffs.Values, logData.BuffMap, log);
-            MechanicDto.BuildMechanics(log.MechanicData.GetPresentMechanics(log, 0, log.FightData.FightEnd), logData.MechanicMap);
+            MechanicDto.BuildMechanics(log.MechanicData.GetPresentMechanics(log, log.FightData.FightStart, log.FightData.FightEnd), logData.MechanicMap);
             return logData;
         }
 

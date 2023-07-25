@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Gw2LogParser.GW2Api
+namespace GW2EIGW2API.GW2API
 {
     public class GW2APIFact
     {

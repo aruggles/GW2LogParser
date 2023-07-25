@@ -26,11 +26,9 @@
 
 .scrollable-y {
     overflow-y: auto;
-    overflow-x: hidden;
 }
 
 .scrollable-x {
-    overflow-y: hidden;
     overflow-x: auto;
 }
 
@@ -71,8 +69,8 @@
 }
 
 .ei-container-small {
-    max-width: 68%;
-    min-width: 1300px;
+    max-width: 1450px;
+    min-width: 1450px;
     margin-right: auto;
     margin-left: auto;
 }
@@ -151,7 +149,7 @@
     color: #DDDDDD;
 }
 
-.cr-barrier { 
+.cr-barrier {
     position: relative;
     width: 100%;
     height: 100%;
@@ -262,28 +260,18 @@ body {
     min-height: 90px;
 }
 
-.theme-yeti .player-cell{
-    box-shadow: 
-    1px 0 0 0 #dee2e6, 
-    0 1px 0 0 #dee2e6, 
-    1px 1px 0 0 #dee2e6,
-    1px 0 0 0 #dee2e6 inset, 
-    0 1px 0 0 #dee2e6 inset;
+.theme-yeti .player-cell {
+    box-shadow: 1px 0 0 0 #dee2e6, 0 1px 0 0 #dee2e6, 1px 1px 0 0 #dee2e6, 1px 0 0 0 #dee2e6 inset, 0 1px 0 0 #dee2e6 inset;
 }
 
 .theme-slate .player-cell {
-    box-shadow: 
-    1px 0 0 0 rgb(10, 10, 10), 
-    0 1px 0 0 rgb(10, 10, 10), 
-    1px 1px 0 0 rgb(10, 10, 10),
-    1px 0 0 0 rgb(10, 10, 10) inset, 
-    0 1px 0 0 rgb(10, 10, 10) inset;
+    box-shadow: 1px 0 0 0 rgb(10, 10, 10), 0 1px 0 0 rgb(10, 10, 10), 1px 1px 0 0 rgb(10, 10, 10), 1px 0 0 0 rgb(10, 10, 10) inset, 0 1px 0 0 rgb(10, 10, 10) inset;
 }
 
 .player-cell-shorten {
-    display:block;
+    display: block;
     text-align: center;
-    white-space:nowrap;
+    white-space: nowrap;
     width: 90px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -395,6 +383,11 @@ img.icon-xxl {
     height: 196px;
 }
 
+img.encounter-icon {
+    height: 128px;
+    object-fit: contain;
+}
+
 
 img.icon-lg {
     width: 64px;
@@ -415,34 +408,20 @@ th:hover img.icon-hover,
     filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=3, OffY=3, Color='#000')";
 }
 
-table.dataTable.table-sm > thead > tr > th {
-    padding-right: 10px;
-}
-
-table.dataTable.table-sm .sorting:before,
-table.dataTable.table-sm .sorting_asc:before,
-table.dataTable.table-sm .sorting_desc:before {
-    right: 0.3em;
-}
-
-table.dataTable thead .sorting:before,
-table.dataTable thead .sorting:after,
-table.dataTable thead .sorting_asc:after,
-table.dataTable thead .sorting_desc:before,
-table.dataTable thead .sorting_asc_disabled:before,
-table.dataTable thead .sorting_asc_disabled:after,
-table.dataTable thead .sorting_desc_disabled:before,
-table.dataTable thead .sorting_desc_disabled:after {
-    right: 0.3em;
-    display: none;
-}
-
-.sub-cell { 
-    width: 20px ;
+.sub-cell {
+    width: 20px;
 }
 
 .prof-cell {
     width: 5px;
+}
+
+span.ellipsis {
+    width: 150px;
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .damage-cell {
@@ -457,10 +436,12 @@ table.dataTable thead .sorting_desc_disabled:after {
     width: 100px;
 }
 
-table.dataTable thead .sorting_asc:before,
-table.dataTable thead .sorting_desc:after {
-    right: 0.3em;
-    display: block;
+.name-cr-cell {
+    width: 150px;
+}
+
+.damage-cr-cell {
+    width: 170px;
 }
 
 .sub-tabs {
@@ -572,6 +553,11 @@ th {
     filter: drop-shadow(0px 0px 6px rgba(50, 120, 0, 1.0));
 }
 
+.super-small {
+    font-size: 65%
+}
+
+
 .theme-slate .target-cell:hover:not(.active) {
     border: 2px solid rgba(40, 75, 0, 0.5);
     border-radius: 50%;
@@ -627,7 +613,6 @@ canvas {
 }
 
 .animation-control {
-    transform: translate(0,-65px);
     z-index: 3;
 }
 
@@ -664,6 +649,7 @@ canvas {
 .slidercontainer {
     width: 100%;
 }
+
 .slider {
     width: 100%;
     height: 25px;
@@ -674,82 +660,93 @@ canvas {
     transition: opacity .2s;
     border-radius: 13px;
 }
-.slider:hover {
-    opacity: 0.9;
-}
+
+    .slider:hover {
+        opacity: 0.9;
+    }
 /* http://danielstern.ca/range.css/?ref=css-tricks#/ */
 input[type=range].slider {
     width: 100%;
     background-color: transparent;
     -webkit-appearance: none;
-  }
-  input[type=range].slider::-webkit-slider-runnable-track {
-    background: rgba(0, 0, 0, 0.0);
-    border: 1px solid rgba(0, 0, 0, 0);
-    width: 100%;
+}
+
+    input[type=range].slider::-webkit-slider-runnable-track {
+        background: rgba(0, 0, 0, 0.0);
+        border: 1px solid rgba(0, 0, 0, 0);
+        width: 100%;
+        cursor: pointer;
+    }
+
+    input[type=range].slider::-webkit-slider-thumb {
+        width: 25px;
+        height: 25px;
+        background: #00ff00;
+        border: 3px solid #00c800;
+        border-radius: 13px;
+        cursor: pointer;
+        -webkit-appearance: none;
+    }
+
+    input[type=range].slider::-moz-range-track {
+        background: rgba(0, 0, 0, 0.0);
+        border: 1px solid rgba(0, 0, 0, 0);
+        width: 100%;
+        cursor: pointer;
+    }
+
+    input[type=range].slider::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        background: #00ff00;
+        border: 3px solid #00c800;
+        border-radius: 13px;
+        cursor: pointer;
+    }
+
+
+thead .sorted, thead .sorted_asc, thead .sorted_desc {
     cursor: pointer;
-  }
-  input[type=range].slider::-webkit-slider-thumb {
-    width: 25px;
-    height: 25px;
-    background: #00ff00;
-    border: 3px solid #00c800;
-    border-radius: 13px;
-    cursor: pointer;
-    -webkit-appearance: none;
-  }
-  input[type=range].slider::-moz-range-track {
-    background: rgba(0, 0, 0, 0.0);
-    border: 1px solid rgba(0, 0, 0, 0);
-    width: 100%;
-    cursor: pointer;
-  }
-  input[type=range].slider::-moz-range-thumb {
-    width: 25px;
-    height: 25px;
-    background: #00ff00;
-    border: 3px solid #00c800;
-    border-radius: 13px;
-    cursor: pointer;
-  }
-
-.scrollable-cr-dps-table table tbody { display:block; }
-.scrollable-cr-dps-table thead { display:block; }
-.scrollable-cr-dps-table tfoot { display:block; }
-
-/* 25px due to datatable sort stuff */
-th.cr-dps-table-dps {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    min-width: 105px;
-    max-width: 105px;
+    position: relative;
+    padding-right: 20px;
 }
 
-td.cr-dps-table-dps {
-    min-width: 120px;
-    max-width: 120px;
-}
+    thead .sorted:before, thead .sorted_asc:before, thead .sorted_desc:before {
+        top: 5px;
+        right: 0.85em;
+        content: "\2191";
+        position: absolute;
+        display: block;
+    }
 
-th.cr-dps-table-name{
-    min-width: 85px;
-    max-width: 85px;
-}
-td.cr-dps-table-name{
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    min-width: 100px;
-    max-width: 100px;
-}
+    thead .sorted:before, thead .sorted_desc:before {
+        opacity: 0.3;
+    }
 
-th.cr-dps-table-icon-col{
-    min-width: 8px;
-    max-width: 8px;
-}
-td.cr-dps-table-icon-col {   
-    min-width: 23px;
-    max-width: 23px;
+    thead .sorted_asc:before {
+        opacity: 1.0;
+    }
+
+    thead .sorted:after, thead .sorted_asc:after, thead .sorted_desc:after {
+        top: 5px;
+        right: 0.5em;
+        content: "\2193";
+        position: absolute;
+        display: block;
+    }
+
+    thead .sorted:after, thead .sorted_asc:after {
+        opacity: 0.3;
+    }
+
+    thead .sorted_desc:after {
+        opacity: 1.0;
+    }
+
+
+
+td.sorted {
+    background-color: rgba(39, 128, 227, 0.05);
 }
 
 td.lowerOrEqual::before {
@@ -763,4 +760,3 @@ td.higherOrEqual::before {
 td.approximate::before {
     content: "\2248";
 }
-  

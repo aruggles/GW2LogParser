@@ -1,12 +1,7 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Statistics;
+﻿using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels
 {
@@ -37,26 +32,27 @@ namespace Gw2LogParser.ExportModels
             }
         }
 
-        public static List<object> GetDMGStatData(FinalGameplayStatsAll stats)
+        public static List<object> GetDMGStatData(FinalGameplayStats stats)
         {
-            List<object> data = GetDMGTargetStatData(stats);
-            data.AddRange(new List<object>
+            var data = new List<object>
                 {
                     // commons
-                    stats.TimeWasted, // 12
-                    stats.Wasted, // 13
+                    stats.TimeWasted, // 0
+                    stats.Wasted, // 1
 
-                    stats.TimeSaved, // 14
-                    stats.Saved, // 15
+                    stats.TimeSaved, // 2
+                    stats.Saved, // 3
 
-                    stats.SwapCount, // 16
-                    Math.Round(stats.StackDist, 2), // 17
-                    Math.Round(stats.DistToCom, 2) // 18
-                });
+                    stats.SwapCount, // 4
+                    Math.Round(stats.StackDist, 2), // 5
+                    Math.Round(stats.DistToCom, 2), // 6
+                    stats.SkillCastUptime, // 7
+                    stats.SkillCastUptimeNoAA, // 8
+                };
             return data;
         }
 
-        public static List<object> GetDMGTargetStatData(FinalGameplayStats stats)
+        public static List<object> GetDMGTargetStatData(FinalOffensiveStats stats)
         {
             var data = new List<object>
                 {
@@ -75,6 +71,14 @@ namespace Gw2LogParser.ExportModels
                     stats.Evaded,// 9
                     stats.Blocked,// 10
                     stats.ConnectedDirectDamageCount, // 11
+                    stats.Killed, // 12
+                    stats.Downed, // 13
+                    stats.AgainstMovingCount, // 14
+                    stats.ConnectedDamageCount, // 15
+                    stats.TotalDamageCount, // 16
+                    stats.DownContribution, // 17
+                    stats.ConnectedDmg, // 18
+                    stats.ConnectedDirectDmg, // 19
                 };
             return data;
         }
@@ -86,6 +90,7 @@ namespace Gw2LogParser.ExportModels
                     dpsAll.Damage,
                     dpsAll.PowerDamage,
                     dpsAll.CondiDamage,
+                    dpsAll.BreakbarDamage,
                 };
             return data;
         }
@@ -112,11 +117,16 @@ namespace Gw2LogParser.ExportModels
                 {
                     defenses.DamageTaken,
                     defenses.DamageBarrier,
-                    defenses.BlockedCount,
-                    defenses.InvulnedCount,
+                    defenses.MissedCount,
                     defenses.InterruptedCount,
+                    defenses.InvulnedCount,
                     defenses.EvadedCount,
-                    defenses.DodgeCount
+                    defenses.BlockedCount,
+                    defenses.DodgeCount,
+                    defenses.ConditionCleanses,
+                    defenses.ConditionCleansesTime,
+                    defenses.BoonStrips,
+                    defenses.BoonStripsTime,
                 };
 
             if (defenses.DownDuration > 0)

@@ -1,9 +1,6 @@
-﻿using Gw2LogParser.GW2EIBuilders.Json.Builders.Utilities;
-using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Helper;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,7 +10,7 @@ namespace Gw2LogParser.GW2EIBuilders
     {
         public static void FillJsonActor(JsonActor jsonActor, AbstractSingleActor actor, ParsedLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
-            IReadOnlyList<PhaseData> phases = log.FightData.GetNonDummyPhases(log);
+            IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
             //
             jsonActor.Name = actor.Character;
             jsonActor.TotalHealth = actor.GetHealth(log.CombatData);
@@ -25,18 +22,19 @@ namespace Gw2LogParser.GW2EIBuilders
             jsonActor.HitboxWidth = actor.HitboxWidth;
             jsonActor.InstanceID = actor.AgentItem.InstID;
             jsonActor.IsFake = actor.IsFakeActor;
+            jsonActor.TeamID = log.CombatData.GetTeamChangeEvents(actor.AgentItem).Any() ? log.CombatData.GetTeamChangeEvents(actor.AgentItem).LastOrDefault().TeamID : 0;
             //
             jsonActor.DpsAll = phases.Select(phase => JsonStatisticsBuilder.BuildJsonDPS(actor.GetDPSStats(log, phase.Start, phase.End))).ToArray();
-            jsonActor.StatsAll = phases.Select(phase => JsonStatisticsBuilder.BuildJsonGameplayStatsAll(actor.GetGameplayStats(log, phase.Start, phase.End))).ToArray();
+            jsonActor.StatsAll = phases.Select(phase => JsonStatisticsBuilder.BuildJsonGameplayStatsAll(actor.GetGameplayStats(log, phase.Start, phase.End), actor.GetOffensiveStats(null, log, phase.Start, phase.End))).ToArray();
             jsonActor.Defenses = phases.Select(phase => JsonStatisticsBuilder.BuildJsonDefensesAll(actor.GetDefenseStats(log, phase.Start, phase.End))).ToArray();
             //
             IReadOnlyDictionary<long, Minions> minionsList = actor.GetMinions(log);
             if (minionsList.Values.Any())
             {
-                jsonActor.Minions = minionsList.Values.Select(x => JsonMinionsBuilder.BuildJsonMinions(x, log, skillDesc, buffDesc)).ToList();
+                jsonActor.Minions = minionsList.Values.Select(x => JsonMinionsBuilder.BuildJsonMinions(x, log, settings, skillDesc, buffDesc)).ToList();
             }
             //
-            var skillByID = actor.GetIntersectingCastEvents(log, 0, log.FightData.FightEnd).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList());
+            var skillByID = actor.GetIntersectingCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList());
             if (skillByID.Any())
             {
                 jsonActor.Rotation = JsonRotationBuilder.BuildJsonRotationList(log, skillByID, skillDesc);
@@ -71,10 +69,10 @@ namespace Gw2LogParser.GW2EIBuilders
             //
             if (settings.RawFormatTimelineArrays)
             {
-                Dictionary<long, BuffsGraphModel> buffGraphs = actor.GetBuffGraphs(log);
-                jsonActor.BoonsStates = JsonBuffsUptimeBuilder.GetBuffStates(buffGraphs[Buff.NumberOfBoonsID]);
-                jsonActor.ConditionsStates = JsonBuffsUptimeBuilder.GetBuffStates(buffGraphs[Buff.NumberOfConditionsID]);
-                if (buffGraphs.TryGetValue(Buff.NumberOfActiveCombatMinionsID, out BuffsGraphModel states))
+                IReadOnlyDictionary<long, BuffsGraphModel> buffGraphs = actor.GetBuffGraphs(log);
+                jsonActor.BoonsStates = JsonBuffsUptimeBuilder.GetBuffStates(buffGraphs[SkillIDs.NumberOfBoons]);
+                jsonActor.ConditionsStates = JsonBuffsUptimeBuilder.GetBuffStates(buffGraphs[SkillIDs.NumberOfConditions]);
+                if (buffGraphs.TryGetValue(SkillIDs.NumberOfActiveCombatMinions, out BuffsGraphModel states))
                 {
                     jsonActor.ActiveCombatMinions = JsonBuffsUptimeBuilder.GetBuffStates(states);
                 }
@@ -94,7 +92,13 @@ namespace Gw2LogParser.GW2EIBuilders
             for (int i = 0; i < phases.Count; i++)
             {
                 PhaseData phase = phases[i];
-                res[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(actor.GetJustActorDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc);
+                res[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(
+                    actor.GetJustActorDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                    actor.GetJustActorBreakbarDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                    log,
+                    skillDesc,
+                    buffDesc
+                );
             }
             return res;
         }
@@ -105,7 +109,13 @@ namespace Gw2LogParser.GW2EIBuilders
             for (int i = 0; i < phases.Count; i++)
             {
                 PhaseData phase = phases[i];
-                res[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(actor.GetDamageTakenEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc);
+                res[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(
+                    actor.GetDamageTakenEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                    actor.GetJustActorBreakbarDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                    log,
+                    skillDesc,
+                    buffDesc
+               );
             }
             return res;
         }

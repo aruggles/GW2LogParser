@@ -1,4 +1,4 @@
-﻿using Gw2LogParser.Parser.Data.El.Statistics;
+﻿using GW2EIEvtcParser.EIData;
 using static Gw2LogParser.GW2EIBuilders.JsonStatistics;
 
 namespace Gw2LogParser.GW2EIBuilders
@@ -51,35 +51,35 @@ namespace Gw2LogParser.GW2EIBuilders
             return jsonDPS;
         }
 
-        private static void FillJsonGamePlayStats(JsonGameplayStats jsonGameplayStats, FinalGameplayStats stats)
+        private static void FillJsonGamePlayStats(JsonGameplayStats jsonGameplayStats, FinalOffensiveStats offStats)
         {
-            jsonGameplayStats.TotalDamageCount = stats.TotalDamageCount;
-            jsonGameplayStats.DirectDamageCount = stats.DirectDamageCount;
-            jsonGameplayStats.ConnectedDirectDamageCount = stats.ConnectedDirectDamageCount;
-            jsonGameplayStats.ConnectedDamageCount = stats.ConnectedDamageCount;
-            jsonGameplayStats.CritableDirectDamageCount = stats.CritableDirectDamageCount;
-            jsonGameplayStats.CriticalRate = stats.CriticalCount;
-            jsonGameplayStats.CriticalDmg = stats.CriticalDmg;
-            jsonGameplayStats.FlankingRate = stats.FlankingCount;
-            jsonGameplayStats.GlanceRate = stats.GlanceCount;
-            jsonGameplayStats.AgainstMovingRate = stats.AgainstMovingCount;
-            jsonGameplayStats.Missed = stats.Missed;
-            jsonGameplayStats.Blocked = stats.Blocked;
-            jsonGameplayStats.Evaded = stats.Evaded;
-            jsonGameplayStats.Interrupts = stats.Interrupts;
-            jsonGameplayStats.Invulned = stats.Invulned;
-            jsonGameplayStats.Killed = stats.Killed;
-            jsonGameplayStats.Downed = stats.Downed;
+            jsonGameplayStats.TotalDamageCount = offStats.TotalDamageCount;
+            jsonGameplayStats.DirectDamageCount = offStats.DirectDamageCount;
+            jsonGameplayStats.ConnectedDirectDamageCount = offStats.ConnectedDirectDamageCount;
+            jsonGameplayStats.ConnectedDamageCount = offStats.ConnectedDamageCount;
+            jsonGameplayStats.CritableDirectDamageCount = offStats.CritableDirectDamageCount;
+            jsonGameplayStats.CriticalRate = offStats.CriticalCount;
+            jsonGameplayStats.CriticalDmg = offStats.CriticalDmg;
+            jsonGameplayStats.FlankingRate = offStats.FlankingCount;
+            jsonGameplayStats.GlanceRate = offStats.GlanceCount;
+            jsonGameplayStats.AgainstMovingRate = offStats.AgainstMovingCount;
+            jsonGameplayStats.Missed = offStats.Missed;
+            jsonGameplayStats.Blocked = offStats.Blocked;
+            jsonGameplayStats.Evaded = offStats.Evaded;
+            jsonGameplayStats.Interrupts = offStats.Interrupts;
+            jsonGameplayStats.Invulned = offStats.Invulned;
+            jsonGameplayStats.Killed = offStats.Killed;
+            jsonGameplayStats.Downed = offStats.Downed;
         }
 
-        public static JsonGameplayStats BuildJsonGameplayStats(FinalGameplayStats stats)
+        public static JsonGameplayStats BuildJsonGameplayStats(FinalOffensiveStats stats)
         {
             var jsonGameplayStats = new JsonGameplayStats();
             FillJsonGamePlayStats(jsonGameplayStats, stats);
             return jsonGameplayStats;
         }
 
-        public static JsonGameplayStatsAll BuildJsonGameplayStatsAll(FinalGameplayStatsAll stats)
+        public static JsonGameplayStatsAll BuildJsonGameplayStatsAll(FinalGameplayStats stats, FinalOffensiveStats offStats)
         {
             var jsonGameplayStatsAll = new JsonGameplayStatsAll
             {
@@ -95,7 +95,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 AvgActiveConditions = stats.AvgActiveConditions,
                 SwapCount = stats.SwapCount
             };
-            FillJsonGamePlayStats(jsonGameplayStatsAll, stats);
+            FillJsonGamePlayStats(jsonGameplayStatsAll, offStats);
             return jsonGameplayStatsAll;
         }
 

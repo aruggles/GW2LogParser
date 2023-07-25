@@ -1,22 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.IO.Compression;
 using System.Threading;
 using Gw2LogParser.Exceptions;
 using System.ComponentModel;
-using Gw2LogParser.Parser;
-using Gw2LogParser.Parser.Data;
 using Gw2LogParser.ExportModels;
 using System.Collections.Concurrent;
 using Gw2LogParser.ExportModels.Report;
-using Gw2LogParser.Parser.Helper;
+using GW2EIEvtcParser;
 using System.Windows.Forms;
 using Gw2LogParser.GW2EIBuilders;
-using Gw2LogParser.GW2Api;
+using GW2EIGW2API;
+using GW2EIEvtcParser.ParserHelpers;
+using Gw2LogParser.EvtcParserExtensions;
 
 namespace Gw2LogParser
 {
@@ -91,7 +88,7 @@ namespace Gw2LogParser
                 {
                     throw new FileNotFoundException("File " + fInfo.FullName + " does not exist");
                 }
-                var parser = new EvtcParser(new ParserSettings(Properties.Settings.Default.Anonymous,
+                var parser = new EvtcParser(new EvtcParserSettings(Properties.Settings.Default.Anonymous,
                                                 Properties.Settings.Default.SkipFailedTries,
                                                 Properties.Settings.Default.ParsePhases,
                                                 Properties.Settings.Default.ParseCombatReplay,
@@ -99,7 +96,8 @@ namespace Gw2LogParser
                                                 Properties.Settings.Default.CustomTooShort,
                                                 Properties.Settings.Default.DetailledWvW), apiController);
                 //Process evtc here
-                ParsedLog log = parser.ParseLog(operation, fInfo, out ParsingFailureReason failureReason);
+                ParsedEvtcLog parsedLog = parser.ParseLog(operation, fInfo, out ParsingFailureReason failureReason);
+                ParsedLog log = new ParsedLog(parsedLog);
                 if (failureReason != null)
                 {
                     failureReason.Throw();
@@ -194,7 +192,7 @@ namespace Gw2LogParser
                 return;
             }
             var uploadResults = new UploadResults("", "", "");
-            var htmlAssets = new GW2EIBuilders.HTMLAssets();
+            var htmlAssets = new HTMLAssets();
             string outputFile = Path.Combine(
                 saveFolder.FullName,
                 $"fight_{count}.html"

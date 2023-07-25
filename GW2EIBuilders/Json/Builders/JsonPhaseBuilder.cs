@@ -1,7 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Helper;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,7 +21,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 targets.Add(log.FightData.Logic.Targets.IndexOf(tar));
             }
             jsPhase.Targets = targets;
-            IReadOnlyList<PhaseData> phases = log.FightData.GetNonDummyPhases(log);
+            IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
             if (!jsPhase.BreakbarPhase)
             {
                 var subPhases = new List<int>();

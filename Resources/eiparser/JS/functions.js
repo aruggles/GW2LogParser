@@ -68,7 +68,7 @@ function getTargetCacheID(activetargets) {
 }
 
 function getDPSGraphCacheID(dpsmode, damagemode, graphmode, activetargets, phaseIndex, extra) {
-    return "dps" + dpsmode + '-'+ damagemode + '-' + graphmode + '-' + getTargetCacheID(activetargets) + '-' + phaseIndex + (extra !== null ? '-' + extra : '');
+    return "dps" + dpsmode + '-' + damagemode + '-' + graphmode + '-' + getTargetCacheID(activetargets) + '-' + phaseIndex + (extra !== null ? '-' + extra : '');
 }
 
 function graphTypeEnumToString(mode) {
@@ -273,21 +273,17 @@ function computeRotationData(rotationData, images, data, phase, actor, yAxis) {
 
             var fillColor;
             var originalDuration = duration;
-            if (endType == 1) { 
-                fillColor = 'rgb(0,0,255)'; 
-            }
-            else if (endType == 2) { 
-                fillColor = 'rgb(255,0,0)'; 
-            }
-            else if (endType == 3) { 
-                fillColor = 'rgb(0,255,0)'; 
-            }
-            else if (endType == 4) { 
-                fillColor = 'rgb(0,255,255)'; 
-                duration = 50;
-            }
-            else { 
-                fillColor = 'rgb(255,255,0)'; 
+            if (endType === RotationStatus.REDUCED) {
+                fillColor = 'rgb(0,0,255)';
+            } else if (endType === RotationStatus.CANCEL) {
+                fillColor = 'rgb(255,0,0)';
+            } else if (endType === RotationStatus.FULL) {
+                fillColor = 'rgb(0,255,0)';
+            } else if (endType === RotationStatus.INSTANT) {
+                fillColor = 'rgb(0,255,255)';
+                duration = 50; // so that the quad is visible
+            } else { // UNKNOWN
+                fillColor = 'rgb(255,255,0)';
             }
 
             var clampedX = Math.max(x, 0);
@@ -442,7 +438,7 @@ function computePlayerDPS(player, damageData, lim, phasebreaks, activetargets, c
         } else if (phasebreaks && phasebreaks[j]) {
             left = j;
         }
-        right = j;    
+        right = j;
         if (graphMode === GraphType.CenteredDPS) {
             if (lim > 0) {
                 right = Math.min(Math.round(time + lim), end - 1);
@@ -456,7 +452,7 @@ function computePlayerDPS(player, damageData, lim, phasebreaks, activetargets, c
             } else {
                 right = end - 1;
             }
-        }          
+        }
         var div = graphMode !== GraphType.Damage ? Math.max(times[right] - times[left], 1) : 1;
         totalDamage = damageData.total[right] - damageData.total[left];
         targetDamage = 0;
@@ -522,7 +518,7 @@ function getActorGraphLayout(images, color, hasBuffs) {
             showticklabels: false,
             color: color,
             range: [0, 2]
-        },      
+        },
         legend: {
             traceorder: 'reversed'
         },
@@ -593,20 +589,20 @@ function _computeTargetGraphData(graph, targets, phase, data, yaxis, jsonGraphNa
         var times = [];
         var target = targets[phase.targets[i]];
         for (var j = 0; j < graphData.length; j++) {
-          texts[j] = graphData[j][1] + "% " + percentName + " - " + target.name;
-          times[j] = graphData[j][0];
+            texts[j] = graphData[j][1] + "% " + percentName + " - " + target.name;
+            times[j] = graphData[j][0];
         }
         var res = {
-          x: times,
-          text: texts,
-          mode: "lines",
-          line: {
-            dash: "dashdot",
-            shape: "hv",
-          },
-          hoverinfo: "text",
-          visible: visible ? true : "legendonly",
-          name: target.name + " " + graphName,
+            x: times,
+            text: texts,
+            mode: "lines",
+            line: {
+                dash: "dashdot",
+                shape: "hv",
+            },
+            hoverinfo: "text",
+            visible: visible ? true : "legendonly",
+            name: target.name + " " + graphName,
         };
         if (yaxis) {
             res.yaxis = yaxis;
@@ -697,47 +693,83 @@ function computeBuffData(buffData, data) {
     return 0;
 }
 
-function _initTable (id, cell, order, orderCallBack) {
-    var table = $(id);
-    if (!table.length) {
-        return;
+function computeTargetDPS(target, damageData, lim, phasebreaks, cacheID, times, graphMode) {
+    if (target.dpsGraphCache.has(cacheID)) {
+        return target.dpsGraphCache.get(cacheID);
     }
-    var data = {
-        order: [
-            [cell, order]
-        ]
-    };
-    table.DataTable(data);
-    if (orderCallBack) {
-        table.DataTable().on('order.dt', orderCallBack);
+    var totalDamage = 0;
+    var totalDPS = [0];
+    var maxDPS = 0;
+    var left = 0, right = 0;
+    var end = times.length;
+    if (graphMode === GraphType.CenteredDPS) {
+        lim /= 2;
     }
-    //}
-};
-
-function initializeTable(tableid, sortdata) {
-    _initTable(
-        "#" + tableid,
-        sortdata.index,
-        sortdata.order,
-        function () {
-            var order = $("#" + tableid)
-                .DataTable()
-                .order();
-                sortdata.order = order[0][1];
-                sortdata.index = order[0][0];
+    for (var j = 0; j < end; j++) {
+        var time = times[j];
+        if (lim > 0) {
+            left = Math.max(Math.round(time - lim), 0);
+        } else if (phasebreaks && phasebreaks[j]) {
+            left = j;
         }
-    );
+        right = j;
+        if (graphMode === GraphType.CenteredDPS) {
+            if (lim > 0) {
+                right = Math.min(Math.round(time + lim), end - 1);
+            } else if (phasebreaks) {
+                for (var i = left + 1; i < phasebreaks.length; i++) {
+                    if (phasebreaks[i]) {
+                        right = i;
+                        break;
+                    }
+                }
+            } else {
+                right = end - 1;
+            }
+        }
+        var div = graphMode !== GraphType.Damage ? Math.max(times[right] - times[left], 1) : 1;
+        totalDamage = damageData[right] - damageData[left];
+        totalDPS[j] = Math.round(totalDamage / (div));
+        maxDPS = Math.max(maxDPS, totalDPS[j]);
+    }
+    if (maxDPS < 1e-6) {
+        maxDPS = 10;
+    }
+    var res = {
+        dps: totalDPS,
+        maxDPS: maxDPS
+    };
+    target.dpsGraphCache.set(cacheID, res);
+    return res;
 }
 
-function updateTable(id) {
-    var divID = "#" + id;
-    var table = $(divID);
-    if ($.fn.dataTable.isDataTable(divID)) {
-        table.DataTable().rows().invalidate('dom');
-        table.DataTable().draw();
+function addTargetLayout(data, target, states, percentName, graphName, visible) {
+    if (!states) {
+        return 0;
     }
-    //}
-};
+    var texts = [];
+    var times = [];
+    for (var j = 0; j < states.length; j++) {
+        texts[j] = states[j][1] + "% " + percentName;
+        times[j] = states[j][0];
+    }
+    var res = {
+        x: times,
+        text: texts,
+        mode: 'lines',
+        line: {
+            dash: 'dashdot',
+            shape: 'hv'
+        },
+        hoverinfo: 'text',
+        visible: visible ? true : 'legendonly',
+        name: target.name + ' ' + graphName,
+        yaxis: 'y3'
+    };
+    data.push(res);
+    return 1;
+}
+
 
 /*function getActorGraphLayout(images, boonYs, stackingBoons) {
     var layout = {

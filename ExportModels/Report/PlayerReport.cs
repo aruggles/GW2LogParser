@@ -16,6 +16,7 @@ namespace Gw2LogParser.ExportModels.Report
         public int Group { get; set; }
         public string Account { get; set; }
         public string Profession { get; set; }
+        public string Icon { get; set; }
         public double DPS
         {
             get

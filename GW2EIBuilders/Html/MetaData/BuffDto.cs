@@ -1,7 +1,7 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.Events.MetaData;
-using Gw2LogParser.Parser.Helper;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
 
@@ -17,7 +17,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public BuffDto(Buff buff, ParsedLog log) : base(buff, log)
         {
             Stacking = (buff.Type == Buff.BuffType.Intensity);
-            Consumable = (buff.Nature == Buff.BuffNature.Consumable);
+            Consumable = (buff.Classification == Buff.BuffClassification.Nourishment || buff.Classification == Buff.BuffClassification.Enhancement || buff.Classification == Buff.BuffClassification.OtherConsumable);
             FightSpecific = (buff.Source == ParserHelper.Source.FightSpecific || buff.Source == ParserHelper.Source.FractalInstability);
             BuffInfoEvent buffInfoEvent = log.CombatData.GetBuffInfoEvent(buff.ID);
             if (buffInfoEvent != null)
@@ -35,7 +35,7 @@ namespace Gw2LogParser.GW2EIBuilders
                     {
                         continue;
                     }
-                    string desc = formula.GetDescription(false, log.Buffs.BuffsByIds);
+                    string desc = formula.GetDescription(false, log.Buffs.BuffsByIds, buff);
                     if (desc.Length > 0)
                     {
                         descriptions.Add(desc);

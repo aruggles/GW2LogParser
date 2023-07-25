@@ -1,8 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.El.Statistics;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,11 +13,44 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool Visible { get; set; }
         public List<object[]> States { get; set; }
 
+        private static string GetBuffColor(string name)
+        {
+            switch (name)
+            {
+
+                case "Aegis": return "rgb(102,255,255)";
+                case "Fury": return "rgb(255,153,0)";
+                case "Might": return "rgb(153,0,0)";
+                case "Protection": return "rgb(102,255,255)";
+                case "Quickness": return "rgb(255,0,255)";
+                case "Regeneration": return "rgb(0,204,0)";
+                case "Resistance": return "rgb(255, 153, 102)";
+                case "Retaliation": return "rgb(255, 51, 0)";
+                case "Resolution": return "rgb(255, 51, 0)";
+                case "Stability": return "rgb(153, 102, 0)";
+                case "Swiftness": return "rgb(255,255,0)";
+                case "Vigor": return "rgb(102, 153, 0)";
+                case "Alacrity": return "rgb(0,102,255)";
+
+                case "Glyph of Empowerment": return "rgb(204, 153, 0)";
+                case "Sun Spirit": return "rgb(255, 102, 0)";
+                case "Banner of Strength": return "rgb(153, 0, 0)";
+                case "Banner of Discipline": return "rgb(0, 51, 0)";
+                case "Spotter": return "rgb(0,255,0)";
+                case "Stone Spirit": return "rgb(204, 102, 0)";
+                case "Storm Spirit": return "rgb(102, 0, 102)";
+                case "Empower Allies": return "rgb(255, 153, 0)";
+                default:
+                    return "";
+            }
+
+        }
+
         private BuffChartDataDto(BuffsGraphModel bgm, List<Segment> bChart, PhaseData phase)
         {
             Id = bgm.Buff.ID;
             Visible = (bgm.Buff.Name == "Might" || bgm.Buff.Name == "Quickness" || bgm.Buff.Name == "Vulnerability");
-            Color = HTMLBuilder.GetLink("Color-" + bgm.Buff.Name);
+            Color = GetBuffColor(bgm.Buff.Name);
             States = Segment.ToObjectList(bChart, phase.Start, phase.End);
         }
 
@@ -51,17 +82,21 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        public static List<BuffChartDataDto> BuildBoonGraphData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Buff> usedBuffs)
+        private static List<BuffChartDataDto> BuildBuffGraphData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, BuffsGraphModel> buffGraphData, Dictionary<long, Buff> usedBuffs)
         {
             var list = new List<BuffChartDataDto>();
-            var boonGraphData = p.GetBuffGraphs(log).ToDictionary(x => x.Key, x => x.Value);
-            BuildBoonGraphData(list, log.StatisticsHelper.PresentBoons, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.StatisticsHelper.PresentConditions, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.StatisticsHelper.PresentOffbuffs, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.StatisticsHelper.PresentSupbuffs, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.StatisticsHelper.PresentDefbuffs, boonGraphData, phase, usedBuffs);
-            BuildBoonGraphData(list, log.StatisticsHelper.PresentGearbuffs, boonGraphData, phase, usedBuffs);
-            foreach (BuffsGraphModel bgm in boonGraphData.Values)
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentBoons, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentConditions, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentOffbuffs, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentSupbuffs, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentDefbuffs, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentDebuffs, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(list, log.StatisticsHelper.PresentGearbuffs, buffGraphData, phase, usedBuffs);
+            var footList = new List<BuffChartDataDto>();
+            BuildBoonGraphData(footList, log.StatisticsHelper.PresentNourishements, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(footList, log.StatisticsHelper.PresentEnhancements, buffGraphData, phase, usedBuffs);
+            BuildBoonGraphData(footList, log.StatisticsHelper.PresentOtherConsumables, buffGraphData, phase, usedBuffs);
+            foreach (BuffsGraphModel bgm in buffGraphData.Values)
             {
                 BuffChartDataDto graph = BuildBuffGraph(bgm, phase, usedBuffs);
                 if (graph != null)
@@ -69,23 +104,19 @@ namespace Gw2LogParser.GW2EIBuilders
                     list.Add(graph);
                 }
             }
-            if (p.GetType() == typeof(Player))
-            {
-                foreach (AbstractSingleActor mainTarget in log.FightData.GetMainTargets(log))
-                {
-                    boonGraphData = mainTarget.GetBuffGraphs(log);
-                    foreach (BuffsGraphModel bgm in boonGraphData.Values.Reverse().Where(x => x.Buff.Name == "Compromised" || x.Buff.Name == "Unnatural Signet" || x.Buff.Name == "Fractured - Enemy" || x.Buff.Name == "Erratic Energy"))
-                    {
-                        BuffChartDataDto graph = BuildBuffGraph(bgm, phase, usedBuffs);
-                        if (graph != null)
-                        {
-                            list.Add(graph);
-                        }
-                    }
-                }
-            }
+            list.AddRange(footList);
             list.Reverse();
             return list;
+        }
+
+        public static List<BuffChartDataDto> BuildBuffGraphData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Buff> usedBuffs)
+        {
+            return BuildBuffGraphData(log, p, phase, p.GetBuffGraphs(log).ToDictionary(x => x.Key, x => x.Value), usedBuffs);
+        }
+
+        public static List<BuffChartDataDto> BuildBuffGraphData(ParsedLog log, AbstractSingleActor p, AbstractSingleActor by, PhaseData phase, Dictionary<long, Buff> usedBuffs)
+        {
+            return BuildBuffGraphData(log, p, phase, p.GetBuffGraphs(log, by).ToDictionary(x => x.Key, x => x.Value), usedBuffs);
         }
     }
 }

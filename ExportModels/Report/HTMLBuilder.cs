@@ -4,9 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.ExportModels.Report
 {
@@ -106,9 +103,8 @@ namespace Gw2LogParser.ExportModels.Report
             foreach (PlayerReport player in players)
             {
                 var combatTime = TimeSpan.FromMilliseconds(player.TimeInCombat).TotalSeconds;
-                var professionIcon = GeneralHelper.GetProfIcon(player.Profession);
 
-                var profession = "<img src=\"" + professionIcon + "\" alt=\"" + player.Profession + "\" class=\"icon\"><span style=\"display: none;\">" + player.Profession + "</span>";
+                var profession = "<img src=\"" + player.Icon + "\" alt=\"" + player.Profession + "\" class=\"icon\"><span style=\"display: none;\">" + player.Profession + "</span>";
                 var tableStart = "<tr><td>" + player.Group + "</td><td>" + profession + "</td><td><a href=\"#" + player.Identifier + "\">" + player.Name + "</a></td><td>" + player.Account + "</td>";
                 // damage += tableStart;
                 // defense += tableStart;

@@ -12,6 +12,11 @@ namespace Gw2LogParser.GW2EIBuilders
         public int TotalDamage { get; set; }
 
         /// <summary>
+        /// Total breakbar damage done
+        /// </summary>
+        public double TotalBreakbarDamage { get; set; }
+
+        /// <summary>
         /// Minimum damage done
         /// </summary>
         public int Min { get; set; }

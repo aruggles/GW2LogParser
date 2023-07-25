@@ -1,4 +1,4 @@
-﻿using Gw2LogParser.Parser.Data.El.Statistics;
+﻿using GW2EIEvtcParser.EIData;
 using System.Linq;
 using static Gw2LogParser.GW2EIBuilders.JsonDeathRecap;
 

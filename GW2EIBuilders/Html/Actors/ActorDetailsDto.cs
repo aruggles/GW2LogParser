@@ -1,8 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.Skills;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,13 +13,14 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<DmgDistributionDto> DmgDistributionsTaken { get; set; }
         public List<List<object[]>> Rotation { get; set; }
         public List<List<BuffChartDataDto>> BoonGraph { get; set; }
+        public List<List<List<BuffChartDataDto>>> BoonGraphPerSource { get; set; }
         public List<FoodDto> Food { get; set; }
         public List<ActorDetailsDto> Minions { get; set; }
         public List<DeathRecapDto> DeathRecap { get; set; }
 
         // helpers
 
-        public static ActorDetailsDto BuildPlayerData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static ActorDetailsDto BuildPlayerData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new ActorDetailsDto
             {
@@ -36,6 +35,7 @@ namespace Gw2LogParser.GW2EIBuilders
             };
             foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
+
                 dto.Rotation.Add(SkillDto.BuildRotationData(log, actor, phase, usedSkills));
                 dto.DmgDistributions.Add(DmgDistributionDto.BuildFriendlyDMGDistData(log, actor, null, phase, usedSkills, usedBuffs));
                 var dmgTargetsDto = new List<DmgDistributionDto>();
@@ -45,7 +45,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 }
                 dto.DmgDistributionsTargets.Add(dmgTargetsDto);
                 dto.DmgDistributionsTaken.Add(DmgDistributionDto.BuildDMGTakenDistData(log, actor, phase, usedSkills, usedBuffs));
-                dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, actor, phase, usedBuffs));
+                dto.BoonGraph.Add(BuffChartDataDto.BuildBuffGraphData(log, actor, phase, usedBuffs));
             }
             foreach (KeyValuePair<long, Minions> pair in actor.GetMinions(log))
             {
@@ -55,7 +55,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        private static ActorDetailsDto BuildFriendlyMinionsData(ParsedLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static ActorDetailsDto BuildFriendlyMinionsData(ParsedLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new ActorDetailsDto
             {
@@ -75,13 +75,14 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        public static ActorDetailsDto BuildTargetData(ParsedLog log, AbstractSingleActor target, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs, bool cr)
+        public static ActorDetailsDto BuildTargetData(ParsedLog log, AbstractSingleActor target, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, bool cr)
         {
             var dto = new ActorDetailsDto
             {
                 DmgDistributions = new List<DmgDistributionDto>(),
                 DmgDistributionsTaken = new List<DmgDistributionDto>(),
                 BoonGraph = new List<List<BuffChartDataDto>>(),
+                BoonGraphPerSource = new List<List<List<BuffChartDataDto>>>(),
                 Rotation = new List<List<object[]>>()
             };
             IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
@@ -93,7 +94,8 @@ namespace Gw2LogParser.GW2EIBuilders
                     dto.DmgDistributions.Add(DmgDistributionDto.BuildTargetDMGDistData(log, target, phase, usedSkills, usedBuffs));
                     dto.DmgDistributionsTaken.Add(DmgDistributionDto.BuildDMGTakenDistData(log, target, phase, usedSkills, usedBuffs));
                     dto.Rotation.Add(SkillDto.BuildRotationData(log, target, phase, usedSkills));
-                    dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, target, phase, usedBuffs));
+                    dto.BoonGraph.Add(BuffChartDataDto.BuildBuffGraphData(log, target, phase, usedBuffs));
+                    dto.BoonGraphPerSource.Add(log.Friendlies.Select(p => BuffChartDataDto.BuildBuffGraphData(log, target, p, phase, usedBuffs)).ToList());
                 }
                 // rotation + buff graph for CR
                 else if (i == 0 && cr)
@@ -101,7 +103,8 @@ namespace Gw2LogParser.GW2EIBuilders
                     dto.DmgDistributions.Add(new DmgDistributionDto());
                     dto.DmgDistributionsTaken.Add(new DmgDistributionDto());
                     dto.Rotation.Add(SkillDto.BuildRotationData(log, target, phase, usedSkills));
-                    dto.BoonGraph.Add(BuffChartDataDto.BuildBoonGraphData(log, target, phase, usedBuffs));
+                    dto.BoonGraph.Add(BuffChartDataDto.BuildBuffGraphData(log, target, phase, usedBuffs));
+                    dto.BoonGraphPerSource.Add(new List<List<BuffChartDataDto>>());
                 }
                 else
                 {
@@ -109,6 +112,7 @@ namespace Gw2LogParser.GW2EIBuilders
                     dto.DmgDistributionsTaken.Add(new DmgDistributionDto());
                     dto.Rotation.Add(new List<object[]>());
                     dto.BoonGraph.Add(new List<BuffChartDataDto>());
+                    dto.BoonGraphPerSource.Add(new List<List<BuffChartDataDto>>());
                 }
             }
 
@@ -120,7 +124,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        private static ActorDetailsDto BuildTargetsMinionsData(ParsedLog log, AbstractSingleActor target, Minions minion, Dictionary<long, Skill> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static ActorDetailsDto BuildTargetsMinionsData(ParsedLog log, AbstractSingleActor target, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new ActorDetailsDto
             {

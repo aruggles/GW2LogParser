@@ -7,15 +7,11 @@
           crossorigin="anonymous">
     <!--${Css}-->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-            crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.2.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/plug-ins/1.10.13/sorting/alt-string.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.1/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.min.js"></script>
     <!--${CompressionRequire}-->
     <!--${CompressionUtils}-->
     <script>
@@ -45,6 +41,7 @@
         }
         var graphData = logData.graphData;
         var healingStatsExtension = logData.healingStatsExtension;
+        var barrierStatsExtension = logData.barrierStatsExtension;
         var crData = logData.crData;
     </script>
     <!--${Js}-->
@@ -87,7 +84,7 @@
                         </li>
                         <li v-if="cr" class="nav-item">
                             <a class="nav-link" @click="mode = 1" :class="{active: mode === 1 }">Combat Replay</a>
-                        </li>                      
+                        </li>
                         <li v-if="healingExtShow" class="nav-item">
                             <a class="nav-link" @click="mode = 2" :class="{active: mode === 2 }">Healing Statistics</a>
                         </li>
@@ -99,19 +96,21 @@
             <keep-alive>
                 <main-view-component v-if="mode === 0" :key="'main-view'" :light="light"></main-view-component>
                 <combat-replay-ui-component v-if="mode === 1" :mode="mode" :key="'combat-replay'" :light="light"></combat-replay-ui-component>
-                <healing-extension-view-component v-if="mode === 2" :mode="mode" :key="'healing-extension'" :light="light"></healing-extension-view-component>            
+                <healing-extension-view-component v-if="mode === 2" :mode="mode" :key="'healing-extension'" :light="light"></healing-extension-view-component>
             </keep-alive>
             <div v-show="mode === 2 && !healingExt" class="mt-3 mb-3">
                 <h2 class="text-center">
-                    The <a href="https://github.com/Krappa322/arcdps_healing_stats/releases">healing
-                        stats addon</a> is now officially supported by Elite Insights. Make sure to download and enable its
+                    The <a href="https://github.com/Krappa322/arcdps_healing_stats/releases">
+                        healing
+                        stats addon
+                    </a> is now officially supported by Elite Insights. Make sure to download and enable its
                     logging features.
                 </h2>
             </div>
         </div>
         <div class="footer">
             <div>Time Start: {{getLogData().encounterStart}} | Time End: {{getLogData().encounterEnd}}</div>
-            <div>ARC: {{getLogData().arcVersion}} | GW2 Build: {{getLogData().gw2Build}} | Fight ID: {{getLogData().fightID}} | {{getLogData().parser}}</div>
+            <div>ARC: {{getLogData().arcVersion}} | GW2 Build: {{getLogData().gw2Build}} | Trigger ID: {{getLogData().triggerID}} | Encounter ID: {{getLogData().encounterID}} | {{getLogData().parser}}</div>
             <div v-if="uploadLinks">
                 <p v-for="link in uploadLinks" v-if="link.url.length > 0">{{link.key}}: <a :href="link.url">{{link.url}}</a> </p>
             </div>

@@ -1,11 +1,9 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.El.Statistics;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
-using static Gw2LogParser.Parser.Helper.ParserHelper;
+using static GW2EIEvtcParser.ParserHelper;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
@@ -120,8 +118,8 @@ namespace Gw2LogParser.GW2EIBuilders
         public static List<BuffData> BuildBuffUptimeData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
         {
             var list = new List<BuffData>();
-            bool boonTable = listToUse.Any(x => x.Nature == Buff.BuffNature.Boon);
-            bool conditionTable = listToUse.Any(x => x.Nature == Buff.BuffNature.Condition);
+            bool boonTable = listToUse.Any(x => x.Classification == Buff.BuffClassification.Boon);
+            bool conditionTable = listToUse.Any(x => x.Classification == Buff.BuffClassification.Condition);
 
             foreach (AbstractSingleActor actor in log.Friendlies)
             {
@@ -142,8 +140,8 @@ namespace Gw2LogParser.GW2EIBuilders
         public static List<BuffData> BuildActiveBuffUptimeData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
         {
             var list = new List<BuffData>();
-            bool boonTable = listToUse.Any(x => x.Nature == Buff.BuffNature.Boon);
-            bool conditionTable = listToUse.Any(x => x.Nature == Buff.BuffNature.Condition);
+            bool boonTable = listToUse.Any(x => x.Classification == Buff.BuffClassification.Boon);
+            bool conditionTable = listToUse.Any(x => x.Classification == Buff.BuffClassification.Condition);
 
             foreach (AbstractSingleActor actor in log.Friendlies)
             {
@@ -205,18 +203,56 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return list;
         }
-
-        /////
-        public static List<BuffData> BuildTargetCondiData(ParsedLog log, long start, long end, AbstractSingleActor target)
+        // 
+        private static List<BuffData> BuildBuffDictionaryData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, AbstractSingleActor player)
         {
-            Dictionary<long, FinalBuffsDictionary> conditions = target.GetBuffsDictionary(log, start, end);
+            IReadOnlyDictionary<long, FinalBuffsDictionary> buffs = player.GetBuffsDictionary(log, phase.Start, phase.End);
             var list = new List<BuffData>();
 
             foreach (AbstractSingleActor actor in log.Friendlies)
             {
-                list.Add(new BuffData(conditions, log.StatisticsHelper.PresentConditions, actor));
+                list.Add(new BuffData(buffs, listToUse, actor));
             }
             return list;
+        }
+        public static List<List<BuffData>> BuildBuffDictionariesData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
+        {
+            var list = new List<List<BuffData>>();
+
+            foreach (AbstractSingleActor actor in log.Friendlies)
+            {
+                list.Add(BuildBuffDictionaryData(log, listToUse, phase, actor));
+            }
+            return list;
+        }
+
+        private static List<BuffData> BuildActiveBuffDictionaryData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, AbstractSingleActor player)
+        {
+            IReadOnlyDictionary<long, FinalBuffsDictionary> buffs = player.GetActiveBuffsDictionary(log, phase.Start, phase.End);
+            var list = new List<BuffData>();
+
+            foreach (AbstractSingleActor actor in log.Friendlies)
+            {
+                list.Add(new BuffData(buffs, listToUse, actor));
+            }
+            return list;
+        }
+
+        public static List<List<BuffData>> BuildActiveBuffDictionariesData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
+        {
+            var list = new List<List<BuffData>>();
+
+            foreach (AbstractSingleActor actor in log.Friendlies)
+            {
+                list.Add(BuildActiveBuffDictionaryData(log, listToUse, phase, actor));
+            }
+            return list;
+        }
+
+        /////
+        public static List<BuffData> BuildTargetCondiData(ParsedLog log, PhaseData phase, AbstractSingleActor actor)
+        {
+            return BuildBuffDictionaryData(log, log.StatisticsHelper.PresentConditions, phase, actor);
         }
 
         public static BuffData BuildTargetCondiUptimeData(ParsedLog log, PhaseData phase, AbstractSingleActor target)

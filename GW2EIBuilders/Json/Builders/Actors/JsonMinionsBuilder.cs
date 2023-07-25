@@ -1,22 +1,19 @@
-﻿using Gw2LogParser.GW2EIBuilders.Json.Builders.Utilities;
-using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.Events.Damage;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
     internal class JsonMinionsBuilder
     {
-        public static JsonMinions BuildJsonMinions(Minions minions, ParsedLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        public static JsonMinions BuildJsonMinions(Minions minions, ParsedLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var jsonMinions = new JsonMinions();
-            IReadOnlyList<PhaseData> phases = log.FightData.GetNonDummyPhases(log);
+            jsonMinions.Id = minions.ID;
+            IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
             bool isEnemyMinion = !log.FriendlyAgents.Contains(minions.Master.AgentItem);
             //
             jsonMinions.Name = minions.Character;
@@ -73,7 +70,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 jsonMinions.TotalTargetBreakbarDamage = totalTargetBreakbarDamage;
             }
             //
-            var skillByID = minions.GetIntersectingCastEvents(log, 0, log.FightData.FightEnd).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList());
+            var skillByID = minions.GetIntersectingCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList());
             if (skillByID.Any())
             {
                 jsonMinions.Rotation = JsonRotationBuilder.BuildJsonRotationList(log, skillByID, skillDesc);
@@ -83,7 +80,13 @@ namespace Gw2LogParser.GW2EIBuilders
             for (int i = 0; i < phases.Count; i++)
             {
                 PhaseData phase = phases[i];
-                totalDamageDist[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(minions.GetDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc);
+                totalDamageDist[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(
+                    minions.GetDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                    minions.GetBreakbarDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                    log,
+                    skillDesc,
+                    buffDesc
+                );
             }
             jsonMinions.TotalDamageDist = totalDamageDist;
             if (!isEnemyMinion)
@@ -96,7 +99,13 @@ namespace Gw2LogParser.GW2EIBuilders
                     for (int j = 0; j < phases.Count; j++)
                     {
                         PhaseData phase = phases[j];
-                        targetDamageDist[i][j] = JsonDamageDistBuilder.BuildJsonDamageDistList(minions.GetDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc);
+                        targetDamageDist[i][j] = JsonDamageDistBuilder.BuildJsonDamageDistList(
+                            minions.GetDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                            minions.GetBreakbarDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                            log,
+                            skillDesc,
+                            buffDesc
+                        );
                     }
                 }
                 jsonMinions.TargetDamageDist = targetDamageDist;
@@ -104,6 +113,14 @@ namespace Gw2LogParser.GW2EIBuilders
             if (log.CombatData.HasEXTHealing && !isEnemyMinion)
             {
                 jsonMinions.EXTHealingStats = EXTJsonMinionsHealingStatsBuilder.BuildMinionsHealingStats(minions, log, skillDesc, buffDesc);
+            }
+            if (log.CombatData.HasEXTBarrier && !isEnemyMinion)
+            {
+                jsonMinions.EXTBarrierStats = EXTJsonMinionsBarrierStatsBuilder.BuildMinionsBarrierStats(minions, log, skillDesc, buffDesc);
+            }
+            if (log.CanCombatReplay)
+            {
+                jsonMinions.CombatReplayData = minions.MinionList.Select(x => JsonActorCombatReplayDataBuilder.BuildJsonActorCombatReplayDataBuilder(x, log, settings)).ToList();
             }
             return jsonMinions;
         }

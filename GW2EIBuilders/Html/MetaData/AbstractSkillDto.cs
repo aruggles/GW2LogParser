@@ -1,7 +1,7 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.Skills;
-using Gw2LogParser.Parser.Extensions;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.Extensions;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
@@ -38,7 +38,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        protected AbstractSkillDto(Skill skill, ParsedLog log)
+        protected AbstractSkillDto(SkillItem skill, ParsedLog log)
         {
             Id = skill.ID;
             Name = skill.Name;

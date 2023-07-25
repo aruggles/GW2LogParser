@@ -4,8 +4,9 @@ using System.Linq;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using GW2EIGW2API.GW2API;
 
-namespace Gw2LogParser.GW2Api
+namespace GW2EIGW2API
 {
     internal static class GW2APIUtilities
     {

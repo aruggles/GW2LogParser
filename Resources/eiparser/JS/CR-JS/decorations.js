@@ -10,6 +10,15 @@ class MechanicDrawable {
         this.end = end;
         this.connectedTo = connectedTo;
         this.master = null;
+        this.ownerID = null;
+        this.owner = null;
+        this.drawOnSelect = false;
+    }
+
+    usingSkillMode(ownerID, drawOnSelect) {
+        this.ownerID = ownerID;
+        this.drawOnSelect = drawOnSelect;
+        return this;
     }
 
     draw() {
@@ -17,14 +26,51 @@ class MechanicDrawable {
     }
 
     getPosition() {
-        if (this.connectedTo === null) {
-            return null;
-        }
         var time = animator.reactiveDataStatus.time;
         if (this.start !== -1 && (this.start > time || this.end < time)) {
             return null;
         }
-        if (this.connectedTo instanceof Array) {
+        if (this.connectedTo.interpolationMethod >= 0) {
+            // only linear support for now
+            var index = -1;
+            var totalPoints = this.connectedTo.positions.length / 3;
+            for (var i = 0; i < totalPoints; i++) {
+                var posTime = this.connectedTo.positions[3 * i + 2];
+                if (time < posTime) {
+                    break;
+                }
+                index = i;
+            }
+            if (index === -1) {
+                return {
+                    x: this.connectedTo.positions[0],
+                    y: this.connectedTo.positions[1]
+                };
+            } else if (index === totalPoints - 1) {
+                return {
+                    x: this.connectedTo.positions[3 * index],
+                    y: this.connectedTo.positions[3 * index + 1]
+                };
+            } else {
+                var cur = {
+                    x: this.connectedTo.positions[3 * index],
+                    y: this.connectedTo.positions[3 * index + 1]
+                };
+                var curTime = this.connectedTo.positions[3 * index + 2];
+                var next = {
+                    x: this.connectedTo.positions[3 * (index + 1)],
+                    y: this.connectedTo.positions[3 * (index + 1) + 1]
+                };
+                var nextTime = this.connectedTo.positions[3 * (index + 1) + 2];
+                var pt = {
+                    x: 0,
+                    y: 0
+                };
+                pt.x = cur.x + (time - curTime) / (nextTime - curTime) * (next.x - cur.x);
+                pt.y = cur.y + (time - curTime) / (nextTime - curTime) * (next.y - cur.y);
+                return pt;
+            }
+        } else if (this.connectedTo instanceof Array) {
             return {
                 x: this.connectedTo[0],
                 y: this.connectedTo[1]
@@ -34,8 +80,29 @@ class MechanicDrawable {
                 let masterId = this.connectedTo;
                 this.master = animator.getActorData(masterId);
             }
+            if (!this.master) {
+                return null;
+            }
             return this.master.getPosition();
         }
+    }
+
+    canDraw() {
+        if (this.connectedTo === null) {
+            return false;
+        }
+        if (this.ownerID !== null) {
+            if (this.owner === null) {
+                this.owner = animator.getActorData(this.ownerID);
+            }
+            if (!this.owner) {
+                return false;
+            }
+            if (this.drawOnSelect && !this.owner.isSelected()) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
@@ -54,7 +121,13 @@ class FacingMechanicDrawable extends MechanicDrawable {
         var time = animator.reactiveDataStatus.time;
         if (time - timeValue > 0 && offsetedIndex < this.facingData.length - 1) {
             const nextTimeValue = animator.times[currentIndex + 1];
-            const nextAngle = this.facingData[offsetedIndex + 1];
+            let nextAngle = this.facingData[offsetedIndex + 1];
+            // Make sure the interpolation is only done on the shortest path to avoid big flips around PI or -PI radians
+            if (nextAngle - initialAngle < -180) {
+                nextAngle += 360.0;
+            } else if (nextAngle - initialAngle > 180) {
+                nextAngle -= 360.0;
+            }
             angle = initialAngle + (time - timeValue) / (nextTimeValue - timeValue) * (nextAngle - initialAngle);
         } else {
             angle = initialAngle;
@@ -62,10 +135,14 @@ class FacingMechanicDrawable extends MechanicDrawable {
         return angle;
     }
 
-    getRotation() {
+    canDraw() {
         if (this.facingData.length === 0) {
-            return null;
+            return false;
         }
+        return super.canDraw();
+    }
+
+    getRotation() {
         var time = animator.reactiveDataStatus.time;
         if (this.start !== -1 && (this.start > time || this.end < time)) {
             return null;
@@ -80,6 +157,9 @@ class FacingMechanicDrawable extends MechanicDrawable {
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         const rot = this.getRotation();
         if (pos === null || rot === null) {
@@ -90,10 +170,10 @@ class FacingMechanicDrawable extends MechanicDrawable {
         ctx.save();
         ctx.translate(pos.x, pos.y);
         ctx.rotate(angle);
-        const facingFullSize = 5 * this.master.pixelSize / (3 * animator.scale);
+        const facingFullSize = 5 * this.master.getSize() / 3;
         const facingHalfSize = facingFullSize / 2;
-        if (this.master !== null && animator.coneControl.enabled && this.master.isSelected()) {           
-            ctx.save(); 
+        if (this.master !== null && animator.coneControl.enabled && this.master.isSelected()) {
+            ctx.save();
             var coneOpening = ToRadians(animator.coneControl.openingAngle);
             ctx.rotate(0.5 * coneOpening);
             var coneRadius = animator.inchToPixel * animator.coneControl.radius;
@@ -120,6 +200,9 @@ class FacingRectangleMechanicDrawable extends FacingMechanicDrawable {
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         const rot = this.getRotation();
         if (pos === null || rot === null) {
@@ -132,6 +215,39 @@ class FacingRectangleMechanicDrawable extends FacingMechanicDrawable {
         ctx.rotate(angle);
         ctx.beginPath();
         ctx.rect(- 0.5 * this.width + this.translation, - 0.5 * this.height, this.width, this.height);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class FacingPieMechanicDrawable extends FacingMechanicDrawable {
+    constructor(start, end, connectedTo, facingData, openingAngle, radius, color) {
+        super(start, end, connectedTo, facingData);
+        this.openingAngle = ToRadians(openingAngle);
+        this.halfOpeningAngle = ToRadians(0.5 * openingAngle);
+        this.radius = radius;
+        this.color = color;
+    }
+
+    draw() {
+        if (!this.canDraw()) {
+            return;
+        }
+        const pos = this.getPosition();
+        const rot = this.getRotation();
+        if (pos === null || rot === null) {
+            return;
+        }
+        var ctx = animator.mainContext;
+        const angle = ToRadians(rot);
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(angle + this.halfOpeningAngle);
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, -this.openingAngle, 0, false);
+        ctx.arc(0, 0, 0, 0, this.openingAngle, true);
+        ctx.closePath();
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.restore();
@@ -151,7 +267,11 @@ class FormMechanicDrawable extends MechanicDrawable {
             return 1.0;
         }
         var time = animator.reactiveDataStatus.time;
-        return Math.min((time - this.start) / (this.growing - this.start), 1.0);
+        var value = Math.min((time - this.start) / (Math.abs(this.growing) - this.start), 1.0);
+        if (this.growing < 0) {
+            value = 1 - value;
+        }
+        return value;
     }
 }
 
@@ -163,6 +283,9 @@ class CircleMechanicDrawable extends FormMechanicDrawable {
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         if (pos === null) {
             return;
@@ -189,6 +312,9 @@ class DoughnutMechanicDrawable extends FormMechanicDrawable {
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         if (pos === null) {
             return;
@@ -196,8 +322,14 @@ class DoughnutMechanicDrawable extends FormMechanicDrawable {
         var ctx = animator.mainContext;
         const percent = this.getPercent();
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, this.innerRadius + percent * (this.outerRadius - this.innerRadius), 2 * Math.PI, 0, false);
-        ctx.arc(pos.x, pos.y, this.innerRadius, 0, 2 * Math.PI, true);
+
+        if (this.growing < 0) {
+            ctx.arc(pos.x, pos.y, this.outerRadius, 2 * Math.PI, 0, false);
+            ctx.arc(pos.x, pos.y, this.innerRadius + percent * (this.outerRadius - this.innerRadius), 0, 2 * Math.PI, true);
+        } else {
+            ctx.arc(pos.x, pos.y, this.innerRadius + percent * (this.outerRadius - this.innerRadius), 2 * Math.PI, 0, false);
+            ctx.arc(pos.x, pos.y, this.innerRadius, 0, 2 * Math.PI, true);
+        }
         ctx.closePath();
         if (this.fill) {
             ctx.fillStyle = this.color;
@@ -218,6 +350,9 @@ class RectangleMechanicDrawable extends FormMechanicDrawable {
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         if (pos === null) {
             return;
@@ -254,6 +389,9 @@ class RotatedRectangleMechanicDrawable extends RectangleMechanicDrawable {
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         if (pos === null) {
             return;
@@ -287,13 +425,16 @@ class PieMechanicDrawable extends FormMechanicDrawable {
     constructor(start, end, fill, growing, color, direction, openingAngle, radius, connectedTo) {
         super(start, end, fill, growing, color, connectedTo);
         this.direction = ToRadians(-direction); // positive mathematical direction, reversed since JS has downwards increasing y axis
-        this.openingAngle = ToRadians(0.5 * openingAngle);
+        this.halfOpeningAngle = ToRadians(0.5 * openingAngle);
         this.radius = radius;
-        this.dx = Math.cos(this.direction - this.openingAngle) * this.radius;
-        this.dy = Math.sin(this.direction - this.openingAngle) * this.radius;
+        this.dx = Math.cos(this.direction - this.halfOpeningAngle) * this.radius;
+        this.dy = Math.sin(this.direction - this.halfOpeningAngle) * this.radius;
     }
 
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         if (pos === null) {
             return;
@@ -303,7 +444,7 @@ class PieMechanicDrawable extends FormMechanicDrawable {
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
         ctx.lineTo(pos.x + this.dx * percent, pos.y + this.dy * percent);
-        ctx.arc(pos.x, pos.y, percent * this.radius, this.direction - this.openingAngle, this.direction + this.openingAngle);
+        ctx.arc(pos.x, pos.y, percent * this.radius, this.direction - this.halfOpeningAngle, this.direction + this.halfOpeningAngle);
         ctx.closePath();
         if (this.fill) {
             ctx.fillStyle = this.color;
@@ -324,28 +465,38 @@ class LineMechanicDrawable extends FormMechanicDrawable {
     }
 
     getTargetPosition() {
-        if (this.connectedFrom === null) {
-            return null;
-        }
         var time = animator.reactiveDataStatus.time;
         if (this.start !== -1 && (this.start > time || this.end < time)) {
             return null;
         }
         if (this.connectedFrom instanceof Array) {
             return {
-                x: this.target[0],
-                y: this.target[1]
+                x: this.connectedFrom[0],
+                y: this.connectedFrom[1]
             };
         } else {
             if (this.endmaster === null) {
                 let masterId = this.connectedFrom;
                 this.endmaster = animator.getActorData(masterId);
             }
+            if (!this.endmaster) {
+                return null;
+            }
             return this.endmaster.getPosition();
         }
     }
 
+    canDraw() {
+        if (this.connectedFrom === null) {
+            return false;
+        }
+        return super.canDraw();
+    }
+
     draw() {
+        if (!this.canDraw()) {
+            return;
+        }
         const pos = this.getPosition();
         const target = this.getTargetPosition();
         if (pos === null || target === null) {

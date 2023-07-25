@@ -14,6 +14,11 @@ namespace Gw2LogParser.GW2EIBuilders
         public string Name { get; set; }
 
         /// <summary>
+        /// Game ID of the minion
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
         /// Total Damage done by minions \n
         /// Length == # of phases
         /// </summary>
@@ -69,8 +74,21 @@ namespace Gw2LogParser.GW2EIBuilders
         /// <seealso cref="JsonRotation"/>
         public IReadOnlyList<JsonRotation> Rotation { get; set; }
 
+        /// <summary>
+        /// Healing stats data
+        /// </summary>
         public EXTJsonMinionsHealingStats EXTHealingStats { get; set; }
 
+        /// <summary>
+        /// Barrier stats data
+        /// </summary>
+        public EXTJsonMinionsBarrierStats EXTBarrierStats { get; set; }
+
+        /// <summary>
+        /// Contains combat replay related data for each individual minion instance
+        /// </summary>
+        /// <seealso cref="JsonActorCombatReplayData"/>
+        public IReadOnlyList<JsonActorCombatReplayData> CombatReplayData { get; set; }
 
         public JsonMinions()
         {

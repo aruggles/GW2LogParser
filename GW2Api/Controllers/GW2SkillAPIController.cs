@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using GW2EIGW2API.GW2API;
 
-namespace Gw2LogParser.GW2Api
+namespace GW2EIGW2API
 {
     internal class GW2SkillAPIController
     {

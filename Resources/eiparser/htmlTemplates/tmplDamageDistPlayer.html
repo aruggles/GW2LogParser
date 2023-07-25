@@ -81,18 +81,14 @@
                     dist.totalDamage += targetDist.totalDamage;
                     dist.totalBreakbarDamage += targetDist.totalBreakbarDamage;
                     dist.contributedShieldDamage += targetDist.contributedShieldDamage;
-                    dist.totalCasting += targetDist.totalCasting;
+                    dist.totalCasting = targetDist.totalCasting;
                     var distribution = targetDist.distribution;
                     for (var k = 0; k < distribution.length; k++) {
                         var targetDistribution = distribution[k];
                         if (rows.has(targetDistribution[1])) {
                             var row = rows.get(targetDistribution[1]);
                             row[2] += targetDistribution[2];
-                            if (row[3] < 0) {
-                                row[3] = targetDistribution[3];
-                            } else if (targetDistribution[3] >= 0) {
-                                row[3] = Math.min(targetDistribution[3], row[3]);
-                            }
+                            row[3] = Math.min(targetDistribution[3], row[3]);
                             row[4] = Math.max(targetDistribution[4], row[4]);
                             row[6] += targetDistribution[6];
                             row[7] += targetDistribution[7];
@@ -105,6 +101,11 @@
                             row[14] += targetDistribution[14];
                             // skip 15
                             row[16] += targetDistribution[16];
+                            row[17] += targetDistribution[17];                  
+                            // skip 18
+                            // skip 19
+                            // skip 20
+                            // skip 21
                         } else {
                             rows.set(targetDistribution[1], targetDistribution.slice(0));
                         }

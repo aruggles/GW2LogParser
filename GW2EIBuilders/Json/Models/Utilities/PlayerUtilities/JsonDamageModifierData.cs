@@ -1,10 +1,4 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.El.DamageModifiers;
-using Gw2LogParser.Parser.Data.El.Statistics;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
 {

@@ -38,6 +38,16 @@ function compileTemplates() {
                     });
                 },
                 deep: true
+            },
+            data: {
+                handler: function () {
+                    var div = document.querySelector(this.queryID);
+                    if (!div) {
+                        return;
+                    }
+                    Plotly.react(div, this.data, this.layout, { showEditInChartStudio: true, plotlyServerURL: "https://chart-studio.plotly.com" });
+                },
+                deep: true
             }
         }
     });
@@ -73,15 +83,53 @@ function compileTemplates() {
             });
         }
     });
+    Vue.component("table-scroll-component", {
+        props: ["min", "max", "width", "height", "transform", "pagestructure"],
+        template: `      
+        <input 
+            style="background-color: #888888;" 
+            :style=getStyle()
+            type="range" :min="min" :max="max" :value="min" class="slider" @input="updateOffset($event.target.value)">
+        `,
+        methods: {
+            updateOffset: function (value) {
+                this.pagestructure.offset = parseInt(value);
+            },
+            getStyle: function () {
+                var res = {
+                    width: this.width,
+                    height: this.height,
+                    transform: this.transform
+                };
+                return res;
+            },
+        }
+    });
+    Vue.component("targetperplayer-graphs-tab-component", {
+        props: ["targetindex", "phaseindex", 'light', 'playerindex'],
+        template: `      
+        <div>            
+            <keep-alive>  
+                <targetperplayer-graph-tab-component v-for="(player, pId) in players" v-if="pId === playerindex"
+                :key="phaseindex + 'perplayer' + pId" :targetindex="targetindex" :phaseindex="phaseindex" :light="light"
+                :playerindex="playerindex">
+                </targetperplayer-graph-tab-component>           
+            <keep-alive>
+        </div>
+        `,
+        computed: {
+            players: function () {
+                return logData.players;
+            }
+        }
+    });
     TEMPLATE_COMPILE
 };
 
 function mainLoad() {
     // make some additional variables reactive
-    var i;
-    var nonDummyPhases = logData.phases.filter(x => !x.dummy);
-    var firstActive = nonDummyPhases[0];
-    for (i = 0; i < logData.phases.length; i++) {
+    var firstActive = logData.phases[0];
+    for (var i = 0; i < logData.phases.length; i++) {
         var phase = logData.phases[i];
         phase.durationS = phase.duration / 1000.0
         var times = [];
@@ -100,14 +148,14 @@ function mainLoad() {
             focus: -1
         });
     }
-    for (i = 0; i < logData.targets.length; i++) {
+    for (var i = 0; i < logData.targets.length; i++) {
         simpleLogData.targets.push({
             active: true
         });
         logData.targets[i].id = i;
         logData.targets[i].dpsGraphCache = new Map();
     }
-    for (i = 0; i < logData.players.length; i++) {
+    for (var i = 0; i < logData.players.length; i++) {
         var playerData = logData.players[i];
         simpleLogData.players.push({
             active: !!playerData.isPoV,
@@ -116,7 +164,7 @@ function mainLoad() {
         playerData.dpsGraphCache = new Map();
         playerData.id = i;
     }
-    compileTemplates()
+    compileTemplates();
     if (!!crData) {
         compileCRTemplates();
     }
@@ -156,13 +204,13 @@ function mainLoad() {
             },
             uploadLinks: function () {
                 var res = [
-                    { 
-                        key: "DPS Reports Link (EI)", 
-                        url: "" 
+                    {
+                        key: "DPS Reports Link (EI)",
+                        url: ""
                     },
-                    { 
-                        key: "Raidar Link", 
-                        url: "" 
+                    {
+                        key: "Raidar Link",
+                        url: ""
                     }
                 ];
                 var hasAny = false;

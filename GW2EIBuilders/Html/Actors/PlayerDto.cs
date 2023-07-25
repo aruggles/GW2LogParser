@@ -1,5 +1,7 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El.Actors;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
@@ -30,62 +32,62 @@ namespace Gw2LogParser.GW2EIBuilders
             Acc = actor.Account;
             Profession = actor.Spec.ToString();
             IsPoV = log.LogData.PoV == actor.AgentItem;
-            IsCommander = actor.HasCommanderTag;
-            ColTarget = HTMLBuilder.GetLink("Color-" + actor.Spec.ToString());
-            ColCleave = HTMLBuilder.GetLink("Color-" + actor.Spec.ToString() + "-NonBoss");
-            ColTotal = HTMLBuilder.GetLink("Color-" + actor.Spec.ToString() + "-Total");
+            IsCommander = actor is Player p && p.IsCommander(log);
+            (ColTarget, ColCleave, ColTotal) = GetSpecGraphColor(actor.BaseSpec);
             IsFake = actor.IsFakeActor;
             NotInSquad = !(actor is Player);
             BuildWeaponSets(actor, log);
         }
 
-        private static void BuildWeaponSets(IReadOnlyList<string> weps, int offset, List<string> set1, List<string> set2)
+        private static (string, string, string) GetSpecGraphColor(ParserHelper.Spec baseSpec)
         {
+            switch (baseSpec)
+            {
 
-            for (int j = 0; j < 4; j++)
-            {
-                string wep = weps[j + offset];
-                if (wep != null)
-                {
-                    if (wep != "2Hand")
-                    {
-                        if (j > 1)
-                        {
-                            set2.Add(wep);
-                        }
-                        else
-                        {
-                            set1.Add(wep);
-                        }
-                    }
-                }
-                else
-                {
-                    if (j > 1)
-                    {
-                        set2.Add("Unknown");
-                    }
-                    else
-                    {
-                        set1.Add("Unknown");
-                    }
-                }
+                case ParserHelper.Spec.Warrior:
+                    return ("rgb(255,209,102)", "rgb(190,159,84)", "rgb(125,109,66)");
+                case ParserHelper.Spec.Guardian:
+                    return ("rgb(114,193,217)", "rgb(88,147,165)", "rgb(62,101,113)");
+                case ParserHelper.Spec.Revenant:
+                    return ("rgb(209,110,90)", "rgb(159,85,70)", "rgb(110,60,50)");
+                case ParserHelper.Spec.Engineer:
+                    return ("rgb(208,156,89)", "rgb(158,119,68)", "rgb(109,83,48)");
+                case ParserHelper.Spec.Ranger:
+                    return ("rgb(140,220,130)", "rgb(107,167,100)", "rgb(75,115,70)");
+                case ParserHelper.Spec.Thief:
+                    return ("rgb(192,143,149)", "rgb(146,109,114)", "rgb(101,76,79)");
+                case ParserHelper.Spec.Elementalist:
+                    return ("rgb(246,138,135)", "rgb(186,106,103)", "rgb(127,74,72)");
+                case ParserHelper.Spec.Mesmer:
+                    return ("rgb(182,121,213)", "rgb(139,90,162)", "rgb(96,60,111)");
+                case ParserHelper.Spec.Necromancer:
+                    return ("rgb(82,167,111)", "rgb(64,127,85)", "rgb(46,88,60)");
+                default:
+                    return ("", "", "");
             }
-            if (set1[0] == "Unknown" && set1[1] == "Unknown")
+
+        }
+
+        private static void BuildWeaponSets((string mh, string oh) set, List<string> listToSet)
+        {
+            if (set.mh == WeaponSets.Unknown && set.oh == WeaponSets.Unknown)
             {
-                set1.Clear();
+                return;
             }
-            if (set2[0] == "Unknown" && set2[1] == "Unknown")
+            listToSet.Add(set.mh);
+            if (set.oh != WeaponSets.TwoHand)
             {
-                set2.Clear();
+                listToSet.Add(set.oh);
             }
         }
 
         private void BuildWeaponSets(AbstractSingleActor actor, ParsedLog log)
         {
-            IReadOnlyList<string> weps = actor.GetWeaponsArray(log);
-            BuildWeaponSets(weps, 0, L1Set, L2Set);
-            BuildWeaponSets(weps, 4, A1Set, A2Set);
+            WeaponSets weps = actor.GetWeaponSets(log);
+            BuildWeaponSets(weps.LandSet1, L1Set);
+            BuildWeaponSets(weps.LandSet2, L2Set);
+            BuildWeaponSets(weps.WaterSet1, A1Set);
+            BuildWeaponSets(weps.WaterSet2, A2Set);
         }
     }
 }

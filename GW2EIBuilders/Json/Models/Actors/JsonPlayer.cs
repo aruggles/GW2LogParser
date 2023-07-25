@@ -38,6 +38,11 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool NotInSquad { get; set; }
 
         /// <summary>
+        /// Guild id to be used to fetch from the official API
+        /// </summary>
+        public string GuildID { get; set; }
+
+        /// <summary>
         /// Weapons of the player \n
         /// 0-1 are the first land set, 1-2 are the second land set \n
         /// 3-4 are the first aquatic set, 5-6 are the second aquatic set \n
@@ -213,7 +218,15 @@ namespace Gw2LogParser.GW2EIBuilders
         /// </summary>
         public IReadOnlyList<long> ActiveTimes { get; set; }
 
+        /// <summary>
+        /// Healing stats data
+        /// </summary>
         public EXTJsonPlayerHealingStats EXTHealingStats { get; set; }
+
+        /// <summary>
+        /// Barrier stats data
+        /// </summary>
+        public EXTJsonPlayerBarrierStats EXTBarrierStats { get; set; }
 
 
         public JsonPlayer()

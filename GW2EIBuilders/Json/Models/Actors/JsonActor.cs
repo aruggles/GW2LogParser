@@ -41,6 +41,13 @@ namespace Gw2LogParser.GW2EIBuilders
         /// ID of the actor in the instance
         /// </summary>
         public ushort InstanceID { get; set; }
+        /// <summary>
+        /// The team ID of the actor. \n
+        /// Mainly useful for WvW logs to differentiate targets from different servers. \n
+        /// In PvE logs, the situation is always a simple Friend vs Foe situation. \
+        /// If value is equal to 0 then no information regarding TeamID was present for given actor.
+        /// </summary>
+        public ulong TeamID { get; set; }
 
         /// <summary>
         /// List of minions

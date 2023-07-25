@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Diagnostics;
 using Gw2LogParser.Exceptions;
+using Gw2LogParser.EvtcParserExtensions;
 
 namespace Gw2LogParser
 {
@@ -206,7 +201,7 @@ namespace Gw2LogParser
         private void btnParse_Click(object sender, EventArgs e)
         {
             queue.Clear();
-            ProcessManager.CompletedLogs = new System.Collections.Concurrent.ConcurrentBag<Parser.Data.ParsedLog>();
+            ProcessManager.CompletedLogs = new System.Collections.Concurrent.ConcurrentBag<ParsedLog>();
             if (logFiles.Count > 0)
             {
                 btnParse.Enabled = false;

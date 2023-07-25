@@ -1,10 +1,6 @@
-﻿using Gw2LogParser.GW2Api;
+﻿using GW2EIGW2API;
 using Gw2LogParser.Parser.Data.Events.MetaData;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gw2LogParser.Parser.Data.Skills
 {

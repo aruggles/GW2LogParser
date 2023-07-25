@@ -1,8 +1,6 @@
-﻿using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El;
-using Gw2LogParser.Parser.Data.El.Actors;
-using Gw2LogParser.Parser.Data.Events.Cast;
-using Gw2LogParser.Parser.Data.Skills;
+﻿using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.ExportModels
@@ -16,9 +14,9 @@ namespace Gw2LogParser.ExportModels
         public bool IsSwap { get; internal set; }
         public bool NotAccurate { get; internal set; }
 
-        internal static void AssembleSkills(ICollection<Skill> skills, Dictionary<string, LoggedSkill> dict, SkillData skillData)
+        internal static void AssembleSkills(ICollection<SkillItem> skills, Dictionary<string, LoggedSkill> dict, SkillData skillData)
         {
-            foreach (Skill skill in skills)
+            foreach (SkillItem skill in skills)
             {
                 dict["s" + skill.ID] = new LoggedSkill()
                 {
@@ -44,7 +42,7 @@ namespace Gw2LogParser.ExportModels
             return rotEntry;
         }
 
-        internal static List<object[]> BuildRotationData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Skill> usedSkills)
+        internal static List<object[]> BuildRotationData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills)
         {
             var list = new List<object[]>();
             IReadOnlyList<AbstractCastEvent> casting = p.GetIntersectingCastEvents(log, phase.Start, phase.End);

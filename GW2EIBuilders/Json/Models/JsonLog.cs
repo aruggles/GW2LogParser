@@ -1,4 +1,4 @@
-﻿using Gw2LogParser.Parser.Data;
+﻿using GW2EIEvtcParser.ParsedData;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
@@ -42,7 +42,21 @@ namespace Gw2LogParser.GW2EIBuilders
             /// </summary>
             public bool IsSwap { get; set; }
             /// <summary>
-            /// True in case where the skill is an instant cast and the detection may have missed some
+            /// True when the skill is an instant cast
+            /// </summary>
+            public bool IsInstantCast { get; set; }
+            /// <summary>
+            /// True when the skill represents a trait proc.\
+            /// <see cref="IsInstantCast"/> is necessarily true.
+            /// </summary>
+            public bool IsTraitProc { get; set; }
+            /// <summary>
+            /// True when the skill represents a trait proc.\
+            /// <see cref="IsInstantCast"/> is necessarily true.
+            /// </summary>
+            public bool IsGearProc { get; set; }
+            /// <summary>
+            /// True when the skill is an instant cast and the detection may have missed some
             /// </summary>
             public bool IsNotAccurate { get; set; }
             /// <summary>
@@ -125,6 +139,11 @@ namespace Gw2LogParser.GW2EIBuilders
             /// Signature of the extension
             /// </summary>
             public uint Signature { get; set; }
+
+            /// <summary>
+            /// List of <see cref="JsonActor.Name"/> running the extension.
+            /// </summary>
+            public IReadOnlyList<string> RunningExtension { get; set; }
         }
 
         /// <summary>
@@ -137,7 +156,6 @@ namespace Gw2LogParser.GW2EIBuilders
             {
 
             }
-
 
             /// <summary>
             /// Name of the damage modifier
@@ -179,6 +197,11 @@ namespace Gw2LogParser.GW2EIBuilders
         /// The id with which the log has been triggered
         /// </summary>
         public int TriggerID { get; set; }
+        /// <summary>
+        /// The elite insight id of the log, indicates which encounter the log corresponds to. \n
+        /// see https://github.com/baaron4/GW2-Elite-Insights-Parser/blob/master/EncounterIDs.md/
+        /// </summary>
+        public long EIEncounterID { get; set; }
 
         /// <summary>
         /// The name of the fight
@@ -204,6 +227,12 @@ namespace Gw2LogParser.GW2EIBuilders
         /// Language with which the evtc was generated
         /// </summary>
         public string Language { get; set; }
+
+        /// <summary>
+        /// Scale of the fractal, only applicable for fractal encounters. \n
+        /// Valued at 0 if missing.
+        /// </summary>
+        public int FractalScale { get; set; }
 
         /// <summary>
         /// ID of the language
@@ -246,6 +275,16 @@ namespace Gw2LogParser.GW2EIBuilders
         /// The duration of the fight in "xh xm xs xms" format
         /// </summary>
         public string Duration { get; set; }
+
+        /// <summary>
+        /// The duration of the fight in ms
+        /// </summary>
+        public long DurationMS { get; set; }
+
+        /// <summary>
+        /// Offset between fight start and log start
+        /// </summary>
+        public long LogStartOffset { get; set; }
 
         /// <summary>
         /// The success status of the fight
@@ -311,10 +350,15 @@ namespace Gw2LogParser.GW2EIBuilders
         public IReadOnlyDictionary<string, IReadOnlyCollection<long>> PersonalBuffs { get; set; }
 
         /// <summary>
-        /// List of present fractal instabilities, the values are buff ids
+        /// List of present fractal instabilities, the values are buff ids. DEPRECATED: use PresentInstanceBuffs instead
         /// </summary>
         /// <seealso cref="BuffMap"/>
         public IReadOnlyList<long> PresentFractalInstabilities { get; set; }
+        /// <summary>
+        /// List of present instance buffs, values are arrays of 2 elements, value[0] is buff id, value[1] is number of stacks.
+        /// </summary>
+        /// <seealso cref="BuffMap"/>
+        public IReadOnlyList<long[]> PresentInstanceBuffs { get; set; }
 
         /// <summary>
         /// List of error messages given by ArcDPS

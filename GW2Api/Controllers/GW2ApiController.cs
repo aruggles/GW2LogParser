@@ -1,5 +1,8 @@
 ﻿
-namespace Gw2LogParser.GW2Api
+using GW2EIGW2API.GW2API;
+
+[assembly: System.CLSCompliant(false)]
+namespace GW2EIGW2API
 {
     public class GW2APIController
     {

@@ -1,8 +1,4 @@
-﻿using Gw2LogParser.ExportModels;
-using Gw2LogParser.Parser.Data;
-using Gw2LogParser.Parser.Data.El.Buffs;
-using Gw2LogParser.Parser.Data.El.DamageModifiers;
-using Gw2LogParser.Parser.Data.Skills;
+﻿using Gw2LogParser.EvtcParserExtensions;
 using Newtonsoft.Json;
 using System;
 using System.IO;
