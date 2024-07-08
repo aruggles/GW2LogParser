@@ -71,13 +71,8 @@
                 </li>
             </ul>
         </div>
-        <span class="rot-skill" v-for="rota in rotation"
-            :class="{'rot-swap': isSwap(rota[1]) ,'mb-1': isSwap(rota[1]), 'rot-small': small || (smallAA && getSkill(rota[1]).aa)}"
-            v-show="showSkill(rota)">
-            <img class="rot-icon"
-                :class="{'rot-cancelled': rota[3] === RotationStatus.CANCEL, 'rot-animfull': rota[3] === RotationStatus.FULL, 'rot-unknown': rota[3] === RotationStatus.UNKNOWN, 'rot-instant': rota[3] === RotationStatus.INSTANT}"
-                :src="getSkill(rota[1]).icon"
-                :data-original-title="getSkill(rota[1]).name + ', Time: ' + rota[0] + 's, Dur: ' + rota[2] + 'ms'">
+        <span class="rot-skill" v-for="cast in rotation" :class="getCastClass(cast)" v-show="showSkill(cast)">
+            <img class="rot-icon" :class="getIconClass(cast)" :src="cast.skill.icon" :data-original-title="getTooltip(cast)"/>
         </span>
         <div class="card mt-2">
             <div class="card-body container">
@@ -109,27 +104,33 @@
         template: `${template}`,
         data: function () {
             var selectedSkills = {};
-            var skillList = [];
-            var rotation = this.target ? logData.targets[this.actorindex].details.rotation[this.phaseindex] : logData.players[this.actorindex].details.rotation[this.phaseindex];
-            for (var i = 0; i < rotation.length; i++) {
-                var rota = rotation[i];
-                var skillID = rota[1];
-                var skill = this.getSkill(skillID);
-                if (skill.isSwap || selectedSkills['s' + skillID]) {
-                    continue;
+            var skillListList = [];
+            for (var phaseIndex = 0; phaseIndex < logData.phases.length; phaseIndex++) {
+                var skillList = [];
+                var encounteredSkills = {};
+                var rotation = this.target ? logData.targets[this.actorindex].details.rotation[phaseIndex] : logData.players[this.actorindex].details.rotation[phaseIndex];
+                for (var i = 0; i < rotation.length; i++) {
+                    var rota = rotation[i];
+                    var skillID = rota[1];
+                    var skill = this.getSkill(skillID);
+                    if (skill.isSwap || encounteredSkills['s' + skillID]) {
+                        continue;
+                    }
+                    skillList.push({name: skill.name, id: skillID});
+                    encounteredSkills['s'+skillID] = true;
+                    selectedSkills['s'+skillID] = true;
                 }
-                skillList.push({name: skill.name, id: skillID});
-                selectedSkills['s'+skillID] = true;
+                skillList.sort((x,y) => {
+                    if (x.name < y.name) {
+                        return -1;
+                    }
+                    if (x.name > y.name) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                skillListList.push(skillList);
             }
-            skillList.sort((x,y) => {
-                if (x.name < y.name) {
-                    return -1;
-                }
-                if (x.name > y.name) {
-                    return 1;
-                }
-                return 0;
-            });
             return {
                 autoattack: true,
                 small: false,
@@ -141,15 +142,24 @@
                 hideGearProc: false,
                 hideSmallTime: true,
                 selectedSkills: selectedSkills,
-                skillList: skillList,
+                skillListList: skillListList,
             };
         },
         computed: {
             rotation: function () {
-                return this.target ? logData.targets[this.actorindex].details.rotation[this.phaseindex] : logData.players[this.actorindex].details.rotation[this.phaseindex];
+                var data = this.target ? logData.targets : logData.players;
+                return data[this.actorindex].details.rotation[this.phaseindex].map((cast) => ({
+                    time: cast[0],
+                    skill: this.getSkill(cast[1]),
+                    duration: cast[2],
+                    type: cast[3]
+                }));
             },
             RotationStatus: function() {
                 return RotationStatus;
+            },
+            skillList: function() {
+                return this.skillListList[this.phaseindex];
             }
         },
         methods: {
@@ -162,12 +172,12 @@
             isSwap: function(id) {
                 return findSkill(false, id).isSwap;
             },
-            showSkill: function (rota) {
-                var skill = this.getSkill(rota[1]);
+            showSkill: function (cast) {
+                var skill = cast.skill;
                 if (skill.isSwap) {
                     return true;
                 }
-                if (!this.selectedSkills['s'+rota[1]]) {
+                if (!this.selectedSkills['s'+skill.id]) {
                     return false;
                 }
                 var aa = skill.aa;
@@ -175,11 +185,11 @@
                     if (!this.autoattack) {
                         return false;
                     }
-                    if (this.hideInterruptedAA && rota[3] === RotationStatus.CANCEL) {
+                    if (this.hideInterruptedAA && cast.type === RotationStatus.CANCEL) {
                         return false;
                     }
                 }
-                var isInstant = rota[3] === RotationStatus.INSTANT;
+                var isInstant = cast.type === RotationStatus.INSTANT;
                 if (isInstant) {
                     if (this.hideInstantCast) {
                         return false;
@@ -191,9 +201,32 @@
                         return false;
                     }
                 } else if (this.hideSmallTime) {
-                    return rota[2] > 10;
+                    return cast.duration > 10;
                 }
                 return true;
+            },
+            getCastClass(cast) {
+                return {
+                    'rot-swap': cast.skill.isSwap,
+                    'mb-1': cast.skill.isSwap,
+                    'rot-small': this.small || (this.smallAA && cast.skill.aa)
+                };
+            },
+            getIconClass(cast) {
+                return {
+                    'rot-cancelled': cast.type === RotationStatus.CANCEL,
+                    'rot-animfull': cast.type === RotationStatus.FULL,
+                    'rot-unknown': cast.type === RotationStatus.UNKNOWN,
+                    'rot-instant': cast.type === RotationStatus.INSTANT
+                };
+            },
+            getTooltip(cast) {
+                var tooltip = `${cast.skill.name} at ${cast.time}s`;
+                if (cast.type === RotationStatus.INSTANT) {
+                    return tooltip;
+                } else {
+                    return tooltip + ` for ${cast.duration}ms`;
+                }
             }
         }
     });

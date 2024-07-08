@@ -33,6 +33,7 @@ namespace GW2EIEvtcParser
             internal const ulong December2019Balance = 100690;
             internal const ulong February2020Balance = 102321;
             internal const ulong February2020Balance2 = 102389;
+            internal const ulong March2020Balance = 102724;
             internal const ulong July2020Balance = 104844;
             internal const ulong September2020SunquaPeakRelease = 106277;
             internal const ulong May2021Balance = 115190;
@@ -42,6 +43,7 @@ namespace GW2EIEvtcParser
             internal const ulong EODBeta2 = 119939;
             internal const ulong EODBeta3 = 121168;
             internal const ulong EODBeta4 = 122479;
+            internal const ulong EODRelease = 125589;
             internal const ulong March2022Balance = 126520;
             internal const ulong March2022Balance2 = 127285;
             internal const ulong May2022Balance = 128773;
@@ -51,6 +53,7 @@ namespace GW2EIEvtcParser
             internal const ulong August2022BalanceHotFix = 132359;
             internal const ulong August2022Balance = 133322;
             internal const ulong October2022Balance = 135242;
+            internal const ulong October2022BalanceHotFix = 135930;
             internal const ulong November2022Balance = 137943;
             internal const ulong February2023Balance = 141374;
             internal const ulong May2023Balance = 145038;
@@ -58,6 +61,14 @@ namespace GW2EIEvtcParser
             internal const ulong June2023Balance = 147734;
             internal const ulong SOTOBetaAndSilentSurfNM = 147830; 
             internal const ulong July2023BalanceAndSilentSurfCM = 148697;
+            internal const ulong SOTOReleaseAndBalance = 150431;
+            internal const ulong September2023Balance = 151966;
+            internal const ulong DagdaNMHPChangedAndCMRelease = 153978;
+            internal const ulong November2023Balance = 154949;
+            internal const ulong January2024Balance = 157732;
+            internal const ulong February2024NewWeapons = 158837;
+            internal const ulong February2024CerusCMHPFix = 158968;
+            internal const ulong March2024BalanceAndCerusLegendary = 159951;
             //
             internal const ulong EndOfLife = ulong.MaxValue;
         }
@@ -73,6 +84,12 @@ namespace GW2EIEvtcParser
             internal const int BuffAttrFlatIncRemoved = 20220308;
             internal const int FunctionalIDToGUIDEvents = 20220709;
             internal const int NewLogStart = 20221111;
+            internal const int Effect2Events = 20230718;
+            internal const int FunctionalEffect2Events = 20230719;
+            internal const int BuffExtensionBroken = 20230905;
+            internal const int BuffExtensionOverstackValueChanged = 20231107;
+            internal const int LingeringAgents = 20231110;
+            internal const int RemovedDurationForInfiniteDurationStacksChanged = 20240211;
             //
             internal const int EndOfLife = int.MaxValue;
         }
@@ -96,7 +113,7 @@ namespace GW2EIEvtcParser
             internal const int OldRaidReward1 = 55821; // On each kill
             internal const int OldRaidReward2 = 60685; // On each kill
             internal const int CurrentRaidReward = 22797; // Once per week
-            internal const int EoDStrikeReward = 29453;
+            internal const int PostEoDStrikeReward = 29453;
         }
 
         /// <summary>
@@ -104,6 +121,7 @@ namespace GW2EIEvtcParser
         /// </summary>
         internal static class RewardIDs
         {
+            internal const ulong FreezieChest = 914;
             internal const ulong ShiverpeaksPassChests = 993; // Three chests, once a day
             internal const ulong KodansOldAndCurrentChest = 1035; // Old repeatable chest, now only once a day
             internal const ulong KodansCurrentChest1 = 1028; // Current, once a day
@@ -261,6 +279,7 @@ namespace GW2EIEvtcParser
             ExtensionCombat = 49,
             FractalScale = 50,
             Effect_51 = 51,
+            RuleSet = 52,
             Unknown
         };
 
@@ -290,7 +309,7 @@ namespace GW2EIEvtcParser
         {
             StackingConditionalLoss = 0, // the same thing as Stacking
             Queue = 1,
-            CappedDuration = 2,
+            StackingTargetUniqueSrc = 2, // This one clearly behaves like an intensity buff (multiple stack actives, any instance can be extended), always come with a stack limit of 999. It is unclear at this time what differentiate this one from the traditional Stacking type.
             Regeneration = 3,
             Stacking = 4,
             Force = 5,
@@ -315,15 +334,15 @@ namespace GW2EIEvtcParser
             Expertise = 9,
             Armor = 10,
             Agony = 11,
-            StatInc = 12,
-            FlatInc = 13,
-            PhysInc = 14,
-            CondInc = 15,
-            PhysRec = 16,
-            CondRec = 17,
+            StatOutgoing = 12,
+            FlatOutgoing = 13,
+            PhysOutgoing = 14,
+            CondOutgoing = 15,
+            PhysIncomingAdditive = 16,
+            CondIncomingAdditive = 17,
             AttackSpeed = 18,
-            UnusedSiphonInc_Arc = 19, // Unused due to being auto detected by the solver
-            SiphonRec = 20,
+            UnusedSiphonOutgoing_Arc = 19, // Unused due to being auto detected by the solver
+            SiphonIncomingAdditive1 = 20,
             //
             Unknown = short.MaxValue,
             //
@@ -350,7 +369,7 @@ namespace GW2EIEvtcParser
             ExperienceFromAll = 100,
             WXP = 112,*/
             // Custom Ids, matched using a very simple pattern detection, see BuffInfoSolver.cs
-            ConditionDurationInc = -1,
+            ConditionDurationOutgoing = -1,
             DamageFormulaSquaredLevel = -2,
             CriticalChance = -3,
             StrikeDamageToHP = -4,
@@ -360,9 +379,9 @@ namespace GW2EIEvtcParser
             DamageFormula = -8,
             MovementActivationDamageFormula = -9,
             EnduranceRegeneration = -10,
-            HealingEffectivenessRec = -11,
-            HealingEffectivenessFlatInc = -12,
-            HealingEffectivenessConvInc = -13,
+            HealingEffectivenessIncomingNonStacking = -11,
+            HealingEffectivenessOutgoingAdditive = -12,
+            HealingEffectivenessConvOutgoing = -13,
             HealingOutputFormula = -14,
             ExperienceFromKills = -15,
             GoldFind = -16,
@@ -372,17 +391,19 @@ namespace GW2EIEvtcParser
             MagicFind = -20,
             ExperienceFromAll = -21,
             WXP = -22,
-            SiphonInc = -23,
-            PhysRec2 = -24,
-            CondRec2 = -25,
-            BoonDurationInc = -26,
-            HealingEffectivenessRec2 = -27,
+            SiphonOutgoing = -23,
+            PhysIncomingMultiplicative = -24,
+            CondIncomingMultiplicative = -25,
+            BoonDurationOutgoing = -26,
+            HealingEffectivenessIncomingAdditive = -27,
             MovementSpeedStacking = -28,
             MovementSpeedStacking2 = -29,
             FishingPower = -30,
             MaximumHP = -31,
             VitalityPercent = -32,
             DefensePercent = -33,
+            SiphonIncomingAdditive2 = -34,
+            HealingEffectivenessIncomingMultiplicative = -35,
         }
         internal static BuffAttribute GetBuffAttribute(short bt, int evtcVersion)
         {
@@ -390,10 +411,10 @@ namespace GW2EIEvtcParser
             if (evtcVersion >= ArcDPSBuilds.BuffAttrFlatIncRemoved)
             {
                 // Enum has shifted by -1
-                if (bt <= (byte)BuffAttribute.SiphonRec - 1)
+                if (bt <= (byte)BuffAttribute.SiphonIncomingAdditive1 - 1)
                 {
                     // only apply +1 shift to enum higher or equal to the one removed
-                    res = bt < (byte)BuffAttribute.FlatInc ? (BuffAttribute)(bt) : (BuffAttribute)(bt + 1);
+                    res = bt < (byte)BuffAttribute.FlatOutgoing ? (BuffAttribute)(bt) : (BuffAttribute)(bt + 1);
                 } 
                 else
                 {
@@ -401,9 +422,9 @@ namespace GW2EIEvtcParser
                 }
             } else
             {
-                res = bt <= (byte)BuffAttribute.SiphonRec ? (BuffAttribute)bt : BuffAttribute.Unknown;
+                res = bt <= (byte)BuffAttribute.SiphonIncomingAdditive1 ? (BuffAttribute)bt : BuffAttribute.Unknown;
             }
-            if (res == BuffAttribute.UnusedSiphonInc_Arc)
+            if (res == BuffAttribute.UnusedSiphonOutgoing_Arc)
             {
                 res = BuffAttribute.Unknown;
             }
@@ -510,6 +531,24 @@ namespace GW2EIEvtcParser
         private const int SanctuaryPrism = -38;
         private const int Torch = -39;
         private const int BoundIcebroodElemental = -40;
+        private const int CAChest = -41;
+        private const int ChestOfDesmina = -42;
+        private const int UnknownAnomaly = -43;
+        private const int ChestOfPrisonCamp = -44;
+        private const int SnowPile = -45;
+        private const int Cage = -46;
+        private const int Bombs = -47;
+        private const int YourSoul = -48;
+        private const int QadimPlatform = -49;
+        private const int GravityBall = -50;
+        private const int JormagMovingFrostBeam = -51;
+        private const int GrandStrikeChest = -52;
+        private const int PermanentEmbodimentOfGluttony = -53;
+        private const int PermanentEmbodimentOfRage = -54;
+        private const int PermanentEmbodimentOfDespair = -55;
+        private const int PermanentEmbodimentOfRegret = -56;
+        private const int PermanentEmbodimentOfEnvy = -57;
+        private const int PermanentEmbodimentOfMalice = -58;
         public const int NonIdentifiedSpecies = 0;
 
         //
@@ -556,6 +595,8 @@ namespace GW2EIEvtcParser
             Slubling4 = 16104,
             PoisonMushroom = ArcDPSEnums.PoisonMushroom,
             // Trio
+            Cage = ArcDPSEnums.Cage,
+            Bombs = ArcDPSEnums.Bombs,
             BanditSaboteur = 16117,
             Warg = 7481,
             VeteranTorturedWarg = 16129,
@@ -685,6 +726,7 @@ namespace GW2EIEvtcParser
             Deathling = 19759,
             UnderworldReaper = 19831,
             DhuumDesmina = 19481,
+            YourSoul = ArcDPSEnums.YourSoul,
             // CA
             ConjuredGreatsword = 21255,
             ConjuredShield = 21170,
@@ -710,6 +752,7 @@ namespace GW2EIEvtcParser
             WyvernMatriarch = 20997,
             WyvernPatriarch = 21183,
             QadimLamp = ArcDPSEnums.QadimLamp,
+            QadimPlatform = ArcDPSEnums.QadimPlatform,
             AngryZommoros = 20961,
             ChillZommoros = 21118,
             AssaultCube = 21092,
@@ -764,11 +807,15 @@ namespace GW2EIEvtcParser
             SmallJumpyTornado = 21961,
             SmallKillerTornado = 21957,
             BigKillerTornado = 21987,
+            SabirPlatform = 21998,
             // Peerless Qadim
-            FriendlyPeerlessQadimPylon = 21996,
-            HostilePeerlessQadimPylon = 21962,
+            PeerlessQadimPylon = 21996,
+            PeerlessQadimAuraPylon = 21962,
             EntropicDistortion = 21973,
             EnergyOrb = 21946,
+            Brandstorm = 21978,
+            GiantQadimThePeerless = 21953,
+            DummyPeerlessQadim = 22005,
             // Fraenir
             IcebroodElemental = 22576,
             BoundIcebroodElemental = ArcDPSEnums.BoundIcebroodElemental,
@@ -812,6 +859,30 @@ namespace GW2EIEvtcParser
             BloodLegionBlademaster = 22993,
             CharrTank = 22953,
             SonsOfSvanirHighShaman = 22283,
+            // Harvest Temple - Void Amalgamate
+            PushableVoidAmalgamate = ArcDPSEnums.PushableVoidAmalgamate,
+            VoidAmalgamate = 24375,
+            KillableVoidAmalgamate = 23956,
+            DragonBodyVoidAmalgamate = ArcDPSEnums.DragonBodyVoidAmalgamate,
+            VoidTangler = 25138,
+            VoidColdsteel = 23945,
+            VoidAbomination = 23936,
+            VoidSaltsprayDragon = 23846,
+            VoidObliterator = 23995,
+            VoidRotswarmer = 24590,
+            VoidGiant = 24450,
+            VoidSkullpiercer = 25177,
+            VoidTimeCaster = 25025,
+            VoidBrandbomber = 24783,
+            VoidBurster = 24464,
+            VoidWarforged1 = 24129,
+            VoidWarforged2 = 24855,
+            VoidStormseer = 24677,
+            VoidMelter = 24223,
+            VoidGoliath = 24761,
+            DragonEnergyOrb = DragonOrb,
+            GravityBall = ArcDPSEnums.GravityBall,
+            JormagMovingFrostBeam = ArcDPSEnums.JormagMovingFrostBeam,
             // Aetherblade Hideout
             MaiTrinStrikeDuringEcho = 23826,
             ScarletPhantomNormalBeam = 24404,
@@ -848,33 +919,35 @@ namespace GW2EIEvtcParser
             TheMindbladeCM = 25280,
             SpiritOfPain = 23793,
             SpiritOfDestruction = 23961,
-            // Void Amalgamate
-            PushableVoidAmalgamate = ArcDPSEnums.PushableVoidAmalgamate,
-            VoidAmalgamate = 24375,
-            KillableVoidAmalgamate = 23956,
-            DragonBodyVoidAmalgamate = ArcDPSEnums.DragonBodyVoidAmalgamate,
-            VoidTangler = 25138,
-            VoidColdsteel = 23945,
-            VoidAbomination = 23936,
-            VoidSaltsprayDragon = 23846,
-            VoidObliterator = 23995,
-            VoidRotswarmer = 24590,
-            VoidGiant = 24450,
-            VoidSkullpiercer = 25177,
-            VoidTimeCaster = 25025,
-            VoidBrandbomber = 24783,
-            VoidBurster = 24464,
-            VoidWarforged1 = 24129,
-            VoidWarforged2 = 24855,
-            VoidStormseer = 24677,
-            VoidMelter = 24223,
-            VoidGoliath = 24761,
-            DragonEnergyOrb = DragonOrb,
+            // Cosmic Observatory
+            TheTormented = 26016,
+            VeteranTheTormented = 25829,
+            EliteTheTormented = 26000,
+            ChampionTheTormented = 25623,
+            TormentedPhantom = 25604,
+            SoulFeast = 26069,
+            Zojja = 26011,
+            // Temple of Febe
+            EmbodimentOfGluttony = 25677,
+            EmbodimentOfRage = 25686,
+            EmbodimentOfDespair = 26034,
+            EmbodimentOfRegret = 26049,
+            EmbodimentOfEnvy = 25967,
+            EmbodimentOfMalice = 25700,
+            MaliciousShadow = 25747,
+            MaliciousShadowCM = 25645,
+            PermanentEmbodimentOfGluttony = ArcDPSEnums.PermanentEmbodimentOfGluttony,
+            PermanentEmbodimentOfRage = ArcDPSEnums.PermanentEmbodimentOfRage,
+            PermanentEmbodimentOfDespair = ArcDPSEnums.PermanentEmbodimentOfDespair,
+            PermanentEmbodimentOfRegret = ArcDPSEnums.PermanentEmbodimentOfRegret,
+            PermanentEmbodimentOfEnvy = ArcDPSEnums.PermanentEmbodimentOfEnvy,
+            PermanentEmbodimentOfMalice = ArcDPSEnums.PermanentEmbodimentOfMalice,
             // Freezie
             FreeziesFrozenHeart = 21328,
             IceStormer = 21325,
             IceSpiker = 21337,
             IcyProtector = 21326,
+            SnowPile = ArcDPSEnums.SnowPile,
             // Fractals
             FractalVindicator = 19684,
             FractalAvenger = 15960,
@@ -898,6 +971,7 @@ namespace GW2EIEvtcParser
             NightmareHallucination2 = 17033, // (small adds, last phase)
             NightmareAltar = 35791,
             // Skorvald
+            UnknownAnomaly = ArcDPSEnums.UnknownAnomaly,
             FluxAnomaly1 = 17578,
             FluxAnomaly2 = 17929,
             FluxAnomaly3 = 17695,
@@ -908,16 +982,18 @@ namespace GW2EIEvtcParser
             FluxAnomalyCM4 = 17673,
             SolarBloom = 17732,
             // Artsariiv
-            TemporalAnomaly = 17870,
+            TemporalAnomalyArtsariiv = 17870,
             Spark = 17630,
             SmallArtsariiv = 17811, // tiny adds
             MediumArtsariiv = 17694, // small adds
             BigArtsariiv = 17937, // big adds
             CloneArtsariiv = SubArtsariiv, // clone adds
             // Arkk
-            TemporalAnomaly2 = 17720,
+            TemporalAnomalyArkk = 17720,
             Archdiviner = 17893,
-            Fanatic = 11282,
+            FanaticDagger1 = 11281,
+            FanaticDagger2 = 11282,
+            FanaticBow = 11288,
             EliteBrazenGladiator = 17730,
             BLIGHT = 16437,
             PLINK = 16325,
@@ -1070,6 +1146,8 @@ namespace GW2EIEvtcParser
             PrototypeVermilionCM = 25414,
             PrototypeArseniteCM = 25416,
             PrototypeIndigoCM = 25423,
+            Dagda = 25705,
+            Cerus = 25989,
             //VoidAmalgamate = 
             // Fract
             MAMA = 17021,
@@ -1109,8 +1187,12 @@ namespace GW2EIEvtcParser
 
         public enum ChestID : int
         {
+            ChestOfPrisonCamp = ArcDPSEnums.ChestOfPrisonCamp,
+            ChestOfDesmina = ArcDPSEnums.ChestOfDesmina,
             ChestOfSouls = ArcDPSEnums.ChestOfSouls,
             SiegeChest = ArcDPSEnums.SiegeChest,
+            CAChest = ArcDPSEnums.CAChest,
+            GrandStrikeChest = ArcDPSEnums.GrandStrikeChest,
             //
             None = int.MaxValue,
         };
@@ -1160,6 +1242,7 @@ namespace GW2EIEvtcParser
             IllusionaryMariner = 9052,
             IllusionaryWhaler = 9057,
             IllusionaryAvenger = 15188,
+            IllusionarySharpShooter = 26152,
             // Mesmer Clones
             // - Single Weapon
             CloneSword = 8108,
@@ -1171,6 +1254,7 @@ namespace GW2EIEvtcParser
             CloneSpear = 6479,
             CloneDownstate = 10542,
             CloneDagger = 25569,
+            CloneRifle = 26153,
             CloneUnknown = 8107, // Possibly -> https://wiki.guildwars2.com/wiki/Clone_(Snowball_Mayhem)
             // - Sword + Offhand
             CloneSwordTorch = 15090,
@@ -1279,6 +1363,7 @@ namespace GW2EIEvtcParser
             JuvenileWhiteTiger = 24298,
             JuvenileSiegeTurtle = 24796,
             JuvenilePhoenix = 25131,
+            JuvenileAetherHunter = 25652,
             // Guardian Weapon Summons
             BowOfTruth = 6383,
             HammerOfWisdom = 5791,

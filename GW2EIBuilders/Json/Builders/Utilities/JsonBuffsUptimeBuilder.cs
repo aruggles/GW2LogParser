@@ -1,4 +1,6 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +8,12 @@ using static Gw2LogParser.GW2EIBuilders.JsonBuffsUptime;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class representing buff on targets
+    /// </summary>
     internal static class JsonBuffsUptimeBuilder
     {
-        private static Dictionary<string, double> ConvertKeys(Dictionary<AbstractSingleActor, double> toConvert)
+        private static Dictionary<string, double> ConvertKeys(IReadOnlyDictionary<AbstractSingleActor, double> toConvert)
         {
             var res = new Dictionary<string, double>();
             foreach (KeyValuePair<AbstractSingleActor, double> pair in toConvert)
@@ -35,7 +40,7 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
 
-        public static JsonBuffsUptime BuildJsonBuffsUptime(AbstractSingleActor actor, long buffID, ParsedLog log, RawFormatSettings settings, List<JsonBuffsUptimeData> buffData, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        public static JsonBuffsUptime BuildJsonBuffsUptime(AbstractSingleActor actor, long buffID, ParsedEvtcLog log, RawFormatSettings settings, List<JsonBuffsUptimeData> buffData, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var jsonBuffsUptime = new JsonBuffsUptime
             {
@@ -49,6 +54,16 @@ namespace Gw2LogParser.GW2EIBuilders
             if (settings.RawFormatTimelineArrays)
             {
                 jsonBuffsUptime.States = GetBuffStates(actor.GetBuffGraphs(log)[buffID]);
+                IReadOnlyDictionary<long, FinalBuffsDictionary> buffDicts = actor.GetBuffsDictionary(log, log.FightData.FightStart, log.FightData.FightEnd);
+                if (buffDicts.TryGetValue(buffID, out FinalBuffsDictionary buffDict))
+                {
+                    var statesPerSource = new Dictionary<string, IReadOnlyList<IReadOnlyList<int>>>();
+                    foreach (AbstractSingleActor source in buffDict.Generated.Keys)
+                    {
+                        statesPerSource[source.Character] = GetBuffStates(actor.GetBuffGraphs(log, source)[buffID]);
+                    }
+                    jsonBuffsUptime.StatesPerSource = statesPerSource;
+                }
             }
             return jsonBuffsUptime;
         }

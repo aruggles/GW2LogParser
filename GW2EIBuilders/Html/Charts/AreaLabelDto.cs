@@ -1,4 +1,4 @@
-﻿namespace Gw2LogParser.GW2EIBuilders
+﻿namespace GW2EIBuilders
 {
     internal class AreaLabelDto
     {

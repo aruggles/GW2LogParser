@@ -26,14 +26,17 @@
 
 .scrollable-y {
     overflow-y: auto;
+    scrollbar-width: thin;
 }
 
 .scrollable-x {
     overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .theme-yeti ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
     background-color: #DDDDDD;
 }
 
@@ -49,6 +52,7 @@
 
 .theme-slate ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
     background-color: #888888;
 }
 
@@ -118,6 +122,8 @@
     color: #DDDDDD;
     width: 130px;
     height: 35px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .actor-rotation {
@@ -127,8 +133,10 @@
 
 .target-status {
     color: #DDDDDD;
-    width: 250px;
+    width: 180px;
     height: 35px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .cr-hp-display {
@@ -136,6 +144,7 @@
     position: relative;
     top: -12px;
     width: 45px;
+    pointer-events: none;
 }
 
 .cr-barrier-display {
@@ -143,24 +152,30 @@
     top: -43px;
     position: relative;
     width: 45px;
+    pointer-events: none;
 }
 
-.cr-breakbar-bar {
-    color: #DDDDDD;
-}
-
-.cr-barrier {
+.cr-barrier { 
     position: relative;
     width: 100%;
     height: 100%;
-    top: -96px;
+    top: -97px;
+    pointer-events: none;
 }
 
 .cr-breakbar-display {
     font-size: 0.65rem;
-    max-height: 35px;
-    height: 12px;
-    width: 200px;
+    min-height: 16px;
+}
+
+.cr-breakbar-bar {
+    color: #DDDDDD;
+    width: 130px;
+}
+
+.cr-breakbar-phase-display {
+    font-size: 0.65rem;
+    width: 180px;
 }
 
 .cr-hp-display-player {
@@ -176,7 +191,7 @@
 }
 
 .cr-barrier-display-target {
-    left: 77%;
+    left: 70%;
 }
 
 h6.actor-shorten {
@@ -260,18 +275,28 @@ body {
     min-height: 90px;
 }
 
-.theme-yeti .player-cell {
-    box-shadow: 1px 0 0 0 #dee2e6, 0 1px 0 0 #dee2e6, 1px 1px 0 0 #dee2e6, 1px 0 0 0 #dee2e6 inset, 0 1px 0 0 #dee2e6 inset;
+.theme-yeti .player-cell{
+    box-shadow: 
+    1px 0 0 0 #dee2e6, 
+    0 1px 0 0 #dee2e6, 
+    1px 1px 0 0 #dee2e6,
+    1px 0 0 0 #dee2e6 inset, 
+    0 1px 0 0 #dee2e6 inset;
 }
 
 .theme-slate .player-cell {
-    box-shadow: 1px 0 0 0 rgb(10, 10, 10), 0 1px 0 0 rgb(10, 10, 10), 1px 1px 0 0 rgb(10, 10, 10), 1px 0 0 0 rgb(10, 10, 10) inset, 0 1px 0 0 rgb(10, 10, 10) inset;
+    box-shadow: 
+    1px 0 0 0 rgb(10, 10, 10), 
+    0 1px 0 0 rgb(10, 10, 10), 
+    1px 1px 0 0 rgb(10, 10, 10),
+    1px 0 0 0 rgb(10, 10, 10) inset, 
+    0 1px 0 0 rgb(10, 10, 10) inset;
 }
 
 .player-cell-shorten {
-    display: block;
+    display:block;
     text-align: center;
-    white-space: nowrap;
+    white-space:nowrap;
     width: 90px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -358,9 +383,19 @@ img.icon-l {
     height: 24px;
 }
 
+
 .empty-icon-l {
     width: 24px;
     height: 24px;
+}
+img.icon-sl {
+    width: 32px;
+    height: 32px;
+}
+
+.empty-icon-sl {
+    width: 32px;
+    height: 32px;
 }
 
 .empty-icon-ll {
@@ -408,8 +443,8 @@ th:hover img.icon-hover,
     filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=3, OffY=3, Color='#000')";
 }
 
-.sub-cell {
-    width: 20px;
+.sub-cell { 
+    width: 20px ;
 }
 
 .prof-cell {
@@ -612,6 +647,11 @@ canvas {
     z-index: 1
 }
 
+#picking-canvas {
+    z-index: 0;
+    opacity: 0;
+}
+
 .animation-control {
     z-index: 3;
 }
@@ -649,7 +689,6 @@ canvas {
 .slidercontainer {
     width: 100%;
 }
-
 .slider {
     width: 100%;
     height: 25px;
@@ -660,49 +699,44 @@ canvas {
     transition: opacity .2s;
     border-radius: 13px;
 }
-
-    .slider:hover {
-        opacity: 0.9;
-    }
+.slider:hover {
+    opacity: 0.9;
+}
 /* http://danielstern.ca/range.css/?ref=css-tricks#/ */
 input[type=range].slider {
     width: 100%;
     background-color: transparent;
     -webkit-appearance: none;
-}
-
-    input[type=range].slider::-webkit-slider-runnable-track {
-        background: rgba(0, 0, 0, 0.0);
-        border: 1px solid rgba(0, 0, 0, 0);
-        width: 100%;
-        cursor: pointer;
-    }
-
-    input[type=range].slider::-webkit-slider-thumb {
-        width: 25px;
-        height: 25px;
-        background: #00ff00;
-        border: 3px solid #00c800;
-        border-radius: 13px;
-        cursor: pointer;
-        -webkit-appearance: none;
-    }
-
-    input[type=range].slider::-moz-range-track {
-        background: rgba(0, 0, 0, 0.0);
-        border: 1px solid rgba(0, 0, 0, 0);
-        width: 100%;
-        cursor: pointer;
-    }
-
-    input[type=range].slider::-moz-range-thumb {
-        width: 25px;
-        height: 25px;
-        background: #00ff00;
-        border: 3px solid #00c800;
-        border-radius: 13px;
-        cursor: pointer;
-    }
+  }
+  input[type=range].slider::-webkit-slider-runnable-track {
+    background: rgba(0, 0, 0, 0.0);
+    border: 1px solid rgba(0, 0, 0, 0);
+    width: 100%;
+    cursor: pointer;
+  }
+  input[type=range].slider::-webkit-slider-thumb {
+    width: 25px;
+    height: 25px;
+    background: #00ff00;
+    border: 3px solid #00c800;
+    border-radius: 13px;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+  input[type=range].slider::-moz-range-track {
+    background: rgba(0, 0, 0, 0.0);
+    border: 1px solid rgba(0, 0, 0, 0);
+    width: 100%;
+    cursor: pointer;
+  }
+  input[type=range].slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    background: #00ff00;
+    border: 3px solid #00c800;
+    border-radius: 13px;
+    cursor: pointer;
+  }
 
 
 thead .sorted, thead .sorted_asc, thead .sorted_desc {
@@ -711,37 +745,33 @@ thead .sorted, thead .sorted_asc, thead .sorted_desc {
     padding-right: 20px;
 }
 
-    thead .sorted:before, thead .sorted_asc:before, thead .sorted_desc:before {
-        top: 5px;
-        right: 0.85em;
-        content: "\2191";
-        position: absolute;
-        display: block;
-    }
+thead .sorted:before, thead .sorted_asc:before, thead .sorted_desc:before {
+    top: 5px;
+    right: 0.85em;
+    content: "\2191";
+    position: absolute;
+    display: block;
+}
+thead .sorted:before, thead .sorted_desc:before {
+    opacity: 0.3;
+}
+thead .sorted_asc:before {
+    opacity: 1.0;
+}
 
-    thead .sorted:before, thead .sorted_desc:before {
-        opacity: 0.3;
-    }
-
-    thead .sorted_asc:before {
-        opacity: 1.0;
-    }
-
-    thead .sorted:after, thead .sorted_asc:after, thead .sorted_desc:after {
-        top: 5px;
-        right: 0.5em;
-        content: "\2193";
-        position: absolute;
-        display: block;
-    }
-
-    thead .sorted:after, thead .sorted_asc:after {
-        opacity: 0.3;
-    }
-
-    thead .sorted_desc:after {
-        opacity: 1.0;
-    }
+thead .sorted:after, thead .sorted_asc:after, thead .sorted_desc:after {
+    top: 5px;
+    right: 0.5em;
+    content: "\2193";
+    position: absolute;
+    display: block;
+}
+thead .sorted:after, thead .sorted_asc:after {
+    opacity: 0.3;
+}
+thead .sorted_desc:after {
+    opacity: 1.0;
+}
 
 
 
@@ -760,3 +790,4 @@ td.higherOrEqual::before {
 td.approximate::before {
     content: "\2248";
 }
+  

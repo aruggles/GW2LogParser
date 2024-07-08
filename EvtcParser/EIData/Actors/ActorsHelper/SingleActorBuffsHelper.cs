@@ -129,7 +129,7 @@ namespace GW2EIEvtcParser.EIData
         /// <param name="buffId"></param>
         /// <param name="time"></param>
         /// <returns></returns>
-        public bool HasBuff(ParsedEvtcLog log, long buffId, long time)
+        public bool HasBuff(ParsedEvtcLog log, long buffId, long time, long window = 0)
         {
             if (!log.Buffs.BuffsByIds.ContainsKey(buffId))
             {
@@ -138,7 +138,7 @@ namespace GW2EIEvtcParser.EIData
             IReadOnlyDictionary<long, BuffsGraphModel> bgms = GetBuffGraphs(log);
             if (bgms.TryGetValue(buffId, out BuffsGraphModel bgm))
             {
-                return bgm.IsPresent(time);
+                return bgm.IsPresent(time, window);
             }
             else
             {
@@ -171,6 +171,8 @@ namespace GW2EIEvtcParser.EIData
             }
         }
 
+        private static readonly Segment _emptySegment = new Segment(long.MinValue, long.MaxValue, 0);
+
         private static Segment GetBuffStatus(long buffId, long time, IReadOnlyDictionary<long, BuffsGraphModel> bgms)
         {
             if (bgms.TryGetValue(buffId, out BuffsGraphModel bgm))
@@ -179,7 +181,7 @@ namespace GW2EIEvtcParser.EIData
             }
             else
             {
-                return new Segment(long.MinValue, long.MaxValue, 0);
+                return _emptySegment;
             }
         }
 
@@ -209,7 +211,10 @@ namespace GW2EIEvtcParser.EIData
             }
             else
             {
-                return new List<Segment>();
+                return new List<Segment>()
+                {
+                    _emptySegment
+                };
             }
         }
 
@@ -279,9 +284,10 @@ namespace GW2EIEvtcParser.EIData
             }
             // Fill in Boon Map
 #if DEBUG
-            var test = log.CombatData.GetBuffData(Actor.AgentItem).Where(x => !log.Buffs.BuffsByIds.ContainsKey(x.BuffID)).GroupBy(x => x.BuffSkill.Name).ToDictionary(x => x.Key, x => x.ToList());
+            var test = log.CombatData.GetBuffDataByDst(Actor.AgentItem).Where(x => !log.Buffs.BuffsByIds.ContainsKey(x.BuffID)).GroupBy(x => x.BuffSkill.Name).ToDictionary(x => x.Key, x => x.ToList());
+            var test2 = log.CombatData.GetBuffDataByDst(Actor.AgentItem).Where(x => log.Buffs.BuffsByIds.ContainsKey(x.BuffID)).GroupBy(x => x.BuffSkill.Name).ToDictionary(x => x.Key, x => x.ToList());
 #endif
-            var buffEventsDict = log.CombatData.GetBuffData(Actor.AgentItem).GroupBy(x => x.BuffID).ToDictionary(x => x.Key, x => x.ToList());
+            var buffEventsDict = log.CombatData.GetBuffDataByDst(Actor.AgentItem).GroupBy(x => x.BuffID).ToDictionary(x => x.Key, x => x.ToList());
             foreach (KeyValuePair<long, List<AbstractBuffEvent>> buffEventPair in buffEventsDict)
             {
                 long buffID = buffEventPair.Key;
@@ -322,6 +328,12 @@ namespace GW2EIEvtcParser.EIData
             {
                 numberOfClonesGraph = new BuffsGraphModel(log.Buffs.BuffsByIds[SkillIDs.NumberOfClones]);
             }
+            BuffsGraphModel numberOfRangerPets = null;
+            bool canUseRangerPets = ProfHelper.CanUseRangerPets(Actor.Spec);
+            if (canUseRangerPets)
+            {
+                numberOfRangerPets = new BuffsGraphModel(log.Buffs.BuffsByIds[SkillIDs.NumberOfRangerPets]);
+            }
             var condiPresenceGraph = new BuffsGraphModel(log.Buffs.BuffsByIds[SkillIDs.NumberOfConditions]);
             var boonIds = new HashSet<long>(log.Buffs.BuffsByClassification[BuffClassification.Boon].Select(x => x.ID));
             var condiIds = new HashSet<long>(log.Buffs.BuffsByClassification[BuffClassification.Condition].Select(x => x.ID));
@@ -339,10 +351,10 @@ namespace GW2EIEvtcParser.EIData
                         simulator = buff.CreateSimulator(log, false);
                         simulator.Simulate(buffEvents, log.FightData.FightStart, log.FightData.FightEnd);
                     }
-                    catch (EIBuffSimulatorIDException)
+                    catch (EIBuffSimulatorIDException e)
                     {
                         // get rid of logs invalid for HasStackIDs false
-                        log.UpdateProgressWithCancellationCheck("Failed id based simulation on " + Actor.Character + " for " + buff.Name);
+                        log.UpdateProgressWithCancellationCheck("Parsing: Failed id based simulation on " + Actor.Character + " for " + buff.Name + " because " + e.Message);
                         buffEvents.RemoveAll(x => !x.IsBuffSimulatorCompliant(false));
                         simulator = buff.CreateSimulator(log, true);
                         simulator.Simulate(buffEvents, log.FightData.FightStart, log.FightData.FightEnd);
@@ -399,6 +411,13 @@ namespace GW2EIEvtcParser.EIData
                         numberOfClonesGraph.MergePresenceInto(minionsSegments);
                     }
                 }
+                if (canUseRangerPets && RangerHelper.IsJuvenilePet(minions.ReferenceAgentItem))
+                {
+                    foreach (IReadOnlyList<Segment> minionsSegments in segments)
+                    {
+                        numberOfRangerPets.MergePresenceInto(minionsSegments);
+                    }
+                }
             }
             if (activeCombatMinionsGraph.BuffChart.Any())
             {
@@ -407,6 +426,10 @@ namespace GW2EIEvtcParser.EIData
             if (canSummonClones && numberOfClonesGraph.BuffChart.Any())
             {
                 _buffGraphs[SkillIDs.NumberOfClones] = numberOfClonesGraph;
+            }
+            if (canUseRangerPets && numberOfRangerPets.BuffChart.Any())
+            {
+                _buffGraphs[SkillIDs.NumberOfRangerPets] = numberOfRangerPets;
             }
         }
 

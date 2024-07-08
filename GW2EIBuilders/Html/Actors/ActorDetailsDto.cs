@@ -1,6 +1,7 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,7 +21,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         // helpers
 
-        public static ActorDetailsDto BuildPlayerData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static ActorDetailsDto BuildPlayerData(ParsedEvtcLog log, AbstractSingleActor actor, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new ActorDetailsDto
             {
@@ -35,11 +36,10 @@ namespace Gw2LogParser.GW2EIBuilders
             };
             foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
-
                 dto.Rotation.Add(SkillDto.BuildRotationData(log, actor, phase, usedSkills));
                 dto.DmgDistributions.Add(DmgDistributionDto.BuildFriendlyDMGDistData(log, actor, null, phase, usedSkills, usedBuffs));
                 var dmgTargetsDto = new List<DmgDistributionDto>();
-                foreach (AbstractSingleActor target in phase.Targets)
+                foreach (AbstractSingleActor target in phase.AllTargets)
                 {
                     dmgTargetsDto.Add(DmgDistributionDto.BuildFriendlyDMGDistData(log, actor, target, phase, usedSkills, usedBuffs));
                 }
@@ -55,7 +55,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        private static ActorDetailsDto BuildFriendlyMinionsData(ParsedLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static ActorDetailsDto BuildFriendlyMinionsData(ParsedEvtcLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new ActorDetailsDto
             {
@@ -65,7 +65,7 @@ namespace Gw2LogParser.GW2EIBuilders
             foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
                 var dmgTargetsDto = new List<DmgDistributionDto>();
-                foreach (AbstractSingleActor target in phase.Targets)
+                foreach (AbstractSingleActor target in phase.AllTargets)
                 {
                     dmgTargetsDto.Add(DmgDistributionDto.BuildFriendlyMinionDMGDistData(log, actor, minion, target, phase, usedSkills, usedBuffs));
                 }
@@ -75,7 +75,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        public static ActorDetailsDto BuildTargetData(ParsedLog log, AbstractSingleActor target, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, bool cr)
+        public static ActorDetailsDto BuildTargetData(ParsedEvtcLog log, AbstractSingleActor target, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, bool cr)
         {
             var dto = new ActorDetailsDto
             {
@@ -89,7 +89,7 @@ namespace Gw2LogParser.GW2EIBuilders
             for (int i = 0; i < phases.Count; i++)
             {
                 PhaseData phase = phases[i];
-                if (phase.Targets.Contains(target))
+                if (phase.AllTargets.Contains(target))
                 {
                     dto.DmgDistributions.Add(DmgDistributionDto.BuildTargetDMGDistData(log, target, phase, usedSkills, usedBuffs));
                     dto.DmgDistributionsTaken.Add(DmgDistributionDto.BuildDMGTakenDistData(log, target, phase, usedSkills, usedBuffs));
@@ -124,7 +124,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        private static ActorDetailsDto BuildTargetsMinionsData(ParsedLog log, AbstractSingleActor target, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static ActorDetailsDto BuildTargetsMinionsData(ParsedEvtcLog log, AbstractSingleActor target, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new ActorDetailsDto
             {
@@ -132,7 +132,7 @@ namespace Gw2LogParser.GW2EIBuilders
             };
             foreach (PhaseData phase in log.FightData.GetPhases(log))
             {
-                if (phase.Targets.Contains(target))
+                if (phase.AllTargets.Contains(target))
                 {
                     dto.DmgDistributions.Add(DmgDistributionDto.BuildTargetMinionDMGDistData(log, target, minion, phase, usedSkills, usedBuffs));
                 }

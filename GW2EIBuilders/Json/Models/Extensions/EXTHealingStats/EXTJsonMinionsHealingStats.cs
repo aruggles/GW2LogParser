@@ -2,6 +2,9 @@
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class regrouping minion related healing statistics
+    /// </summary>
     public class EXTJsonMinionsHealingStats
     {
         /// <summary>

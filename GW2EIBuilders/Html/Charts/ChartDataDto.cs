@@ -1,10 +1,10 @@
-﻿using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class ChartDataDto
     {
@@ -27,12 +27,12 @@ namespace Gw2LogParser.GW2EIBuilders
             return Segment.ToObjectList(subSegments, phase.Start, phase.End);
         }
 
-        public static List<object[]> BuildHealthStates(ParsedLog log, AbstractSingleActor actor, PhaseData phase, bool nullable)
+        public static List<object[]> BuildHealthStates(ParsedEvtcLog log, AbstractSingleActor actor, PhaseData phase, bool nullable)
         {
             return BuildGraphStates(actor.GetHealthUpdates(log), phase, nullable, 100.0);
         }
 
-        public static List<object[]> BuildBarrierStates(ParsedLog log, AbstractSingleActor actor, PhaseData phase)
+        public static List<object[]> BuildBarrierStates(ParsedEvtcLog log, AbstractSingleActor actor, PhaseData phase)
         {
             var barriers = new List<Segment>(actor.GetBarrierUpdates(log));
             if (!barriers.Any(x => x.Value > 0))
@@ -42,12 +42,12 @@ namespace Gw2LogParser.GW2EIBuilders
             return BuildGraphStates(barriers, phase, true, 0.0);
         }
 
-        public static List<object[]> BuildBreakbarPercentStates(ParsedLog log, AbstractSingleActor npc, PhaseData phase)
+        public static List<object[]> BuildBreakbarPercentStates(ParsedEvtcLog log, AbstractSingleActor npc, PhaseData phase)
         {
             return BuildGraphStates(npc.GetBreakbarPercentUpdates(log), phase, true, 100.0);
         }
 
-        public ChartDataDto(ParsedLog log)
+        public ChartDataDto(ParsedEvtcLog log)
         {
             var phaseChartData = new List<PhaseChartDataDto>();
             IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);

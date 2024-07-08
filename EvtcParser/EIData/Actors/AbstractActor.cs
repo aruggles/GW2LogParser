@@ -27,6 +27,7 @@ namespace GW2EIEvtcParser.EIData
         protected List<AbstractHealthDamageEvent> DamageEvents { get; set; }
         protected Dictionary<AgentItem, List<AbstractHealthDamageEvent>> DamageEventByDst { get; set; }
         private readonly Dictionary<ParserHelper.DamageType, CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>> _typedHitDamageEvents = new Dictionary<ParserHelper.DamageType, CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>>();
+        private readonly Dictionary<ParserHelper.DamageType, CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>> _typedHitDamageTakenEvents = new Dictionary<ParserHelper.DamageType, CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>>();
         protected List<AbstractHealthDamageEvent> DamageTakenEvents { get; set; }
         protected Dictionary<AgentItem, List<AbstractHealthDamageEvent>> DamageTakenEventsBySrc { get; set; }
         // Breakbar Damage
@@ -42,6 +43,11 @@ namespace GW2EIEvtcParser.EIData
             string[] name = agent.Name.Split('\0');
             Character = name[0];
             AgentItem = agent;
+        }
+
+        public bool IsNonIdentifiedSpecies()
+        {
+            return AgentItem.IsNonIdentifiedSpecies();
         }
 
         public bool IsSpecies(int id)
@@ -69,6 +75,26 @@ namespace GW2EIEvtcParser.EIData
             return AgentItem.IsSpecies(id);
         }
 
+        public bool IsAnySpecies(IEnumerable<ArcDPSEnums.TrashID> ids)
+        {
+            return AgentItem.IsAnySpecies(ids);
+        }
+
+        public bool IsAnySpecies(IEnumerable<ArcDPSEnums.TargetID> ids)
+        {
+            return AgentItem.IsAnySpecies(ids);
+        }
+
+        public bool IsAnySpecies(IEnumerable<ArcDPSEnums.MinionID> ids)
+        {
+            return AgentItem.IsAnySpecies(ids);
+        }
+
+        public bool IsAnySpecies(IEnumerable<ArcDPSEnums.ChestID> ids)
+        {
+            return AgentItem.IsAnySpecies(ids);
+        }
+
         // Getters
         // Damage logs
         public abstract IReadOnlyList<AbstractHealthDamageEvent> GetDamageEvents(AbstractSingleActor target, ParsedEvtcLog log, long start, long end);
@@ -93,6 +119,9 @@ namespace GW2EIEvtcParser.EIData
                     case ParserHelper.DamageType.Strike:
                         dls.RemoveAll(x => x is NonDirectHealthDamageEvent);
                         break;
+                    case ParserHelper.DamageType.LifeLeech:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent ndhd && !ndhd.IsLifeLeech);
+                        break;
                     case ParserHelper.DamageType.Condition:
                         dls.RemoveAll(x => !x.ConditionDamageBased(log));
                         break;
@@ -108,6 +137,46 @@ namespace GW2EIEvtcParser.EIData
                         throw new NotImplementedException("Not implemented damage type " + damageType);
                 }
                 hitDamageEventsPerPhasePerTarget.Set(start, end, target, dls);
+            }
+            return dls;
+        }
+
+        public IReadOnlyList<AbstractHealthDamageEvent> GetHitDamageTakenEvents(AbstractSingleActor target, ParsedEvtcLog log, long start, long end, ParserHelper.DamageType damageType)
+        {
+            if (!_typedHitDamageTakenEvents.TryGetValue(damageType, out CachingCollectionWithTarget<List<AbstractHealthDamageEvent>> hitDamageTakenEventsPerPhasePerTarget))
+            {
+                hitDamageTakenEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<AbstractHealthDamageEvent>>(log);
+                _typedHitDamageTakenEvents[damageType] = hitDamageTakenEventsPerPhasePerTarget;
+            }
+            if (!hitDamageTakenEventsPerPhasePerTarget.TryGetValue(start, end, target, out List<AbstractHealthDamageEvent> dls))
+            {
+                dls = GetDamageTakenEvents(target, log, start, end).Where(x => x.HasHit).ToList();
+                switch (damageType)
+                {
+                    case ParserHelper.DamageType.Power:
+                        dls.RemoveAll(x => x.ConditionDamageBased(log));
+                        break;
+                    case ParserHelper.DamageType.Strike:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent);
+                        break;
+                    case ParserHelper.DamageType.LifeLeech:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent ndhd && !ndhd.IsLifeLeech);
+                        break;
+                    case ParserHelper.DamageType.Condition:
+                        dls.RemoveAll(x => !x.ConditionDamageBased(log));
+                        break;
+                    case ParserHelper.DamageType.StrikeAndCondition:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent && !x.ConditionDamageBased(log));
+                        break;
+                    case ParserHelper.DamageType.StrikeAndConditionAndLifeLeech:
+                        dls.RemoveAll(x => x is NonDirectHealthDamageEvent ndhd && !x.ConditionDamageBased(log) && !ndhd.IsLifeLeech);
+                        break;
+                    case ParserHelper.DamageType.All:
+                        break;
+                    default:
+                        throw new NotImplementedException("Not implemented damage type " + damageType);
+                }
+                hitDamageTakenEventsPerPhasePerTarget.Set(start, end, target, dls);
             }
             return dls;
         }

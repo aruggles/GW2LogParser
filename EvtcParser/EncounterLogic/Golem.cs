@@ -11,6 +11,7 @@ using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
+using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.EncounterLogic
 {
@@ -18,57 +19,58 @@ namespace GW2EIEvtcParser.EncounterLogic
     {
         public Golem(int id) : base(id)
         {
-            Mode = ParseMode.Benchmark;
+            ParseMode = ParseModeEnum.Benchmark;
+            SkillMode = SkillModeEnum.PvE;
             EncounterID |= EncounterIDs.EncounterMasks.GolemMask;
             EncounterID |= 0x000100;
-            switch (ArcDPSEnums.GetTargetID(id))
+            switch (GetTargetID(id))
             {
-                case ArcDPSEnums.TargetID.MassiveGolem10M:
+                case TargetID.MassiveGolem10M:
                     Extension = "MassiveGolem10M";
                     Icon = EncounterIconMassiveGolem;
                     EncounterID |= 0x000001;
                     break;
-                case ArcDPSEnums.TargetID.MassiveGolem4M:
+                case TargetID.MassiveGolem4M:
                     Extension = "MassiveGolem4M";
                     Icon = EncounterIconMassiveGolem;
                     EncounterID |= 0x000002;
                     break;
-                case ArcDPSEnums.TargetID.MassiveGolem1M:
+                case TargetID.MassiveGolem1M:
                     Extension = "MassiveGolem1M";
                     Icon = EncounterIconMassiveGolem;
                     EncounterID |= 0x000003;
                     break;
-                case ArcDPSEnums.TargetID.VitalGolem:
+                case TargetID.VitalGolem:
                     Extension = "VitalGolem";
                     Icon = EncounterIconVitalGolem;
                     EncounterID |= 0x000004;
                     break;
-                case ArcDPSEnums.TargetID.AvgGolem:
+                case TargetID.AvgGolem:
                     Extension = "AvgGolem";
                     Icon = EncounterIconAvgGolem;
                     EncounterID |= 0x000005;
                     break;
-                case ArcDPSEnums.TargetID.StdGolem:
+                case TargetID.StdGolem:
                     Extension = "StdGolem";
                     Icon = EncounterIconStdGolem;
                     EncounterID |= 0x000006;
                     break;
-                case ArcDPSEnums.TargetID.ConditionGolem:
+                case TargetID.ConditionGolem:
                     Extension = "ToughGolem";
                     Icon = EncounterIconCondiPowerMedGolem;
                     EncounterID |= 0x000007;
                     break;
-                case ArcDPSEnums.TargetID.PowerGolem:
+                case TargetID.PowerGolem:
                     Extension = "ResGolem";
                     Icon = EncounterIconCondiPowerMedGolem;
                     EncounterID |= 0x000008;
                     break;
-                case ArcDPSEnums.TargetID.LGolem:
+                case TargetID.LGolem:
                     Extension = "LGolem";
                     Icon = EncounterIconLGolem;
                     EncounterID |= 0x000009;
                     break;
-                case ArcDPSEnums.TargetID.MedGolem:
+                case TargetID.MedGolem:
                     Extension = "MedGolem";
                     Icon = EncounterIconCondiPowerMedGolem;
                     EncounterID |= 0x00000A;
@@ -91,7 +93,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                 new BuffGainCastFinder(MushroomKingsBlessing, POV_MushroomKingsBlessingBuff).UsingICD(500),
             };
         }
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
             AgentItem target = agentData.GetNPCsByID(GenericTriggerID).FirstOrDefault();
             foreach (CombatItem c in combatData)
@@ -107,6 +109,7 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
 #if DEBUG
             ProfHelper.DEBUG_ComputeProfessionCombatReplayActors(p, log, replay);
 #endif
@@ -180,10 +183,11 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override long GetFightOffset(int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
         {
-            CombatItem logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == ArcDPSEnums.StateChange.LogStartNPCUpdate);
+            CombatItem logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogStartNPCUpdate);
             if (logStartNPCUpdate != null)
             {
-                return GetPostLogStartNPCUpdateDamageEventTime(fightData, agentData, combatData, logStartNPCUpdate.Time, GenericTriggerID);
+                AgentItem golem = agentData.GetNPCsByIDAndAgent(GenericTriggerID, logStartNPCUpdate.DstAgent).FirstOrDefault() ?? agentData.GetNPCsByID(GenericTriggerID).FirstOrDefault();
+                return GetPostLogStartNPCUpdateDamageEventTime(fightData, agentData, combatData, logStartNPCUpdate.Time, golem);
             }
             return GetGenericFightOffset(fightData);
         }

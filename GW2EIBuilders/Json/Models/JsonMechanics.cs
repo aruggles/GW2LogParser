@@ -31,6 +31,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         }
 
+
         /// <summary>
         /// List of mechanics application
         /// </summary>

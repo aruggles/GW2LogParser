@@ -3,7 +3,7 @@
 var numberComponent = {
     methods: {
         // https://stackoverflow.com/questions/16637051/adding-space-between-numbers
-        integerWithSpaces: function (x) {
+        integerWithSpaces: function(x) {
             return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         },
         round: function (value) {
@@ -37,7 +37,7 @@ var numberComponent = {
 };
 
 var damageGraphComponent = {
-    data: function () {
+    data: function() {
         return {
             graphdata: {
                 dpsmode: 0,
@@ -56,7 +56,7 @@ var graphComponent = {
             dataCache: new Map(),
         };
     },
-    computed: {
+    computed: {       
         computePhaseBreaks: function () {
             var res = [];
             if (this.phase.subPhases) {
@@ -76,26 +76,26 @@ var graphComponent = {
         },
     },
     methods: {
-        updateVisibily: function (images, x0, x1) {
-            var redraw = false;
-            for (var i = 0; i < images.length; i++) {
-                var image = images[i];
-                var old = image.visible;
-                image.visible = typeof x0 === "undefined" || ((image.x <= x1 + 10 && image.x >= x0 - 10) && (x1 - x0) < 75);
-                redraw = redraw || image.visible !== old;
-            }
-            return redraw;
-        },
-        updateVisibilyInQuad: function (images, x0, x1, y0, y1) {
-            var redraw = false;
-            for (var i = 0; i < images.length; i++) {
-                var image = images[i];
-                var old = image.visible;
-                image.visible = typeof x0 === "undefined" || (((image.x <= x1 + 10 && image.x >= x0 - 10) && (x1 - x0) < 75) && ((image.y <= y1 + 10 && image.y >= y0 - 10) && (y1 - y0) < 75));
-                redraw = redraw || image.visible !== old;
-            }
-            return redraw;
-        },
+            updateVisibily: function (images, x0, x1) {
+                var redraw = false;
+                for (var i = 0; i < images.length; i++) {
+                    var image = images[i];
+                    var old = image.visible;
+                    image.visible = typeof x0 === "undefined" || ((image.x <= x1+10 && image.x >= x0 - 10) && (x1 - x0) < 75);
+                    redraw = redraw || image.visible !== old;
+                }
+                return redraw;
+            },
+            updateVisibilyInQuad: function (images, x0, x1, y0, y1) {
+                var redraw = false;
+                for (var i = 0; i < images.length; i++) {
+                    var image = images[i];
+                    var old = image.visible;
+                    image.visible = typeof x0 === "undefined" || (((image.x <= x1+10 && image.x >= x0 - 10) && (x1 - x0) < 75) && ((image.y <= y1+10 && image.y >= y0 - 10) && (y1 - y0) < 75)) ;
+                    redraw = redraw || image.visible !== old;
+                }
+                return redraw;
+            },
     }
 };
 
@@ -128,8 +128,8 @@ var timeRefreshComponent = {
 };
 
 var sortedTableComponent = {
-    methods: {
-        sortByBase: function (sortdata, key, index) {
+    methods:  {       
+        sortByBase: function(sortdata, key, index) {
             index = index >= 0 ? index : -1;
             if (sortdata.key !== key || index !== sortdata.index) {
                 sortdata.order = "asc";
@@ -139,54 +139,54 @@ var sortedTableComponent = {
             sortdata.key = key;
             sortdata.index = index;
         },
-        getHeaderClassBase: function (sortdata, key, index) {
+        getHeaderClassBase: function(sortdata, key, index) {
             index = index >= 0 ? index : -1;
             if (sortdata.key === key && sortdata.index === index) {
                 if (sortdata.order === "asc") {
-                    return { "sorted_asc": true };
+                    return {"sorted_asc" : true};
                 } else {
-                    return { "sorted_desc": true };
+                    return {"sorted_desc": true};
                 }
             };
-            return { 'sorted': true };
+            return {'sorted': true};
         },
-        getBodyClassBase: function (sortdata, key, index) {
+        getBodyClassBase: function(sortdata, key, index) {
             index = index >= 0 ? index : -1;
-            return { 'sorted': sortdata.key === key && sortdata.index === index };
+            return {'sorted': sortdata.key === key && sortdata.index === index};
         },
     }
 };
 
 var sortedDistributionComponent = {
-    methods: {
-        sortBy: function (key, index, func) {
+    methods: {    
+        sortBy: function(key, index, func) {
             this.sortByBase(this.sortdata, key, index);
             this.sortdata.sortFunc = func ? func : null;
         },
-        getHeaderClass: function (key, index) {
+        getHeaderClass: function(key, index) {
             return this.getHeaderClassBase(this.sortdata, key, index);
         },
-        getBodyClass: function (key, index) {
+        getBodyClass: function(key, index) {
             var classes = this.getBodyClassBase(this.sortdata, key, index);
             return classes;
-        },
-        getCastBodyClass: function (key, index, data) {
+        },     
+        getCastBodyClass: function(key, index, data) {
             var res = this.getBodyClass(key, index);
-            var innacurate = { higherOrEqual: (!this.getSkill(data).condi && this.getCast(data)) && this.showInequality(data) };
+            var innacurate = {higherOrEqual: (!this.getSkill(data).condi && this.getCast(data)) && this.showInequality(data)};
             Object.assign(res, innacurate);
             return res;
         },
-        getHitsPerCastBodyClass: function (key, index, data) {
+        getHitsPerCastBodyClass: function(key, index, data) {
             var res = this.getBodyClass(key, index);
-            var innacurate = { lowerOrEqual: (!this.getSkill(data).condi && this.getConnectedHits(data) && this.getCast(data)) && this.showInequality(data) };
+            var innacurate = {lowerOrEqual: (!this.getSkill(data).condi && this.getConnectedHits(data) && this.getCast(data)) && this.showInequality(data)};
             Object.assign(res, innacurate);
             return res;
         },
-        sortData: function (rows) {
+        sortData: function(rows) {
             var order = this.sortdata.order === "asc" ? 1 : -1;
             switch (this.sortdata.key) {
                 case "Skill":
-                    rows.sort((x, y) => order * (this.getSkill(x).name.localeCompare(this.getSkill(y).name)));
+                    rows.sort((x,y) => order * (this.getSkill(x).name.localeCompare(this.getSkill(y).name)));
                     break;
                 case "Data":
                     var sortFunc = x => {
@@ -200,7 +200,7 @@ var sortedDistributionComponent = {
                         }
                         return value;
                     };
-                    rows.sort((x, y) => order * (sortFunc(x) - sortFunc(y)));
+                    rows.sort((x,y) => order * (sortFunc(x) - sortFunc(y)));
                     break;
                 default:
                     return null;
@@ -211,50 +211,76 @@ var sortedDistributionComponent = {
     }
 };
 
-var colSliderComponent = function (perpage) {
-    return {
-        data: function () {
+var colSliderComponent = function (perpage, names = null) {
+    let data;
+    let methods;
+    if (names !== null) {
+        data = function () {
+            let res = {};
+            for (let i = 0; i < names.length; i++) {
+                res[names[i] + "ColStructure"] = {
+                    offset: 0,
+                    perpage: perpage,
+                };
+            }
+            return res;
+        };
+        methods = {};
+        for (let i = 0; i < names.length; i++) {
+            methods["isIn" + names[i][0].toUpperCase() + names[i].slice(1) + "ColPage"] = function (index) {
+                return (
+                    index >= this[names[i] + "ColStructure"].offset &&
+                    index < this[names[i] + "ColStructure"].offset + this[names[i] + "ColStructure"].perpage
+                );
+            }
+        }
+    } else {
+        data = function () {
             return {
                 colStructure: {
                     offset: 0,
-                    perpage: perpage
+                    perpage: perpage,
                 },
             };
-        },
-        methods: {
+        };
+        methods = {
             isInColPage: function (index) {
                 return (
                     index >= this.colStructure.offset &&
                     index < this.colStructure.offset + this.colStructure.perpage
                 );
             },
-        },
+        }
+    }
+    return {
+        data: data,
+        methods: methods
     };
 };
 
 var rowSliderComponent = function (perpage) {
     return {
-        data: function () {
-            return {
-                rowStructure: {
-                    offset: 0,
-                    perpage: perpage
-                },
-            };
+      data: function () {
+        return {
+          rowStructure: {
+              offset: 0,
+              perpage: perpage
+          },
+        };
+      },
+      methods: {
+        isInRowPage: function (index) {
+          return (
+            index >= this.rowStructure.offset &&
+            index < this.rowStructure.offset + this.rowStructure.perpage
+          );
         },
-        methods: {
-            isInRowPage: function (index) {
-                return (
-                    index >= this.rowStructure.offset &&
-                    index < this.rowStructure.offset + this.rowStructure.perpage
-                );
-            },
-        },
+      },
     };
-};
+  };
 
 // Requires graphComponent and damageGraphComponent
-var targetTabGraphComponent = {
+var targetTabGraphComponent = {   
     data: function () {
         return {
             targetOffset: 0
@@ -373,7 +399,7 @@ var targetTabGraphComponent = {
             }
             return res;
         },
-        rotationData: function () {
+        rotationData: function() {
             return this.target.details.rotation[this.phaseindex];
         }
     },
@@ -401,7 +427,7 @@ var targetTabGraphComponent = {
             }
             var dpsData = this.computeDPSData();
             var res = [dpsData.dps];
-            addPointsToGraph(res, this.healthStates, dpsData.maxDPS);
+            addPointsToGraph(res, this.healthStates, dpsData.maxDPS);               
             addPointsToGraph(res, this.barrierStates, dpsData.maxDPS);
             addPointsToGraph(res, this.breakbarStates, dpsData.maxDPS);
             this.dataCache.set(cacheID, res);

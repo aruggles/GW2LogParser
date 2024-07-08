@@ -2,9 +2,13 @@
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Base class for Players and NPCs
+    /// </summary>
+    /// <seealso cref="JsonPlayer"/> 
+    /// <seealso cref="JsonNPC"/>
     public abstract class JsonActor
     {
-
         /// <summary>
         /// Name of the actor
         /// </summary>
@@ -30,7 +34,7 @@ namespace Gw2LogParser.GW2EIBuilders
         /// </summary>
         public uint Toughness { get; set; }
         /// <summary>
-        /// Height of the hitbox
+        /// Height of the hitbox, please not that the center of the box is at the feet of the agent
         /// </summary>
         public uint HitboxHeight { get; set; }
         /// <summary>
@@ -41,6 +45,7 @@ namespace Gw2LogParser.GW2EIBuilders
         /// ID of the actor in the instance
         /// </summary>
         public ushort InstanceID { get; set; }
+
         /// <summary>
         /// The team ID of the actor. \n
         /// Mainly useful for WvW logs to differentiate targets from different servers. \n

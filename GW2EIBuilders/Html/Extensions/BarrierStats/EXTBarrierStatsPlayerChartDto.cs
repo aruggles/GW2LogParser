@@ -1,14 +1,14 @@
-﻿using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class EXTBarrierStatsPlayerChartDto
     {
         public PlayerDamageChartDto<int> Barrier { get; }
 
-        private EXTBarrierStatsPlayerChartDto(ParsedLog log, PhaseData phase, AbstractSingleActor p)
+        private EXTBarrierStatsPlayerChartDto(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor p)
         {
             Barrier = new PlayerDamageChartDto<int>()
             {
@@ -21,7 +21,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        public static List<EXTBarrierStatsPlayerChartDto> BuildPlayersBarrierGraphData(ParsedLog log, PhaseData phase)
+        public static List<EXTBarrierStatsPlayerChartDto> BuildPlayersBarrierGraphData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<EXTBarrierStatsPlayerChartDto>();
 

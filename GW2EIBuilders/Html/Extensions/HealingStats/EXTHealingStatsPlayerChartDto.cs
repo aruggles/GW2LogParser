@@ -1,9 +1,9 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class EXTHealingStatsPlayerChartDto
     {
@@ -12,7 +12,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public PlayerDamageChartDto<int> ConversionBasedHealing { get; }
         //public PlayerDamageChartDto<int> HybridHealing { get; }
 
-        private EXTHealingStatsPlayerChartDto(ParsedLog log, PhaseData phase, AbstractSingleActor p)
+        private EXTHealingStatsPlayerChartDto(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor p)
         {
             Healing = new PlayerDamageChartDto<int>()
             {
@@ -62,7 +62,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        public static List<EXTHealingStatsPlayerChartDto> BuildPlayersHealingGraphData(ParsedLog log, PhaseData phase)
+        public static List<EXTHealingStatsPlayerChartDto> BuildPlayersHealingGraphData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<EXTHealingStatsPlayerChartDto>();
 

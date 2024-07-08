@@ -2,6 +2,9 @@
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Combat Replay meta data
+    /// </summary>
     public class JsonCombatReplayMetaData
     {
         /// <summary>

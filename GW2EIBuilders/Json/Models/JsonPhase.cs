@@ -30,6 +30,12 @@ namespace Gw2LogParser.GW2EIBuilders
         public IReadOnlyList<int> Targets { get; set; }
 
         /// <summary>
+        /// Index of secondary targets tracked during the phase
+        /// </summary>
+        /// <seealso cref="JsonLog.Targets"/>
+        public IReadOnlyList<int> SecondaryTargets { get; set; }
+
+        /// <summary>
         /// Index of sub phases
         /// </summary>
         /// <seealso cref="JsonLog.Phases"/>

@@ -1,6 +1,6 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public double Percent { get; set; }
         public double HpLeft { get; set; }
 
-        public TargetDto(AbstractSingleActor target, ParsedLog log, ActorDetailsDto details) : base(target, log, details)
+        public TargetDto(AbstractSingleActor target, ParsedEvtcLog log, ActorDetailsDto details) : base(target, log, details)
         {
             HbHeight = target.HitboxHeight;
             HbWidth = target.HitboxWidth;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using static System.Net.WebRequestMethods;
 using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.ParserHelpers
@@ -19,6 +20,26 @@ namespace GW2EIEvtcParser.ParserHelpers
         /// Generic enemy icon.
         /// </summary>
         public const string GenericEnemyIcon = "https://i.imgur.com/ZnFcOIA.png";
+
+        /// <summary>
+        /// Generic blue arrow pointing upwards.
+        /// </summary>
+        public const string GenericBlueArrowUp = "https://i.imgur.com/0EnjyQX.png";
+
+        /// <summary>
+        /// Generic Green arrow pointing upwards.
+        /// </summary>
+        public const string GenericGreenArrowUp = "https://i.imgur.com/Nlu3u04.png";
+
+        /// <summary>
+        /// Generic Red arrow pointing upwards.
+        /// </summary>
+        public const string GenericRedArrowUp = "https://i.imgur.com/hCrbYA6.png";
+
+        /// <summary>
+        /// Generic Purple arrow pointing upwards.
+        /// </summary>
+        public const string GenericPurpleArrowUp = "https://i.imgur.com/DBq6i0R.png";
 
         // High Resolution Icons 200px
         private const string HighResUntamed = "https://wiki.guildwars2.com/images/3/33/Untamed_tango_icon_200px.png";
@@ -65,7 +86,7 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string BaseResRanger = "https://wiki.guildwars2.com/images/4/43/Ranger_tango_icon_20px.png";
         private const string BaseResMechanist = "https://wiki.guildwars2.com/images/thumb/8/8a/Mechanist_tango_icon_200px.png/20px-Mechanist_tango_icon_200px.png";
         private const string BaseResHolosmith = "https://wiki.guildwars2.com/images/2/28/Holosmith_tango_icon_20px.png";
-        private const string BaseResScrapper = "https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png";
+        private const string BaseResScrapper = "https://wiki.guildwars2.com/images/b/be/Scrapper_tango_icon_20px.png";
         private const string BaseResEngineer = "https://wiki.guildwars2.com/images/2/27/Engineer_tango_icon_20px.png";
         private const string BaseResSpecter = "https://wiki.guildwars2.com/images/5/5c/Specter_tango_icon_20px.png";
         private const string BaseResDeadeye = "https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png";
@@ -164,6 +185,8 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string TargetPrototypeArsenite = "https://i.imgur.com/tSD5Phl.png";
         private const string TargetPrototypeIndigo = "https://i.imgur.com/DRdLQSr.png";
         private const string TargetKanaxai = "https://i.imgur.com/AxKZDs8.png";
+        private const string TargetDagda = "https://i.imgur.com/k6rQdML.png";
+        private const string TargetCerus = "https://i.imgur.com/wDdN8O3.png";
 
         // Trash NPC Icons
         private const string TrashCanach = "https://i.imgur.com/UuxqFko.png";
@@ -241,8 +264,10 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string TrashHandOfErosionEruption = "https://i.imgur.com/reGQHhr.png";
         private const string TrashVoltaicWisp = "https://i.imgur.com/C1mvNGZ.png";
         private const string TrashParalyzingWisp = "https://i.imgur.com/YBl8Pqo.png";
-        private const string TrashHostilePeerlessQadimPylon = "https://i.imgur.com/b33vAEQ.png";
+        private const string TrashPeerlessQadimPylon = "https://i.imgur.com/Db5Pi3b.png";
+        private const string TrashPeerlessQadimAuraPylon = "https://i.imgur.com/ojjQQlR.png";
         private const string TrashEntropicDistortion = "https://i.imgur.com/MIpP5pK.png";
+        private const string TrashGiantQadimThePeerless = "https://i.imgur.com/qRhJSgR.png";
         private const string TrashSmallJumpyTornado = "https://i.imgur.com/WBJNgp7.png";
         private const string TrashOrbSpider = "https://i.imgur.com/FB5VM9X.png";
         private const string TrashSeekers = "https://i.imgur.com/FrPoluz.png";
@@ -297,7 +322,8 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string TrashTheMindblade = "https://i.imgur.com/KyMgGQD.png";
         private const string TrashTheRitualist = "https://i.imgur.com/gG5p3Hz.png";
         private const string TrashTheSniper = "https://i.imgur.com/RWIjUoe.png";
-        private const string TrashVoidAmalgamate = "https://i.imgur.com/BuKbosz.png";
+        private const string TrashPushableVoidAmalgamate = "https://i.imgur.com/BuKbosz.png";
+        private const string TrashKillableVoidAmalgamate = "https://i.imgur.com/fSFEiPm.png";
         private const string TrashKraitHallucination = "https://i.imgur.com/JtISLvT.png";
         private const string TrashQuagganHallucination = "https://i.imgur.com/8dHLEfj.png";
         private const string TrashLichHallucination = "https://i.imgur.com/IXKqCYT.png";
@@ -345,6 +371,19 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string TrashTheMossman = "https://i.imgur.com/jwFEGFA.png";
         private const string TrashJadeMawTentacle = "https://i.imgur.com/SfB9gJG.png";
         private const string TrashInspectorEllenKiel = "https://i.imgur.com/TyYmSnn.png";
+        private const string TrashSpiritOfDestructionOrPain = "https://i.imgur.com/mKJ8X8k.png";
+        private const string TrashTheTormented = "https://i.imgur.com/kEytVae.png";
+        private const string TrashSoulFeast = "https://i.imgur.com/iNp5Rnx.png";
+        private const string TrashSnowPile = "https://i.imgur.com/uku1klD.png";
+        private const string TrashCage = "https://i.imgur.com/W9Z0roU.png";
+        private const string TrashBombs = "https://i.imgur.com/fV8psEZ.png";
+        private const string TrashGravityBall = "https://i.imgur.com/7zm0q8A.png";
+        private const string TrashCerusDespair = "https://i.imgur.com/A5ORL5I.png";
+        private const string TrashCerusEnvy = "https://i.imgur.com/pncZoZZ.png";
+        private const string TrashCerusGluttony = "https://i.imgur.com/Hsturw6.png";
+        private const string TrashCerusMalice = "https://i.imgur.com/13Z3dNF.png";
+        private const string TrashCerusRage = "https://i.imgur.com/L0v8Goe.png";
+        private const string TrashCerusRegret = "https://i.imgur.com/jZdx74j.png";
 
         // Minion NPC Icons
         private const string MinionHoundOfBalthazar = "https://i.imgur.com/FFSYrzL.png";
@@ -443,6 +482,7 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string MinionJuvenileWhiteTiger = "https://i.imgur.com/B6wtfhQ.png";
         private const string MinionJuvenileWolf = "https://i.imgur.com/GQLiFky.png";
         private const string MinionJuvenileHyena = "https://i.imgur.com/XtYVyhH.png";
+        private const string MinionJuvenileAetherHunter = "https://i.imgur.com/qMVHHki.png";
         private const string MinionBloodFiend = "https://i.imgur.com/PrOpULe.png";
         private const string MinionBoneFiend = "https://i.imgur.com/BEntBIt.png";
         private const string MinionFleshGolem = "https://i.imgur.com/JkYUNug.png";
@@ -475,6 +515,168 @@ namespace GW2EIEvtcParser.ParserHelpers
         private const string MinionSousChef = "https://i.imgur.com/dcBeQep.png";
         private const string MinionSunspreadParagon = "https://i.imgur.com/QXbFenF.png";
         private const string MinionRavenSpiritShadow = "https://i.imgur.com/dbLzIiY.png";
+
+        // Portal icons
+        internal const string PortalMesmerEntre = "https://i.imgur.com/TILHQ1u.png";
+        internal const string PortalMesmerExeunt = "https://i.imgur.com/7gsObHV.png";
+        internal const string PortalShadowPortalPrepare = "https://i.imgur.com/oDpQcea.png";
+        internal const string PortalShadowPortalOpen = "https://i.imgur.com/P7YI6am.png";
+        internal const string PortalSandswell = "https://i.imgur.com/15kzkcj.png";
+        internal const string PortalWhiteMantleItem = "https://i.imgur.com/FcO9n7c.png";
+        internal const string PortalWhiteMantleSkill = "https://i.imgur.com/qf99SF9.png";
+        internal const string PortalDimensionalAperture = "https://i.imgur.com/kzbkWov.png";
+
+        // Skill effect decoration icons
+        internal const string EffectCorrosivePoisonCloud = "https://i.imgur.com/tzUFm6G.png";
+        internal const string EffectThunderclap = "https://i.imgur.com/uaTRWqN.png";
+        internal const string EffectFunctionGyro = "https://i.imgur.com/HFg6kXZ.png";
+        internal const string EffectDefenseField = "https://i.imgur.com/AwZ1O8O.png";
+        internal const string EffectFeedback = "https://i.imgur.com/S5mXVxy.png";
+        internal const string EffectBarrage = "https://i.imgur.com/8XZHYwx.png";
+        internal const string EffectBonfire = "https://i.imgur.com/khgHSD5.png";
+        internal const string EffectFlameTrap = "https://i.imgur.com/Z0hDXFW.png";
+        internal const string EffectFrostTrap = "https://i.imgur.com/gW8yg4G.png";
+        internal const string EffectSpikeTrap = "https://i.imgur.com/sHgsGxe.png";
+        internal const string EffectVipersNest = "https://i.imgur.com/M7imyZL.png";
+        internal const string EffectHunkerDown = "https://i.imgur.com/KkFFoJa.png";
+        internal const string EffectInspiringReinforcement = "https://i.imgur.com/OItlXSb.png";
+        internal const string EffectLineOfWarding = "https://i.imgur.com/XSix0GV.png";
+        internal const string EffectShade = "https://i.imgur.com/tIBkK5d.png";
+        internal const string EffectNullField = "https://i.imgur.com/wwaavul.png";
+        internal const string EffectPlaguelands = "https://i.imgur.com/FsENhPT.png";
+        internal const string EffectRainOfSwords = "https://i.imgur.com/BITK6dS.png";
+        internal const string EffectRingOfWarding = "https://i.imgur.com/TK6tL8x.png";
+        internal const string EffectSanctuary = "https://i.imgur.com/odR5akI.png";
+        internal const string EffectSealArea = "https://i.imgur.com/OXGdr7m.png";
+        internal const string EffectShadowRefuge = "https://i.imgur.com/ghU8kz0.png";
+        internal const string EffectShieldOfTheAvenger = "https://i.imgur.com/O6cTek5.png";
+        internal const string EffectSublimeConversion = "https://i.imgur.com/RhNsDFz.png";
+        internal const string EffectThousandCuts = "https://i.imgur.com/5Fll0GH.png";
+        internal const string EffectValiantBulwark = "https://i.imgur.com/cQCtl85.png";
+        internal const string EffectVeil = "https://i.imgur.com/k8sVoEk.png";
+        internal const string EffectWallOfReflection = "https://i.imgur.com/dc81qhc.png";
+        internal const string EffectWellOfBlood = "https://i.imgur.com/j9JBLJO.png";
+        internal const string EffectWellOfCorruption = "https://i.imgur.com/agcWjKA.png";
+        internal const string EffectWellOfDarkness = "https://i.imgur.com/hfaRt5e.png";
+        internal const string EffectWellOfSuffering = "https://i.imgur.com/PPnNujO.png";
+        internal const string EffectWindsOfDisenchantment = "https://i.imgur.com/IAW0hFN.png";
+        internal const string EffectProtectiveSolace = "https://i.imgur.com/uBO48eB.png";
+        internal const string EffectWellOfGloom = "https://i.imgur.com/k4RSbxD.png";
+        internal const string EffectWellOfBounty = "https://i.imgur.com/ZgKMlgA.png";
+        internal const string EffectWellOfTears = "https://i.imgur.com/pbCS8tn.png";
+        internal const string EffectWellOfSilence = "https://i.imgur.com/ZQxshJM.png";
+        internal const string EffectWellOfSorrow = "https://i.imgur.com/B2gQzkY.png";
+        internal const string EffectShadowfall = "https://i.imgur.com/SfRb7bC.png";
+        internal const string EffectWellOfEternity = "https://i.imgur.com/TPisxaE.png";
+        internal const string EffectWellOfAction = "https://i.imgur.com/YnwzegV.png";
+        internal const string EffectWellOfCalamity = "https://i.imgur.com/ZrYTFnd.png";
+        internal const string EffectWellOfPrecognition = "https://i.imgur.com/ECcw4jT.png";
+        internal const string EffectWellOfSenility = "https://i.imgur.com/TyNZ8EN.png";
+        internal const string EffectGravityWell = "https://i.imgur.com/wtdZPRo.png";
+        internal const string EffectVitalDraw = "https://i.imgur.com/v0FW8mn.png";
+        internal const string EffectMarkOfBlood = "https://i.imgur.com/RXSaEJE.png";
+        internal const string EffectChillblains = "https://i.imgur.com/ViOzLNe.png";
+        internal const string EffectMarkOfBloodOrChillblains = "https://i.imgur.com/dAPDUFm.png";
+        internal const string EffectPutridMark = "https://i.imgur.com/wJ3V2Fm.png";
+        internal const string EffectReapersMark = "https://i.imgur.com/85VAsHR.png";
+        internal const string EffectMeteorShower = "https://i.imgur.com/ENXoZja.png";
+        internal const string EffectStaticField = "https://i.imgur.com/XixW4Ae.png";
+        internal const string EffectOverloadFire = "https://i.imgur.com/K34TWxW.png";
+        internal const string EffectOverloadAir = "https://i.imgur.com/VwMTUTD.png";
+        internal const string EffectUpdraft = "https://i.imgur.com/LQSmmJ1.png";
+        internal const string EffectFirestormGlyphOrFieryGreatsword = "https://i.imgur.com/BpsVQir.png";
+        internal const string EffectFirestormFieryGreatsword = "https://i.imgur.com/YuYYuGW.png";
+        internal const string EffectFirestormGlyph = "https://i.imgur.com/677TYqA.png";
+        internal const string EffectGeyser = "https://i.imgur.com/4h9HaFh.png";
+        internal const string EffectDeployJadeSphereFire = "https://i.imgur.com/qdkoYap.png";
+        internal const string EffectDeployJadeSphereWater = "https://i.imgur.com/xy0SAxK.png";
+        internal const string EffectDeployJadeSphereAir = "https://i.imgur.com/SvUQmyj.png";
+        internal const string EffectDeployJadeSphereEarth = "https://i.imgur.com/KG8ysd9.png";
+
+        // Overhead icons
+        // - Fixations
+        internal const string FixationBlueOverhead = "https://i.imgur.com/EUoDTln.png";
+        internal const string FixationGreenOverhead = "https://i.imgur.com/cDmJWrY.png";
+        internal const string FixationPurpleOverhead = "https://i.imgur.com/UImUF0H.png";
+        internal const string FixationRedOverhead = "https://i.imgur.com/wIYRfY6.png";
+        internal const string FixationYellowOverhead = "https://i.imgur.com/FAPQufJ.png";
+        // - Squad Markers
+        internal const string ArrowSquadMarkerOverhead = "https://wiki.guildwars2.com/images/e/ef/Commander_arrow_marker.png";
+        internal const string CircleSquadMarkerOverhead = "https://wiki.guildwars2.com/images/6/60/Commander_circle_marker.png";
+        internal const string HeartSquadMarkerOverhead = "https://wiki.guildwars2.com/images/3/32/Commander_heart_marker.png";
+        internal const string SwirlSquadMarkerOverhead = "https://wiki.guildwars2.com/images/0/00/Commander_spiral_marker.png";
+        internal const string SquareSquadMarkerOverhead = "https://wiki.guildwars2.com/images/0/01/Commander_square_marker.png";
+        internal const string StarSquadMarkerOverhead = "https://wiki.guildwars2.com/images/3/31/Commander_star_marker.png";
+        internal const string TriangleSquadMarkerOverhead = "https://wiki.guildwars2.com/images/e/ea/Commander_triangle_marker.png";
+        internal const string XSquadMarkerOverhead = "https://wiki.guildwars2.com/images/b/b9/Commander_x_marker.png";
+        // - Commander Tags
+        internal const string BlueCommanderTagOverhead = "https://wiki.guildwars2.com/images/5/54/Commander_tag_%28blue%29.png";
+        internal const string CyanCommanderTagOverhead = "https://wiki.guildwars2.com/images/2/2b/Commander_tag_%28cyan%29.png";
+        internal const string GreenCommanderTagOverhead = "https://wiki.guildwars2.com/images/5/5e/Commander_tag_%28green%29.png";
+        internal const string PinkCommanderTagOverhead = "https://wiki.guildwars2.com/images/b/ba/Commander_tag_%28magenta%29.png";
+        internal const string OrangeCommanderTagOverhead = "https://wiki.guildwars2.com/images/1/1c/Commander_tag_%28orange%29.png";
+        internal const string PurpleCommanderTagOverhead = "https://wiki.guildwars2.com/images/c/cb/Commander_tag_%28purple%29.png";
+        internal const string RedCommanderTagOverhead = "https://wiki.guildwars2.com/images/4/40/Commander_tag_%28red%29.png";
+        internal const string WhiteCommanderTagOverhead = "https://wiki.guildwars2.com/images/f/f1/Commander_tag_%28white%29.png";
+        internal const string YellowCommanderTagOverhead = "https://wiki.guildwars2.com/images/c/cb/Commander_tag_%28yellow%29.png";
+        // - Catmander Tags
+        internal const string BlueCatmanderTagOverhead = "https://wiki.guildwars2.com/images/1/16/Catmander_tag_%28blue%29.png";
+        internal const string CyanCatmanderTagOverhead = "https://wiki.guildwars2.com/images/9/9d/Catmander_tag_%28cyan%29.png";
+        internal const string GreenCatmanderTagOverhead = "https://wiki.guildwars2.com/images/f/fd/Catmander_tag_%28green%29.png";
+        internal const string PinkCatmanderTagOverhead = "https://wiki.guildwars2.com/images/9/94/Catmander_tag_%28magenta%29.png";
+        internal const string OrangeCatmanderTagOverhead = "https://wiki.guildwars2.com/images/2/2a/Catmander_tag_%28orange%29.png";
+        internal const string PurpleCatmanderTagOverhead = "https://wiki.guildwars2.com/images/f/ff/Catmander_tag_%28purple%29.png";
+        internal const string RedCatmanderTagOverhead = "https://wiki.guildwars2.com/images/5/59/Catmander_tag_%28red%29.png";
+        internal const string WhiteCatmanderTagOverhead = "https://wiki.guildwars2.com/images/5/51/Catmander_tag_%28white%29.png";
+        internal const string YellowCatmanderTagOverhead = "https://wiki.guildwars2.com/images/a/a3/Catmander_tag_%28yellow%29.png";
+        // - Miscellaneous
+        internal const string RedArrowOverhead = "https://wiki.guildwars2.com/images/3/33/Generic_red_arrow_down.png";
+        internal const string EnragedOverhead = "https://wiki.guildwars2.com/images/thumb/8/8e/Enraged_%28overhead_icon%29.png/120px-Enraged_%28overhead_icon%29.png";
+        internal const string BombOverhead = "https://wiki.guildwars2.com/images/d/da/Bomb_%28overhead_icon%29.png";
+        internal const string VolatilePoisonOverhead = "https://wiki.guildwars2.com/images/d/db/Volatile_Poison_IG.png";
+        internal const string UnbalancedOverhead = "https://wiki.guildwars2.com/images/0/0e/Unbalanced_%28overhead_icon%29.png";
+        internal const string RadiantAttunementOverhead = "https://wiki.guildwars2.com/images/c/ce/Radiant_Attunement_overhead_icon.png";
+        internal const string CrimsonAttunementOverhead = "https://wiki.guildwars2.com/images/1/13/Crimson_Attunement_overhead_icon.png";
+        internal const string TearInstabilityOverhead = "https://wiki.guildwars2.com/images/7/7d/Tear_Instability_%28overhead_icon%29.png";
+        internal const string TidalPoolOverhead = "https://wiki.guildwars2.com/images/e/e7/Tidal_Pool_%28overhead_icon%29.png";
+        internal const string SkullOverhead = "https://wiki.guildwars2.com/images/f/f6/Jade_Maw_agony_attack.png";
+        internal const string PowerOfTheVoidOverhead = "https://wiki.guildwars2.com/images/f/f4/Power_of_the_Void_%28overhead_icon%29.png";
+        internal const string SpectralDarknessOverhead = "https://wiki.guildwars2.com/images/f/f6/Spectral_Darkness_%28overhead_icon%29.png";
+        internal const string CorruptionOverhead = "https://wiki.guildwars2.com/images/2/2d/Disarm_Poison_Gas_Mine.png";
+        internal const string ConjuredShieldEmptyOverhead = "https://wiki.guildwars2.com/images/4/41/Conjured_Shield_%28overhead_icon%29.png";
+        internal const string GreatswordPowerEmptyOverhead = "https://wiki.guildwars2.com/images/c/c1/Greatsword_Power_%28overhead_icon%29.png";
+        internal const string EyeOverhead = "https://i.imgur.com/OBfLywE.png";
+        internal const string CallTarget = "https://wiki.guildwars2.com/images/e/e9/Call_Target.png";
+        internal const string TargetOverhead = "https://wiki.guildwars2.com/images/9/96/Targeted_%28Vishen_Steelshot%29.png";
+        // - Bomb Timer
+        internal const string BombTimerEmptyOverhead = "https://wiki.guildwars2.com/images/a/a0/Timer_empty_%28overhead_icon%29.png";
+        internal const string BombTimerFullOverhead = "https://wiki.guildwars2.com/images/d/d9/Timer_full_%28overhead_icon%29.png";
+        // - Madness
+        internal const string MadnessSilverOverhead = "https://wiki.guildwars2.com/images/a/a8/Madness_%28overhead_icon_silver%29.png";
+        internal const string MadnessGoldOverhead = "https://wiki.guildwars2.com/images/c/ce/Madness_%28overhead_icon_gold%29.png";
+        internal const string MadnessRedOverhead = "https://wiki.guildwars2.com/images/f/f4/Madness_%28overhead_icon_red%29.png";
+        // - Derangement
+        internal const string DerangementSilverOverhead = "https://wiki.guildwars2.com/images/4/44/Derangement_%28overhead_icon_white%29.png";
+        internal const string DerangementGoldOverhead = "https://wiki.guildwars2.com/images/c/cb/Derangement_%28overhead_icon_yellow%29.png";
+        internal const string DerangementRedOverhead = "https://wiki.guildwars2.com/images/a/a1/Derangement_%28overhead_icon_red%29.png";
+        // - Sensors
+        internal const string SensorBlueOverhead = "https://wiki.guildwars2.com/images/a/aa/Sensor_Tracking_icon_%28blue%29.png";
+        internal const string SensorGreenOverhead = "https://wiki.guildwars2.com/images/1/18/Sensor_Tracking_icon_%28green%29.png";
+        internal const string SensorRedOverhead = "https://wiki.guildwars2.com/images/3/38/Sensor_Tracking_icon_%28red%29.png";
+        // - Target Orders
+        internal const string TargetOrder1Overhead = "https://wiki.guildwars2.com/images/6/6f/Target_Order-1_%28overhead_icon%29.png";
+        internal const string TargetOrder2Overhead = "https://wiki.guildwars2.com/images/8/87/Target_Order-2_%28overhead_icon%29.png";
+        internal const string TargetOrder3Overhead = "https://wiki.guildwars2.com/images/d/d8/Target_Order-3_%28overhead_icon%29.png";
+        internal const string TargetOrder4Overhead = "https://wiki.guildwars2.com/images/c/c6/Target_Order-4_%28overhead_icon%29.png";
+        internal const string TargetOrder5Overhead = "https://wiki.guildwars2.com/images/4/47/Target_Order-5_%28overhead_icon%29.png";
+
+        // NPC / Gadgets Icons not private
+        internal const string DhuumPlayerSoul = "https://i.imgur.com/rAyuxqS.png";
+
+        // - Other
+        internal const string QadimPlatform = "https://i.imgur.com/DbXr5Fo.png";
+
+        internal const string NoImage = "";
 
         /// <summary>
         /// Dictionary matching a <see cref="Spec"/> to their high resolution profession icon.
@@ -649,6 +851,8 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TargetID.PrototypeIndigo, TargetPrototypeIndigo },
             { ArcDPSEnums.TargetID.PrototypeIndigoCM, TargetPrototypeIndigo },
             { ArcDPSEnums.TargetID.KanaxaiScytheOfHouseAurkusCM, TargetKanaxai },
+            { ArcDPSEnums.TargetID.Dagda, TargetDagda },
+            { ArcDPSEnums.TargetID.Cerus, TargetCerus },
         };
 
         /// <summary>
@@ -695,6 +899,7 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.Messenger, TrashTormentedDeadMessenger },
             { ArcDPSEnums.TrashID.Enforcer, TrashEnforcer },
             { ArcDPSEnums.TrashID.Echo, TrashEcho },
+            { ArcDPSEnums.TrashID.YourSoul, DhuumPlayerSoul },
             { ArcDPSEnums.TrashID.KeepConstructCore, TrashKeepConstructCoreExquisiteConjunction },
             { ArcDPSEnums.TrashID.ExquisiteConjunction, TrashKeepConstructCoreExquisiteConjunction },
             { ArcDPSEnums.TrashID.Jessica, TrashKeepConstructGhosts },
@@ -714,6 +919,8 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.IcePatch, TrashIcePatch },
             { ArcDPSEnums.TrashID.BanditSaboteur, TrashBanditSaboteur },
             { ArcDPSEnums.TrashID.NarellaTornado, TrashTornado },
+            { ArcDPSEnums.TrashID.Cage, TrashCage },
+            { ArcDPSEnums.TrashID.Bombs, TrashBombs },
             { ArcDPSEnums.TrashID.Tornado, TrashTornado },
             { ArcDPSEnums.TrashID.Jade, TrashJade },
             { ArcDPSEnums.TrashID.AngryZommoros, TrashAngryChillZommoros },
@@ -731,6 +938,7 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.GreaterMagmaElemental2, TrashGreaterMagmaElemental },
             { ArcDPSEnums.TrashID.LavaElemental1, TrashLavaElemental },
             { ArcDPSEnums.TrashID.LavaElemental2, TrashLavaElemental },
+            { ArcDPSEnums.TrashID.QadimPlatform, NoImage},
             { ArcDPSEnums.TrashID.PyreGuardian, TrashPyreGuardianKillerTornado },
             { ArcDPSEnums.TrashID.SmallKillerTornado, TrashPyreGuardianKillerTornado},
             { ArcDPSEnums.TrashID.BigKillerTornado, TrashPyreGuardianKillerTornado },
@@ -741,6 +949,7 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.PyreGuardianResolution, TrashPyreGuardianResolution },
             { ArcDPSEnums.TrashID.PyreGuardianStab, TrashPyreGuardianStab },
             { ArcDPSEnums.TrashID.PyreGuardianProtect, TrashPyreGuardianProtect },
+            { ArcDPSEnums.TrashID.SabirPlatform, NoImage},
             { ArcDPSEnums.TrashID.ReaperOfFlesh, TrashReaperofFlesh },
             { ArcDPSEnums.TrashID.Kernan, TrashKernan },
             { ArcDPSEnums.TrashID.Knuckles, TrashKnuckles },
@@ -805,15 +1014,19 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.ReanimatedSpite, TrashReanimatedSpite },
             { ArcDPSEnums.TrashID.SanctuaryPrism, TrashSanctuaryPrism },
             { ArcDPSEnums.TrashID.VoidBrandstalker, TrashGenericRedEnemySkull },
-            { ArcDPSEnums.TrashID.SpiritOfDestruction, TrashGenericRedEnemySkull },
-            { ArcDPSEnums.TrashID.SpiritOfPain, TrashGenericRedEnemySkull },
+            { ArcDPSEnums.TrashID.SpiritOfDestruction, TrashSpiritOfDestructionOrPain },
+            { ArcDPSEnums.TrashID.SpiritOfPain, TrashSpiritOfDestructionOrPain },
             { ArcDPSEnums.TrashID.DragonEnergyOrb, TrashGenericRedEnemySkull },
             { ArcDPSEnums.TrashID.HandOfErosion, TrashHandOfErosionEruption },
             { ArcDPSEnums.TrashID.HandOfEruption, TrashHandOfErosionEruption },
             { ArcDPSEnums.TrashID.VoltaicWisp, TrashVoltaicWisp },
             { ArcDPSEnums.TrashID.ParalyzingWisp, TrashParalyzingWisp },
-            { ArcDPSEnums.TrashID.HostilePeerlessQadimPylon, TrashHostilePeerlessQadimPylon },
+            { ArcDPSEnums.TrashID.PeerlessQadimPylon, TrashPeerlessQadimPylon },
+            //{ ArcDPSEnums.TrashID.PeerlessQadimAuraPylon, TrashPeerlessQadimAuraPylon },
             { ArcDPSEnums.TrashID.EntropicDistortion, TrashEntropicDistortion },
+            //{ ArcDPSEnums.TrashID.Brandstorm, GenericEnemyIcon },
+            { ArcDPSEnums.TrashID.GiantQadimThePeerless, TrashGiantQadimThePeerless },
+            //{ ArcDPSEnums.TrashID.DummyPeerlessQadim, GenericEnemyIcon },
             { ArcDPSEnums.TrashID.SmallJumpyTornado, TrashSmallJumpyTornado },
             { ArcDPSEnums.TrashID.OrbSpider, TrashOrbSpider },
             { ArcDPSEnums.TrashID.Seekers, TrashSeekers },
@@ -832,23 +1045,25 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.VigilTactician, TrashGenericFriendlyTarget },
             { ArcDPSEnums.TrashID.Prisoner1, TrashGenericFriendlyTarget },
             { ArcDPSEnums.TrashID.Prisoner2, TrashGenericFriendlyTarget },
-            { ArcDPSEnums.TrashID.FriendlyPeerlessQadimPylon, TrashGenericFriendlyTarget },
             { ArcDPSEnums.TrashID.Mine, TrashMine },
             { ArcDPSEnums.TrashID.FleshWurm, TrashFleshWurm },
             { ArcDPSEnums.TrashID.Hands, TrashHands },
-            { ArcDPSEnums.TrashID.TemporalAnomaly, TrashTemporalAnomaly },
-            { ArcDPSEnums.TrashID.TemporalAnomaly2, TrashTemporalAnomaly },
+            { ArcDPSEnums.TrashID.TemporalAnomalyArtsariiv, TrashTemporalAnomaly },
+            { ArcDPSEnums.TrashID.TemporalAnomalyArkk, TrashTemporalAnomaly },
             { ArcDPSEnums.TrashID.DOC, TrashDOC_BLIGHT_PLINK_CHOP },
             { ArcDPSEnums.TrashID.BLIGHT, TrashDOC_BLIGHT_PLINK_CHOP },
             { ArcDPSEnums.TrashID.PLINK, TrashDOC_BLIGHT_PLINK_CHOP },
             { ArcDPSEnums.TrashID.CHOP, TrashDOC_BLIGHT_PLINK_CHOP },
             { ArcDPSEnums.TrashID.Archdiviner, TrashArchdiviner },
             { ArcDPSEnums.TrashID.EliteBrazenGladiator, TrashEliteBrazenGladiator },
-            { ArcDPSEnums.TrashID.Fanatic, TrashFanatic },
+            { ArcDPSEnums.TrashID.FanaticDagger1, TrashFanatic },
+            { ArcDPSEnums.TrashID.FanaticDagger2, TrashFanatic },
+            { ArcDPSEnums.TrashID.FanaticBow, TrashFanatic },
             { ArcDPSEnums.TrashID.FreeziesFrozenHeart, TrashFreeziesFrozenHeart },
             { ArcDPSEnums.TrashID.IceSpiker, TrashIceSpiker },
             { ArcDPSEnums.TrashID.IceStormer, TrashIceElemental },
             { ArcDPSEnums.TrashID.IcyProtector, TrashIcyProtector },
+            { ArcDPSEnums.TrashID.SnowPile, TrashSnowPile },
             { ArcDPSEnums.TrashID.RiverOfSouls, TrashRiverOfSouls },
             { ArcDPSEnums.TrashID.WargBloodhound, TrashWargBloodhound },
             { ArcDPSEnums.TrashID.CrimsonMcLeod, TrashCrimsonMcLeod },
@@ -896,6 +1111,8 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.VoidSkullpiercer, TrashVoidSkullpiercer },
             { ArcDPSEnums.TrashID.VoidTimeCaster, TrashVoidTimeCaster },
             { ArcDPSEnums.TrashID.VoidTimeCaster2, TrashVoidTimeCaster },
+            { ArcDPSEnums.TrashID.GravityBall, TrashGravityBall },
+            { ArcDPSEnums.TrashID.JormagMovingFrostBeam, TrashGenericRedEnemySkull },
             { ArcDPSEnums.TrashID.VoidThornheart1, TrashVoidThornheart },
             { ArcDPSEnums.TrashID.VoidThornheart2, TrashVoidThornheart },
             { ArcDPSEnums.TrashID.VoidBrandfang1, TrashVoidBrandfang },
@@ -922,8 +1139,8 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.TheRitualistCM, TrashTheRitualist },
             { ArcDPSEnums.TrashID.TheSniper, TrashTheSniper },
             { ArcDPSEnums.TrashID.TheSniperCM, TrashTheSniper },
-            { ArcDPSEnums.TrashID.PushableVoidAmalgamate, TrashVoidAmalgamate },
-            { ArcDPSEnums.TrashID.KillableVoidAmalgamate, TrashVoidAmalgamate },
+            { ArcDPSEnums.TrashID.PushableVoidAmalgamate, TrashPushableVoidAmalgamate },
+            { ArcDPSEnums.TrashID.KillableVoidAmalgamate, TrashKillableVoidAmalgamate },
             { ArcDPSEnums.TrashID.FluxAnomaly1, TrashFluxAnomaly },
             { ArcDPSEnums.TrashID.FluxAnomaly2, TrashFluxAnomaly },
             { ArcDPSEnums.TrashID.FluxAnomaly3, TrashFluxAnomaly },
@@ -948,6 +1165,23 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.TrashID.InspectorEllenKiel, TrashInspectorEllenKiel },
             { ArcDPSEnums.TrashID.JadeMawTentacle, TrashJadeMawTentacle },
             { ArcDPSEnums.TrashID.AwakenedAbomination, TrashAwakenedAbomination },
+            { ArcDPSEnums.TrashID.EmbodimentOfDespair, TrashCerusDespair },
+            { ArcDPSEnums.TrashID.EmbodimentOfEnvy, TrashCerusEnvy },
+            { ArcDPSEnums.TrashID.EmbodimentOfGluttony, TrashCerusGluttony },
+            { ArcDPSEnums.TrashID.EmbodimentOfMalice, TrashCerusMalice },
+            { ArcDPSEnums.TrashID.EmbodimentOfRage, TrashCerusRage },
+            { ArcDPSEnums.TrashID.EmbodimentOfRegret, TrashCerusRegret },
+            { ArcDPSEnums.TrashID.PermanentEmbodimentOfDespair, TrashCerusDespair },
+            { ArcDPSEnums.TrashID.PermanentEmbodimentOfEnvy, TrashCerusEnvy },
+            { ArcDPSEnums.TrashID.PermanentEmbodimentOfGluttony, TrashCerusGluttony },
+            { ArcDPSEnums.TrashID.PermanentEmbodimentOfMalice, TrashCerusMalice },
+            { ArcDPSEnums.TrashID.PermanentEmbodimentOfRage, TrashCerusRage },
+            { ArcDPSEnums.TrashID.PermanentEmbodimentOfRegret, TrashCerusRegret },
+            { ArcDPSEnums.TrashID.TheTormented, TrashTheTormented },
+            { ArcDPSEnums.TrashID.VeteranTheTormented, TrashTheTormented },
+            { ArcDPSEnums.TrashID.EliteTheTormented, TrashTheTormented },
+            { ArcDPSEnums.TrashID.ChampionTheTormented, TrashTheTormented },
+            { ArcDPSEnums.TrashID.SoulFeast, TrashSoulFeast },
         };
 
         /// <summary>
@@ -1097,6 +1331,7 @@ namespace GW2EIEvtcParser.ParserHelpers
             { ArcDPSEnums.MinionID.JuvenileWhiteTiger, MinionJuvenileWhiteTiger },
             { ArcDPSEnums.MinionID.JuvenileWolf, MinionJuvenileWolf },
             { ArcDPSEnums.MinionID.JuvenileHyena, MinionJuvenileHyena },
+            { ArcDPSEnums.MinionID.JuvenileAetherHunter, MinionJuvenileAetherHunter },
             { ArcDPSEnums.MinionID.BloodFiend, MinionBloodFiend },
             { ArcDPSEnums.MinionID.BoneFiend, MinionBoneFiend },
             { ArcDPSEnums.MinionID.FleshGolem, MinionFleshGolem },

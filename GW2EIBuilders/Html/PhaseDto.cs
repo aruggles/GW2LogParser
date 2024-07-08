@@ -1,11 +1,11 @@
-﻿using GW2EIEvtcParser;
-using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using Gw2LogParser.GW2EIBuilders;
 using static GW2EIEvtcParser.ParserHelper;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.HtmlModels
 {
 
     internal class PhaseDto
@@ -15,6 +15,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public double Start { get; set; }
         public double End { get; set; }
         public List<int> Targets { get; set; } = new List<int>();
+        public List<bool> SecondaryTargets { get; set; } = new List<bool>();
         public bool BreakbarPhase { get; set; }
 
         public List<List<object>> DpsStats { get; set; }
@@ -93,6 +94,11 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<DamageModData> DmgModifiersItem { get; set; }
         public List<DamageModData> DmgModifiersPers { get; set; }
 
+
+        public List<DamageModData> DmgIncModifiersCommon { get; set; }
+        public List<DamageModData> DmgIncModifiersItem { get; set; }
+        public List<DamageModData> DmgIncModifiersPers { get; set; }
+
         public List<List<BuffData>> TargetsCondiStats { get; set; }
         public List<BuffData> TargetsCondiTotals { get; set; }
         public List<BuffData> TargetsBoonTotals { get; set; }
@@ -105,16 +111,19 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<AreaLabelDto> MarkupAreas { get; set; }
         public List<int> SubPhases { get; set; }
 
-        public PhaseDto(PhaseData phase, IReadOnlyList<PhaseData> phases, ParsedLog log, IReadOnlyDictionary<Spec, IReadOnlyList<Buff>> persBuffDict, IReadOnlyList<DamageModifier> commonDamageModifiers, IReadOnlyList<DamageModifier> itemDamageModifiers, IReadOnlyDictionary<Spec, IReadOnlyList<DamageModifier>> persDamageModDict)
+        public PhaseDto(PhaseData phase, IReadOnlyList<PhaseData> phases, ParsedEvtcLog log, IReadOnlyDictionary<Spec, IReadOnlyList<Buff>> persBuffDict, 
+            IReadOnlyList<OutgoingDamageModifier> commonOutDamageModifiers, IReadOnlyList<OutgoingDamageModifier> itemOutDamageModifiers, IReadOnlyDictionary<Spec, IReadOnlyList<OutgoingDamageModifier>> persOutDamageModDict,
+            IReadOnlyList<IncomingDamageModifier> commonIncDamageModifiers, IReadOnlyList<IncomingDamageModifier> itemIncDamageModifiers, IReadOnlyDictionary<Spec, IReadOnlyList<IncomingDamageModifier>> persIncDamageModDict)
         {
             Name = phase.Name;
             Duration = phase.DurationInMS;
             Start = phase.Start / 1000.0;
             End = phase.End / 1000.0;
             BreakbarPhase = phase.BreakbarPhase;
-            foreach (AbstractSingleActor target in phase.Targets)
+            foreach (AbstractSingleActor target in phase.AllTargets)
             {
                 Targets.Add(log.FightData.Logic.Targets.IndexOf(target));
+                SecondaryTargets.Add(phase.IsSecondaryTarget(target));
             }
             PlayerActiveTimes = new List<long>();
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -235,16 +244,19 @@ namespace Gw2LogParser.GW2EIBuilders
             DefBuffGenActiveOGroupStats = BuffData.BuildActiveBuffGenerationData(log, statistics.PresentDefbuffs, phase, BuffEnum.OffGroup);
             DefBuffGenActiveSquadStats = BuffData.BuildActiveBuffGenerationData(log, statistics.PresentDefbuffs, phase, BuffEnum.Squad);
             //
-            DmgModifiersCommon = DamageModData.BuildDmgModifiersData(log, phase, commonDamageModifiers);
-            DmgModifiersItem = DamageModData.BuildDmgModifiersData(log, phase, itemDamageModifiers);
-            DmgModifiersPers = DamageModData.BuildPersonalDmgModifiersData(log, phase, persDamageModDict);
+            DmgModifiersCommon = DamageModData.BuildOutgoingDmgModifiersData(log, phase, commonOutDamageModifiers);
+            DmgModifiersItem = DamageModData.BuildOutgoingDmgModifiersData(log, phase, itemOutDamageModifiers);
+            DmgModifiersPers = DamageModData.BuildPersonalOutgoingDmgModifiersData(log, phase, persOutDamageModDict);
+            DmgIncModifiersCommon = DamageModData.BuildIncomingDmgModifiersData(log, phase, commonIncDamageModifiers);
+            DmgIncModifiersItem = DamageModData.BuildIncomingDmgModifiersData(log, phase, itemIncDamageModifiers);
+            DmgIncModifiersPers = DamageModData.BuildPersonalIncomingDmgModifiersData(log, phase, persIncDamageModDict);
             TargetsCondiStats = new List<List<BuffData>>();
             TargetsCondiTotals = new List<BuffData>();
             TargetsBoonTotals = new List<BuffData>();
             MechanicStats = MechanicDto.BuildPlayerMechanicData(log, phase);
             EnemyMechanicStats = MechanicDto.BuildEnemyMechanicData(log, phase);
 
-            foreach (AbstractSingleActor target in phase.Targets)
+            foreach (AbstractSingleActor target in phase.AllTargets)
             {
                 TargetsCondiStats.Add(BuffData.BuildTargetCondiData(log, phase, target));
                 TargetsCondiTotals.Add(BuffData.BuildTargetCondiUptimeData(log, phase, target));
@@ -252,7 +264,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        private static bool HasBoons(ParsedLog log, PhaseData phase, AbstractSingleActor target)
+        private static bool HasBoons(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor target)
         {
             IReadOnlyDictionary<long, FinalActorBuffs> conditions = target.GetBuffs(BuffEnum.Self, log, phase.Start, phase.End);
             foreach (Buff boon in log.StatisticsHelper.PresentBoons)
@@ -271,7 +283,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         // helper methods
 
-        private static List<object> GetDMGStatData(FinalGameplayStats stats)
+        private static List<object> GetGameplayStatData(FinalGameplayStats stats)
         {
             var data = new List<object>
                 {
@@ -291,12 +303,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return data;
         }
 
-        private static List<object> GetGameplayStatData(FinalGameplayStats stats)
-        {
-            return GetDMGStatData(stats);
-        }
-
-        private static List<object> GetDMGTargetStatData(FinalOffensiveStats stats)
+        private static List<object> GetOffensiveStatData(FinalOffensiveStats stats)
         {
             var data = new List<object>
                 {
@@ -323,13 +330,16 @@ namespace Gw2LogParser.GW2EIBuilders
                     stats.DownContribution, // 17
                     stats.ConnectedDmg, // 18
                     stats.ConnectedDirectDmg, // 19
+
+                    stats.ConnectedPowerCount, // 20
+                    stats.ConnectedPowerAbove90HPCount, // 21
+                    stats.ConnectedConditionCount, // 22
+                    stats.ConnectedConditionAbove90HPCount, // 23
+                    stats.AgainstDownedCount, // 24
+                    stats.AgainstDownedDamage, // 25
+                    stats.TotalDmg, // 26
                 };
             return data;
-        }
-
-        private static List<object> GetOffensiveStatData(FinalOffensiveStats stats)
-        {
-            return GetDMGTargetStatData(stats);
         }
 
         private static List<object> GetDPSStatData(FinalDPS dpsAll)
@@ -362,48 +372,45 @@ namespace Gw2LogParser.GW2EIBuilders
 
         private static List<object> GetDefenseStatData(FinalDefensesAll defenses, PhaseData phase)
         {
-            var data = new List<object>
-                {
-                    defenses.DamageTaken,
-                    defenses.DamageBarrier,
-                    defenses.MissedCount,
-                    defenses.InterruptedCount,
-                    defenses.InvulnedCount,
-                    defenses.EvadedCount,
-                    defenses.BlockedCount,
-                    defenses.DodgeCount,
-                    defenses.ConditionCleanses,
-                    defenses.ConditionCleansesTime,
-                    defenses.BoonStrips,
-                    defenses.BoonStripsTime,
-                };
-
+            int downCount = 0;
+            string downTooltip = "0% Downed";
             if (defenses.DownDuration > 0)
             {
                 var downDuration = TimeSpan.FromMilliseconds(defenses.DownDuration);
-                data.Add(defenses.DownCount);
-                data.Add(downDuration.TotalSeconds + " seconds downed, " + Math.Round((downDuration.TotalMilliseconds / phase.DurationInMS) * 100, 1) + "% Downed");
+                downCount = (defenses.DownCount);
+                downTooltip = (downDuration.TotalSeconds + " seconds downed, " + Math.Round((downDuration.TotalMilliseconds / phase.DurationInMS) * 100, 1) + "% Downed");
             }
-            else
-            {
-                data.Add(0);
-                data.Add("0% downed");
-            }
-
+            int deadCount = 0;
+            string deadTooltip = "100% Alive";
             if (defenses.DeadCount > 0)
             {
                 var deathDuration = TimeSpan.FromMilliseconds(defenses.DeadDuration);
-                data.Add(defenses.DeadCount);
-                data.Add(deathDuration.TotalSeconds + " seconds dead, " + (100.0 - Math.Round((deathDuration.TotalMilliseconds / phase.DurationInMS) * 100, 1)) + "% Alive");
+                deadCount = (defenses.DeadCount);
+                deadTooltip = (deathDuration.TotalSeconds + " seconds dead, " + (100.0 - Math.Round((deathDuration.TotalMilliseconds / phase.DurationInMS) * 100, 1)) + "% Alive");
             }
-            else
-            {
-                data.Add(0);
-                data.Add("100% Alive");
-            }
+            var data = new List<object>
+                {
+                    defenses.DamageTaken, // 0
+                    defenses.DamageBarrier,// 1
+                    defenses.MissedCount,// 2
+                    defenses.InterruptedCount,// 3
+                    defenses.InvulnedCount,// 4
+                    defenses.EvadedCount,// 5
+                    defenses.BlockedCount,// 6
+                    defenses.DodgeCount,// 7
+                    defenses.ConditionCleanses,// 8
+                    defenses.ConditionCleansesTime,// 9
+                    defenses.BoonStrips,// 10
+                    defenses.BoonStripsTime,// 11
+                    downCount, // 12
+                    downTooltip,// 13
+                    deadCount,// 14
+                    deadTooltip,// 15
+                    defenses.DownedDamageTaken // 16
+                };
             return data;
         }
-        public static List<List<object>> BuildDPSData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildDPSData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>(log.Friendlies.Count);
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -414,7 +421,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<List<object>>> BuildDPSTargetsData(ParsedLog log, PhaseData phase)
+        public static List<List<List<object>>> BuildDPSTargetsData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<List<object>>>(log.Friendlies.Count);
 
@@ -422,7 +429,7 @@ namespace Gw2LogParser.GW2EIBuilders
             {
                 var playerData = new List<List<object>>();
 
-                foreach (AbstractSingleActor target in phase.Targets)
+                foreach (AbstractSingleActor target in phase.AllTargets)
                 {
                     playerData.Add(GetDPSStatData(actor.GetDPSStats(target, log, phase.Start, phase.End)));
                 }
@@ -431,7 +438,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<object>> BuildGameplayStatsData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildGameplayStatsData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>();
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -460,7 +467,7 @@ namespace Gw2LogParser.GW2EIBuilders
             foreach (AbstractSingleActor actor in log.Friendlies)
             {
                 var playerData = new List<List<object>>();
-                foreach (AbstractSingleActor target in phase.Targets)
+                foreach (AbstractSingleActor target in phase.AllTargets)
                 {
                     FinalOffensiveStats statsTarget = actor.GetOffensiveStats(target, log, phase.Start, phase.End);
                     playerData.Add(GetOffensiveStatData(statsTarget));
@@ -470,7 +477,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<object>> BuildDefenseData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildDefenseData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>();
 
@@ -483,7 +490,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<object>> BuildSupportData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildSupportData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>();
 

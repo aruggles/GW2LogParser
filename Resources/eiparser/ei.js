@@ -85,17 +85,17 @@ function compileTemplates() {
     });
     Vue.component("table-scroll-component", {
         props: ["min", "max", "width", "height", "transform", "pagestructure"],
-        template: `      
+        template : `      
         <input 
             style="background-color: #888888;" 
             :style=getStyle()
             type="range" :min="min" :max="max" :value="min" class="slider" @input="updateOffset($event.target.value)">
         `,
         methods: {
-            updateOffset: function (value) {
+            updateOffset: function(value) {
                 this.pagestructure.offset = parseInt(value);
             },
-            getStyle: function () {
+            getStyle: function() {
                 var res = {
                     width: this.width,
                     height: this.height,
@@ -107,7 +107,7 @@ function compileTemplates() {
     });
     Vue.component("targetperplayer-graphs-tab-component", {
         props: ["targetindex", "phaseindex", 'light', 'playerindex'],
-        template: `      
+        template : `      
         <div>            
             <keep-alive>  
                 <targetperplayer-graph-tab-component v-for="(player, pId) in players" v-if="pId === playerindex"
@@ -118,7 +118,7 @@ function compileTemplates() {
         </div>
         `,
         computed: {
-            players: function () {
+            players: function() {
                 return logData.players;
             }
         }
@@ -149,11 +149,18 @@ function mainLoad() {
         });
     }
     for (var i = 0; i < logData.targets.length; i++) {
-        simpleLogData.targets.push({
-            active: true
-        });
-        logData.targets[i].id = i;
-        logData.targets[i].dpsGraphCache = new Map();
+        var target = logData.targets[i];
+        var activeArray = [];
+        simpleLogData.targets.push(activeArray);
+        for (var j = 0; j < logData.phases.length; j++) {
+            var phase = logData.phases[j];
+            var phaseTarget = phase.targets.indexOf(i);
+            activeArray.push({
+                active: phaseTarget > -1 ? !phase.secondaryTargets[phaseTarget] : false
+            });
+        }
+        target.id = i;
+        target.dpsGraphCache = new Map();
     }
     for (var i = 0; i < logData.players.length; i++) {
         var playerData = logData.players[i];
@@ -204,13 +211,13 @@ function mainLoad() {
             },
             uploadLinks: function () {
                 var res = [
-                    {
-                        key: "DPS Reports Link (EI)",
-                        url: ""
+                    { 
+                        key: "DPS Reports Link (EI)", 
+                        url: "" 
                     },
-                    {
-                        key: "Raidar Link",
-                        url: ""
+                    { 
+                        key: "Raidar Link", 
+                        url: "" 
                     }
                 ];
                 var hasAny = false;
@@ -237,7 +244,8 @@ function mainLoad() {
     });
     $("body").tooltip({
         selector: "[data-original-title]",
-        html: true
+        html: true,
+        boundary: "window"
     });
 };
 

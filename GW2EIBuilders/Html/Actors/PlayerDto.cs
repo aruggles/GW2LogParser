@@ -26,19 +26,6 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool IsFake { get; set; }
         public bool NotInSquad { get; set; }
 
-        public PlayerDto(AbstractSingleActor actor, ParsedLog log, ActorDetailsDto details) : base(actor, log, details)
-        {
-            Group = actor.Group;
-            Acc = actor.Account;
-            Profession = actor.Spec.ToString();
-            IsPoV = log.LogData.PoV == actor.AgentItem;
-            IsCommander = actor is Player p && p.IsCommander(log);
-            (ColTarget, ColCleave, ColTotal) = GetSpecGraphColor(actor.BaseSpec);
-            IsFake = actor.IsFakeActor;
-            NotInSquad = !(actor is Player);
-            BuildWeaponSets(actor, log);
-        }
-
         private static (string, string, string) GetSpecGraphColor(ParserHelper.Spec baseSpec)
         {
             switch (baseSpec)
@@ -68,6 +55,19 @@ namespace Gw2LogParser.GW2EIBuilders
 
         }
 
+        public PlayerDto(AbstractSingleActor actor, ParsedEvtcLog log, ActorDetailsDto details) : base(actor, log, details)
+        {
+            Group = actor.Group;
+            Acc = actor.Account;
+            Profession = actor.Spec.ToString();
+            IsPoV = log.LogData.PoV == actor.AgentItem;
+            IsCommander = actor is Player p && p.IsCommander(log);
+            (ColTarget, ColCleave, ColTotal) = GetSpecGraphColor(actor.BaseSpec);
+            IsFake = actor.IsFakeActor;
+            NotInSquad = !(actor is Player);
+            BuildWeaponSets(actor, log);
+        }
+
         private static void BuildWeaponSets((string mh, string oh) set, List<string> listToSet)
         {
             if (set.mh == WeaponSets.Unknown && set.oh == WeaponSets.Unknown)
@@ -81,7 +81,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        private void BuildWeaponSets(AbstractSingleActor actor, ParsedLog log)
+        private void BuildWeaponSets(AbstractSingleActor actor, ParsedEvtcLog log)
         {
             WeaponSets weps = actor.GetWeaponSets(log);
             BuildWeaponSets(weps.LandSet1, L1Set);

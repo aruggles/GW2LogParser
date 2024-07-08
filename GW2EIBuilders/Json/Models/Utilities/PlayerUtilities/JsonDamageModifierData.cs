@@ -2,6 +2,9 @@
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class representing damage modifier data
+    /// </summary>
     public class JsonDamageModifierData
     {
         /// <summary>

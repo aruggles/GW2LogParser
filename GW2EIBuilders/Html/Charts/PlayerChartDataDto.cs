@@ -1,9 +1,8 @@
-﻿using GW2EIEvtcParser;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class PlayerChartDataDto : ActorChartDataDto
     {
@@ -12,7 +11,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public PlayerDamageChartDto<int> ConditionDamage { get; }
         public PlayerDamageChartDto<double> BreakbarDamage { get; }
 
-        private PlayerChartDataDto(ParsedLog log, PhaseData phase, AbstractSingleActor p) : base(log, phase, p, true)
+        private PlayerChartDataDto(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor p) : base(log, phase, p, true)
         {
             Damage = new PlayerDamageChartDto<int>()
             {
@@ -34,7 +33,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 Total = p.Get1SBreakbarDamageList(log, phase.Start, phase.End, null),
                 Targets = new List<IReadOnlyList<double>>()
             };
-            foreach (AbstractSingleActor target in phase.Targets)
+            foreach (AbstractSingleActor target in phase.AllTargets)
             {
                 Damage.Targets.Add(p.Get1SDamageList(log, phase.Start, phase.End, target, ParserHelper.DamageType.All));
                 PowerDamage.Targets.Add(p.Get1SDamageList(log, phase.Start, phase.End, target, ParserHelper.DamageType.Power));
@@ -43,7 +42,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        public static List<PlayerChartDataDto> BuildPlayersGraphData(ParsedLog log, PhaseData phase)
+        public static List<PlayerChartDataDto> BuildPlayersGraphData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<PlayerChartDataDto>();
 

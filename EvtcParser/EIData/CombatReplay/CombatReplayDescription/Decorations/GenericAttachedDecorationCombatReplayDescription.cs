@@ -1,21 +1,27 @@
-﻿namespace GW2EIEvtcParser.EIData
+﻿
+namespace GW2EIEvtcParser.EIData
 {
     public abstract class GenericAttachedDecorationCombatReplayDescription : GenericDecorationCombatReplayDescription
     {
         public object ConnectedTo { get; }
+        public object RotationConnectedTo { get; }
 
         public object Owner { get; }
 
-        public bool DrawOnSelect { get; }
+        public uint Category { get; }
 
         internal GenericAttachedDecorationCombatReplayDescription(ParsedEvtcLog log, GenericAttachedDecoration decoration, CombatReplayMap map) : base(decoration)
         {
             ConnectedTo = decoration.ConnectedTo.GetConnectedTo(map, log);
+            RotationConnectedTo = decoration.RotationConnectedTo?.GetConnectedTo(map, log);
             IsMechanicOrSkill = true;
-            if (decoration.Owner != null)
+            if (decoration.SkillMode != null)
             {
-                Owner = decoration.Owner.GetConnectedTo(map, log);
-                DrawOnSelect = decoration.DrawOnSelect;
+                Category = (uint)decoration.SkillMode.Category;
+                if (decoration.SkillMode.Owner != null)
+                {
+                    Owner = decoration.SkillMode.Owner.GetConnectedTo(map, log);
+                }
             }
         }
     }

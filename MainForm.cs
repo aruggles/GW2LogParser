@@ -129,7 +129,7 @@ namespace Gw2LogParser
                     if (e.Error.InnerException != null)
                     {
                         row.Status = e.Error.InnerException.Message;
-                        Console.WriteLine(row.Status);
+                        Console.WriteLine(e.Error);
                     }
 
                     if (row.State == RowState.ClearOnComplete)

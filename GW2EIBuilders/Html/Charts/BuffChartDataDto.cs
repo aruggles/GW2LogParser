@@ -1,10 +1,9 @@
-﻿using GW2EIEvtcParser;
-using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class BuffChartDataDto
     {
@@ -82,7 +81,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        private static List<BuffChartDataDto> BuildBuffGraphData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, BuffsGraphModel> buffGraphData, Dictionary<long, Buff> usedBuffs)
+        private static List<BuffChartDataDto> BuildBuffGraphData(ParsedEvtcLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, BuffsGraphModel> buffGraphData, Dictionary<long, Buff> usedBuffs)
         {
             var list = new List<BuffChartDataDto>();
             BuildBoonGraphData(list, log.StatisticsHelper.PresentBoons, buffGraphData, phase, usedBuffs);
@@ -98,6 +97,10 @@ namespace Gw2LogParser.GW2EIBuilders
             BuildBoonGraphData(footList, log.StatisticsHelper.PresentOtherConsumables, buffGraphData, phase, usedBuffs);
             foreach (BuffsGraphModel bgm in buffGraphData.Values)
             {
+                if (bgm.Buff.Classification == Buff.BuffClassification.Hidden)
+                {
+                    continue;
+                }
                 BuffChartDataDto graph = BuildBuffGraph(bgm, phase, usedBuffs);
                 if (graph != null)
                 {
@@ -109,12 +112,12 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<BuffChartDataDto> BuildBuffGraphData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Buff> usedBuffs)
+        public static List<BuffChartDataDto> BuildBuffGraphData(ParsedEvtcLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, Buff> usedBuffs)
         {
             return BuildBuffGraphData(log, p, phase, p.GetBuffGraphs(log).ToDictionary(x => x.Key, x => x.Value), usedBuffs);
         }
 
-        public static List<BuffChartDataDto> BuildBuffGraphData(ParsedLog log, AbstractSingleActor p, AbstractSingleActor by, PhaseData phase, Dictionary<long, Buff> usedBuffs)
+        public static List<BuffChartDataDto> BuildBuffGraphData(ParsedEvtcLog log, AbstractSingleActor p, AbstractSingleActor by, PhaseData phase, Dictionary<long, Buff> usedBuffs)
         {
             return BuildBuffGraphData(log, p, phase, p.GetBuffGraphs(log, by).ToDictionary(x => x.Key, x => x.Value), usedBuffs);
         }

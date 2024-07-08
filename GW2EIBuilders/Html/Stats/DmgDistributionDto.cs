@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
 using Gw2LogParser.EvtcParserExtensions;
 using System;
@@ -7,7 +8,7 @@ using System.Linq;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
-    public class DmgDistributionDto
+    internal class DmgDistributionDto
     {
         public long ContributedDamage { get; set; }
         public double ContributedBreakbarDamage { get; set; }
@@ -171,7 +172,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return skillItem;
         }
 
-        public static DmgDistributionDto BuildDMGTakenDistData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DmgDistributionDto BuildDMGTakenDistData(ParsedEvtcLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new DmgDistributionDto
             {
@@ -193,7 +194,7 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
 
-        private static List<object[]> BuildDMGDistBodyData(ParsedLog log, IReadOnlyList<AbstractCastEvent> casting, IReadOnlyList<AbstractHealthDamageEvent> damageLogs, IReadOnlyList<AbstractBreakbarDamageEvent> breakbarLogs, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, PhaseData phase)
+        private static List<object[]> BuildDMGDistBodyData(ParsedEvtcLog log, IReadOnlyList<AbstractCastEvent> casting, IReadOnlyList<AbstractHealthDamageEvent> damageLogs, IReadOnlyList<AbstractBreakbarDamageEvent> breakbarLogs, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, PhaseData phase)
         {
             var list = new List<object[]>();
             var castLogsBySkill = casting.GroupBy(x => x.Skill).ToDictionary(x => x.Key, x => x.ToList());
@@ -280,7 +281,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        private static DmgDistributionDto BuildDMGDistDataInternal(ParsedLog log, FinalDPS dps, AbstractSingleActor p, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static DmgDistributionDto BuildDMGDistDataInternal(ParsedEvtcLog log, FinalDPS dps, AbstractSingleActor p, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new DmgDistributionDto();
             IReadOnlyList<AbstractCastEvent> casting = p.GetIntersectingCastEvents(log, phase.Start, phase.End);
@@ -297,20 +298,20 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
 
-        public static DmgDistributionDto BuildFriendlyDMGDistData(ParsedLog log, AbstractSingleActor actor, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DmgDistributionDto BuildFriendlyDMGDistData(ParsedEvtcLog log, AbstractSingleActor actor, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             FinalDPS dps = actor.GetDPSStats(target, log, phase.Start, phase.End);
             return BuildDMGDistDataInternal(log, dps, actor, target, phase, usedSkills, usedBuffs);
         }
 
 
-        public static DmgDistributionDto BuildTargetDMGDistData(ParsedLog log, AbstractSingleActor npc, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DmgDistributionDto BuildTargetDMGDistData(ParsedEvtcLog log, AbstractSingleActor npc, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             FinalDPS dps = npc.GetDPSStats(log, phase.Start, phase.End);
             return BuildDMGDistDataInternal(log, dps, npc, null, phase, usedSkills, usedBuffs);
         }
 
-        private static DmgDistributionDto BuildDMGDistDataMinionsInternal(ParsedLog log, FinalDPS dps, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static DmgDistributionDto BuildDMGDistDataMinionsInternal(ParsedEvtcLog log, FinalDPS dps, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new DmgDistributionDto();
             IReadOnlyList<AbstractCastEvent> casting = minions.GetIntersectingCastEvents(log, phase.Start, phase.End);
@@ -326,14 +327,15 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        public static DmgDistributionDto BuildFriendlyMinionDMGDistData(ParsedLog log, AbstractSingleActor actor, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DmgDistributionDto BuildFriendlyMinionDMGDistData(ParsedEvtcLog log, AbstractSingleActor actor, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             FinalDPS dps = actor.GetDPSStats(target, log, phase.Start, phase.End);
+
             return BuildDMGDistDataMinionsInternal(log, dps, minions, target, phase, usedSkills, usedBuffs);
         }
 
 
-        public static DmgDistributionDto BuildTargetMinionDMGDistData(ParsedLog log, AbstractSingleActor target, Minions minions, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static DmgDistributionDto BuildTargetMinionDMGDistData(ParsedEvtcLog log, AbstractSingleActor target, Minions minions, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             FinalDPS dps = target.GetDPSStats(log, phase.Start, phase.End);
             return BuildDMGDistDataMinionsInternal(log, dps, minions, null, phase, usedSkills, usedBuffs);

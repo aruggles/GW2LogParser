@@ -1,12 +1,16 @@
-﻿using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// The root of the JSON
+    /// </summary>
     internal static class JsonActorCombatReplayDataBuilder
     {
-        public static JsonActorCombatReplayData BuildJsonActorCombatReplayDataBuilder(AbstractSingleActor actor, ParsedLog log, RawFormatSettings settings)
+        public static JsonActorCombatReplayData BuildJsonActorCombatReplayDataBuilder(AbstractSingleActor actor, ParsedEvtcLog log, RawFormatSettings settings)
         {
             CombatReplayMap map = log.FightData.Logic.GetCombatReplayMap(log);
             AbstractSingleActorCombatReplayDescription description = actor.GetCombatReplayDescription(map, log);
@@ -54,19 +58,12 @@ namespace Gw2LogParser.GW2EIBuilders
                     actorCombatReplayData.Down = jsonDowns;
                 }
                 //
-                IReadOnlyList<GenericDecoration> decorations = actor.GetCombatReplayDecorations(log);
-                foreach (GenericDecoration decoration in decorations)
-                {
-                    GenericDecorationCombatReplayDescription decDescription = decoration.GetCombatReplayDescription(map, log);
-                    if (decDescription is FacingDecorationCombatReplayDescription facingDescription)
-                    {
-                        actorCombatReplayData.Orientations = facingDescription.FacingData;
-                    }
-                }
+                actorCombatReplayData.Orientations = description.Angles;
             }
 
             //
             return actorCombatReplayData;
         }
+
     }
 }

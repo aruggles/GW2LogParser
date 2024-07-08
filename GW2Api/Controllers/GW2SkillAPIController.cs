@@ -57,3 +57,4 @@ namespace GW2EIGW2API
         }
     }
 }
+

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class PlayerDamageChartDto<T>
     {

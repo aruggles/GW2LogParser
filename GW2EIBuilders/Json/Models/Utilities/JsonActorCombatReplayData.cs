@@ -6,8 +6,12 @@ using System.Threading.Tasks;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class corresponding to an actor's combat replay data
+    /// </summary>
     public class JsonActorCombatReplayData
     {
+
         /// <summary>
         /// Time at which the actor becomes active.
         /// </summary>

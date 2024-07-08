@@ -1,4 +1,6 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
 using Gw2LogParser.EvtcParserExtensions;
 using System;
@@ -7,9 +9,13 @@ using System.Linq;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
-    internal class JsonMinionsBuilder
+    /// <summary>
+    /// Class corresponding to the regrouping of the same type of minions
+    /// </summary>
+    internal static class JsonMinionsBuilder
     {
-        public static JsonMinions BuildJsonMinions(Minions minions, ParsedLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+
+        public static JsonMinions BuildJsonMinions(Minions minions, ParsedEvtcLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var jsonMinions = new JsonMinions();
             jsonMinions.Id = minions.ID;
@@ -124,5 +130,6 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return jsonMinions;
         }
+
     }
 }

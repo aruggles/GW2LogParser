@@ -1,6 +1,9 @@
 ﻿
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class representing general statistics
+    /// </summary>
     public static class EXTJsonHealingStatistics
     {
         /// <summary>

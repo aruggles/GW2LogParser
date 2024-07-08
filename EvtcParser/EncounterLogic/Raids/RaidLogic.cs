@@ -14,7 +14,8 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         protected RaidLogic(int triggerID) : base(triggerID)
         {
-            Mode = ParseMode.Instanced10;
+            ParseMode = ParseModeEnum.Instanced10;
+            SkillMode = SkillModeEnum.PvE;
             EncounterCategoryInformation.Category = FightCategory.Raid;
             EncounterID |= EncounterIDs.EncounterMasks.RaidMask; 
         }
@@ -40,6 +41,15 @@ namespace GW2EIEvtcParser.EncounterLogic
             {
                 NoBouncyChestGenericCheckSucess(combatData, agentData, fightData, playerAgents);
             }
+        }
+
+        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+        {
+            if (TargetHPPercentUnderThreshold(GenericTriggerID, fightData.FightStart, combatData, Targets))
+            {
+                return FightData.EncounterStartStatus.Late;
+            }
+            return FightData.EncounterStartStatus.Normal;
         }
 
         protected override HashSet<int> GetUniqueNPCIDs()

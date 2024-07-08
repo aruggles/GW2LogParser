@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using GW2EIEvtcParser.EncounterLogic;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using GW2EIEvtcParser.Extensions;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SkillIDs;
+using static GW2EIEvtcParser.EIData.SkillModeDescriptor;
 
 namespace GW2EIEvtcParser.EIData
 {
@@ -14,15 +17,93 @@ namespace GW2EIEvtcParser.EIData
         private static readonly List<InstantCastFinder> _genericInstantCastFinders = new List<InstantCastFinder>()
         {
             new BreakbarDamageCastFinder(Technobabble, Technobabble),
-            new DamageCastFinder(SigilOfEarth, SigilOfEarth).UsingICD(500).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-            new DamageCastFinder(LightningStrikeSigil, LightningStrikeSigil).UsingICD(500).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-            new DamageCastFinder(FlameBlastSigil, FlameBlastSigil).UsingICD(500).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-            new DamageCastFinder(SigilOfHydromancy, SigilOfHydromancy).UsingICD(500).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new DamageCastFinder(SigilOfEarth, SigilOfEarth)
+                .UsingICD(500)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new DamageCastFinder(LightningStrikeSigil, LightningStrikeSigil)
+                .UsingICD(500)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new DamageCastFinder(FlameBlastSigil, FlameBlastSigil)
+                .UsingICD(500)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new DamageCastFinder(SigilOfHydromancy, SigilOfHydromancy)
+                .UsingICD(500)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
             new EXTHealingCastFinder(WaterBlastCombo1, WaterBlastCombo1),
+            new EXTHealingCastFinder(WaterBlastCombo2, WaterBlastCombo2),
             new EXTHealingCastFinder(WaterLeapCombo, WaterLeapCombo),
-            new EffectCastFinderByDst(RuneOfNightmare, EffectGUIDs.RuneOfNightmare).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EffectCastFinderByDst(RuneOfNightmare, EffectGUIDs.RuneOfNightmare)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
             new BuffGainCastFinder(PortalEntranceWhiteMantleWatchwork, PortalWeavingWhiteMantleWatchwork),
-            new BuffGainCastFinder(PortalExitWhiteMantleWatchwork, PortalUsesWhiteMantleWatchwork).UsingBeforeWeaponSwap(true),
+            new BuffGainCastFinder(PortalExitWhiteMantleWatchwork, PortalUsesWhiteMantleWatchwork)
+                .UsingBeforeWeaponSwap(true),
+            // Relics
+            new BuffGainCastFinder(RelicOfVass, RelicOfVass)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new BuffGainCastFinder(RelicOfTheFirebrand, RelicOfTheFirebrand)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new BuffGainCastFinder(NouryssHungerDamageBuff, NouryssHungerDamageBuff)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new BuffGainCastFinder(MabonsStrength, MabonsStrength)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            //new BuffGainCastFinder(RelicOfIsgarrenTargetBuff, RelicTargetPlayerBuff).UsingChecker((bae, combatData, agentData, skillData) =>
+            //{
+            //    return combatData.GetBuffData(RelicOfIsgarrenTargetBuff).Where(x => x.CreditedBy == bae.To && Math.Abs(x.Time - bae.Time) < ServerDelayConstant).Any();
+            //}).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            //new BuffGainCastFinder(RelicOfTheDragonhunterTargetBuff, RelicTargetPlayerBuff).UsingChecker((bae, combatData, agentData, skillData) =>
+            //{
+            //    return combatData.GetBuffData(RelicOfTheDragonhunterTargetBuff).Where(x => x.CreditedBy == bae.To && Math.Abs(x.Time - bae.Time) < ServerDelayConstant).Any();
+            //}).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new BuffLossCastFinder(RelicOfFireworksBuffLoss, RelicOfFireworks)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EffectCastFinder(RelicOfCerusHit, EffectGUIDs.RelicOfCerusEye)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EffectCastFinder(RelicOfTheIce, EffectGUIDs.RelicOfIce)
+                .UsingICD(1000)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EffectCastFinder(RelicOfFireworks, EffectGUIDs.RelicOfFireworks)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EffectCastFinder(RelicOfPeithaBlade, EffectGUIDs.RelicOfPeitha)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            //new EffectCastFinder(RelicOfTheCitadel, EffectGUIDs.RelicWhiteCircle).UsingChecker((evt, combatData, agentData, skillData) =>
+            //{
+            //    combatData.TryGetEffectEventsByGUID(EffectGUIDs.RelicOfTheCitadelExplosion, out IReadOnlyList<EffectEvent> effects);
+            //    return effects != null && effects.Any(x => x.Time > evt.Time);
+            //}).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            //new EffectCastFinder(RelicOfTheNightmare, EffectGUIDs.RelicWhiteCircle).UsingChecker((evt, combatData, agentData, skillData) =>
+            //{
+            //    combatData.TryGetEffectEventsByGUID(EffectGUIDs.RelicOfTheNightmare, out IReadOnlyList<EffectEvent> effects);
+            //    return effects != null && effects.Any(x => x.Time > evt.Time);
+            //}).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            //new EffectCastFinder(RelicOfTheKrait, EffectGUIDs.RelicWhiteCircle).UsingChecker((evt, combatData, agentData, skillData) =>
+            //{
+            //    combatData.TryGetEffectEventsByGUID(EffectGUIDs.RelicOfTheKrait, out IReadOnlyList<EffectEvent> effects);
+            //    return effects != null && effects.Any(x => x.Time > evt.Time);
+            //}).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EffectCastFinder(RelicOfTheWizardsTower, EffectGUIDs.RelicWhiteCircle)
+                .UsingSecondaryEffectChecker(EffectGUIDs.RelicOfTheWizardsTower)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EXTHealingCastFinder(RelicOfKarakosaHealing, RelicOfKarakosaHealing)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EXTHealingCastFinder(RelicOfNayosHealing, RelicOfNayosHealing)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EXTHealingCastFinder(RelicOfTheDefenderHealing, RelicOfTheDefenderHealing)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EXTHealingCastFinder(RelicOfTheFlock, RelicOfTheFlock)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            new EXTBarrierCastFinder(RelicOfTheFlockBarrier, RelicOfTheFlockBarrier)
+                .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+            // Mounts
+            new BuffGainCastFinder(BondOfLifeSkill, BondOfLifeBuff),
+            new BuffGainCastFinder(BondOfVigorSkill, BondOfVigorBuff),
+            new BuffGainCastFinder(BondOfFaithSkill, EvasionBondOfFaith)
+                .UsingBeforeWeaponSwap(true),
+            new BuffGainCastFinder(Stealth2Skill, StealthMountBuff),
+            // Skyscale
+            new EffectCastFinderByDst(SkyscaleSkill, EffectGUIDs.SkyscaleLaunch),
+            new EffectCastFinder(SkyscaleFireballSkill, EffectGUIDs.SkyscaleFireball),
+            new EffectCastFinder(SkyscaleBlastSkill, EffectGUIDs.SkyscaleBlast1)
+                .UsingSecondaryEffectChecker(EffectGUIDs.SkyscaleBlast2),
         };
 
         internal static void AttachMasterToGadgetByCastData(CombatData combatData, IReadOnlyCollection<AgentItem> gadgets, IReadOnlyList<long> castIDS, long castEndThreshold)
@@ -256,9 +337,153 @@ namespace GW2EIEvtcParser.EIData
             return instantCastFinders;
         }
 
-        internal static void ComputeProfessionCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
+        internal static void ComputeProfessionCombatReplayActors(AbstractPlayer player, ParsedEvtcLog log, CombatReplay replay)
         {
-            return;
+            Color color = Colors.Blue;
+
+            // White Mantle Portal Device portal locations
+            if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.WhiteMantlePortalInactive, out IReadOnlyList<EffectEvent> whiteMantlePortalInactive))
+            {
+                var skill = new SkillModeDescriptor(player, PortalEntranceWhiteMantleWatchwork);
+                foreach (EffectEvent effect in whiteMantlePortalInactive)
+                {
+                    (long, long) lifespan = effect.ComputeLifespan(log, 60000, player.AgentItem, PortalWeavingWhiteMantleWatchwork);
+                    var connector = new PositionConnector(effect.Position);
+                    replay.Decorations.Add(new CircleDecoration(90, lifespan, color, 0.2, connector).UsingSkillMode(skill));
+                    replay.Decorations.Add(new IconDecoration(ParserIcons.PortalWhiteMantleSkill, CombatReplaySkillDefaultSizeInPixel, CombatReplaySkillDefaultSizeInWorld, 0.5f, lifespan, connector).UsingSkillMode(skill));
+                }
+            }
+            if (log.CombatData.TryGetGroupedEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.WhiteMantlePortalActive, out IReadOnlyList<IReadOnlyList<EffectEvent>> whiteMantlePortalActive))
+            {
+                var skill = new SkillModeDescriptor(player, PortalExitWhiteMantleWatchwork, SkillModeCategory.Portal);
+                foreach (IReadOnlyList<EffectEvent> group in whiteMantlePortalActive)
+                {
+                    GenericAttachedDecoration first = null;
+                    foreach (EffectEvent effect in group)
+                    {
+                        (long, long) lifespan = effect.ComputeLifespan(log, 10000, player.AgentItem, PortalUsesWhiteMantleWatchwork);
+                        var connector = new PositionConnector(effect.Position);
+                        replay.Decorations.Add(new CircleDecoration(90, lifespan, color, 0.3, connector).UsingSkillMode(skill));
+                        GenericAttachedDecoration decoration = new IconDecoration(ParserIcons.PortalWhiteMantleSkill, CombatReplaySkillDefaultSizeInPixel, CombatReplaySkillDefaultSizeInWorld, 0.7f, lifespan, connector).UsingSkillMode(skill);
+                        if (first == null)
+                        {
+                            first = decoration;
+                        }
+                        else
+                        {
+                            replay.Decorations.Add(first.LineTo(decoration, color, 0.3).UsingSkillMode(skill));
+                        }
+                        replay.Decorations.Add(decoration);
+                    }
+                }
+            }
+
+
+            switch (player.Spec)
+            {
+                // Elementalist
+                case Spec.Elementalist:
+                    ElementalistHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Tempest:
+                    ElementalistHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    TempestHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Weaver:
+                    ElementalistHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Catalyst:
+                    ElementalistHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    CatalystHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Engineer
+                case Spec.Engineer:
+                    EngineerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Scrapper:
+                    EngineerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    ScrapperHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Holosmith:
+                case Spec.Mechanist:
+                    EngineerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Guardian
+                case Spec.Guardian:
+                case Spec.Dragonhunter:
+                    GuardianHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Firebrand:
+                    GuardianHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    FirebrandHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Willbender:
+                    GuardianHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Mesmer
+                case Spec.Mesmer:
+                    MesmerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Chronomancer:
+                    MesmerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    ChronomancerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Mirage:
+                    MesmerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Virtuoso:
+                    MesmerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    VirtuosoHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Necromancer
+                case Spec.Necromancer:
+                case Spec.Reaper:
+                    NecromancerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Scourge:
+                    NecromancerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    ScourgeHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Harbinger:
+                    NecromancerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    HarbingerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Ranger
+                case Spec.Ranger:
+                case Spec.Druid:
+                case Spec.Soulbeast:
+                case Spec.Untamed:
+                    RangerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Revenant
+                case Spec.Revenant:
+                case Spec.Herald:
+                case Spec.Renegade:
+                case Spec.Vindicator:
+                    RevenantHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Thief
+                case Spec.Thief:
+                case Spec.Daredevil:
+                case Spec.Deadeye:
+                    ThiefHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Specter:
+                    ThiefHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    SpecterHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                // Warrior
+                case Spec.Warrior:
+                case Spec.Berserker:
+                    break;
+                case Spec.Spellbreaker:
+                    SpellbreakerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                    break;
+                case Spec.Bladesworn:
+                    break;
+                default:
+                    break;
+            }
         }
 
         internal static void DEBUG_ComputeProfessionCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
@@ -266,7 +491,6 @@ namespace GW2EIEvtcParser.EIData
             var knownEffects = new HashSet<long>();
             CombatReplay.DebugEffects(p, log, replay, knownEffects);
         }
-
 
         private static readonly HashSet<Spec> _canSummonClones = new HashSet<Spec>()
         {
@@ -278,6 +502,19 @@ namespace GW2EIEvtcParser.EIData
         internal static bool CanSummonClones(Spec spec)
         {
             return _canSummonClones.Contains(spec);
+        }
+
+        private static readonly HashSet<Spec> _canUseRangerPets = new HashSet<Spec>()
+        {
+            Spec.Ranger,
+            Spec.Druid,
+            Spec.Soulbeast,
+            Spec.Untamed,
+        };
+
+        internal static bool CanUseRangerPets(Spec spec)
+        {
+            return _canUseRangerPets.Contains(spec);
         }
 
         /// <summary>
@@ -333,6 +570,53 @@ namespace GW2EIEvtcParser.EIData
                 default:
                     break;
             }
+        }
+
+
+        private static IReadOnlyList<AnimatedCastEvent> ComputeUnderBuffCastEvents(IReadOnlyList<AbstractBuffEvent> buffs, SkillItem skill)
+        {
+            var res = new List<AnimatedCastEvent>();
+            var applies = buffs.OfType<BuffApplyEvent>().ToList();
+            var removals = buffs.OfType<BuffRemoveAllEvent>().ToList();
+            for (int i = 0; i < applies.Count && i < removals.Count; i++)
+            {
+                res.Add(new AnimatedCastEvent(applies[i].To, skill, applies[i].Time, removals[i].Time - applies[i].Time));
+            }
+            return res;
+        }
+
+        private static IReadOnlyList<AnimatedCastEvent> ComputeEndWithBuffApplyCastEvents(IReadOnlyList<BuffApplyEvent> buffs, SkillItem skill, long startOffset, long skillDuration)
+        {
+            var res = new List<AnimatedCastEvent>();
+            foreach (BuffApplyEvent bae in buffs) 
+            {
+                res.Add(new AnimatedCastEvent(bae.To, skill, bae.Time - startOffset, skillDuration));
+            }
+            return res;
+        }
+
+        internal static IReadOnlyList<AnimatedCastEvent> ComputeUnderBuffCastEvents(AbstractSingleActor actor, CombatData combatData, SkillData skillData, long skillId, long buffId)
+        {
+            SkillItem skill = skillData.Get(skillId);
+            return ComputeUnderBuffCastEvents(combatData.GetBuffData(buffId).Where(x => x.To == actor.AgentItem).ToList(), skill);
+        }
+
+        internal static IReadOnlyList<AnimatedCastEvent> ComputeEndWithBuffApplyCastEvents(AbstractSingleActor actor, CombatData combatData, SkillData skillData, long skillId, long startOffset, long skillDuration, long buffId)
+        {
+            SkillItem skill = skillData.Get(skillId);
+            return ComputeEndWithBuffApplyCastEvents(combatData.GetBuffData(buffId).Where(x => x.To == actor.AgentItem).OfType<BuffApplyEvent>().ToList(), skill, startOffset, skillDuration);
+        }
+
+        internal static IReadOnlyList<AnimatedCastEvent> ComputeUnderBuffCastEvents(CombatData combatData, SkillData skillData, long skillId, long buffId)
+        {
+            SkillItem skill = skillData.Get(skillId);
+            var dict = combatData.GetBuffData(buffId).GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            var res = new List<AnimatedCastEvent>();
+            foreach (KeyValuePair<AgentItem, List<AbstractBuffEvent>> pair in dict)
+            {
+                res.AddRange(ComputeUnderBuffCastEvents(pair.Value, skill));
+            }
+            return res;
         }
     }
 }

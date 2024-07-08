@@ -1,10 +1,10 @@
-﻿using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class MechanicChartDataDto
     {
@@ -14,7 +14,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<List<List<object>>> Points { get; }
         public bool Visible { get; }
 
-        private MechanicChartDataDto(ParsedLog log, Mechanic mech)
+        private MechanicChartDataDto(ParsedEvtcLog log, Mechanic mech)
         {
             Color = mech.PlotlySetting.Color;
             Symbol = mech.PlotlySetting.Symbol;
@@ -23,7 +23,7 @@ namespace Gw2LogParser.GW2EIBuilders
             Points = BuildMechanicGraphPointData(log, log.MechanicData.GetMechanicLogs(log, mech, log.FightData.FightStart, log.FightData.FightEnd), mech.IsEnemyMechanic);
         }
 
-        private static List<List<object>> GetMechanicChartPoints(IReadOnlyList<MechanicEvent> mechanicLogs, PhaseData phase, ParsedLog log, bool enemyMechanic)
+        private static List<List<object>> GetMechanicChartPoints(IReadOnlyList<MechanicEvent> mechanicLogs, PhaseData phase, ParsedEvtcLog log, bool enemyMechanic)
         {
             var res = new List<List<object>>();
             if (!enemyMechanic)
@@ -46,9 +46,9 @@ namespace Gw2LogParser.GW2EIBuilders
             else
             {
                 var targetIndex = new Dictionary<AbstractSingleActor, int>();
-                for (int p = 0; p < phase.Targets.Count; p++)
+                for (int p = 0; p < phase.AllTargets.Count; p++)
                 {
-                    targetIndex.Add(phase.Targets[p], p);
+                    targetIndex.Add(phase.AllTargets[p], p);
                     res.Add(new List<object>());
                 }
                 res.Add(new List<object>());
@@ -68,7 +68,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return res;
         }
 
-        private static List<List<List<object>>> BuildMechanicGraphPointData(ParsedLog log, IReadOnlyList<MechanicEvent> mechanicLogs, bool enemyMechanic)
+        private static List<List<List<object>>> BuildMechanicGraphPointData(ParsedEvtcLog log, IReadOnlyList<MechanicEvent> mechanicLogs, bool enemyMechanic)
         {
             var list = new List<List<List<object>>>();
             foreach (PhaseData phase in log.FightData.GetPhases(log))
@@ -78,7 +78,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<MechanicChartDataDto> BuildMechanicsChartData(ParsedLog log)
+        public static List<MechanicChartDataDto> BuildMechanicsChartData(ParsedEvtcLog log)
         {
             var mechanicsChart = new List<MechanicChartDataDto>();
             foreach (Mechanic mech in log.MechanicData.GetPresentMechanics(log, log.FightData.FightStart, log.FightData.FightEnd))

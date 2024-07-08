@@ -1,47 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace GW2EIGW2API.GW2API
 {
     public class GW2APIFact
     {
         [JsonProperty]
-        public string Text { get; set; }
+        public string Text { get; internal set; }
         [JsonProperty]
-        public string Icon { get; set; }
+        public string Icon { get; internal set; }
         [JsonProperty]
-        public string Type { get; set; }
+        public string Type { get; internal set; }
         [JsonProperty]
-        public string Target { get; set; }
+        public string Target { get; internal set; }
         [JsonProperty]
-        public object Value { get; set; }
+        public object Value { get; internal set; }
         [JsonProperty]
-        public string Status { get; set; }
+        public string Status { get; internal set; }
         [JsonProperty]
-        public string Description { get; set; }
+        public string Description { get; internal set; }
         [JsonProperty(PropertyName = "apply_count")]
-        public int ApplyCount { get; set; }
+        public int ApplyCount { get; internal set; }
         [JsonProperty]
-        public int Duration { get; set; }
+        public float Duration { get; internal set; }
         [JsonProperty(PropertyName = "field_type")]
-        public string FieldType { get; set; }
+        public string FieldType { get; internal set; }
         [JsonProperty(PropertyName = "finisher_type")]
-        public string FinisherType { get; set; }
+        public string FinisherType { get; internal set; }
         [JsonProperty]
-        public float Percent { get; set; }
+        public float Percent { get; internal set; }
         [JsonProperty(PropertyName = "hit_count")]
-        public int HitCount { get; set; }
+        public int HitCount { get; internal set; }
         [JsonProperty(PropertyName = "dmg_multiplier")]
-        public float DmgMultiplier { get; set; }
+        public float DmgMultiplier { get; internal set; }
         [JsonProperty]
-        public int Distance { get; set; }
+        public int Distance { get; internal set; }
         [JsonProperty]
-        public GW2APIFact Prefix { get; set; }
-
-        
+        public GW2APIFact Prefix { get; internal set; }
     }
 }
+

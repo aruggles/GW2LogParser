@@ -1,9 +1,11 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System;
+using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal abstract class AbstractSkillDto
     {
@@ -12,7 +14,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public string Icon { get; set; }
         public int HealingMode { get; set; }
 
-        protected AbstractSkillDto(Buff buff, ParsedLog log)
+        protected AbstractSkillDto(Buff buff, ParsedEvtcLog log)
         {
             Id = buff.ID;
             Name = buff.Name;
@@ -20,7 +22,7 @@ namespace Gw2LogParser.GW2EIBuilders
             HealingMode = 3;
             if (log.CombatData.HasEXTHealing)
             {
-                switch (log.CombatData.EXTHealingCombatData.GetHealingType(buff, log))
+                switch(log.CombatData.EXTHealingCombatData.GetHealingType(buff, log))
                 {
                     case HealingStatsExtensionHandler.EXTHealingType.HealingPower:
                         HealingMode = 0;
@@ -38,7 +40,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        protected AbstractSkillDto(SkillItem skill, ParsedLog log)
+        protected AbstractSkillDto(SkillItem skill, ParsedEvtcLog log)
         {
             Id = skill.ID;
             Name = skill.Name;

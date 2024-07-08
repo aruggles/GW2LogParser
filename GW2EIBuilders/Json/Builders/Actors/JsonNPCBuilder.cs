@@ -1,7 +1,7 @@
-﻿using GW2EIEvtcParser;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +9,13 @@ using static Gw2LogParser.GW2EIBuilders.JsonBuffsUptime;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class representing an NPC
+    /// </summary>
     internal static class JsonNPCBuilder
     {
-        public static JsonNPC BuildJsonNPC(AbstractSingleActor npc, ParsedLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+
+        public static JsonNPC BuildJsonNPC(AbstractSingleActor npc, ParsedEvtcLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var jsonNPC = new JsonNPC();
             JsonActorBuilder.FillJsonActor(jsonNPC, npc, log, settings, skillDesc, buffDesc);
@@ -46,7 +50,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return jsonNPC;
         }
 
-        private static List<JsonBuffsUptime> GetNPCJsonBuffsUptime(AbstractSingleActor npc, ParsedLog log, RawFormatSettings settings, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        private static List<JsonBuffsUptime> GetNPCJsonBuffsUptime(AbstractSingleActor npc, ParsedEvtcLog log, RawFormatSettings settings, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var res = new List<JsonBuffsUptime>();
             IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
@@ -54,6 +58,11 @@ namespace Gw2LogParser.GW2EIBuilders
             var buffDictionaries = phases.Select(x => npc.GetBuffsDictionary(log, x.Start, x.End)).ToList();
             foreach (KeyValuePair<long, FinalActorBuffs> pair in buffs[0])
             {
+                Buff buff = log.Buffs.BuffsByIds[pair.Key];
+                if (buff.Classification == Buff.BuffClassification.Hidden)
+                {
+                    continue;
+                }
                 var data = new List<JsonBuffsUptimeData>();
                 for (int i = 0; i < phases.Count; i++)
                 {

@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using Gw2LogParser.EvtcParserExtensions;
@@ -50,7 +51,7 @@ namespace Gw2LogParser.GW2EIBuilders
             };
         }
 
-        private static EXTJsonHealingDist BuildHealingDist(long id, List<EXTAbstractHealingEvent> list, ParsedLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        private static EXTJsonHealingDist BuildHealingDist(long id, List<EXTAbstractHealingEvent> list, ParsedEvtcLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var jsonHealingDist = new EXTJsonHealingDist();
             jsonHealingDist.IndirectHealing = list.Exists(x => x is EXTNonDirectHealingEvent);
@@ -97,7 +98,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return jsonHealingDist;
         }
 
-        internal static List<EXTJsonHealingDist> BuildHealingDistList(Dictionary<long, List<EXTAbstractHealingEvent>> dlsByID, ParsedLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        internal static List<EXTJsonHealingDist> BuildHealingDistList(Dictionary<long, List<EXTAbstractHealingEvent>> dlsByID, ParsedEvtcLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var res = new List<EXTJsonHealingDist>();
             foreach (KeyValuePair<long, List<EXTAbstractHealingEvent>> pair in dlsByID)

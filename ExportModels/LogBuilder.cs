@@ -1,4 +1,6 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIBuilders;
+using GW2EIBuilders.HtmlModels;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
 using Gw2LogParser.EvtcParserExtensions;
 using Gw2LogParser.ExportModels.Report;
@@ -255,6 +257,9 @@ namespace Gw2LogParser.ExportModels
                     original.healing.OutgoingTargetConversion += report.healing.OutgoingTargetConversion;
                     original.healing.OutgoingTargetDowned += report.healing.OutgoingTargetDowned;
                     original.healing.OutgoingTargetHealingPower += report.healing.OutgoingTargetHealingPower;
+                    original.healing.IncomingBarrier += report.healing.IncomingBarrier;
+                    original.healing.OutgoingBarrier += report.healing.OutgoingBarrier;
+                    original.healing.OutgoingTargetBarrier += report.healing.OutgoingTargetBarrier;
                 }
             }
         }
@@ -324,7 +329,7 @@ namespace Gw2LogParser.ExportModels
                     playerReport.Defense.Downed = Parse<int>(phase.DefStats[playerIndex][12]);
                     playerReport.Defense.Dead = Parse<int>(phase.DefStats[playerIndex][14]);
                     playerReport.Gameplay = BuildGameplayReport(phase.GameplayStats[playerIndex], phase.OffensiveStats[playerIndex]);
-                    
+
                     playerReport.setBoonStats(phase.BoonStats[playerIndex].Data);
                     playerReport.setBoonGenSquadStats(phase.BoonGenSquadStats[playerIndex].Data);
                     playerReport.setBoonGenSelfStats(phase.BoonGenSelfStats[playerIndex].Data);
@@ -347,7 +352,7 @@ namespace Gw2LogParser.ExportModels
                         int OutgoingTargetDowned = 0;
                         var targetStats = data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStatsTargets[playerIndex];
                         for (int target = 0; target < targetStats.Count; target++)
-                        {   
+                        {
                             OutgoingTargetAll += Parse<int>(targetStats[target][0]);
                             OutgoingTargetHealingPower += Parse<int>(targetStats[target][1]);
                             OutgoingTargetConversion += Parse<int>(targetStats[target][2]);
@@ -358,6 +363,18 @@ namespace Gw2LogParser.ExportModels
                         healingReport.OutgoingTargetConversion = OutgoingTargetConversion;
                         healingReport.OutgoingTargetDowned = OutgoingTargetDowned;
                         playerReport.healing = healingReport;
+                    }
+                    if (data.BarrierStatsExtension != null && playerReport.healing != null)
+                    {
+                        playerReport.healing.IncomingBarrier = Parse<int>(data.BarrierStatsExtension.BarrierPhases[phaseIndex].IncomingBarrierStats[playerIndex][0]);
+                        playerReport.healing.OutgoingBarrier = Parse<int>(data.BarrierStatsExtension.BarrierPhases[phaseIndex].OutgoingBarrierStats[playerIndex][0]);
+                        int OutgoingTargetBarrier = 0;
+                        var targetStats = data.BarrierStatsExtension.BarrierPhases[phaseIndex].OutgoingBarrierStatsTargets[playerIndex];
+                        for (int target = 0; target < targetStats.Count; target++)
+                        {
+                            OutgoingTargetBarrier += Parse<int>(targetStats[target][0]);
+                        }
+                        playerReport.healing.OutgoingTargetBarrier = OutgoingTargetBarrier;
                     }
                     
                 }

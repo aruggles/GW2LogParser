@@ -4,11 +4,14 @@ using System.Linq;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
+using System.Collections;
+using GW2EIEvtcParser.Extensions;
 
 namespace GW2EIEvtcParser.EncounterLogic
 {
@@ -62,8 +65,8 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             return new List<InstantCastFinder>()
             {
-                new DamageCastFinder(NikareAquaticAura , NikareAquaticAura ), // Nikare Aquatic Aura
-                new DamageCastFinder(KenutAquaticAura , KenutAquaticAura ), // Kenut Aquatic Aura
+                new DamageCastFinder(NikareAquaticAura, NikareAquaticAura),
+                new DamageCastFinder(KenutAquaticAura, KenutAquaticAura),
             };
         }
 
@@ -114,6 +117,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     }
                 }
             }
+            targetPhases.RemoveAll(x => x.DurationInMS < ParserHelper.PhaseTimeLimit);
             for (int i = 0; i < targetPhases.Count; i++)
             {
                 PhaseData phase = targetPhases[i];
@@ -135,7 +139,7 @@ namespace GW2EIEvtcParser.EncounterLogic
         private static void FallBackPhases(AbstractSingleActor target, List<PhaseData> phases, ParsedEvtcLog log, bool firstPhaseAt0)
         {
             IReadOnlyCollection<AgentItem> pAgents = log.PlayerAgents;
-            // clean Nikare related bugs
+            // clean Nikare/Kenut missing enter combat events related bugs
             switch (phases.Count)
             {
                 case 2:
@@ -149,10 +153,12 @@ namespace GW2EIEvtcParser.EncounterLogic
                             if (hit != null)
                             {
                                 p2.OverrideStart(hit.Time);
+                                p2.Name += " (Fallback)";
                             }
                             else
                             {
                                 p2.OverrideStart(p1.End);
+                                p2.Name += " (Bad Fallback)";
                             }
                         }
                     }
@@ -169,10 +175,12 @@ namespace GW2EIEvtcParser.EncounterLogic
                             if (hit != null)
                             {
                                 p2.OverrideStart(hit.Time);
+                                p2.Name += " (Fallback)";
                             }
                             else
                             {
                                 p2.OverrideStart(p1.End);
+                                p2.Name += " (Bad Fallback)";
                             }
                         }
                         // P1/P2 and P3 are merged
@@ -182,10 +190,12 @@ namespace GW2EIEvtcParser.EncounterLogic
                             if (hit != null)
                             {
                                 p3.OverrideStart(hit.Time);
+                                p3.Name += " (Fallback)";
                             }
                             else
                             {
                                 p3.OverrideStart(p2.End);
+                                p3.Name += " (Bad Fallback)";
                             }
                         }
                     }
@@ -200,6 +210,11 @@ namespace GW2EIEvtcParser.EncounterLogic
                 if (hit != null)
                 {
                     p1.OverrideStart(hit.Time);
+                    p1.Name += " (Fallback)";
+                } 
+                else
+                {
+                    p1.Name += " (Bad Fallback)";
                 }
             }
         }
@@ -234,6 +249,49 @@ namespace GW2EIEvtcParser.EncounterLogic
             return phases;
         }
 
+        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+        {
+            if (TargetHPPercentUnderThreshold(ArcDPSEnums.TargetID.Kenut, fightData.FightStart, combatData, Targets) ||
+                TargetHPPercentUnderThreshold(ArcDPSEnums.TargetID.Nikare, fightData.FightStart, combatData, Targets))
+            {
+                return FightData.EncounterStartStatus.Late;
+            }
+            return FightData.EncounterStartStatus.Normal;
+        }
+
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        {
+            ComputeFightTargets(agentData, combatData, extensions);
+            // discard hp update events after determined apply
+            AbstractSingleActor nikare = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Nikare));
+            if (nikare == null)
+            {
+                throw new MissingKeyActorsException("Nikare not found");
+            }
+            var nikareHPUpdates = combatData.Where(x => x.IsStateChange == ArcDPSEnums.StateChange.HealthUpdate && x.SrcMatchesAgent(nikare.AgentItem)).ToList();
+            if (nikareHPUpdates.Any(x => x.DstAgent != 10000 && x.DstAgent != 0))
+            {
+                CombatItem lastHPUpdate = nikareHPUpdates.Last();
+                if (lastHPUpdate.DstAgent == 10000)
+                {
+                    lastHPUpdate.OverrideSrcAgent(0);
+                }
+            }
+            AbstractSingleActor kenut = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Kenut));
+            if (kenut != null)
+            {
+                var kenutHPUpdates = combatData.Where(x => x.IsStateChange == ArcDPSEnums.StateChange.HealthUpdate && x.SrcMatchesAgent(kenut.AgentItem)).ToList();
+                if (kenutHPUpdates.Any(x => x.DstAgent != 10000 && x.DstAgent != 0))
+                {
+                    CombatItem lastHPUpdate = kenutHPUpdates.Last();
+                    if (lastHPUpdate.DstAgent == 10000)
+                    {
+                        lastHPUpdate.OverrideSrcAgent(0);
+                    }
+                }
+            }
+        }
+
         internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
         {
             IReadOnlyList<AbstractCastEvent> cls = target.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd);
@@ -244,7 +302,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     var barrageN = cls.Where(x => x.SkillId == AquaticBarrage).ToList();
                     foreach (AbstractCastEvent c in barrageN)
                     {
-                        replay.Decorations.Add(new CircleDecoration(true, 0, 250, ((int)c.Time, (int)c.EndTime), "rgba(0, 180, 255, 0.3)", new AgentConnector(target)));
+                        replay.Decorations.Add(new CircleDecoration(250, ((int)c.Time, (int)c.EndTime), Colors.LightBlue, 0.3, new AgentConnector(target)));
                     }
                     //Platform wipe (CM only)
                     var aquaticDomainN = cls.Where(x => x.SkillId == AquaticDomain).ToList();
@@ -252,8 +310,8 @@ namespace GW2EIEvtcParser.EncounterLogic
                     {
                         int start = (int)c.Time;
                         int end = (int)c.EndTime;
-                        int radius = 800;
-                        replay.Decorations.Add(new CircleDecoration(true, end, radius, (start, end), "rgba(255, 255, 0, 0.3)", new AgentConnector(target)));
+                        uint radius = 800;
+                        replay.Decorations.Add(new CircleDecoration(radius, (start, end), Colors.Yellow, 0.3, new AgentConnector(target)).UsingGrowingEnd(end));
                     }
                     break;
                 case (int)ArcDPSEnums.TargetID.Kenut:
@@ -261,7 +319,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     var barrageK = cls.Where(x => x.SkillId == AquaticBarrage).ToList();
                     foreach (AbstractCastEvent c in barrageK)
                     {
-                        replay.Decorations.Add(new CircleDecoration(true, 0, 250, ((int)c.Time, (int)c.EndTime), "rgba(0, 180, 255, 0.3)", new AgentConnector(target)));
+                        replay.Decorations.Add(new CircleDecoration(250, ((int)c.Time, (int)c.EndTime), Colors.LightBlue, 0.3, new AgentConnector(target)));
                     }
                     //Platform wipe (CM only)
                     var aquaticDomainK = cls.Where(x => x.SkillId == AquaticDomain).ToList();
@@ -269,8 +327,8 @@ namespace GW2EIEvtcParser.EncounterLogic
                     {
                         int start = (int)c.Time;
                         int end = (int)c.EndTime;
-                        int radius = 800;
-                        replay.Decorations.Add(new CircleDecoration(true, end, radius, (start, end), "rgba(255, 255, 0, 0.3)", new AgentConnector(target)));
+                        uint radius = 800;
+                        replay.Decorations.Add(new CircleDecoration(radius, (start, end), Colors.Yellow, 0.3, new AgentConnector(target)).UsingGrowingEnd(end));
                     }
                     var shockwave = cls.Where(x => x.SkillId == SeaSwell).ToList();
                     foreach (AbstractCastEvent c in shockwave)
@@ -278,8 +336,8 @@ namespace GW2EIEvtcParser.EncounterLogic
                         int start = (int)c.Time;
                         int delay = 960;
                         int duration = 3000;
-                        int radius = 1200;
-                        replay.Decorations.Add(new CircleDecoration(false, start + delay + duration, radius, (start + delay, start + delay + duration), "rgba(100, 200, 255, 0.5)", new AgentConnector(target)));
+                        uint radius = 1200;
+                        replay.Decorations.Add(new CircleDecoration(radius, (start + delay, start + delay + duration), "rgba(100, 200, 255, 0.5)", new AgentConnector(target)).UsingFilled(false).UsingGrowingEnd(start + delay + duration));
                     }
                     var boonSteal = cls.Where(x => x.SkillId == VaporJet).ToList();
                     foreach (AbstractCastEvent c in boonSteal)
@@ -287,14 +345,14 @@ namespace GW2EIEvtcParser.EncounterLogic
                         int start = (int)c.Time;
                         int delay = 1000;
                         int duration = 500;
-                        int width = 500;
-                        int height = 250;
-                        Point3D facing = replay.Rotations.FirstOrDefault(x => x.Time >= start);
+                        uint width = 500;
+                        uint height = 250;
+                        Point3D facing = target.GetCurrentRotation(log, start);
                         if (facing != null)
                         {
-                            float rotation = Point3D.GetRotationFromFacing(facing);
-                            replay.Decorations.Add(new RotatedRectangleDecoration(false, 0, width, height, rotation, width / 2, (start + delay, start + delay + duration), "rgba(255, 175, 0, 0.8)", new AgentConnector(target)));
-                            replay.Decorations.Add(new RotatedRectangleDecoration(true, 0, width, height, rotation, width / 2, (start + delay, start + delay + duration), "rgba(255, 175, 0, 0.2)", new AgentConnector(target)));
+                            var positionConnector = (AgentConnector)new AgentConnector(target).WithOffset(new Point3D(width / 2, 0), true);
+                            var rotationConnextor = new AngleConnector(facing);
+                            replay.AddDecorationWithBorder((RectangleDecoration)new RectangleDecoration(width, height, (start + delay, start + delay + duration), Colors.LightOrange, 0.4, positionConnector).UsingRotationConnector(rotationConnextor));
                         }
                     }
                     break;
@@ -305,48 +363,31 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
             // Water "Poison Bomb"
-            List<AbstractBuffEvent> waterToDrop = GetFilteredList(log.CombatData, TidalPoolBuff, p, true, true);
-            int toDropStart = 0;
-            foreach (AbstractBuffEvent c in waterToDrop)
+            var waterToDrop = p.GetBuffStatus(log, TidalPoolBuff, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            foreach (Segment seg in waterToDrop)
             {
                 int timer = 5000;
                 int duration = 83000;
-                int debuffRadius = 100;
-                int radius = 500;
-                if (c is BuffApplyEvent)
+                uint debuffRadius = 100;
+                uint radius = 500;
+                int toDropStart = (int)seg.Start;
+                int toDropEnd = (int)seg.End;
+                replay.AddDecorationWithFilledWithGrowing(new CircleDecoration(debuffRadius, seg, Colors.Orange, 0.4, new AgentConnector(p)).UsingFilled(false), true, toDropStart + timer);
+                Point3D position = p.GetCurrentInterpolatedPosition(log, toDropEnd);
+                if (position != null)
                 {
-                    toDropStart = (int)c.Time;
+                    replay.AddDecorationWithGrowing(new CircleDecoration(radius, debuffRadius, (toDropEnd, toDropEnd + duration), Colors.DarkWhite, 0.5, new PositionConnector(position)).UsingFilled(false), toDropStart + duration);
                 }
-                else
-                {
-                    int toDropEnd = (int)c.Time;
-                    replay.Decorations.Add(new CircleDecoration(false, 0, debuffRadius, (toDropStart, toDropEnd), "rgba(255, 100, 0, 0.4)", new AgentConnector(p)));
-                    replay.Decorations.Add(new CircleDecoration(true, toDropStart + timer, debuffRadius, (toDropStart, toDropEnd), "rgba(255, 100, 0, 0.4)", new AgentConnector(p)));
-                    ParametricPoint3D poisonNextPos = replay.PolledPositions.FirstOrDefault(x => x.Time >= toDropEnd);
-                    ParametricPoint3D poisonPrevPos = replay.PolledPositions.LastOrDefault(x => x.Time <= toDropEnd);
-                    if (poisonNextPos != null || poisonPrevPos != null)
-                    {
-                        replay.Decorations.Add(new CircleDecoration(true, toDropStart + duration, radius, (toDropEnd, toDropEnd + duration), "rgba(100, 100, 100, 0.3)", new InterpolatedPositionConnector(poisonPrevPos, poisonNextPos, toDropEnd), debuffRadius));
-                        replay.Decorations.Add(new CircleDecoration(false, toDropStart + duration, radius, (toDropEnd, toDropEnd + duration), "rgba(230, 230, 230, 0.4)", new InterpolatedPositionConnector(poisonPrevPos, poisonNextPos, toDropEnd), debuffRadius));
-                    }
-                }
+                replay.AddOverheadIcon(seg, p, ParserIcons.TidalPoolOverhead);
             }
             // Bubble (Aquatic Detainment)
-            List<AbstractBuffEvent> bubble = GetFilteredList(log.CombatData, AquaticDetainmentBuff, p, true, true);
-            int bubbleStart = 0;
-            foreach (AbstractBuffEvent c in bubble)
+            var bubble = p.GetBuffStatus(log, AquaticDetainmentBuff, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            uint bubbleRadius = 100;
+            foreach (Segment seg in bubble)
             {
-                int radius = 100;
-                if (c is BuffApplyEvent)
-                {
-                    bubbleStart = Math.Max((int)c.Time, 0);
-                }
-                else
-                {
-                    int bubbleEnd = (int)c.Time;
-                    replay.Decorations.Add(new CircleDecoration(true, 0, radius, (bubbleStart, bubbleEnd), "rgba(0, 200, 255, 0.3)", new AgentConnector(p)));
-                }
+                replay.Decorations.Add(new CircleDecoration(bubbleRadius, seg, Colors.LightBlue, 0.3, new AgentConnector(p)));
             }
         }
 
@@ -358,16 +399,37 @@ namespace GW2EIEvtcParser.EncounterLogic
         internal override FightData.EncounterMode GetEncounterMode(CombatData combatData, AgentData agentData, FightData fightData)
         {
             AbstractSingleActor nikare = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Nikare));
-            AbstractSingleActor kenut = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Kenut));
             if (nikare == null)
             {
                 throw new MissingKeyActorsException("Nikare not found");
             }
+            bool nikareHasCastAquaticDomain = combatData.GetAnimatedCastData(nikare.AgentItem).Any(x => x.SkillId == AquaticDomain);
+            if (nikareHasCastAquaticDomain) // aquatic domain only present in CM
+            {
+                return FightData.EncounterMode.CM;
+            }
+            FightData.EncounterMode mode = (nikare.GetHealth(combatData) > 18e6) ? FightData.EncounterMode.CM : FightData.EncounterMode.Normal; //Health of Nikare;
+            AbstractSingleActor kenut = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Kenut));
             if (kenut != null)
             {
-                return kenut.GetHealth(combatData) > 16e6 || nikare.GetHealth(combatData) > 18e6 ? FightData.EncounterMode.CM : FightData.EncounterMode.Normal; // Kenut or nikare hp
+                if (combatData.GetAnimatedCastData(kenut.AgentItem).Any(x => x.SkillId == AquaticDomain)) // aquatic domain only present in CM
+                {
+                    return FightData.EncounterMode.CM;
+                }
+                if (mode != FightData.EncounterMode.CM && kenut.GetHealth(combatData) > 16e6) // Health of Kenut
+                {
+                    mode = FightData.EncounterMode.CM;
+                }
+                if (mode == FightData.EncounterMode.CM && combatData.GetDamageTakenData(kenut.AgentItem).Any(x => x.CreditedFrom.IsPlayer && x.HealthDamage > 0) && !nikareHasCastAquaticDomain) // Kenut engaged but nikare never cast Aquatic Domain -> normal mode
+                {
+                    mode = FightData.EncounterMode.Normal;
+                }
             }
-            return (nikare.GetHealth(combatData) > 18e6) ? FightData.EncounterMode.CM : FightData.EncounterMode.Normal; //Health of Nikare
+            if (mode == FightData.EncounterMode.CM && combatData.GetHealthUpdateEvents(nikare.AgentItem).Any(x => x.HPPercent < 70) && !nikareHasCastAquaticDomain) // Nikare went below 70% but never cast Aquatic Domain
+            {
+                mode = FightData.EncounterMode.Normal;
+            }
+            return mode;
         }
     }
 }

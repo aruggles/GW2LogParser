@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace GW2EIGW2API.GW2API
@@ -53,4 +49,6 @@ namespace GW2EIGW2API.GW2API
         [JsonProperty(PropertyName = "toolbelt_skill")]
         public int ToolbeltSkill { get; internal set; }
     }
+
 }
+

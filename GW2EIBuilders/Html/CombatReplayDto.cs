@@ -1,12 +1,12 @@
-﻿using GW2EIEvtcParser;
-using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.HtmlModels
 {
-    public class CombatReplayDto
+    internal class CombatReplayDto
     {
         public List<object> Actors { get; set; }
         public int[] Sizes { get; set; }
@@ -15,7 +15,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public int PollingRate { get; set; }
         public IReadOnlyList<CombatReplayMap.MapItem> Maps { get; set; }
 
-        public CombatReplayDto(ParsedLog log)
+        public CombatReplayDto(ParsedEvtcLog log)
         {
             CombatReplayMap map = log.FightData.Logic.GetCombatReplayMap(log);
             Actors = GetCombatReplayActors(log, map);
@@ -28,16 +28,36 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
 
-        private static List<object> GetCombatReplayActors(ParsedLog log, CombatReplayMap map)
+        private static List<object> GetCombatReplayActors(ParsedEvtcLog log, CombatReplayMap map)
         {
             var actors = new List<object>();
+            var fromNonFriendliesSet = new HashSet<AbstractSingleActor>(log.FightData.Logic.Hostiles);
             foreach (AbstractSingleActor actor in log.Friendlies)
             {
-                if (actor.IsFakeActor)
+                if (actor.IsFakeActor || actor.GetCombatReplayPolledPositions(log).Count == 0)
                 {
                     continue;
                 }
-                if (actor.GetCombatReplayPolledPositions(log).Count == 0)
+                actors.Add(actor.GetCombatReplayDescription(map, log));
+                foreach (GenericDecoration a in actor.GetCombatReplayDecorations(log))
+                {
+                    actors.Add(a.GetCombatReplayDescription(map, log));
+                }
+                foreach (Minions minions in actor.GetMinions(log).Values)
+                {
+                    if (minions.MinionList.Count > ParserHelper.MinionLimit)
+                    {
+                        continue;
+                    }
+                    if (ParserHelper.IsKnownMinionID(minions.ReferenceAgentItem, actor.Spec))
+                    {
+                        fromNonFriendliesSet.UnionWith(minions.MinionList);
+                    }
+                }
+            }
+            foreach (AbstractSingleActor actor in fromNonFriendliesSet.ToList())
+            {
+                if ((actor.LastAware - actor.FirstAware < 200) || actor.GetCombatReplayPolledPositions(log).Count == 0)
                 {
                     continue;
                 }
@@ -47,29 +67,9 @@ namespace Gw2LogParser.GW2EIBuilders
                     actors.Add(a.GetCombatReplayDescription(map, log));
                 }
             }
-            foreach (NPC actor in log.FightData.Logic.TrashMobs)
+            foreach (GenericDecoration a in log.FightData.GetEnvironmentCombatReplayDecorations(log))
             {
-                if (actor.GetCombatReplayPolledPositions(log).Count == 0)
-                {
-                    continue;
-                }
-                actors.Add(actor.GetCombatReplayDescription(map, log));
-                foreach (GenericDecoration a in actor.GetCombatReplayDecorations(log))
-                {
-                    actors.Add(a.GetCombatReplayDescription(map, log));
-                }
-            }
-            foreach (AbstractSingleActor actor in log.FightData.Logic.Targets)
-            {
-                if (actor.GetCombatReplayPolledPositions(log).Count == 0)
-                {
-                    continue;
-                }
-                actors.Add(actor.GetCombatReplayDescription(map, log));
-                foreach (GenericDecoration a in actor.GetCombatReplayDecorations(log))
-                {
-                    actors.Add(a.GetCombatReplayDescription(map, log));
-                }
+                actors.Add(a.GetCombatReplayDescription(map, log));
             }
             return actors;
         }

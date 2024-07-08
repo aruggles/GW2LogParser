@@ -1,14 +1,15 @@
-﻿using GW2EIEvtcParser;
+﻿using System.Collections.Generic;
+using System.Linq;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.HtmlModels
 {
-    public class MechanicDto
+    internal class MechanicDto
     {
         public string Name { get; set; }
+
         public int Icd { get; set; }
         public string ShortName { get; set; }
         public string Description { get; set; }
@@ -16,7 +17,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool PlayerMech { get; set; }
         public bool IsAchievementEligibility { get; set; }
 
-        private static List<int[]> GetMechanicData(IReadOnlyCollection<Mechanic> presMech, ParsedLog log, AbstractSingleActor actor, PhaseData phase)
+        private static List<int[]> GetMechanicData(IReadOnlyCollection<Mechanic> presMech, ParsedEvtcLog log, AbstractSingleActor actor, PhaseData phase)
         {
             var res = new List<int[]>();
 
@@ -44,7 +45,7 @@ namespace Gw2LogParser.GW2EIBuilders
                             count++;
                         }
                     }
-                }
+                } 
                 else
                 {
                     count = log.MechanicData.GetMechanicLogs(log, mech, actor, phase.Start, phase.End).Count;
@@ -72,7 +73,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        public static List<List<int[]>> BuildPlayerMechanicData(ParsedLog log, PhaseData phase)
+        public static List<List<int[]>> BuildPlayerMechanicData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<int[]>>();
 
@@ -83,7 +84,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<int[]>> BuildEnemyMechanicData(ParsedLog log, PhaseData phase)
+        public static List<List<int[]>> BuildEnemyMechanicData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<int[]>>();
             foreach (AbstractSingleActor enemy in log.MechanicData.GetEnemyList(log, log.FightData.FightStart, log.FightData.FightEnd))

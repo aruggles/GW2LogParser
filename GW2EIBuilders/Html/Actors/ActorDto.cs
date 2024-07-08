@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 
@@ -18,7 +19,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<MinionDto> Minions { get; } = new List<MinionDto>();
         public ActorDetailsDto Details { get; set; }
 
-        protected ActorDto(AbstractSingleActor actor, ParsedLog log, ActorDetailsDto details)
+        protected ActorDto(AbstractSingleActor actor, ParsedEvtcLog log, ActorDetailsDto details)
         {
             Health = actor.GetHealth(log.CombatData);
             Condi = actor.Condition;

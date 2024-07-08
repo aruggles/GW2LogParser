@@ -1,8 +1,8 @@
-﻿using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class PhaseChartDataDto
     {
@@ -13,12 +13,12 @@ namespace Gw2LogParser.GW2EIBuilders
         public List<List<object[]>> TargetsBreakbarPercentStatesForCR { get; set; } = null;
         public List<List<object[]>> TargetsBarrierStatesForCR { get; set; } = null;
 
-        public PhaseChartDataDto(ParsedLog log, PhaseData phase, bool addCRData)
+        public PhaseChartDataDto(ParsedEvtcLog log, PhaseData phase, bool addCRData)
         {
             Players = PlayerChartDataDto.BuildPlayersGraphData(log, phase);
-            foreach (AbstractSingleActor target in phase.Targets)
+            foreach (AbstractSingleActor target in phase.AllTargets)
             {
-                Targets.Add(new TargetChartDataDto(log, phase, target));
+               Targets.Add(new TargetChartDataDto(log, phase, target));
             }
             if (addCRData)
             {

@@ -1,10 +1,11 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
-    public class FoodDto
+    internal class FoodDto
     {
         public double Time { get; set; }
         public double Duration { get; set; }
@@ -21,10 +22,10 @@ namespace Gw2LogParser.GW2EIBuilders
             Dimished = (consume.Buff.ID == 46587 || consume.Buff.ID == 46668);
         }
 
-        public static List<FoodDto> BuildFoodData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, Buff> usedBuffs)
+        public static List<FoodDto> BuildFoodData(ParsedEvtcLog log, AbstractSingleActor actor, Dictionary<long, Buff> usedBuffs)
         {
             var list = new List<FoodDto>();
-            IReadOnlyList<Consumable> consume = actor.GetConsumablesList(log, 0, log.FightData.FightEnd);
+            IReadOnlyList<Consumable> consume = actor.GetConsumablesList(log, log.FightData.FightStart, log.FightData.FightEnd);
 
             foreach (Consumable entry in consume)
             {

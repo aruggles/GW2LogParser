@@ -1,9 +1,9 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class HealingStatsExtension
     {
@@ -13,7 +13,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         public List<List<EXTHealingStatsPlayerChartDto>> PlayerHealingCharts { get; }
 
-        public HealingStatsExtension(ParsedLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public HealingStatsExtension(ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             HealingPhases = new List<EXTHealingStatsPhaseDto>();
             PlayerHealingCharts = new List<List<EXTHealingStatsPlayerChartDto>>();

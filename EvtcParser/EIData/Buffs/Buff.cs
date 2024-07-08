@@ -28,6 +28,7 @@ namespace GW2EIEvtcParser.EIData
             Enhancement,
             Nourishment,
             OtherConsumable,
+            Hidden,
             Unknown
         };
 
@@ -52,10 +53,10 @@ namespace GW2EIEvtcParser.EIData
                 {
                     case BuffStackType.Queue:
                     case BuffStackType.Regeneration:
-                    case BuffStackType.CappedDuration:
                     case BuffStackType.Force:
                         return BuffType.Duration;
                     case BuffStackType.Stacking:
+                    case BuffStackType.StackingTargetUniqueSrc:
                     case BuffStackType.StackingConditionalLoss:
                         return BuffType.Intensity;
                     default:
@@ -125,11 +126,11 @@ namespace GW2EIEvtcParser.EIData
             }
             if (Capacity != buffInfoEvent.MaxStacks)
             {
-                operation.UpdateProgressWithCancellationCheck("Adjusted capacity for " + Name + " from " + Capacity + " to " + buffInfoEvent.MaxStacks);
+                operation.UpdateProgressWithCancellationCheck("Parsing: Adjusted capacity for " + Name + " from " + Capacity + " to " + buffInfoEvent.MaxStacks);
             }
             if (buffInfoEvent.StackingType != StackType && buffInfoEvent.StackingType != BuffStackType.Unknown)
             {
-                operation.UpdateProgressWithCancellationCheck("Incoherent stack type for " + Name + ": is " + StackType + " but expected " + buffInfoEvent.StackingType);
+                operation.UpdateProgressWithCancellationCheck("Parsing: Incoherent stack type for " + Name + ": is " + StackType + " but expected " + buffInfoEvent.StackingType);
             }
         }
 
@@ -170,6 +171,15 @@ namespace GW2EIEvtcParser.EIData
         internal static BuffSourceFinder GetBuffSourceFinder(CombatData combatData, HashSet<long> boonIds)
         {
             ulong gw2Build = combatData.GetBuildEvent().Build;
+
+            if (gw2Build >= GW2Builds.March2024BalanceAndCerusLegendary)
+            {
+                return new BuffSourceFinder20240319(boonIds);
+            }
+            if (gw2Build >= GW2Builds.October2022BalanceHotFix)
+            {
+                return new BuffSourceFinder20221018(boonIds);
+            }
             if (gw2Build >= GW2Builds.EODBeta2)
             {
                 return new BuffSourceFinder20210921(boonIds);

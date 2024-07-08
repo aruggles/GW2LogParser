@@ -4,6 +4,7 @@ using System.Linq;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
@@ -94,11 +95,25 @@ namespace GW2EIEvtcParser.EncounterLogic
                 PhaseData phase = phases[i];
                 if (i % 2 == 0)
                 {
+                    int phaseID = i / 2;
                     AddTargetsToPhaseAndFit(phase, ids, log);
                     if (phase.Targets.Count > 0)
                     {
                         AbstractSingleActor phaseTar = phase.Targets[0];
                         phase.Name = PhaseNames.TryGetValue(phaseTar.ID, out string phaseName) ? phaseName : "Unknown";
+                    }
+                    switch (phaseID)
+                    {
+                        case 1:
+                            break;
+                        case 2:
+                            phase.AddSecondaryTargets(Targets.Where(x => (x.IsSpecies(ArcDPSEnums.TrashID.Kernan)) && phase.Start < x.LastAware));
+                            break;
+                        case 3:
+                            phase.AddSecondaryTargets(Targets.Where(x => (x.IsSpecies(ArcDPSEnums.TrashID.Kernan) || x.IsSpecies(ArcDPSEnums.TrashID.Knuckles)) && phase.Start < x.LastAware));
+                            break;
+                        default:
+                            break;
                     }
                 }
                 else
@@ -109,13 +124,13 @@ namespace GW2EIEvtcParser.EncounterLogic
                     switch(phaseID)
                     {
                         case 2:
-                            phase.AddTargets(Targets.Where(x => x.IsSpecies(ArcDPSEnums.TrashID.Kernan)));
+                            phase.AddSecondaryTargets(Targets.Where(x => x.IsSpecies(ArcDPSEnums.TrashID.Kernan) && phase.Start < x.LastAware));
                             break;
                         case 3:
-                            phase.AddTargets(Targets.Where(x => x.IsSpecies(ArcDPSEnums.TrashID.Knuckles)));
+                            phase.AddSecondaryTargets(Targets.Where(x => (x.IsSpecies(ArcDPSEnums.TrashID.Kernan) || x.IsSpecies(ArcDPSEnums.TrashID.Knuckles)) && phase.Start < x.LastAware));
                             break;
                         case 4:
-                            phase.AddTargets(Targets.Where(x => x.IsSpecies(ArcDPSEnums.TrashID.Karde)));
+                            phase.AddSecondaryTargets(Targets.Where(x => (x.IsSpecies(ArcDPSEnums.TrashID.Kernan) || x.IsSpecies(ArcDPSEnums.TrashID.Knuckles) || x.IsSpecies(ArcDPSEnums.TrashID.Karde)) && phase.Start < x.LastAware));
                             break;
                         default:
                             break;
@@ -148,13 +163,13 @@ namespace GW2EIEvtcParser.EncounterLogic
                         int start = (int)c.Time;
                         int preCastTime = 2800;
                         int duration = 10000;
-                        int width = 1300; int height = 60;
-                        Point3D facing = replay.Rotations.LastOrDefault(x => x.Time <= start);
+                        uint width = 1300; uint height = 60;
+                        Point3D facing = target.GetCurrentRotation(log, start);
                         if (facing != null)
                         {
-                            float initialDirection = ParserHelper.RadianToDegreeF(Math.Atan2(facing.Y, facing.X));
-                            replay.Decorations.Add(new RotatedRectangleDecoration(true, 0, width, height, initialDirection, width / 2, (start, start + preCastTime), "rgba(255, 100, 0, 0.2)", new AgentConnector(target)));
-                            replay.Decorations.Add(new RotatedRectangleDecoration(true, 0, width, height, initialDirection, width / 2, 360, (start + preCastTime, start + preCastTime + duration), "rgba(255, 50, 0, 0.5)", new AgentConnector(target)));
+                            var positionConnector = (AgentConnector)new AgentConnector(target).WithOffset(new Point3D(width / 2, 0), true);
+                            replay.Decorations.Add(new RectangleDecoration(width, height, (start, start + preCastTime), Colors.Orange, 0.2, positionConnector).UsingRotationConnector(new AngleConnector(facing)));
+                            replay.Decorations.Add(new RectangleDecoration(width, height, (start + preCastTime, start + preCastTime + duration), Colors.Red, 0.5, positionConnector).UsingRotationConnector(new AngleConnector(facing, 360)));
                         }
                     }
                     break;
@@ -169,13 +184,15 @@ namespace GW2EIEvtcParser.EncounterLogic
                         int firstConeEnd = firstConeStart + 400;
                         int secondConeEnd = secondConeStart + 400;
                         int thirdConeEnd = thirdConeStart + 400;
-                        int radius = 1500;
-                        Point3D facing = replay.Rotations.LastOrDefault(x => x.Time <= start);
+                        uint radius = 1500;
+                        Point3D facing = target.GetCurrentRotation(log, start);
                         if (facing != null)
                         {
-                            replay.Decorations.Add(new PieDecoration(true, 0, radius, facing, 28, (firstConeStart, firstConeEnd), "rgba(255,200,0,0.3)", new AgentConnector(target)));
-                            replay.Decorations.Add(new PieDecoration(true, 0, radius, facing, 54, (secondConeStart, secondConeEnd), "rgba(255,200,0,0.3)", new AgentConnector(target)));
-                            replay.Decorations.Add(new PieDecoration(true, 0, radius, facing, 81, (thirdConeStart, thirdConeEnd), "rgba(255,200,0,0.3)", new AgentConnector(target)));
+                            var connector = new AgentConnector(target);
+                            var rotationConnector = new AngleConnector(facing);
+                            replay.Decorations.Add(new PieDecoration( radius, 28, (firstConeStart, firstConeEnd), Colors.Yellow, 0.3, connector).UsingRotationConnector(rotationConnector));
+                            replay.Decorations.Add(new PieDecoration(radius, 54, (secondConeStart, secondConeEnd), Colors.Yellow, 0.3, connector).UsingRotationConnector(rotationConnector));
+                            replay.Decorations.Add(new PieDecoration(radius, 81, (thirdConeStart, thirdConeEnd), Colors.Yellow, 0.3, connector).UsingRotationConnector(rotationConnector));
                         }
                     }
                     break;
@@ -183,7 +200,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     var breakbar = cls.Where(x => x.SkillId == PlatformQuake).ToList();
                     foreach (AbstractCastEvent c in breakbar)
                     {
-                        replay.Decorations.Add(new CircleDecoration(true, 0, 180, ((int)c.Time, (int)c.EndTime), "rgba(0, 180, 255, 0.3)", new AgentConnector(target)));
+                        replay.Decorations.Add(new CircleDecoration(180, ((int)c.Time, (int)c.EndTime), Colors.LightBlue, 0.3, new AgentConnector(target)));
                     }
                     break;
                 case (int)ArcDPSEnums.TrashID.Karde:
@@ -192,11 +209,11 @@ namespace GW2EIEvtcParser.EncounterLogic
                     {
                         int start = (int)c.Time;
                         int end = start + 4000;
-                        int radius = 600;
-                        Point3D facing = replay.Rotations.LastOrDefault(x => x.Time <= start);
+                        uint radius = 600;
+                        Point3D facing = target.GetCurrentRotation(log, start);
                         if (facing != null)
                         {
-                            replay.Decorations.Add(new PieDecoration(true, 0, radius, facing, 60, (start, end), "rgba(255,200,0,0.5)", new AgentConnector(target)));
+                            replay.Decorations.Add(new PieDecoration(radius, 60, (start, end), Colors.Yellow, 0.5, new AgentConnector(target)).UsingRotationConnector(new AngleConnector(facing)));
                         }
                     }
                     break;
@@ -217,30 +234,21 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
             // timed bombs
             var timedBombs = log.CombatData.GetBuffData(TimeBomb).Where(x => x.To == p.AgentItem && x is BuffApplyEvent).ToList();
             foreach (AbstractBuffEvent c in timedBombs)
             {
                 int start = (int)c.Time;
                 int end = start + 3000;
-                replay.Decorations.Add(new CircleDecoration(false, 0, 280, (start, end), "rgba(255, 150, 0, 0.5)", new AgentConnector(p)));
-                replay.Decorations.Add(new CircleDecoration(true, end, 280, (start, end), "rgba(255, 150, 0, 0.5)", new AgentConnector(p)));
+                replay.AddDecorationWithFilledWithGrowing(new CircleDecoration(280, (start, end), Colors.LightOrange, 0.5, new AgentConnector(p)).UsingFilled(false), true, end);
             }
             // Sapper bombs
-            List<AbstractBuffEvent> sapperBombs = GetFilteredList(log.CombatData, SapperBombBuff, p, true, true);
-            int sapperStart = 0;
-            foreach (AbstractBuffEvent c in sapperBombs)
+            var sapperBombs = p.GetBuffStatus(log, SapperBombBuff, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            foreach (Segment seg in sapperBombs)
             {
-                if (c is BuffApplyEvent)
-                {
-                    sapperStart = (int)c.Time;
-                }
-                else
-                {
-                    int sapperEnd = (int)c.Time;
-                    replay.Decorations.Add(new CircleDecoration(false, 0, 180, (sapperStart, sapperEnd), "rgba(200, 255, 100, 0.5)", new AgentConnector(p)));
-                    replay.Decorations.Add(new CircleDecoration(true, sapperStart + 5000, 180, (sapperStart, sapperEnd), "rgba(200, 255, 100, 0.5)", new AgentConnector(p)));
-                }
+                replay.AddDecorationWithFilledWithGrowing(new CircleDecoration(180, seg, "rgba(200, 255, 100, 0.5)", new AgentConnector(p)).UsingFilled(false), true, seg.Start + 5000);
+                replay.AddOverheadIcon(seg, p, ParserIcons.BombOverhead);
             }
         }
 

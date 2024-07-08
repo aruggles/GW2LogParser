@@ -1,12 +1,13 @@
-﻿using Gw2LogParser.EvtcParserExtensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GW2EIEvtcParser;
+using Gw2LogParser.GW2EIBuilders;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     public class RawFormatBuilder
     {
@@ -18,7 +19,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         //
 
-        public RawFormatBuilder(ParsedLog log, RawFormatSettings settings, Version parserVersion, UploadResults uploadResults)
+        public RawFormatBuilder(ParsedEvtcLog log, RawFormatSettings settings, Version parserVersion, UploadResults uploadResults)
         {
             if (settings == null)
             {
@@ -41,7 +42,7 @@ namespace Gw2LogParser.GW2EIBuilders
             };
             var writer = new JsonTextWriter(sw)
             {
-                Formatting = Newtonsoft.Json.Formatting.None
+                Formatting =  Newtonsoft.Json.Formatting.None
             };
             serializer.Serialize(writer, _jsonLog);
             writer.Close();
@@ -123,5 +124,6 @@ namespace Gw2LogParser.GW2EIBuilders
             xml.WriteTo(xmlTextWriter);
             xmlTextWriter.Close();
         }
+
     }
 }

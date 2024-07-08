@@ -4,6 +4,7 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
@@ -15,6 +16,7 @@ namespace GW2EIEvtcParser.EncounterLogic
     internal class ConjuredAmalgamate : MythwrightGambit
     {
         private readonly bool _cn;
+        private static readonly Point3D CAChestPosition = new Point3D(-4594f, -13004f, -2063.04f);
         public ConjuredAmalgamate(int triggerID) : base((int)ArcDPSEnums.TargetID.ConjuredAmalgamate)
         {
             MechanicList.AddRange(new List<Mechanic>
@@ -30,15 +32,16 @@ namespace GW2EIEvtcParser.EncounterLogic
             new PlayerCastStartMechanic(ConjuredProtectionSAK, "Conjured Protection", new MechanicPlotlySetting(Symbols.Square,Colors.Green), "Shield.Cst","Conjured Protection (Special action shield)", "Shield Cast",0),
             new PlayerDstBuffApplyMechanic(GreatswordPower, "Greatsword Power", new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "Sword.C","Collected Sword", "Sword Collect",50),
             new PlayerDstBuffApplyMechanic(ConjuredShield, "Conjured Shield", new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Green), "Shield.C","Collected Shield", "Shield Collect",50),
-            new EnemyDstBuffApplyMechanic(AugmentedPower, "Augmented Power", new MechanicPlotlySetting(Symbols.AsteriskOpen,Colors.Red), "Augmented Power","Augmented Power", "Augmented Power",50),
-            new EnemyDstBuffApplyMechanic(Shielded, "Shielded", new MechanicPlotlySetting(Symbols.AsteriskOpen,Colors.Green), "Shielded","Shielded", "Shielded",50),
+            new EnemyDstBuffApplyMechanic(AugmentedPower, "Augmented Power", new MechanicPlotlySetting(Symbols.BowtieOpen,Colors.Red), "Augmented Power","Augmented Power", "Augmented Power",50),
+            new EnemyDstBuffApplyMechanic(ShieldedCA, "Shielded", new MechanicPlotlySetting(Symbols.BowtieOpen,Colors.Green), "Shielded","Shielded", "Shielded",50),
             });
             _cn = triggerID != (int)ArcDPSEnums.TargetID.ConjuredAmalgamate;
             Extension = "ca";
-            GenericFallBackMethod = FallBackMethod.None;
+            GenericFallBackMethod = FallBackMethod.ChestGadget;
             Icon = EncounterIconConjuredAmalgamate;
             EncounterCategoryInformation.InSubCategoryOrder = 0;
             EncounterID |= 0x000001;
+            ChestID = ArcDPSEnums.ChestID.CAChest;
         }
 
         protected override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log)
@@ -55,7 +58,7 @@ namespace GW2EIEvtcParser.EncounterLogic
             // time starts at first smash
             if (combatData.Any(x => x.IsStateChange == ArcDPSEnums.StateChange.EffectIDToGUID))
             {
-                CombatItem armSmashGUID = combatData.Where(x => x.IsStateChange == ArcDPSEnums.StateChange.EffectIDToGUID).FirstOrDefault(x => IDToGUIDEvent.UnpackGUID(x.SrcAgent, x.DstAgent) == EffectGUIDs.CAArmSmash);
+                CombatItem armSmashGUID = combatData.Where(x => x.IsStateChange == ArcDPSEnums.StateChange.EffectIDToGUID).FirstOrDefault(x => IDToGUIDEvent.UnpackGUID(x.SrcAgent, x.DstAgent).hex == EffectGUIDs.CAArmSmash);
                 if (armSmashGUID != null)
                 {
                     CombatItem firstArmSmash = combatData.FirstOrDefault(x => x.IsEffect && x.SkillID == armSmashGUID.SkillID);
@@ -77,6 +80,16 @@ namespace GW2EIEvtcParser.EncounterLogic
                 }
             }
             return GetGenericFightOffset(fightData);
+        }
+
+        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+        {
+            // Can be improved
+            if (TargetHPPercentUnderThreshold(ArcDPSEnums.TargetID.ConjuredAmalgamate, fightData.FightStart, combatData, Targets, 90))
+            {
+                return FightData.EncounterStartStatus.Late;
+            }
+            return FightData.EncounterStartStatus.Normal;
         }
 
         protected override List<int> GetTargetsIDs()
@@ -106,7 +119,7 @@ namespace GW2EIEvtcParser.EncounterLogic
             };
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
             // make those into npcs
             IReadOnlyList<AgentItem> cas = agentData.GetGadgetsByID(_cn ? ArcDPSEnums.TargetID.ConjuredAmalgamate_CHINA : ArcDPSEnums.TargetID.ConjuredAmalgamate);
@@ -131,6 +144,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                 rightArm.OverrideType(AgentItem.AgentType.NPC);
                 rightArm.OverrideID(ArcDPSEnums.TargetID.CARightArm);
             }
+            FindChestGadget(ChestID, agentData, combatData, CAChestPosition, (agentItem) => agentItem.HitboxHeight == 1200 && agentItem.HitboxWidth == 100);
             agentData.Refresh();
             AgentItem sword = agentData.AddCustomNPCAgent(fightData.FightStart, fightData.FightEnd, "Conjured Sword\0:Conjured Sword\051", ParserHelper.Spec.NPC, ArcDPSEnums.TrashID.ConjuredPlayerSword, true);
             ComputeFightTargets(agentData, combatData, extensions);
@@ -167,20 +181,11 @@ namespace GW2EIEvtcParser.EncounterLogic
             switch (target.ID)
             {
                 case (int)ArcDPSEnums.TargetID.ConjuredAmalgamate:
-                    List<AbstractBuffEvent> shieldCA = GetFilteredList(log.CombatData, Shielded, target, true, true);
-                    int shieldCAStart = 0;
-                    foreach (AbstractBuffEvent c in shieldCA)
+                    var shieldCA = target.GetBuffStatus(log, ShieldedCA, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+                    uint CAShieldRadius = 500;
+                    foreach (Segment seg in shieldCA)
                     {
-                        if (c is BuffApplyEvent)
-                        {
-                            shieldCAStart = (int)c.Time;
-                        }
-                        else
-                        {
-                            int shieldEnd = (int)c.Time;
-                            int radius = 500;
-                            replay.Decorations.Add(new CircleDecoration(true, 0, radius, (shieldCAStart, shieldEnd), "rgba(0, 150, 255, 0.3)", new AgentConnector(target)));
-                        }
+                        replay.Decorations.Add(new CircleDecoration(CAShieldRadius, seg, "rgba(0, 150, 255, 0.3)", new AgentConnector(target)));
                     }
                     break;
                 case (int)ArcDPSEnums.TargetID.CALeftArm:
@@ -189,20 +194,11 @@ namespace GW2EIEvtcParser.EncounterLogic
                 case (int)ArcDPSEnums.TrashID.ConjuredGreatsword:
                     break;
                 case (int)ArcDPSEnums.TrashID.ConjuredShield:
-                    List<AbstractBuffEvent> shield = GetFilteredList(log.CombatData, Shielded, target, true, true);
-                    int shieldStart = 0;
-                    foreach (AbstractBuffEvent c in shield)
+                    var shieldShield = target.GetBuffStatus(log, ShieldedCA, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+                    uint ShieldShieldRadius = 100;
+                    foreach (Segment seg in shieldShield)
                     {
-                        if (c is BuffApplyEvent)
-                        {
-                            shieldStart = (int)c.Time;
-                        }
-                        else
-                        {
-                            int shieldEnd = (int)c.Time;
-                            int radius = 100;
-                            replay.Decorations.Add(new CircleDecoration(true, 0, radius, (shieldStart, shieldEnd), "rgba(0, 150, 255, 0.3)", new AgentConnector(target)));
-                        }
+                        replay.Decorations.Add(new CircleDecoration(ShieldShieldRadius, seg, "rgba(0, 150, 255, 0.3)", new AgentConnector(target)));
                     }
                     break;
                 default:
@@ -228,7 +224,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     return;
                 }
                 SpawnEvent npcSpawn = combatData.GetSpawnEvents(zommoros).LastOrDefault();
-                AbstractHealthDamageEvent lastDamageTaken = combatData.GetDamageTakenData(target.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && playerAgents.Contains(x.From.GetFinalMaster()));
+                AbstractHealthDamageEvent lastDamageTaken = combatData.GetDamageTakenData(target.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && !x.ToFriendly && playerAgents.Contains(x.From.GetFinalMaster()));
                 if (lastDamageTaken == null)
                 {
                     return;
@@ -258,11 +254,19 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         private static List<long> GetTargetableTimes(ParsedEvtcLog log, AbstractSingleActor target)
         {
-            var attackTargetsAgents = log.CombatData.GetAttackTargetEvents(target.AgentItem).Take(2).ToList(); // 3rd one is weird
-            var attackTargets = new List<AgentItem>();
-            foreach (AttackTargetEvent c in attackTargetsAgents)
+            if (target == null)
+            {
+                return new List<long>();
+            }
+            var attackTargetsAgents = log.CombatData.GetAttackTargetEvents(target.AgentItem).ToList();
+            var attackTargets = new HashSet<AgentItem>();
+            foreach (AttackTargetEvent c in attackTargetsAgents) // 3rd one is weird
             {
                 attackTargets.Add(c.AttackTarget);
+                if (attackTargets.Count == 2)
+                {
+                    break;
+                }
             }
             var targetables = new List<long>();
             foreach (AgentItem attackTarget in attackTargets)
@@ -281,58 +285,60 @@ namespace GW2EIEvtcParser.EncounterLogic
             {
                 throw new MissingKeyActorsException("Conjured Amalgamate not found");
             }
+            AbstractSingleActor leftArm = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.CALeftArm));
+            AbstractSingleActor rightArm = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.CARightArm));
             phases[0].AddTarget(ca);
+            phases[0].AddSecondaryTarget(leftArm);
+            phases[0].AddSecondaryTarget(rightArm);
             if (!requirePhases)
             {
                 return phases;
             }
             phases.AddRange(GetPhasesByInvul(log, CAInvul, ca, true, false));
+            int burnPhase = 0, armPhase = 0;
             for (int i = 1; i < phases.Count; i++)
             {
                 string name;
                 PhaseData phase = phases[i];
                 if (i % 2 == 1)
                 {
-                    name = "Arm Phase";
+                    name = "Arm Phase " + (++armPhase);
                 }
                 else
                 {
-                    name = "Burn Phase";
+                    name = "Burn Phase " + (++burnPhase);
                     phase.AddTarget(ca);
                 }
                 phase.Name = name;
             }
-            AbstractSingleActor leftArm = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.CALeftArm));
-            if (leftArm != null)
+            int leftArmPhase = 0, rightArmPhase = 0, bothArmPhase = 0;
+            if (leftArm != null || rightArm != null)
             {
-                List<long> targetables = GetTargetableTimes(log, leftArm);
-                for (int i = 1; i < phases.Count; i += 2)
+                List<long> targetablesL = GetTargetableTimes(log, leftArm);
+                List<long> targetablesR = GetTargetableTimes(log, rightArm);
+                for (int i = 1; i < phases.Count; i++)
                 {
                     PhaseData phase = phases[i];
-                    if (targetables.Exists(x => phase.InInterval(x)))
+                    if (!phase.Name.Contains("Arm"))
                     {
-                        phase.Name = "Left " + phase.Name;
-                        phase.AddTarget(leftArm);
+                        continue;
                     }
-                }
-            }
-            AbstractSingleActor rightArm = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.CARightArm));
-            if (rightArm != null)
-            {
-                List<long> targetables = GetTargetableTimes(log, rightArm);
-                for (int i = 1; i < phases.Count; i += 2)
-                {
-                    PhaseData phase = phases[i];
-                    if (targetables.Exists(x => phase.InInterval(x)))
+                    var leftExists = targetablesL.Exists(x => phase.InInterval(x));
+                    var rightExists = targetablesR.Exists(x => phase.InInterval(x));
+                    if (leftExists && rightExists)
                     {
-                        if (phase.Name.Contains("Left"))
-                        {
-                            phase.Name = "Both Arms Phase";
-                        }
-                        else
-                        {
-                            phase.Name = "Right " + phase.Name;
-                        }
+                        phase.Name = "Both Arms Phase " + (++bothArmPhase);
+                        phase.AddTarget(leftArm);
+                        phase.AddTarget(rightArm);
+                    } 
+                    else if (leftExists)
+                    {
+                        phase.Name = "Left Arm Phase " + (++leftArmPhase);
+                        phase.AddTarget(leftArm);
+                    } 
+                    else if (rightExists)
+                    {
+                        phase.Name = "Right Arm Phase " + (++rightArmPhase);
                         phase.AddTarget(rightArm);
                     }
                 }
@@ -342,21 +348,25 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+            // Conjured Protection - Shield AoE
             IReadOnlyList<AbstractCastEvent> cls = p.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd);
             var shieldCast = cls.Where(x => x.SkillId == ConjuredProtectionSAK).ToList();
             foreach (AbstractCastEvent c in shieldCast)
             {
                 int start = (int)c.Time;
                 int duration = 10000;
-                int radius = 300;
-                ParametricPoint3D shieldNextPos = replay.PolledPositions.FirstOrDefault(x => x.Time >= start);
-                ParametricPoint3D shieldPrevPos = replay.PolledPositions.LastOrDefault(x => x.Time <= start);
-                if (shieldNextPos != null || shieldPrevPos != null)
+                uint radius = 300;
+                Point3D position = p.GetCurrentInterpolatedPosition(log, start);
+                if (position != null)
                 {
-                    replay.Decorations.Add(new CircleDecoration(true, 0, radius, (start, start + duration), "rgba(255, 0, 255, 0.1)", new InterpolatedPositionConnector(shieldPrevPos, shieldNextPos, start)));
-                    replay.Decorations.Add(new CircleDecoration(false, 0, radius, (start, start + duration), "rgba(255, 0, 255, 0.3)", new InterpolatedPositionConnector(shieldPrevPos, shieldNextPos, start)));
+                    var circle = new CircleDecoration(radius, (start, start + duration), "rgba(255, 0, 255, 0.2)", new PositionConnector(position));
+                    replay.AddDecorationWithBorder(circle);
                 }
             }
+            // Shields and Greatswords Overheads
+            replay.AddOverheadIcons(p.GetBuffStatus(log, ConjuredShield, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0), p, ParserIcons.ConjuredShieldEmptyOverhead);
+            replay.AddOverheadIcons(p.GetBuffStatus(log, GreatswordPower, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0), p, ParserIcons.GreatswordPowerEmptyOverhead);
         }
 
         internal override FightData.EncounterMode GetEncounterMode(CombatData combatData, AgentData agentData, FightData fightData)

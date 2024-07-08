@@ -1,8 +1,9 @@
-﻿using GW2EIEvtcParser;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.EncounterLogic;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +11,12 @@ using static Gw2LogParser.GW2EIBuilders.JsonLog;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
-    internal class JsonLogBuilder
+    /// <summary>
+    /// The root of the JSON
+    /// </summary>
+    internal static class JsonLogBuilder
     {
-        internal static SkillDesc BuildSkillDesc(SkillItem skill, ParsedLog log)
+        internal static SkillDesc BuildSkillDesc(SkillItem skill, ParsedEvtcLog log)
         {
             var skillDesc = new SkillDesc
             {
@@ -31,7 +35,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return skillDesc;
         }
 
-        internal static BuffDesc BuildBuffDesc(Buff buff, ParsedLog log)
+        internal static BuffDesc BuildBuffDesc(Buff buff, ParsedEvtcLog log)
         {
             var buffDesc = new BuffDesc
             {
@@ -77,12 +81,13 @@ namespace Gw2LogParser.GW2EIBuilders
                 Description = damageModifier.Tooltip,
                 NonMultiplier = !damageModifier.Multiplier,
                 SkillBased = damageModifier.SkillBased,
-                Approximate = damageModifier.Approximate
+                Approximate = damageModifier.Approximate,
+                Incoming = damageModifier.Incoming,
             };
             return damageModDesc;
         }
 
-        public static JsonLog BuildJsonLog(ParsedLog log, RawFormatSettings settings, Version parserVersion, string[] uploadLinks)
+        public static JsonLog BuildJsonLog(ParsedEvtcLog log, RawFormatSettings settings, Version parserVersion, string[] uploadLinks)
         {
             var jsonLog = new JsonLog();
             //
@@ -94,6 +99,7 @@ namespace Gw2LogParser.GW2EIBuilders
             jsonLog.EliteInsightsVersion = parserVersion.ToString();
             jsonLog.ArcVersion = log.LogData.ArcVersion;
             jsonLog.RecordedBy = log.LogData.PoVName;
+            jsonLog.RecordedAccountBy = log.LogData.PoVAccount;
             jsonLog.TimeStart = log.LogData.LogStart;
             jsonLog.TimeEnd = log.LogData.LogEnd;
             jsonLog.TimeStartStd = log.LogData.LogStartStd;
@@ -107,8 +113,14 @@ namespace Gw2LogParser.GW2EIBuilders
             jsonLog.Language = log.LogData.Language;
             jsonLog.LanguageID = (byte)log.LogData.LanguageID;
             jsonLog.FractalScale = log.CombatData.GetFractalScaleEvent() != null ? log.CombatData.GetFractalScaleEvent().Scale : 0;
-            jsonLog.IsCM = log.FightData.IsCM;
+            jsonLog.IsCM = log.FightData.IsCM || log.FightData.IsLegendaryCM;
+            jsonLog.IsLegendaryCM = log.FightData.IsLegendaryCM;
+            jsonLog.IsLateStart = log.FightData.IsLateStart;
+            jsonLog.MissingPreEvent = log.FightData.MissingPreEvent;
+            jsonLog.Anonymous = log.ParserSettings.AnonymousPlayers;
+            jsonLog.DetailedWvW = log.ParserSettings.DetailedWvWParse && log.FightData.Logic.ParseMode == FightLogic.ParseModeEnum.WvW;
             var personalBuffs = new Dictionary<string, HashSet<long>>();
+            var personalDamageMods = new Dictionary<string, HashSet<long>>();
             var skillMap = new Dictionary<string, SkillDesc>();
             var buffMap = new Dictionary<string, BuffDesc>();
             var damageModMap = new Dictionary<string, DamageModDesc>();
@@ -148,7 +160,7 @@ namespace Gw2LogParser.GW2EIBuilders
             jsonLog.Targets = log.FightData.Logic.Targets.Select(x => JsonNPCBuilder.BuildJsonNPC(x, log, settings, skillMap, buffMap)).ToList();
             //
             log.UpdateProgressWithCancellationCheck("Raw Format: Building Players");
-            jsonLog.Players = log.Friendlies.Select(x => JsonPlayerBuilder.BuildJsonPlayer(x, log, settings, skillMap, buffMap, damageModMap, personalBuffs)).ToList();
+            jsonLog.Players = log.Friendlies.Select(x => JsonPlayerBuilder.BuildJsonPlayer(x, log, settings, skillMap, buffMap, damageModMap, personalBuffs, personalDamageMods)).ToList();
             //
             if (log.LogData.LogErrors.Any())
             {
@@ -181,6 +193,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             //
             jsonLog.PersonalBuffs = personalBuffs.ToDictionary(x => x.Key, x => (IReadOnlyCollection<long>)x.Value);
+            jsonLog.PersonalDamageMods = personalDamageMods.ToDictionary(x => x.Key, x => (IReadOnlyCollection<long>)x.Value);
             jsonLog.SkillMap = skillMap;
             jsonLog.BuffMap = buffMap;
             jsonLog.DamageModMap = damageModMap;
@@ -191,5 +204,6 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return jsonLog;
         }
+
     }
 }

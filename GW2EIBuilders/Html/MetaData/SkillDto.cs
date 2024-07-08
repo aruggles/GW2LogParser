@@ -1,9 +1,9 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class SkillDto : AbstractSkillDto
     {
@@ -13,7 +13,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool TraitProc { get; set; }
         public bool GearProc { get; set; }
 
-        public SkillDto(SkillItem skill, ParsedLog log) : base(skill, log)
+        public SkillDto(SkillItem skill, ParsedEvtcLog log) : base(skill, log)
         {
             Aa = skill.AA;
             IsSwap = skill.IsSwap;
@@ -22,7 +22,7 @@ namespace Gw2LogParser.GW2EIBuilders
             TraitProc = log.SkillData.IsTraitProc(skill.ID);
         }
 
-        public static void AssembleSkills(ICollection<SkillItem> skills, Dictionary<string, SkillDto> dict, ParsedLog log)
+        public static void AssembleSkills(ICollection<SkillItem> skills, Dictionary<string, SkillDto> dict, ParsedEvtcLog log)
         {
             foreach (SkillItem skill in skills)
             {
@@ -42,7 +42,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return rotEntry;
         }
 
-        public static List<object[]> BuildRotationData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills)
+        public static List<object[]> BuildRotationData(ParsedEvtcLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills)
         {
             var list = new List<object[]>();
             IReadOnlyList<AbstractCastEvent> casting = p.GetIntersectingCastEvents(log, phase.Start, phase.End);

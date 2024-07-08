@@ -1,14 +1,10 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
     <title>Combat Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap4.min.css" integrity="sha512-PT0RvABaDhDQugEbpNMwgYBCnGCiTZMh9yOzUsJHDgl/dMhD9yjHAwoumnUk3JydV3QTcIkNDuN40CJxik5+WQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         img.icon {
             width: 24px;
@@ -470,29 +466,35 @@
                                     <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
-                                    <th data-toggle="tooltip" title="All">
-                                        Target <img src="https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/20px-Healing.png" alt="All" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Target">
+                                        Target <img src="https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/20px-Healing.png" alt="Target" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Healing Power">
-                                        Target <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="Healing Power" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Target Healing Power">
+                                        Target <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="Target Healing Power" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Conversion">
-                                        Target <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="Conversion" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Target Conversion">
+                                        Target <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="Target Conversion" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Downed Healing">
-                                        Target <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Downed Healing" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="Target Downed Healing">
+                                        Target <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Target Downed Healing" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="Target Barrier">
+                                        Target <img src="https://wiki.guildwars2.com/images/thumb/c/cc/Barrier.png/30px-Barrier.png" alt="Target Barrier" class="icon icon-hover">
                                     </th>
                                     <th data-toggle="tooltip" title="All">
                                         All <img src="https://wiki.guildwars2.com/images/thumb/f/f3/Healing.png/20px-Healing.png" alt="All" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Healing Power">
-                                        All <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="Healing Power" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="All Healing Power">
+                                        All <img src="https://wiki.guildwars2.com/images/8/81/Healing_Power.png" alt="All Healing Power" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Conversion">
-                                        All <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="Conversion" class="icon icon-hover">
+                                    <th data-toggle="tooltip" title="All Conversion">
+                                        All <img src="https://wiki.guildwars2.com/images/4/4a/Litany_of_Wrath.png" alt="All Conversion" class="icon icon-hover">
                                     </th>
-                                    <th data-toggle="tooltip" title="Downed Healing">
+                                    <th data-toggle="tooltip" title="All Downed Healing">
                                         All <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Downed Healing" class="icon icon-hover">
+                                    </th>
+                                    <th data-toggle="tooltip" title="All Barrier">
+                                        <img src="https://wiki.guildwars2.com/images/thumb/c/cc/Barrier.png/30px-Barrier.png" alt="All Barrier" class="icon icon-hover">
                                     </th>
                                 </tr>
                             </thead>
@@ -518,6 +520,9 @@
                                     <th data-toggle="tooltip" title="Downed Healed">
                                         <img src="https://wiki.guildwars2.com/images/3/3d/Downed_ally.png" alt="Downed Healing" class="icon icon-hover">
                                     </th>
+                                    <th data-toggle="tooltip" title="Incoming Barrier">
+                                        <img src="https://wiki.guildwars2.com/images/thumb/c/cc/Barrier.png/30px-Barrier.png" alt="Downed Healing" class="icon icon-hover">
+                                    </th>
                                 </tr>
                             </thead>
                         </table>
@@ -531,33 +536,45 @@
                 </div>
                 <!-- Player Summaries -->
             </div>
-
-            <!-- Optional JavaScript -->
-            <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-            <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-            <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-            <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-            <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+            
+            <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.2/umd/popper.min.js" integrity="sha512-2rNj2KJ+D8s1ceNasTIex6z4HWyOnEYLVC3FigGOmyQCZc2eBXKgOxQmo3oKLHyfcj53uz4QMsRCWNbLd32Q1g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js" integrity="sha512-BkpSL20WETFylMrcirBahHfSnY++H2O1W+UnEEO4yNIl+jI2+zowyoGJpbtk6bx97fBXf++WJHSSK2MV4ghPcg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.10/pako.min.js"></script>
+            <!--${CompressionUtils}-->
+            
+            <script>
+                // Player data.
+                var playerData = ${logDataJson};
+                if (window.pako) {
+                    playerData = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(playerData))))
+                }
+            </script>
             <script>
                 function buildHealingData() {
                     data = [];
                     for (const [key, value] of Object.entries(playerData)) {
-                        data.push({
-                            group: value.group, profession: value.profession, name: key, account: value.account,
-                            incomingConversion: value.healing.incomingConversion,
-                            incomingDowned: value.healing.incomingDowned,
-                            incomingHealed: value.healing.incomingHealed,
-                            incomingHealingPower: value.healing.incomingHealingPower,
-                            outgoingAll: value.healing.outgoingAll,
-                            outgoingAllConversion: value.healing.outgoingAllConversion,
-                            outgoingAllDowned: value.healing.outgoingAllDowned,
-                            outgoingAllHealingPower: value.healing.outgoingAllHealingPower,
-                            outgoingTargetAll: value.healing.outgoingTargetAll,
-                            outgoingTargetConversion: value.healing.outgoingTargetConversion,
-                            outgoingTargetDowned: value.healing.outgoingTargetDowned,
-                            outgoingTargetHealingPower: value.healing.outgoingTargetHealingPower
-                        });
+                        if (value.healing !== undefined) {
+                            data.push({
+                                group: value.group, profession: value.profession, name: key, account: value.account,
+                                incomingConversion: value.healing.incomingConversion,
+                                incomingDowned: value.healing.incomingDowned,
+                                incomingHealed: value.healing.incomingHealed,
+                                incomingHealingPower: value.healing.incomingHealingPower,
+                                outgoingAll: value.healing.outgoingAll,
+                                outgoingAllConversion: value.healing.outgoingAllConversion,
+                                outgoingAllDowned: value.healing.outgoingAllDowned,
+                                outgoingAllHealingPower: value.healing.outgoingAllHealingPower,
+                                outgoingTargetAll: value.healing.outgoingTargetAll,
+                                outgoingTargetConversion: value.healing.outgoingTargetConversion,
+                                outgoingTargetDowned: value.healing.outgoingTargetDowned,
+                                outgoingTargetHealingPower: value.healing.outgoingTargetHealingPower,
+                                incomingBarrier: value.healing.incomingBarrier,
+                                outgoingBarrier: value.healing.outgoingBarrier,
+                                outgoingTargetBarrier: value.healing.outgoingTargetBarrier
+                            });
+                        }
                     }
                     return data;
                 }
@@ -663,7 +680,6 @@
                     return new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(number)
                 }
                 var playerArray = [];
-                var playerData = ${logDataJson};
                 for (const [_, value] of Object.entries(playerData)) {
                     value.gameplay.critPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.critableHits / value.gameplay.criticalHits) * 100.0) + '%';
                     value.gameplay.flankPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.flanking / value.gameplay.criticalHits) * 100.0) + '%';
@@ -748,10 +764,12 @@
                             { data: 'outgoingTargetHealingPower' },
                             { data: 'outgoingTargetConversion' },
                             { data: 'outgoingTargetDowned' },
+                            { data: 'outgoingTargetBarrier' },
                             { data: 'outgoingAll' },
                             { data: 'outgoingAllHealingPower' },
                             { data: 'outgoingAllConversion' },
-                            { data: 'outgoingAllDowned' }
+                            { data: 'outgoingAllDowned' },
+                            { data: 'outgoingBarrier'},
                         ]
                     });
                     $('#table-healing-incoming').DataTable({
@@ -771,7 +789,8 @@
                             { data: 'incomingHealed' },
                             { data: 'incomingHealingPower' },
                             { data: 'incomingConversion' },
-                            { data: 'incomingDowned' }
+                            { data: 'incomingDowned' },
+                            { data: 'incomingBarrier'},
                         ]
                     });
                     $('#table-defensestats').DataTable({

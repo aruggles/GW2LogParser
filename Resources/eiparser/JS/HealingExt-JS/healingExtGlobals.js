@@ -6,8 +6,8 @@ function compileHealingExtTemplates() {
 };
 
 var healingGraphComponent = {
-    data: function () {
-        return {
+    data: function() {
+        return {     
             graphhealingdata: {
                 hpsmode: 0,
                 graphmode: logData.wvw ? GraphType.Damage : GraphType.DPS,

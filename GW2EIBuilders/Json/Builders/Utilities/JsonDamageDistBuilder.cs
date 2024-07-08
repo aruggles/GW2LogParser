@@ -8,9 +8,12 @@ using System.Linq;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class corresponding a damage distribution
+    /// </summary>
     internal static class JsonDamageDistBuilder
     {
-        private static JsonDamageDist BuildJsonDamageDist(long id, List<AbstractHealthDamageEvent> dmList, List<AbstractBreakbarDamageEvent> brList, ParsedLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        private static JsonDamageDist BuildJsonDamageDist(long id, List<AbstractHealthDamageEvent> dmList, List<AbstractBreakbarDamageEvent> brList, ParsedEvtcLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var jsonDamageDist = new JsonDamageDist();
             jsonDamageDist.IndirectDamage = dmList.Exists(x => x is NonDirectHealthDamageEvent) || brList.Exists(x => x is NonDirectBreakbarDamageEvent);
@@ -75,7 +78,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return jsonDamageDist;
         }
 
-        internal static List<JsonDamageDist> BuildJsonDamageDistList(Dictionary<long, List<AbstractHealthDamageEvent>> dlsByID, Dictionary<long, List<AbstractBreakbarDamageEvent>> brlsByID, ParsedLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        internal static List<JsonDamageDist> BuildJsonDamageDistList(Dictionary<long, List<AbstractHealthDamageEvent>> dlsByID, Dictionary<long, List<AbstractBreakbarDamageEvent>> brlsByID, ParsedEvtcLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var res = new List<JsonDamageDist>();
             foreach (KeyValuePair<long, List<AbstractHealthDamageEvent>> pair in dlsByID)
@@ -96,5 +99,6 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return res;
         }
+
     }
 }

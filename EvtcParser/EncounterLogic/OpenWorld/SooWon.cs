@@ -101,7 +101,7 @@ namespace GW2EIEvtcParser.EncounterLogic.OpenWorld
         {
             double initialHealth = mainTarget.GetCurrentHealthPercent(log, 0);
             Func<Func<BuffApplyEvent, bool>, BuffApplyEvent> targetBuffs =
-                log.CombatData.GetBuffData(mainTarget.AgentItem).OfType<BuffApplyEvent>().FirstOrDefault;
+                log.CombatData.GetBuffDataByDst(mainTarget.AgentItem).OfType<BuffApplyEvent>().FirstOrDefault;
             AbstractBuffEvent initialInvuln = targetBuffs(x => x.Initial && x.BuffID == Invulnerability757);
             AbstractBuffEvent initialDmgImmunity = targetBuffs(x => x.Initial && x.BuffID == SooWonSpearPhaseInvul); // spear phase
 
@@ -203,8 +203,8 @@ namespace GW2EIEvtcParser.EncounterLogic.OpenWorld
             }
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData,
-            List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData,
+            AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
             IReadOnlyList<AgentItem> sooWons = agentData.GetGadgetsByID(ArcDPSEnums.TargetID.SooWonOW);
             if (!sooWons.Any())

@@ -5,6 +5,7 @@
     /// </summary>
     public class JsonConsumable
     {
+
         /// <summary>
         /// Number of stacks
         /// </summary>

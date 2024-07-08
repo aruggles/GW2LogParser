@@ -1,10 +1,9 @@
-﻿using GW2EIEvtcParser.ParsedData;
+﻿using System.Collections.Generic;
 using GW2EIEvtcParser;
-using System.Collections.Generic;
 using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
+using GW2EIEvtcParser.ParsedData;
 
-namespace Gw2LogParser.GW2EIBuilders.Html.Extensions.BarrierStats
+namespace GW2EIBuilders
 {
     internal class EXTBarrierStatsPlayerDetailsDto
     {
@@ -15,7 +14,7 @@ namespace Gw2LogParser.GW2EIBuilders.Html.Extensions.BarrierStats
 
         // helpers
 
-        public static EXTBarrierStatsPlayerDetailsDto BuildPlayerBarrierData(ParsedLog log, AbstractSingleActor actor, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static EXTBarrierStatsPlayerDetailsDto BuildPlayerBarrierData(ParsedEvtcLog log, AbstractSingleActor actor, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new EXTBarrierStatsPlayerDetailsDto
             {
@@ -43,7 +42,7 @@ namespace Gw2LogParser.GW2EIBuilders.Html.Extensions.BarrierStats
             return dto;
         }
 
-        private static EXTBarrierStatsPlayerDetailsDto BuildFriendlyMinionsHealingData(ParsedLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static EXTBarrierStatsPlayerDetailsDto BuildFriendlyMinionsHealingData(ParsedEvtcLog log, AbstractSingleActor actor, Minions minion, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new EXTBarrierStatsPlayerDetailsDto
             {

@@ -23,7 +23,7 @@ namespace GW2EIEvtcParser.EncounterLogic
             {
                 throw new MissingKeyActorsException("Main target not found");
             }
-            CombatItem firstDamageEvent = combatData.FirstOrDefault(x => (x.SrcMatchesAgent(mainTarget) || x.DstMatchesAgent(mainTarget)) && x.IsDamage() && x.Time >= upperLimit - ParserHelper.ServerDelayConstant);
+            CombatItem firstDamageEvent = combatData.FirstOrDefault(x => (x.SrcMatchesAgent(mainTarget) || x.DstMatchesAgent(mainTarget)) && x.IsDamagingDamage() && x.Time >= upperLimit - ParserHelper.ServerDelayConstant);
             if (firstDamageEvent != null)
             {
                 return firstDamageEvent.Time;
@@ -31,24 +31,9 @@ namespace GW2EIEvtcParser.EncounterLogic
             return upperLimit;
         }
 
-        internal static long GetPostLogStartNPCUpdateDamageEventTime(FightData fightData, AgentData agentData, IReadOnlyList<CombatItem> combatData, long upperLimit, int id)
+        internal static long GetEnterCombatTime(FightData fightData, AgentData agentData, IReadOnlyList<CombatItem> combatData, long upperLimit, int id, ulong agent)
         {
-            AgentItem mainTarget = agentData.GetNPCsByID(id).FirstOrDefault();
-            if (mainTarget == null)
-            {
-                throw new MissingKeyActorsException("Main target not found");
-            }
-            return GetPostLogStartNPCUpdateDamageEventTime(fightData, agentData, combatData, upperLimit, mainTarget);
-        }
-        internal static long GetPostLogStartNPCUpdateDamageEventTime(FightData fightData, AgentData agentData, IReadOnlyList<CombatItem> combatData, long upperLimit, ArcDPSEnums.TargetID id)
-        {
-            return GetPostLogStartNPCUpdateDamageEventTime(fightData, agentData, combatData, upperLimit, (int)id);
-        }
-
-
-        internal static long GetEnterCombatTime(FightData fightData, AgentData agentData, IReadOnlyList<CombatItem> combatData, long upperLimit, int id)
-        {
-            AgentItem mainTarget = agentData.GetNPCsByID(id).FirstOrDefault();
+            AgentItem mainTarget = agentData.GetNPCsByIDAndAgent(id, agent).FirstOrDefault() ?? agentData.GetNPCsByID(id).FirstOrDefault();
             if (mainTarget == null)
             {
                 throw new MissingKeyActorsException("Main target not found");

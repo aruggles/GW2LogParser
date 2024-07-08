@@ -1,17 +1,20 @@
-﻿using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.Extensions;
-using Gw2LogParser.EvtcParserExtensions;
+﻿using System;
 using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.Extensions;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
+
     internal class EXTHealingStatsPhaseDto
     {
+
         public List<List<object>> OutgoingHealingStats { get; set; }
         public List<List<List<object>>> OutgoingHealingStatsTargets { get; set; }
-        public List<List<object>> IncomingHealingStats { get; set; }
+        public List<List<object>> IncomingHealingStats { get; set; } 
 
-        public EXTHealingStatsPhaseDto(PhaseData phase, ParsedLog log)
+        public EXTHealingStatsPhaseDto(PhaseData phase, ParsedEvtcLog log)
         {
             OutgoingHealingStats = BuildOutgoingHealingStatData(log, phase);
             OutgoingHealingStatsTargets = BuildOutgoingHealingFriendlyStatData(log, phase);
@@ -46,7 +49,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 };
             return data;
         }
-        public static List<List<object>> BuildOutgoingHealingStatData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildOutgoingHealingStatData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>(log.Friendlies.Count);
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -57,7 +60,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<List<object>>> BuildOutgoingHealingFriendlyStatData(ParsedLog log, PhaseData phase)
+        public static List<List<List<object>>> BuildOutgoingHealingFriendlyStatData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<List<object>>>(log.Friendlies.Count);
 
@@ -72,9 +75,9 @@ namespace Gw2LogParser.GW2EIBuilders
                 list.Add(playerData);
             }
             return list;
-        }
+        } 
 
-        public static List<List<object>> BuildIncomingHealingStatData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildIncomingHealingStatData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>();
 

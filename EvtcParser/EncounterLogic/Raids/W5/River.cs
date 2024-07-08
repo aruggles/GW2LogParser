@@ -21,7 +21,7 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             MechanicList.AddRange(new List<Mechanic>
             {
-                new PlayerDstHitMechanic(Bombshell, "Bombshell", new MechanicPlotlySetting(Symbols.Circle,Colors.Orange),"Bomb Hit", "Hit by Hollowed Bomber Exlosion", "Hit by Bomb", 0 ),
+                new PlayerDstHitMechanic(BombShellRiverOfSouls, "Bombshell", new MechanicPlotlySetting(Symbols.Circle,Colors.Orange),"Bomb Hit", "Hit by Hollowed Bomber Exlosion", "Hit by Bomb", 0 ),
                 new PlayerDstHitMechanic(TimedBomb, "Timed Bomb", new MechanicPlotlySetting(Symbols.Square,Colors.Orange),"Stun Bomb", "Stunned by Mini Bomb", "Stun Bomb", 0).UsingChecker((de, log) => !de.To.HasBuff(log, Stability, de.Time - ServerDelayConstant)),
             }
             );
@@ -92,38 +92,25 @@ namespace GW2EIEvtcParser.EncounterLogic
             return startToUse;
         }
 
-        internal override void CheckSuccess(CombatData combatData, AgentData agentData, FightData fightData, IReadOnlyCollection<AgentItem> playerAgents)
+        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
         {
-            base.CheckSuccess(combatData, agentData, fightData, playerAgents);
-            if (!fightData.Success)
+            if (!agentData.TryGetFirstAgentItem(ArcDPSEnums.TargetID.Desmina, out AgentItem desmina))
             {
-                AgentItem desmina = agentData.GetNPCsByID((int)ArcDPSEnums.TargetID.Desmina).FirstOrDefault();
-                if (desmina == null)
+                throw new MissingKeyActorsException("Desmina not found");
+            }
+            if (combatData.HasMovementData)
+            {
+                var desminaEncounterStartPosition = new Point3D(-9239.706f, 635.445435f, -813.8115f);
+                var positions = combatData.GetMovementData(desmina).Where(x => x is PositionEvent pe && pe.Time < desmina.FirstAware + MinimumInCombatDuration).Select(x => x.GetParametricPoint3D()).ToList();
+                if (!positions.Any(x => x.X < desminaEncounterStartPosition.X + 100 && x.X > desminaEncounterStartPosition.X - 1300))
                 {
-                    throw new MissingKeyActorsException("Desmina not found");
-                }
-                ExitCombatEvent ooc = combatData.GetExitCombatEvents(desmina).LastOrDefault();
-                if (ooc != null)
-                {
-                    long time = 0;
-                    foreach (NPC mob in TrashMobs)
-                    {
-                        time = Math.Max(mob.LastAware, time);
-                    }
-                    DespawnEvent dspwn = combatData.GetDespawnEvents(desmina).LastOrDefault();
-                    if (time != 0 && dspwn == null && time + 500 <= desmina.LastAware)
-                    {
-                        if (AtLeastOnePlayerAlive(combatData, fightData, time, playerAgents))
-                        {
-                            fightData.SetSuccess(true, time);
-                        }
-                    }
+                    return FightData.EncounterStartStatus.Late;
                 }
             }
+            return FightData.EncounterStartStatus.Normal;
         }
 
-
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
             FindChestGadget(ChestID, agentData, combatData, ChestOfSoulsPosition, (agentItem) => agentItem.HitboxHeight == 1200 && agentItem.HitboxWidth == 100);
             agentData.AddCustomNPCAgent(fightData.FightStart, fightData.FightEnd, "River of Souls", Spec.NPC, (int)ArcDPSEnums.TargetID.DummyTarget, true);
@@ -136,19 +123,19 @@ namespace GW2EIEvtcParser.EncounterLogic
             // Handle potentially wrongly associated logs
             if (logStartNPCUpdate != null)
             {
-                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.BrokenKing).Any(brokenKing => combatData.Any(evt => evt.IsDamage() && evt.DstMatchesAgent(brokenKing) && evt.Value > 0)))
+                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.BrokenKing).Any(brokenKing => combatData.Any(evt => evt.IsDamagingDamage() && evt.DstMatchesAgent(brokenKing))))
                 {
                     return new StatueOfIce((int)ArcDPSEnums.TargetID.BrokenKing);
                 }
-                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EaterOfSouls).Any(soulEater => combatData.Any(evt => evt.IsDamage() && evt.DstMatchesAgent(soulEater) && evt.Value > 0)))
+                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EaterOfSouls).Any(soulEater => combatData.Any(evt => evt.IsDamagingDamage() && evt.DstMatchesAgent(soulEater))))
                 {
                     return new StatueOfDeath((int)ArcDPSEnums.TargetID.EaterOfSouls);
                 }
-                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EyeOfFate).Any(eyeOfFate => combatData.Any(evt => evt.IsDamage() && evt.DstMatchesAgent(eyeOfFate) && evt.Value > 0)))
+                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EyeOfFate).Any(eyeOfFate => combatData.Any(evt => evt.IsDamagingDamage() && evt.DstMatchesAgent(eyeOfFate))))
                 {
                     return new StatueOfDarkness((int)ArcDPSEnums.TargetID.EyeOfFate);
                 }
-                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EyeOfJudgement).Any(eyeOfJudgement => combatData.Any(evt => evt.IsDamage() && evt.DstMatchesAgent(eyeOfJudgement) && evt.Value > 0)))
+                if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EyeOfJudgement).Any(eyeOfJudgement => combatData.Any(evt => evt.IsDamagingDamage() && evt.DstMatchesAgent(eyeOfJudgement))))
                 {
                     return new StatueOfDarkness((int)ArcDPSEnums.TargetID.EyeOfJudgement);
                 }
@@ -158,6 +145,7 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
             // TODO bombs dual following circle actor (one growing, other static) + dual static circle actor (one growing with min radius the final radius of the previous, other static). Missing buff id
         }
 
@@ -166,19 +154,10 @@ namespace GW2EIEvtcParser.EncounterLogic
             switch (target.ID)
             {
                 case (int)ArcDPSEnums.TargetID.Desmina:
-                    List<AbstractBuffEvent> asylums = GetFilteredList(log.CombatData, FollowersAsylum, target, true, true);
-                    int asylumStart = 0;
-                    foreach (AbstractBuffEvent asylum in asylums)
+                    var asylums = target.GetBuffStatus(log, FollowersAsylum, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+                    foreach (Segment asylum in asylums)
                     {
-                        if (asylum is BuffApplyEvent)
-                        {
-                            asylumStart = (int)asylum.Time;
-                        }
-                        else
-                        {
-                            int asylumEnd = (int)asylum.Time;
-                            replay.Decorations.Add(new CircleDecoration(true, 0, 300, (asylumStart, asylumEnd), "rgba(0, 160, 255, 0.3)", new AgentConnector(target)));
-                        }
+                        replay.Decorations.Add(new CircleDecoration(300, asylum, "rgba(0, 160, 255, 0.3)", new AgentConnector(target)));
                     }
                     break;
                 case (int)ArcDPSEnums.TrashID.HollowedBomber:
@@ -187,14 +166,14 @@ namespace GW2EIEvtcParser.EncounterLogic
                     {
                         replay.Trim(firstBomberMovement.Time - 1000, replay.TimeOffsets.end);
                     }
-                    var bomberman = target.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.SkillId == Bombshell).ToList();
+                    var bomberman = target.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.SkillId == BombShellRiverOfSouls).ToList();
                     foreach (AbstractCastEvent bomb in bomberman)
                     {
                         int startCast = (int)bomb.Time;
                         int endCast = (int)bomb.EndTime;
                         int expectedEnd = Math.Max(startCast + bomb.ExpectedDuration, endCast);
-                        replay.Decorations.Add(new CircleDecoration(true, 0, 480, (startCast, endCast), "rgba(180,250,0,0.3)", new AgentConnector(target)));
-                        replay.Decorations.Add(new CircleDecoration(true, expectedEnd, 480, (startCast, endCast), "rgba(180,250,0,0.3)", new AgentConnector(target)));
+                        var circle = new CircleDecoration(480, (startCast, endCast), "rgba(180,250,0,0.3)", new AgentConnector(target));
+                        replay.AddDecorationWithGrowing(circle, expectedEnd);
                     }
                     break;
                 case (int)ArcDPSEnums.TrashID.RiverOfSouls:
@@ -207,7 +186,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     {
                         int start = (int)replay.TimeOffsets.start;
                         int end = (int)replay.TimeOffsets.end;
-                        replay.Decorations.Add(new FacingRectangleDecoration((start, end), new AgentConnector(target), replay.PolledRotations, 160, 390, "rgba(255,100,0,0.5)"));
+                        replay.Decorations.Add(new RectangleDecoration( 160, 390, (start, end), Colors.Orange, 0.5, new AgentConnector(target)).UsingRotationConnector(new AgentFacingConnector(target)));
                     }
                     break;
                 case (int)ArcDPSEnums.TrashID.Enervator:

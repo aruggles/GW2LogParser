@@ -1,18 +1,20 @@
-﻿using GW2EIEvtcParser.Extensions;
-using GW2EIEvtcParser;
+﻿using System;
 using System.Collections.Generic;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
+using GW2EIEvtcParser.Extensions;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
+
     internal class EXTBarrierStatsPhaseDto
     {
+
         public List<List<object>> OutgoingBarrierStats { get; set; }
         public List<List<List<object>>> OutgoingBarrierStatsTargets { get; set; }
-        public List<List<object>> IncomingBarrierStats { get; set; }
+        public List<List<object>> IncomingBarrierStats { get; set; } 
 
-        public EXTBarrierStatsPhaseDto(PhaseData phase, ParsedLog log)
+        public EXTBarrierStatsPhaseDto(PhaseData phase, ParsedEvtcLog log)
         {
             OutgoingBarrierStats = BuildOutgoingBarrierStatData(log, phase);
             OutgoingBarrierStatsTargets = BuildOutgoingBarrierFriendlyStatData(log, phase);
@@ -39,7 +41,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 };
             return data;
         }
-        public static List<List<object>> BuildOutgoingBarrierStatData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildOutgoingBarrierStatData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>(log.Friendlies.Count);
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -50,7 +52,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<List<object>>> BuildOutgoingBarrierFriendlyStatData(ParsedLog log, PhaseData phase)
+        public static List<List<List<object>>> BuildOutgoingBarrierFriendlyStatData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<List<object>>>(log.Friendlies.Count);
 
@@ -65,9 +67,9 @@ namespace Gw2LogParser.GW2EIBuilders
                 list.Add(playerData);
             }
             return list;
-        }
+        } 
 
-        public static List<List<object>> BuildIncomingBarrierStatData(ParsedLog log, PhaseData phase)
+        public static List<List<object>> BuildIncomingBarrierStatData(ParsedEvtcLog log, PhaseData phase)
         {
             var list = new List<List<object>>();
 

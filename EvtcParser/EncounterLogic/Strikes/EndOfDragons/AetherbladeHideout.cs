@@ -5,6 +5,7 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
@@ -25,7 +26,6 @@ namespace GW2EIEvtcParser.EncounterLogic
                 new PlayerDstHitMechanic(new long[] {TormentingWave, TormentingWaveCM }, "Tormenting Wave", new MechanicPlotlySetting(Symbols.Circle, Colors.DarkRed), "Shck.Wv", "Hit by Shockwave attack", "Shockwave", 150),
                 new PlayerDstHitMechanic(new long[] {LeyBreach, LeyBreachCM }, "Ley Breach", new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Puddle", "Stood in Puddle", "Puddle", 150),
                 new PlayerDstHitMechanic(KaleidoscopicChaos, "Kaleidoscopic Chaos", new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Orange), "Circle.H", "Hit by Yellow Circle", "Yellow Circle Hit", 150),
-                new PlayerDstBuffApplyMechanic(ExposedPlayer, "Exposed", new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Red), "Exposed", "Received Exposed stack", "Exposed", 150),
                 new PlayerDstBuffApplyMechanic(new long[] {SharedDestructionMaiTrin, SharedDestructionMaiTrinCM }, "Shared Destruction", new MechanicPlotlySetting(Symbols.Circle, Colors.Green), "Green", "Selected for Green", "Green", 150),
                 new PlayerDstBuffApplyMechanic(PhotonSaturation, "Photon Saturation", new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Green), "Green.D", "Received Green debuff", "Green Debuff", 150),
                 new PlayerDstSkillMechanic(FocusedDestruction, "Focused Destruction", new MechanicPlotlySetting(Symbols.TriangleUp, Colors.Red), "Green.Dwn", "Downed by Green", "Green Downed", 150).UsingChecker((evt, log) => evt.HasDowned),
@@ -110,6 +110,24 @@ namespace GW2EIEvtcParser.EncounterLogic
                     break;
             }
 
+        }
+
+        internal override List<InstantCastFinder> GetInstantCastFinders()
+        {
+            return new List<InstantCastFinder>()
+            {
+                new BuffLossCastFinder(ReverseThePolaritySAK, MaiTrinCMBeamsTargetGreen),
+                new BuffLossCastFinder(ReverseThePolaritySAK, MaiTrinCMBeamsTargetBlue),
+                new BuffLossCastFinder(ReverseThePolaritySAK, MaiTrinCMBeamsTargetRed),
+            };
+        }
+
+        internal override void ComputePlayerCombatReplayActors(AbstractPlayer player, ParsedEvtcLog log, CombatReplay replay)
+        {
+            base.ComputePlayerCombatReplayActors(player, log, replay);
+            // Bomb Selection
+            var bombs = player.GetBuffStatus(log, new long[] { MaiTrinCMBeamsTargetBlue, MaiTrinCMBeamsTargetGreen, MaiTrinCMBeamsTargetRed }, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            replay.AddOverheadIcons(bombs, player, ParserIcons.BombOverhead);
         }
 
         private AbstractSingleActor GetEchoOfScarletBriar(FightData fightData)
@@ -218,7 +236,7 @@ namespace GW2EIEvtcParser.EncounterLogic
             return phases;
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
             // Ferrous Bombs
             var bombs = combatData.Where(x => x.DstAgent == 89640 && x.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate).Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.Gadget).ToList();
@@ -240,8 +258,8 @@ namespace GW2EIEvtcParser.EncounterLogic
             }
             if (agentData.GetNPCsByID(ArcDPSEnums.TargetID.EchoOfScarletBriarNM).Count + agentData.GetNPCsByID(ArcDPSEnums.TargetID.EchoOfScarletBriarCM).Count == 0)
             {
-                agentData.AddCustomNPCAgent(long.MaxValue, long.MaxValue, "Echo of Scarlet Briar", Spec.NPC, ArcDPSEnums.TargetID.EchoOfScarletBriarNM, false);
-                agentData.AddCustomNPCAgent(long.MaxValue, long.MaxValue, "Echo of Scarlet Briar", Spec.NPC, ArcDPSEnums.TargetID.EchoOfScarletBriarCM, false);
+                agentData.AddCustomNPCAgent(int.MaxValue, int.MaxValue, "Echo of Scarlet Briar", Spec.NPC, ArcDPSEnums.TargetID.EchoOfScarletBriarNM, false);
+                agentData.AddCustomNPCAgent(int.MaxValue, int.MaxValue, "Echo of Scarlet Briar", Spec.NPC, ArcDPSEnums.TargetID.EchoOfScarletBriarCM, false);
             }
             ComputeFightTargets(agentData, combatData, extensions);
             var echoesOfScarlet = Targets.Where(x => x.IsSpecies(ArcDPSEnums.TargetID.EchoOfScarletBriarNM) || x.IsSpecies(ArcDPSEnums.TargetID.EchoOfScarletBriarCM)).ToList();
@@ -250,19 +268,21 @@ namespace GW2EIEvtcParser.EncounterLogic
                 var hpUpdates = combatData.Where(x => x.SrcMatchesAgent(echoOfScarlet.AgentItem) && x.IsStateChange == ArcDPSEnums.StateChange.HealthUpdate).ToList();
                 if (hpUpdates.Count > 1 && hpUpdates.LastOrDefault().DstAgent == 10000)
                 {
-                    hpUpdates.LastOrDefault().OverrideSrcAgent(_unknownAgent.Agent);
+                    hpUpdates.Last().OverrideDstAgent(hpUpdates[hpUpdates.Count - 2].DstAgent);
                 }
             }
+            int curPhantom = 1;
+            int curCC = 1;
             foreach (NPC target in Targets)
             {
                 switch (target.ID)
                 {
                     case (int)ArcDPSEnums.TrashID.ScarletPhantomBreakbar:
-                        target.OverrideName("Elite " + target.Character + " CC");
+                        target.OverrideName("Elite " + target.Character + " CC " + (curCC++));
                         break;
                     case (int)ArcDPSEnums.TrashID.ScarletPhantomHP:
                     case (int)ArcDPSEnums.TrashID.ScarletPhantomHPCM:
-                        target.OverrideName("Elite " + target.Character + " HP");
+                        target.OverrideName("Elite " + target.Character + " HP " + (curPhantom++));
                         break;
                     default:
                         break;
@@ -284,23 +304,13 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             base.SetInstanceBuffs(log);
             
-            if(log.FightData.Success)
+            if (log.FightData.Success)
             {
-                IReadOnlyList<AbstractBuffEvent> triangulation = log.CombatData.GetBuffData(AchievementEligibilityTriangulation);
-                bool hasTriangulationBeenAdded = false;
-                if (triangulation.Any())
+                if (log.CombatData.GetBuffData(AchievementEligibilityTriangulation).Any())
                 {
-                    foreach (Player p in log.PlayerList)
-                    {
-                        if (p.HasBuff(log, AchievementEligibilityTriangulation, log.FightData.FightEnd - ServerDelayConstant))
-                        {
-                            InstanceBuffs.Add((log.Buffs.BuffsByIds[AchievementEligibilityTriangulation], 1));
-                            hasTriangulationBeenAdded = true;
-                            break;
-                        }
-                    }
+                    InstanceBuffs.AddRange(GetOnPlayerCustomInstanceBuff(log, AchievementEligibilityTriangulation));
                 }
-                if (!hasTriangulationBeenAdded && CustomCheckTriangulationEligibility(log))
+                else if (CustomCheckTriangulationEligibility(log))
                 {
                     InstanceBuffs.Add((log.Buffs.BuffsByIds[AchievementEligibilityTriangulation], 1));
                 }

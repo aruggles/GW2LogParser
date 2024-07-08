@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +29,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return data;
         }
 
-        public static List<DeathRecapDto> BuildDeathRecap(ParsedLog log, AbstractSingleActor actor)
+        public static List<DeathRecapDto> BuildDeathRecap(ParsedEvtcLog log, AbstractSingleActor actor)
         {
             var res = new List<DeathRecapDto>();
             IReadOnlyList<DeathRecap> recaps = actor.GetDeathRecaps(log);

@@ -15,5 +15,8 @@ namespace Gw2LogParser.ExportModels.Report
         public int IncomingHealingPower { get; set; }
         public int IncomingConversion { get; set; }
         public int IncomingDowned { get; set; }
+        public int IncomingBarrier { get; set; }
+        public int OutgoingBarrier { get; set; }
+        public int OutgoingTargetBarrier { get; set; }
     }
 }

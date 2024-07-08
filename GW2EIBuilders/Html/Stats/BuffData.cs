@@ -115,7 +115,7 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
         //////
-        public static List<BuffData> BuildBuffUptimeData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
+        public static List<BuffData> BuildBuffUptimeData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
         {
             var list = new List<BuffData>();
             bool boonTable = listToUse.Any(x => x.Classification == Buff.BuffClassification.Boon);
@@ -137,7 +137,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<BuffData> BuildActiveBuffUptimeData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
+        public static List<BuffData> BuildActiveBuffUptimeData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
         {
             var list = new List<BuffData>();
             bool boonTable = listToUse.Any(x => x.Classification == Buff.BuffClassification.Boon);
@@ -160,7 +160,7 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
         //////
-        public static List<BuffData> BuildPersonalBuffUptimeData(ParsedLog log, IReadOnlyDictionary<Spec, IReadOnlyList<Buff>> buffsBySpec, PhaseData phase)
+        public static List<BuffData> BuildPersonalBuffUptimeData(ParsedEvtcLog log, IReadOnlyDictionary<Spec, IReadOnlyList<Buff>> buffsBySpec, PhaseData phase)
         {
             var list = new List<BuffData>();
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -170,7 +170,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<BuffData> BuildActivePersonalBuffUptimeData(ParsedLog log, IReadOnlyDictionary<Spec, IReadOnlyList<Buff>> buffsBySpec, PhaseData phase)
+        public static List<BuffData> BuildActivePersonalBuffUptimeData(ParsedEvtcLog log, IReadOnlyDictionary<Spec, IReadOnlyList<Buff>> buffsBySpec, PhaseData phase)
         {
             var list = new List<BuffData>();
             foreach (AbstractSingleActor actor in log.Friendlies)
@@ -182,7 +182,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
 
         //////
-        public static List<BuffData> BuildBuffGenerationData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, BuffEnum type)
+        public static List<BuffData> BuildBuffGenerationData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, BuffEnum type)
         {
             var list = new List<BuffData>();
 
@@ -193,7 +193,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<BuffData> BuildActiveBuffGenerationData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, BuffEnum type)
+        public static List<BuffData> BuildActiveBuffGenerationData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, BuffEnum type)
         {
             var list = new List<BuffData>();
 
@@ -204,7 +204,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
         // 
-        private static List<BuffData> BuildBuffDictionaryData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, AbstractSingleActor player)
+        private static List<BuffData> BuildBuffDictionaryData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, AbstractSingleActor player)
         {
             IReadOnlyDictionary<long, FinalBuffsDictionary> buffs = player.GetBuffsDictionary(log, phase.Start, phase.End);
             var list = new List<BuffData>();
@@ -215,7 +215,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return list;
         }
-        public static List<List<BuffData>> BuildBuffDictionariesData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
+        public static List<List<BuffData>> BuildBuffDictionariesData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
         {
             var list = new List<List<BuffData>>();
 
@@ -226,7 +226,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        private static List<BuffData> BuildActiveBuffDictionaryData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, AbstractSingleActor player)
+        private static List<BuffData> BuildActiveBuffDictionaryData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase, AbstractSingleActor player)
         {
             IReadOnlyDictionary<long, FinalBuffsDictionary> buffs = player.GetActiveBuffsDictionary(log, phase.Start, phase.End);
             var list = new List<BuffData>();
@@ -238,7 +238,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        public static List<List<BuffData>> BuildActiveBuffDictionariesData(ParsedLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
+        public static List<List<BuffData>> BuildActiveBuffDictionariesData(ParsedEvtcLog log, IReadOnlyList<Buff> listToUse, PhaseData phase)
         {
             var list = new List<List<BuffData>>();
 
@@ -250,18 +250,18 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
         /////
-        public static List<BuffData> BuildTargetCondiData(ParsedLog log, PhaseData phase, AbstractSingleActor actor)
+        public static List<BuffData> BuildTargetCondiData(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor actor)
         {
             return BuildBuffDictionaryData(log, log.StatisticsHelper.PresentConditions, phase, actor);
         }
 
-        public static BuffData BuildTargetCondiUptimeData(ParsedLog log, PhaseData phase, AbstractSingleActor target)
+        public static BuffData BuildTargetCondiUptimeData(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor target)
         {
             IReadOnlyDictionary<long, FinalActorBuffs> buffs = target.GetBuffs(BuffEnum.Self, log, phase.Start, phase.End);
             return new BuffData(buffs, log.StatisticsHelper.PresentConditions, target.GetGameplayStats(log, phase.Start, phase.End).AvgConditions);
         }
 
-        public static BuffData BuildTargetBoonData(ParsedLog log, PhaseData phase, AbstractSingleActor target)
+        public static BuffData BuildTargetBoonData(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor target)
         {
             IReadOnlyDictionary<long, FinalActorBuffs> buffs = target.GetBuffs(BuffEnum.Self, log, phase.Start, phase.End);
             return new BuffData(buffs, log.StatisticsHelper.PresentBoons, target.GetGameplayStats(log, phase.Start, phase.End).AvgBoons);

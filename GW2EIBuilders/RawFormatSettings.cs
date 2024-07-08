@@ -1,5 +1,4 @@
-﻿
-namespace Gw2LogParser.GW2EIBuilders
+﻿namespace GW2EIBuilders
 {
     public class RawFormatSettings
     {

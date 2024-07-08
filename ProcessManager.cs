@@ -10,10 +10,11 @@ using System.Collections.Concurrent;
 using Gw2LogParser.ExportModels.Report;
 using GW2EIEvtcParser;
 using System.Windows.Forms;
-using Gw2LogParser.GW2EIBuilders;
 using GW2EIGW2API;
 using GW2EIEvtcParser.ParserHelpers;
 using Gw2LogParser.EvtcParserExtensions;
+using GW2EIBuilders.HtmlModels;
+using GW2EIBuilders;
 
 namespace Gw2LogParser
 {
@@ -97,11 +98,11 @@ namespace Gw2LogParser
                                                 Properties.Settings.Default.DetailledWvW), apiController);
                 //Process evtc here
                 ParsedEvtcLog parsedLog = parser.ParseLog(operation, fInfo, out ParsingFailureReason failureReason);
-                ParsedLog log = new ParsedLog(parsedLog);
                 if (failureReason != null)
                 {
                     failureReason.Throw();
                 }
+                ParsedLog log = new ParsedLog(parsedLog);
                 log.evctFile = fInfo;
                 /*
                 string fName = fInfo.Name.Split('.')[0];
@@ -191,7 +192,7 @@ namespace Gw2LogParser
             {
                 return;
             }
-            var uploadResults = new UploadResults("", "", "");
+            var uploadResults = new UploadResults("", "");
             var htmlAssets = new HTMLAssets();
             string outputFile = Path.Combine(
                 saveFolder.FullName,
@@ -200,12 +201,13 @@ namespace Gw2LogParser
             using (var fs = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
             using (var sw = new StreamWriter(fs))
             {
-                var builder = new GW2EIBuilders.HTMLBuilder(log,
-                    new HTMLSettings(Properties.Settings.Default.LightTheme,
-                            Properties.Settings.Default.HtmlExternalScripts,
-                            Properties.Settings.Default.HtmlExternalScriptsPath,
-                            Properties.Settings.Default.HtmlExternalScriptsCdn,
-                            Properties.Settings.Default.HtmlCompressJson),
+                var builder = new HTMLBuilder(log,
+                    new HTMLSettings(
+                        Properties.Settings.Default.LightTheme,
+                        Properties.Settings.Default.HtmlExternalScripts,
+                        Properties.Settings.Default.HtmlExternalScriptsPath,
+                        Properties.Settings.Default.HtmlExternalScriptsCdn,
+                        Properties.Settings.Default.HtmlCompressJson),
                     htmlAssets, ParserVersion, uploadResults);
                 builder.CreateHTML(sw, saveFolder.FullName);
             }
@@ -214,7 +216,7 @@ namespace Gw2LogParser
         public static void GenerateFile(BackgroundWorker worker)
         {
             var report = new Report();
-            var uploadResults = new UploadResults("", "", "");
+            var uploadResults = new UploadResults("", "");
             var count = 0;
             var total = CompletedLogs.Count;
             FileInfo fileInfo = null;
@@ -285,7 +287,7 @@ namespace Gw2LogParser
                 using (var fs = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
                 using (var sw = new StreamWriter(fs))
                 {
-                    var builder = new ExportModels.Report.HTMLBuilder(report);
+                    var builder = new ExportModels.Report.HTMLReportBuilder(report);
                     builder.CreatHTML(sw, saveFolder.FullName);
                 }
             }

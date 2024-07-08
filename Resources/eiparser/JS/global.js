@@ -130,7 +130,7 @@ const specs = [
     "Catalyst"
 ];
 
-const specToBase = {
+const SpecToBase = {
     Warrior: 'Warrior',
     Berserker: 'Warrior',
     Spellbreaker: 'Warrior',
@@ -176,6 +176,22 @@ const specToBase = {
     Weaver: "Elementalist",
     Catalyst: "Elementalist"
 };
+
+const SkillDecorationCategory = {
+    "Show On Select" : 1 << 0,
+    "Important Buffs": 1 << 1,
+    "Projectile Management": 1 << 2,
+    "Heal": 1 << 3,
+    "Cleanse": 1 << 4,
+    "Strip": 1 << 5,
+    "Portal": 1 << 6,
+};
+
+let AllSkillDecorations = 0;
+for (let key in SkillDecorationCategory) {
+    AllSkillDecorations |= SkillDecorationCategory[key];
+}
+let DefaultSkillDecorations = AllSkillDecorations;
 
 const RotationStatus = {
     UNKNOWN: 0,

@@ -10,8 +10,8 @@
     <div class="collapse" id="<!-- Player Identifier -->_collapse" style="margin: 5px;">
         <nav class="players">
             <div class="nav nav-tabs" role="tablist">
-                <a class="nav-item nav-link active" data-toggle="tab" href="#nav-<!-- Player Identifier -->-damage" role="tab">Damage Distribution</a>
-                <a class="nav-item nav-link" data-toggle="tab" href="#nav-<!-- Player Identifier -->-defense" role="tab">Damage Taken</a>
+                <a class="nav-item nav-link active" data-toggle="tab" href="#nav-<!-- Player Identifier -->-damage" role="tab">Outgoing Damage</a>
+                <a class="nav-item nav-link" data-toggle="tab" href="#nav-<!-- Player Identifier -->-defense" role="tab">Incoming Damage</a>
             </div>
         </nav>
         <div class="tab-content">
@@ -21,22 +21,19 @@
                         <tr>
                             <th>Skill</th>
                             <th>Damage</th>
-                            <th>Barrier Dmg</th>
-                            <th>Min</th>
-                            <th>Max</th>
+                            <th data-toggle="tooltip" title="Damage against barrier. Not necessarily included in total damage">Barrier Dmg</th>
+                            <th data-toggle="tooltip" title="Minimum Damage">Min</th>
+                            <th data-toggle="tooltip" title="Maximum Damage">Max</th>
                             <th>Casts</th>
                             <th>Hits</th>
                             <th>Hits per Cast</th>
-                            <th>Crit</th>
-                            <th>Flank</th>
-                            <th>Glance</th>
-                            <th>Wasted</th>
-                            <th>Saved</th>
+                            <th data-toggle="tooltip" title="Percent time hits critical">Crit</th>
+                            <th data-toggle="tooltip" title="Percent time hits while flanking">Flank</th>
+                            <th data-toggle="tooltip" title="Percent time hits while glancing">Glance</th>
+                            <th data-toggle="tooltip" title="Time wasted interupting skill casts">Wasted</th>
+                            <th data-toggle="tooltip" title="Time saved(in seconds) interupting skill casts">Saved</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Player Damage Data -->
-                    </tbody>
                 </table>
             </div>
             <div class="tab-pane" id="nav-<!-- Player Identifier -->-defense" role="tabpanel">
@@ -45,18 +42,15 @@
                         <tr>
                             <th>Skill</th>
                             <th>Damage</th>
-                            <th>Barrier Dmg</th>
-                            <th>Min</th>
-                            <th>Max</th>
+                            <th data-toggle="tooltip" title="Damage against barrier. Not necessarily included in total damage">Barrier Dmg</th>
+                            <th data-toggle="tooltip" title="Minimum Damage">Min</th>
+                            <th data-toggle="tooltip" title="Maximum Damage">Max</th>
                             <th>Hits</th>
-                            <th>Crit</th>
-                            <th>Flank</th>
-                            <th>Glance</th>
+                            <th data-toggle="tooltip" title="Percent time hits critical">Crit</th>
+                            <th data-toggle="tooltip" title="Percent time hits while flanking">Flank</th>
+                            <th data-toggle="tooltip" title="Percent time hits while glancing">Glance</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Player Taken Data -->
-                    </tbody>
                 </table>
             </div>
         </div>

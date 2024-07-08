@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using GW2EIEvtcParser.EIData;
 
 namespace GW2EIEvtcParser.ParsedData
@@ -26,30 +27,29 @@ namespace GW2EIEvtcParser.ParsedData
             return new Point3D(orientationFloats[0], orientationFloats[1], -BitConverter.ToSingle(BitConverter.GetBytes(evtcItem.Pad), 0));
         }
 
-        private static ushort ReadDuration(CombatItem evtcItem)
-        {
-            byte[] durationBytes = new byte[sizeof(ushort)];
-            int offset = 0;
-            durationBytes[offset++] = evtcItem.IsShields;
-            durationBytes[offset++] = evtcItem.IsOffcycle;
-
-
-            ushort[] durationUShort = new ushort[1];
-            Buffer.BlockCopy(durationBytes, 0, durationUShort, 0, durationBytes.Length);
-            return durationUShort[0];
-        }
-
         internal EffectEventCBTS45(CombatItem evtcItem, AgentData agentData) : base(evtcItem, agentData)
         {
             Orientation = ReadOrientation(evtcItem);
-            if (evtcItem.IsFlanking > 0 || EffectID == 0)
+        }
+
+        protected override long ComputeEndTime(ParsedEvtcLog log, long maxDuration, AgentItem agent = null, long? associatedBuff = null)
+        {
+            if (associatedBuff != null)
             {
-                TrackingID = ReadDuration(evtcItem);
+                BuffRemoveAllEvent remove = log.CombatData.GetBuffData(associatedBuff.Value)
+                    .OfType<BuffRemoveAllEvent>()
+                    .FirstOrDefault(x => x.To == agent && x.Time >= Time);
+                if (remove != null)
+                {
+                    return remove.Time;
+                }
             }
-            else
-            {
-                Duration = ReadDuration(evtcItem);
-            }
+            return Time + maxDuration;
+        }
+
+        public override (long, long) ComputeDynamicLifespan(ParsedEvtcLog log, long defaultDuration, AgentItem agent = null, long? associatedBuff = null)
+        {
+            return base.ComputeDynamicLifespan(log, 0, agent, associatedBuff);
         }
 
     }

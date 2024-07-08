@@ -7,6 +7,7 @@ namespace GW2EIGW2API
 {
     internal class GW2SpecAPIController
     {
+
         private const string APIPath = "/v2/specializations";
 
         private GW2APIUtilities.APIItems<GW2APISpec> _apiSpecs = new GW2APIUtilities.APIItems<GW2APISpec>();
@@ -59,3 +60,4 @@ namespace GW2EIGW2API
         }
     }
 }
+

@@ -7,8 +7,12 @@ using static Gw2LogParser.GW2EIBuilders.JsonMechanics;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class corresponding to mechanics
+    /// </summary>
     internal static class JsonMechanicsBuilder
     {
+
         public static JsonMechanic BuildJsonMechanic(MechanicEvent ml)
         {
             var jsMech = new JsonMechanic();
@@ -28,7 +32,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return jsMechs;
         }
 
-        internal static List<JsonMechanics> GetJsonMechanicsList(ParsedLog log, MechanicData mechanicData, IReadOnlyCollection<Mechanic> presentMechanics)
+        internal static List<JsonMechanics> GetJsonMechanicsList(ParsedEvtcLog log, MechanicData mechanicData, IReadOnlyCollection<Mechanic> presentMechanics)
         {
             var mechanics = new List<JsonMechanics>();
             var dict = new Dictionary<Mechanic, List<JsonMechanic>>();
@@ -47,5 +51,6 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return mechanics;
         }
+
     }
 }

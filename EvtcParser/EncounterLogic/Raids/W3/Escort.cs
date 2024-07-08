@@ -1,16 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.Exceptions;
+using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
-using static GW2EIEvtcParser.SkillIDs;
-using static GW2EIEvtcParser.ParserHelper;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
+using GW2EIEvtcParser.ParserHelpers;
+using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
-using GW2EIEvtcParser.Exceptions;
-using System;
-using GW2EIEvtcParser.Extensions;
+using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
+using static GW2EIEvtcParser.ParserHelper;
+using static GW2EIEvtcParser.SkillIDs;
 
 namespace GW2EIEvtcParser.EncounterLogic
 {
@@ -27,6 +28,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                 new PlayerDstHitMechanic(FireMortarEscortHit, "Fire Mortar", new MechanicPlotlySetting(Symbols.Hourglass, Colors.DarkPurple), "Shrd.H", "Hit by Mortar Fire (Bloodstone Turrets)", "Mortar Fire Hit", 0),
                 new PlayerDstBuffApplyMechanic(RadiantAttunementPhantasm, "Radiant Attunement", new MechanicPlotlySetting(Symbols.Diamond, Colors.White), "Rad.A", "Radiant Attunement Application", "Radiant Attunement Application", 150),
                 new PlayerDstBuffApplyMechanic(CrimsonAttunementPhantasm, "Crimson Attunement", new MechanicPlotlySetting(Symbols.Diamond, Colors.Red), "Crim.A", "Crimson Attunement Application", "Crimson Attunement Application", 150),
+                new PlayerSrcEffectMechanic(EffectGUIDs.EscortOverHere, "Over Here!", new MechanicPlotlySetting(Symbols.Star, Colors.White), "OverHere.C", "Used Over Here! (Special Action Key)", "Over Here! Cast", 0),
                 new EnemyDstBuffApplyMechanic(Invulnerability757, "Invulnerability", new MechanicPlotlySetting(Symbols.DiamondOpen, Colors.LightBlue), "Inv.A", "Invulnerability Applied", "Invulnerability Applied", 150),
                 new EnemyCastStartMechanic(TeleportDisplacementField, "Teleport Displacement Field", new MechanicPlotlySetting(Symbols.Square, Colors.LightPurple), "Tel.C", "Teleport Cast", "Teleport Cast", 150),
             }
@@ -74,7 +76,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                     phase.Name = "McLeod Split " + (i) / 2;
                     AbstractSingleActor whiteMcLeod = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.RadiantMcLeod) && x.LastAware > phase.Start);
                     AbstractSingleActor redMcLeod = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.CrimsonMcLeod) && x.LastAware > phase.Start);
-                    phase.AddTarget(whiteMcLeod); 
+                    phase.AddTarget(whiteMcLeod);
                     phase.AddTarget(redMcLeod);
                     phase.OverrideTimes(log);
                 }
@@ -112,7 +114,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                 preEventPhase.AddTargets(preEventWargs);
                 preEventPhase.AddTarget(Targets.FirstOrDefault(x => x.ID == (int)ArcDPSEnums.TargetID.DummyTarget));
                 phases.Add(preEventPhase);
-            } 
+            }
             phases.AddRange(GetMcLeodPhases(mcLeod, log));
             var mcLeodWargs = wargs.Where(x => x.FirstAware >= mcLeod.FirstAware && x.FirstAware <= mcLeod.LastAware).ToList();
             if (mcLeodWargs.Any())
@@ -126,14 +128,13 @@ namespace GW2EIEvtcParser.EncounterLogic
                 phase.OverrideTimes(log);
                 phases.Add(phase);
             }
-            
+
             return phases;
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
-            AgentItem mcLeod = agentData.GetNPCsByID(ArcDPSEnums.TargetID.McLeodTheSilent).FirstOrDefault();
-            if (mcLeod == null)
+            if (!agentData.TryGetFirstAgentItem(ArcDPSEnums.TargetID.McLeodTheSilent, out AgentItem mcLeod))
             {
                 throw new MissingKeyActorsException("McLeod not found");
             }
@@ -155,7 +156,7 @@ namespace GW2EIEvtcParser.EncounterLogic
             {
                 agentData.Refresh();
             }
-            base.EIEvtcParse(gw2Build, fightData, agentData, combatData, extensions);
+            base.EIEvtcParse(gw2Build, evtcVersion, fightData, agentData, combatData, extensions);
             int curCrimson = 1;
             int curRadiant = 1;
             int curWarg = 1;
@@ -178,8 +179,7 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override long GetFightOffset(int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
         {
-            AgentItem mcLeod = agentData.GetNPCsByID(ArcDPSEnums.TargetID.McLeodTheSilent).FirstOrDefault();
-            if (mcLeod == null)
+            if (!agentData.TryGetFirstAgentItem(ArcDPSEnums.TargetID.McLeodTheSilent, out AgentItem mcLeod))
             {
                 throw new MissingKeyActorsException("McLeod not found");
             }
@@ -190,13 +190,47 @@ namespace GW2EIEvtcParser.EncounterLogic
                 if (mcLeod.FirstAware - fightData.LogStart > MinimumInCombatDuration)
                 {
                     _hasPreEvent = true;
-                } 
+                    // Is this reliable?
+                    /*CombatItem achievementTrackApply = combatData.Where(x => (x.SkillID == AchievementEligibilityMineControl || x.SkillID == AchievementEligibilityFastSiege) && x.IsBuffApply()).FirstOrDefault();
+                    if (achievementTrackApply != null)
+                    {
+                        startToUse = achievementTrackApply.Time;
+                    }*/
+                }
                 else
                 {
-                    startToUse = GetEnterCombatTime(fightData, agentData, combatData, logStartNPCUpdate.Time);
+                    startToUse = GetEnterCombatTime(fightData, agentData, combatData, logStartNPCUpdate.Time, (int)ArcDPSEnums.TargetID.McLeodTheSilent, logStartNPCUpdate.DstAgent);
                 }
             }
             return startToUse;
+        }
+
+        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+        {
+            if (_hasPreEvent)
+            {
+                if (!agentData.TryGetFirstAgentItem(ArcDPSEnums.TrashID.Glenna, out AgentItem glenna))
+                {
+                    throw new MissingKeyActorsException("Glenna not found");
+                }
+                if (combatData.HasMovementData)
+                {
+                    var glennaInitialPosition = new Point3D(9092.697f, 21477.2969f, -2946.81885f);
+                    if (!combatData.GetMovementData(glenna).Any(x => x is PositionEvent pe && pe.Time < glenna.FirstAware + MinimumInCombatDuration && pe.GetParametricPoint3D().Distance2DToPoint(glennaInitialPosition) < 100))
+                    {
+                        return FightData.EncounterStartStatus.Late;
+                    }
+                }
+                return FightData.EncounterStartStatus.Normal;
+            } 
+            else if (combatData.GetLogStartNPCUpdateEvents().Any())
+            {
+                return FightData.EncounterStartStatus.NoPreEvent;
+            } 
+            else
+            {
+                return FightData.EncounterStartStatus.Normal;
+            }
         }
 
         protected override HashSet<int> GetUniqueNPCIDs()
@@ -212,16 +246,16 @@ namespace GW2EIEvtcParser.EncounterLogic
             return new List<int>
             {
                 (int)ArcDPSEnums.TargetID.McLeodTheSilent,
-                (int)ArcDPSEnums.TargetID.DummyTarget,
-                (int)ArcDPSEnums.TrashID.WargBloodhound,
                 (int)ArcDPSEnums.TrashID.RadiantMcLeod,
                 (int)ArcDPSEnums.TrashID.CrimsonMcLeod,
+                (int)ArcDPSEnums.TrashID.WargBloodhound,
+                (int)ArcDPSEnums.TargetID.DummyTarget,
             };
         }
 
         protected override List<ArcDPSEnums.TrashID> GetTrashMobsIDs()
         {
-            return new List<ArcDPSEnums.TrashID>() { 
+            return new List<ArcDPSEnums.TrashID>() {
                 ArcDPSEnums.TrashID.MushroomCharger,
                 ArcDPSEnums.TrashID.MushroomKing,
                 ArcDPSEnums.TrashID.MushroomSpikeThrower,
@@ -253,21 +287,36 @@ namespace GW2EIEvtcParser.EncounterLogic
 
             if (log.FightData.Success)
             {
-                if (log.CombatData.GetBuffData(AchievementEligibilityLoveIsBunny).Any()) { CheckAchievementBuff(log, AchievementEligibilityLoveIsBunny); }
-                if (log.CombatData.GetBuffData(AchievementEligibilityFastSiege).Any()) { CheckAchievementBuff(log, AchievementEligibilityFastSiege); }
+                if (log.CombatData.GetBuffData(AchievementEligibilityLoveIsBunny).Any()) { InstanceBuffs.AddRange(GetOnPlayerCustomInstanceBuff(log, AchievementEligibilityLoveIsBunny)); }
+                if (log.CombatData.GetBuffData(AchievementEligibilityFastSiege).Any()) { InstanceBuffs.AddRange(GetOnPlayerCustomInstanceBuff(log, AchievementEligibilityFastSiege)); }
             }
         }
 
-        private void CheckAchievementBuff(ParsedEvtcLog log, long achievement)
+        internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
         {
-            foreach (Player p in log.PlayerList)
+            switch(target.ID)
             {
-                if (p.HasBuff(log, achievement, log.FightData.FightEnd - ServerDelayConstant))
-                {
-                    InstanceBuffs.Add((log.Buffs.BuffsByIds[achievement], 1));
+                case (int)ArcDPSEnums.TargetID.McLeodTheSilent:
+                    replay.AddHideByBuff(target, log, Invulnerability757);
                     break;
-                }
             }
+        }
+
+        internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+            // Attunements Overhead
+            replay.AddOverheadIcons(p.GetBuffStatus(log, CrimsonAttunementPhantasm, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), p, ParserIcons.CrimsonAttunementOverhead);
+            replay.AddOverheadIcons(p.GetBuffStatus(log, RadiantAttunementPhantasm, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), p, ParserIcons.RadiantAttunementOverhead);
+        }
+
+        internal override List<InstantCastFinder> GetInstantCastFinders()
+        {
+            return new List<InstantCastFinder>()
+            {
+                new EffectCastFinder(OverHere, EffectGUIDs.EscortOverHere),
+            };
         }
     }
 }
+

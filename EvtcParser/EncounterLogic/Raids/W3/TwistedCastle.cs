@@ -4,6 +4,7 @@ using System.Linq;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
@@ -72,7 +73,13 @@ namespace GW2EIEvtcParser.EncounterLogic
             return GetGenericFightOffset(fightData);
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+        {
+            // To investigate
+            return FightData.EncounterStartStatus.Normal;
+        }
+
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
             agentData.AddCustomNPCAgent(fightData.FightStart, fightData.FightEnd, "Twisted Castle", Spec.NPC, ArcDPSEnums.TargetID.DummyTarget, true);
             ComputeFightTargets(agentData, combatData, extensions);
@@ -95,13 +102,35 @@ namespace GW2EIEvtcParser.EncounterLogic
                     var lifespan = ((int)replay.TimeOffsets.start, (int)replay.TimeOffsets.end);
                     if (replay.Rotations.Any())
                     {
-                        replay.Decorations.Add(new ActorOrientationDecoration(lifespan, new AgentConnector(npc), replay.PolledRotations));
+                        replay.Decorations.Add(new ActorOrientationDecoration(lifespan, npc.AgentItem));
                     }
                     break;
                 //case (ushort)ParseEnum.TrashIDS.CastleFountain:
                 //    break;
                 default:
                     break;
+            }
+        }
+
+        internal override void ComputePlayerCombatReplayActors(AbstractPlayer player, ParsedEvtcLog log, CombatReplay replay)
+        {
+            base.ComputePlayerCombatReplayActors(player, log, replay);
+            // Madness - 0 to 29 nothing, 30 to 59 Silver, 60 to 89 Gold, 90 to 99 Red
+            IEnumerable<Segment> madnesses = player.GetBuffStatus(log, Madness, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0);
+            foreach (Segment segment in madnesses)
+            {
+                if (segment.Value >= 90)
+                {
+                    replay.AddOverheadIcon(segment, player, ParserIcons.DerangementRedOverhead);
+                }
+                else if (segment.Value >= 60)
+                {
+                    replay.AddOverheadIcon(segment, player, ParserIcons.MadnessGoldOverhead);
+                }
+                else if (segment.Value >= 30)
+                {
+                    replay.AddOverheadIcon(segment, player, ParserIcons.MadnessSilverOverhead);
+                }
             }
         }
 
@@ -121,21 +150,11 @@ namespace GW2EIEvtcParser.EncounterLogic
 
             if (log.FightData.Success)
             {
-                IReadOnlyList<AbstractBuffEvent> mildlyInsane = log.CombatData.GetBuffData(AchievementEligibilityMildlyInsane);
-                bool hasBeenAdded = false;
-                if (mildlyInsane.Any())
+                if (log.CombatData.GetBuffData(AchievementEligibilityMildlyInsane).Any())
                 {
-                    foreach (Player p in log.PlayerList)
-                    {
-                        if (p.HasBuff(log, AchievementEligibilityMildlyInsane, log.FightData.FightEnd - ServerDelayConstant))
-                        {
-                            InstanceBuffs.Add((log.Buffs.BuffsByIds[AchievementEligibilityMildlyInsane], 1));
-                            hasBeenAdded = true;
-                            break;
-                        }
-                    }
+                    InstanceBuffs.AddRange(GetOnPlayerCustomInstanceBuff(log, AchievementEligibilityMildlyInsane));
                 }
-                if (!hasBeenAdded && CustomCheckMildlyInsaneEligibility(log))
+                else if(CustomCheckMildlyInsaneEligibility(log))
                 {
                     InstanceBuffs.Add((log.Buffs.BuffsByIds[AchievementEligibilityMildlyInsane], 1));
                 }

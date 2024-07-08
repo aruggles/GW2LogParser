@@ -15,6 +15,10 @@ namespace GW2EIEvtcParser
         internal static readonly AgentItem _unknownAgent = new AgentItem();
 
         public const int CombatReplayPollingRate = 150;
+        internal const uint CombatReplaySkillDefaultSizeInPixel = 22;
+        internal const uint CombatReplaySkillDefaultSizeInWorld = 90;
+        internal const uint CombatReplayOverheadDefaultSizeInPixel = 20;
+        internal const float CombatReplayOverheadDefaultOpacity = 0.8f;
 
         public const int MinionLimit = 1500;
 
@@ -32,7 +36,7 @@ namespace GW2EIEvtcParser
 
         internal const long InchDistanceThreshold = 10;
 
-        internal const long MinimumInCombatDuration = 2200;
+        public const long MinimumInCombatDuration = 2200;
 
         internal const int PhaseTimeLimit = 2000;
 
@@ -50,6 +54,7 @@ namespace GW2EIEvtcParser
             Thief, Daredevil, Deadeye, Specter,
             Ranger, Druid, Soulbeast, Untamed,
             Engineer, Scrapper, Holosmith, Mechanist,
+            PetSpecific,
             FightSpecific,
             FractalInstability,
             Unknown
@@ -271,8 +276,9 @@ namespace GW2EIEvtcParser
         /// <param name="redirectFrom">AgentItem the events need to be redirected from</param>
         /// <param name="stateCopyFroms">AgentItems from where last known states (hp, position, etc) will be copied from</param>
         /// <param name="to">AgentItem the events need to be redirected to</param>
+        /// <param name="copyPositionalDataFromAttackTarget">If true, "to" will get the positional data from attack targets, if possible</param>
         /// <param name="extraRedirections">function to handle special conditions, given event either src or dst matches from</param>
-        internal static void RedirectEventsAndCopyPreviousStates(List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions, AgentData agentData, AgentItem redirectFrom, List<AgentItem> stateCopyFroms, AgentItem to, ExtraRedirection extraRedirections = null)
+        internal static void RedirectEventsAndCopyPreviousStates(List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions, AgentData agentData, AgentItem redirectFrom, List<AgentItem> stateCopyFroms, AgentItem to, bool copyPositionalDataFromAttackTarget, ExtraRedirection extraRedirections = null)
         {
             // Redirect combat events
             foreach (CombatItem evt in combatData)
@@ -295,14 +301,28 @@ namespace GW2EIEvtcParser
                     }
                 }
             }
+            // Copy attack targets
+            var attackTargetAgents = new HashSet<AgentItem>();
+            var attackTargets = combatData.Where(x => x.IsStateChange == StateChange.AttackTarget && x.DstMatchesAgent(redirectFrom)).ToList();
+            var targetableOns = combatData.Where(x => x.IsStateChange == StateChange.Targetable && x.DstAgent == 1).ToList();
+            foreach (CombatItem c in attackTargets)
+            {
+                var cExtra = new CombatItem(c);
+                cExtra.OverrideTime(to.FirstAware);
+                cExtra.OverrideDstAgent(to.Agent);
+                combatData.Add(cExtra);
+                AgentItem at = agentData.GetAgent(c.SrcAgent, c.Time);
+                if (targetableOns.Any(x => x.SrcMatchesAgent(at)))
+                {
+                    attackTargetAgents.Add(at);
+                }
+            }
+            // Copy states
             var toCopy = new List<CombatItem>();
-            Func<CombatItem, bool> canCopy = (evt) => stateCopyFroms.Any(x => evt.SrcMatchesAgent(x));
-            var stateChangeCopyConditions = new List<Func<CombatItem, bool>>()
+            Func<CombatItem, bool> canCopyFromAgent = (evt) => stateCopyFroms.Any(x => evt.SrcMatchesAgent(x));
+            var stateChangeCopyFromAgentConditions = new List<Func<CombatItem, bool>>()
             {
                 (x) => x.IsStateChange == StateChange.BreakbarState,
-                (x) => x.IsStateChange == StateChange.Position,
-                (x) => x.IsStateChange == StateChange.Rotation,
-                (x) => x.IsStateChange == StateChange.Velocity,
                 (x) => x.IsStateChange == StateChange.MaxHealthUpdate,
                 (x) => x.IsStateChange == StateChange.HealthUpdate,
                 (x) => x.IsStateChange == StateChange.BreakbarPercent,
@@ -310,12 +330,37 @@ namespace GW2EIEvtcParser
                 (x) => (x.IsStateChange == StateChange.EnterCombat || x.IsStateChange == StateChange.ExitCombat),
                 (x) => (x.IsStateChange == StateChange.Spawn || x.IsStateChange == StateChange.Despawn || x.IsStateChange == StateChange.ChangeDead || x.IsStateChange == StateChange.ChangeDown || x.IsStateChange == StateChange.ChangeUp),
             };
-            foreach (Func<CombatItem, bool> stateChangeCopyCondition in stateChangeCopyConditions)
+            if (!copyPositionalDataFromAttackTarget || !attackTargetAgents.Any())
             {
-                CombatItem stateToCopy = combatData.LastOrDefault(x => stateChangeCopyCondition(x) && canCopy(x) && x.Time <= to.FirstAware);
+                stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Position);
+                stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Rotation);
+                stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Velocity);
+            }
+            foreach (Func<CombatItem, bool> stateChangeCopyCondition in stateChangeCopyFromAgentConditions)
+            {
+                CombatItem stateToCopy = combatData.LastOrDefault(x => stateChangeCopyCondition(x) && canCopyFromAgent(x) && x.Time <= to.FirstAware);
                 if (stateToCopy != null)
                 {
                     toCopy.Add(stateToCopy);
+                }
+            }
+            // Copy positional data from attack targets
+            if (copyPositionalDataFromAttackTarget && attackTargetAgents.Any())
+            {
+                Func<CombatItem, bool> canCopyFromAttackTarget = (evt) => attackTargetAgents.Any(x => evt.SrcMatchesAgent(x));
+                var stateChangeCopyFromAttackTargetConditions = new List<Func<CombatItem, bool>>()
+                {
+                    (x) => x.IsStateChange == StateChange.Position,
+                    (x) => x.IsStateChange == StateChange.Rotation,
+                    (x) => x.IsStateChange == StateChange.Velocity,
+                };
+                foreach (Func<CombatItem, bool> stateChangeCopyCondition in stateChangeCopyFromAttackTargetConditions)
+                {
+                    CombatItem stateToCopy = combatData.LastOrDefault(x => stateChangeCopyCondition(x) && canCopyFromAttackTarget(x) && x.Time <= to.FirstAware);
+                    if (stateToCopy != null)
+                    {
+                        toCopy.Add(stateToCopy);
+                    }
                 }
             }
             foreach (CombatItem c in toCopy)
@@ -323,15 +368,6 @@ namespace GW2EIEvtcParser
                 var cExtra = new CombatItem(c);
                 cExtra.OverrideTime(to.FirstAware);
                 cExtra.OverrideSrcAgent(to.Agent);
-                combatData.Add(cExtra);
-            }
-            // Copy attack targets
-            var attackTargets = combatData.Where(x => x.IsStateChange == StateChange.AttackTarget && x.DstMatchesAgent(redirectFrom)).ToList();
-            foreach (CombatItem c in attackTargets)
-            {
-                var cExtra = new CombatItem(c);
-                cExtra.OverrideTime(to.FirstAware);
-                cExtra.OverrideDstAgent(to.Agent);
                 combatData.Add(cExtra);
             }
             // Redirect NPC masters
@@ -545,6 +581,11 @@ namespace GW2EIEvtcParser
             return ParserIcons.BaseResProfIcons.TryGetValue(spec, out string icon) ? icon : ParserIcons.UnknownProfessionIcon;
         }
 
+        internal static string GetGadgetIcon()
+        {
+            return "https://wiki.guildwars2.com/images/1/17/Gadgeteer.png";
+        }
+
         internal static string GetNPCIcon(int id)
         {
             if (id == 0)
@@ -587,19 +628,20 @@ namespace GW2EIEvtcParser
             { BuffAttribute.FishingPower, "Fishing Power" },
             { BuffAttribute.Armor, "Armor" },
             { BuffAttribute.Agony, "Agony" },
-            { BuffAttribute.StatInc, "Stat Increase" },
-            { BuffAttribute.FlatInc, "Flat Increase" },
-            { BuffAttribute.PhysInc, "Outgoing Strike Damage" },
-            { BuffAttribute.CondInc, "Outgoing Condition Damage" },
-            { BuffAttribute.SiphonInc, "Outgoing Life Leech Damage" },
-            { BuffAttribute.SiphonRec, "Incoming Life Leech Damage" },
-            { BuffAttribute.CondRec, "Incoming Condition Damage" },
-            { BuffAttribute.CondRec2, "Incoming Condition Damage (Mult)" },
-            { BuffAttribute.PhysRec, "Incoming Strike Damage" },
-            { BuffAttribute.PhysRec2, "Incoming Strike Damage (Mult)" },
+            { BuffAttribute.StatOutgoing, "Stat Increase" },
+            { BuffAttribute.FlatOutgoing, "Flat Increase" },
+            { BuffAttribute.PhysOutgoing, "Outgoing Strike Damage" },
+            { BuffAttribute.CondOutgoing, "Outgoing Condition Damage" },
+            { BuffAttribute.SiphonOutgoing, "Outgoing Life Leech Damage" },
+            { BuffAttribute.SiphonIncomingAdditive1, "Incoming Life Leech Damage" },
+            { BuffAttribute.SiphonIncomingAdditive2, "Incoming Life Leech Damage" },
+            { BuffAttribute.CondIncomingAdditive, "Incoming Condition Damage" },
+            { BuffAttribute.CondIncomingMultiplicative, "Incoming Condition Damage (Mult)" },
+            { BuffAttribute.PhysIncomingAdditive, "Incoming Strike Damage" },
+            { BuffAttribute.PhysIncomingMultiplicative, "Incoming Strike Damage (Mult)" },
             { BuffAttribute.AttackSpeed, "Attack Speed" },
-            { BuffAttribute.ConditionDurationInc, "Outgoing Condition Duration" },
-            { BuffAttribute.BoonDurationInc, "Outgoing Boon Duration" },
+            { BuffAttribute.ConditionDurationOutgoing, "Outgoing Condition Duration" },
+            { BuffAttribute.BoonDurationOutgoing, "Outgoing Boon Duration" },
             { BuffAttribute.DamageFormulaSquaredLevel, "Damage Formula" },
             { BuffAttribute.DamageFormula, "Damage Formula" },
             { BuffAttribute.GlancingBlow, "Glancing Blow" },
@@ -609,10 +651,11 @@ namespace GW2EIEvtcParser
             { BuffAttribute.SkillActivationDamageFormula, "Damage Formula on Skill Activation" },
             { BuffAttribute.MovementActivationDamageFormula, "Damage Formula based on Movement" },
             { BuffAttribute.EnduranceRegeneration, "Endurance Regeneration" },
-            { BuffAttribute.HealingEffectivenessRec, "Incoming Healing Effectiveness" },
-            { BuffAttribute.HealingEffectivenessRec2, "Incoming Healing Effectiveness" },
-            { BuffAttribute.HealingEffectivenessConvInc, "Outgoing Healing Effectiveness" },
-            { BuffAttribute.HealingEffectivenessFlatInc, "Outgoing Healing Effectiveness" },
+            { BuffAttribute.HealingEffectivenessIncomingNonStacking, "Incoming Healing Effectiveness" },
+            { BuffAttribute.HealingEffectivenessIncomingAdditive, "Incoming Healing Effectiveness" },
+            { BuffAttribute.HealingEffectivenessIncomingMultiplicative, "Incoming Healing Effectiveness (Mult)" },
+            { BuffAttribute.HealingEffectivenessConvOutgoing, "Outgoing Healing Effectiveness" },
+            { BuffAttribute.HealingEffectivenessOutgoingAdditive, "Outgoing Healing Effectiveness" },
             { BuffAttribute.HealingOutputFormula, "Healing Formula" },
             { BuffAttribute.ExperienceFromKills, "Experience From Kills" },
             { BuffAttribute.ExperienceFromAll, "Experience From All" },
@@ -630,27 +673,29 @@ namespace GW2EIEvtcParser
 
         public static IReadOnlyDictionary<BuffAttribute, string> BuffAttributesPercent { get; private set; } = new Dictionary<BuffAttribute, string>()
         {
-            { BuffAttribute.FlatInc, "%" },
-            { BuffAttribute.PhysInc, "%" },
-            { BuffAttribute.CondInc, "%" },
-            { BuffAttribute.CondRec, "%" },
-            { BuffAttribute.CondRec2, "%" },
-            { BuffAttribute.PhysRec, "%" },
-            { BuffAttribute.PhysRec2, "%" },
+            { BuffAttribute.FlatOutgoing, "%" },
+            { BuffAttribute.PhysOutgoing, "%" },
+            { BuffAttribute.CondOutgoing, "%" },
+            { BuffAttribute.CondIncomingAdditive, "%" },
+            { BuffAttribute.CondIncomingMultiplicative, "%" },
+            { BuffAttribute.PhysIncomingAdditive, "%" },
+            { BuffAttribute.PhysIncomingMultiplicative, "%" },
             { BuffAttribute.AttackSpeed, "%" },
-            { BuffAttribute.ConditionDurationInc, "%" },
-            { BuffAttribute.BoonDurationInc, "%" },
+            { BuffAttribute.ConditionDurationOutgoing, "%" },
+            { BuffAttribute.BoonDurationOutgoing, "%" },
             { BuffAttribute.GlancingBlow, "%" },
             { BuffAttribute.CriticalChance, "%" },
             { BuffAttribute.StrikeDamageToHP, "%" },
             { BuffAttribute.ConditionDamageToHP, "%" },
             { BuffAttribute.EnduranceRegeneration, "%" },
-            { BuffAttribute.HealingEffectivenessRec, "%" },
-            { BuffAttribute.HealingEffectivenessRec2, "%" },
-            { BuffAttribute.SiphonInc, "%" },
-            { BuffAttribute.SiphonRec, "%" },
-            { BuffAttribute.HealingEffectivenessConvInc , "%" },
-            { BuffAttribute.HealingEffectivenessFlatInc , "%" },
+            { BuffAttribute.HealingEffectivenessIncomingNonStacking, "%" },
+            { BuffAttribute.HealingEffectivenessIncomingAdditive, "%" },
+            { BuffAttribute.HealingEffectivenessIncomingMultiplicative, "%" },
+            { BuffAttribute.SiphonOutgoing, "%" },
+            { BuffAttribute.SiphonIncomingAdditive1, "%" },
+            { BuffAttribute.SiphonIncomingAdditive2, "%" },
+            { BuffAttribute.HealingEffectivenessConvOutgoing , "%" },
+            { BuffAttribute.HealingEffectivenessOutgoingAdditive , "%" },
             { BuffAttribute.ExperienceFromKills, "%" },
             { BuffAttribute.ExperienceFromAll, "%" },
             { BuffAttribute.GoldFind, "%" },
@@ -768,56 +813,33 @@ namespace GW2EIEvtcParser
             }
             return res;
         }
-
-
-        private static readonly HashSet<string> _compressedFiles = new HashSet<string>()
+        public static void Add<TKey, TValue>(Dictionary<TKey, List<TValue>> dict, TKey key, TValue evt)
         {
-            ".zevtc",
-            ".evtc.zip",
-        };
-
-        private static readonly HashSet<string> _tmpCompressedFiles = new HashSet<string>()
-        {
-            ".tmp.zip"
-        };
-
-        private static readonly HashSet<string> _tmpFiles = new HashSet<string>()
-        {
-            ""
-        };
-
-        private static readonly HashSet<string> _supportedFiles = new HashSet<string>(_compressedFiles)
-        {
-            ".evtc"
-        };
-
-        public static bool IsCompressedFormat(string fileName)
-        {
-            foreach (string format in _compressedFiles)
+            if (dict.TryGetValue(key, out List<TValue> list))
             {
-                if (fileName.EndsWith(format, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
+                list.Add(evt);
             }
-            return false;
-        }
-
-        public static IReadOnlyList<string> GetSupportedFormats()
-        {
-            return new List<string>(_supportedFiles);
-        }
-
-        public static bool IsSupportedFormat(string fileName)
-        {
-            foreach (string format in _supportedFiles)
+            else
             {
-                if (fileName.EndsWith(format, StringComparison.OrdinalIgnoreCase))
+                dict[key] = new List<TValue>()
                 {
-                    return true;
-                }
+                    evt
+                };
             }
-            return false;
+        }
+        public static void Add<TKey, TValue>(Dictionary<TKey, HashSet<TValue>> dict, TKey key, TValue evt)
+        {
+            if (dict.TryGetValue(key, out HashSet<TValue> list))
+            {
+                list.Add(evt);
+            }
+            else
+            {
+                dict[key] = new HashSet<TValue>()
+                {
+                    evt
+                };
+            }
         }
 
         public static int IndexOf<T>(this IReadOnlyList<T> self, T elementToFind)
@@ -834,30 +856,5 @@ namespace GW2EIEvtcParser
             }
             return -1;
         }
-
-        public static bool IsTemporaryCompressedFormat(string fileName)
-        {
-            foreach (string format in _tmpCompressedFiles)
-            {
-                if (fileName.EndsWith(format, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static bool IsTemporaryFormat(string fileName)
-        {
-            foreach (string format in _tmpFiles)
-            {
-                if (fileName.EndsWith(format, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
     }
 }

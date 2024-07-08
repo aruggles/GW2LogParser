@@ -25,7 +25,7 @@
                             style="display:none">{{row.player.profession}}</span>
                     </td>
                     <td :class="getBodyClass('Name')"class="text-left">{{row.player.name}}</td>
-                    <td v-for="(modifier, index) in modifiers" :class="getBodyClass('Data', index, modifier.approximate)"
+                    <td v-for="(modifier, index) in modifiers" :class="getBodyClass('Data', index, modifier.approximate, getCellValue(row.data[index], modifier))"
                         v-show="isInColPage(index)"
                         :data-original-title="getTooltip(row.data[index], modifier)">
                         {{getCellValue(row.data[index], modifier)}}
@@ -37,7 +37,7 @@
                     <td></td>
                     <td></td>
                     <td class="text-left">{{row.name}}</td>
-                    <td v-for="(modifier, index) in modifiers" :class="{approximate: modifier.approximate}"
+                    <td v-for="(modifier, index) in modifiers" :class="getSumClass(modifier.approximate,getCellValue(row.data[index], modifier))"
                         v-show="isInColPage(index)"
                         :data-original-title="getTooltip(row.data[index], modifier)">
                         {{getCellValue(row.data[index], modifier)}}
@@ -231,9 +231,14 @@
             getHeaderClass: function(key, index) {
                 return this.getHeaderClassBase(this.sortdata, key, index);
             },
-            getBodyClass: function(key, index, approximate) {
+            getBodyClass: function(key, index, approximate, cellValue) {
                 var classes = this.getBodyClassBase(this.sortdata, key, index);
-                classes.approximate = !!approximate;
+                classes.approximate = cellValue !== "-" && cellValue !== "Tooltip" ? !!approximate : false;
+                return classes;
+            },
+            getSumClass: function( approximate, cellValue) {
+                var classes = {};
+                classes.approximate = cellValue !== "-" && cellValue !== "Tooltip" ? !!approximate : false;
                 return classes;
             },
             sortData: function(rows) {
@@ -251,7 +256,7 @@
                     case "Data":
                         var index = this.sortdata.index;
                         var modifier = this.modifiers[index];
-                        rows.sort((x,y) => order * this.getCellValue(x.data[index], modifier).localeCompare(this.getCellValue(y.data[index], modifier)));
+                        rows.sort((x,y) => order * (this.getNumericalCellValue(x.data[index], modifier) - this.getNumericalCellValue(y.data[index], modifier)));
                         break;
                     default:
                         return null;
@@ -285,6 +290,15 @@
                     gain += "<br>Total Damage: " + this.round3(100.0 * item[2] / item[3]) + "%";
                 }
                 return res + "<br>" + gain;
+            },
+            getNumericalCellValue: function (item, mod) {
+                var cellValue = this.getCellValue(item, mod);
+                if (cellValue === 'Tooltip') {
+                    return Number.MAX_SAFE_INTEGER;
+                } else if (cellValue === '-') {
+                    return 0;
+                }
+                return parseFloat(cellValue);
             },
             getCellValue: function (item, mod) {
                 if (item[2] === 0) {

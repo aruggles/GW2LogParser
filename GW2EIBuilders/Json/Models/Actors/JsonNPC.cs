@@ -7,6 +7,7 @@ namespace Gw2LogParser.GW2EIBuilders
     /// </summary>
     public class JsonNPC : JsonActor
     {
+
         /// <summary>
         /// Game ID of the target
         /// </summary>

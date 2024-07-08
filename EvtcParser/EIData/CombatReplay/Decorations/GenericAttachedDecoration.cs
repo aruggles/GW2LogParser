@@ -1,36 +1,49 @@
-﻿namespace GW2EIEvtcParser.EIData
+﻿using System;
+using System.Security.Cryptography.X509Certificates;
+
+namespace GW2EIEvtcParser.EIData
 {
     internal abstract class GenericAttachedDecoration : GenericDecoration
     {
-        public Connector ConnectedTo { get; }
 
-        public AgentConnector Owner { get; private set; }
-        public bool DrawOnSelect { get; private set; }
+        public GeographicalConnector ConnectedTo { get; }
+        public RotationConnector RotationConnectedTo { get; protected set; }
+        public SkillModeDescriptor SkillMode;
 
-        protected GenericAttachedDecoration((int start, int end) lifespan, Connector connector) : base(lifespan)
+        protected GenericAttachedDecoration((long , long ) lifespan, GeographicalConnector connector) : base(lifespan)
         {
             ConnectedTo = connector;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="owner">Owner of the skill, will use master if current is a minion</param>
-        /// <param name="drawOnSelect"></param>
-        /// <returns></returns>
-        public virtual GenericAttachedDecoration UsingSkillMode(AbstractSingleActor owner, bool drawOnSelect = true)
+        /// <summary>Creates a new line towards the other decoration</summary>
+        public LineDecoration LineTo(GenericAttachedDecoration other, string color)
         {
-            if (owner == null)
-            {
-                Owner = null;
-            } 
-            else
-            {
-                Owner = new AgentConnector(owner.AgentItem.GetFinalMaster());
-            }
-            DrawOnSelect = drawOnSelect;
+            int start = Math.Max(Lifespan.start, other.Lifespan.start);
+            int end = Math.Min(Lifespan.end, other.Lifespan.end);
+            return new LineDecoration((start, end), color, ConnectedTo, other.ConnectedTo);
+        }
+
+        public LineDecoration LineTo(GenericAttachedDecoration other, Color color, double opacity)
+        {
+            return LineTo(other, color.WithAlpha(opacity).ToString(true));
+        }
+
+        public virtual GenericAttachedDecoration UsingRotationConnector(RotationConnector rotationConnectedTo)
+        {
+            RotationConnectedTo = rotationConnectedTo;
             return this;
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="skill">Skill information</param>
+        /// <returns></returns>
+        public virtual GenericAttachedDecoration UsingSkillMode(SkillModeDescriptor skill)
+        {
+            SkillMode = skill;
+            return this;
+        }
     }
 }

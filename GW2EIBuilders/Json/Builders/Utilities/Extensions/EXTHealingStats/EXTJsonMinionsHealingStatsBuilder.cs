@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,8 @@ namespace Gw2LogParser.GW2EIBuilders
 {
     internal static class EXTJsonMinionsHealingStatsBuilder
     {
-        public static EXTJsonMinionsHealingStats BuildMinionsHealingStats(Minions minions, ParsedLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+
+        public static EXTJsonMinionsHealingStats BuildMinionsHealingStats(Minions minions, ParsedEvtcLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var totalHealing = new List<int>();
             var totalAlliedHealing = new List<List<int>>();
@@ -43,5 +45,6 @@ namespace Gw2LogParser.GW2EIBuilders
             }
             return res;
         }
+
     }
 }

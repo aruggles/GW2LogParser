@@ -1,8 +1,12 @@
 ﻿
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// Class corresponding a healing distribution
+    /// </summary>
     public class EXTJsonHealingDist
     {
+
         /// <summary>
         /// Total healing done
         /// </summary>
@@ -46,5 +50,6 @@ namespace Gw2LogParser.GW2EIBuilders
         {
 
         }
+
     }
 }

@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
-using static GW2EIEvtcParser.SkillIDs;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
+using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
+using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
+using static GW2EIEvtcParser.SkillIDs;
 
 namespace GW2EIEvtcParser.EncounterLogic
 {
@@ -29,6 +28,8 @@ namespace GW2EIEvtcParser.EncounterLogic
             new PlayerDstBuffApplyMechanic(FixatedRigom, "Fixate: Rigom", new MechanicPlotlySetting(Symbols.StarOpen,Colors.Red), "R.Fix","Fixated by Rigom", "Fixate: Rigom",0),
             new PlayerDstBuffApplyMechanic(InevitableBetrayalBig, "Big Hug", new MechanicPlotlySetting(Symbols.Circle,Colors.DarkGreen), "B.Gr","Big Green (friends mechanic)", "Big Green",0),
             new PlayerDstBuffApplyMechanic(InevitableBetrayalSmall, "Small Hug", new MechanicPlotlySetting(Symbols.CircleOpen,Colors.DarkGreen), "S.Gr","Small Green (friends mechanic)", "Small Green",0),
+            new EnemyDstBuffApplyMechanic(StrengthenedBondGuldhem, "Strengthened Bond: Guldhem", new MechanicPlotlySetting(Symbols.TriangleNE,Colors.Orange), "G.Str","Strengthened Bond: Guldhem", "Strengthened: Guldhem",0),
+            new EnemyDstBuffApplyMechanic(StrengthenedBondRigom, "Strengthened Bond: Rigom", new MechanicPlotlySetting(Symbols.TriangleNE,Colors.Red), "R.Str","Strengthened Bond: Rigom", "Strengthened: Rigom",0),
             new PlayerDstHitMechanic(SpearReturn, "Spear Return", new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Red), "S.Rt","Hit by Spear Return", "Spear Return",0),
             new PlayerDstHitMechanic(new long[] {InevitableBetrayalFailSmall, InevitableBetrayalFailBig}, "Inevitable Betrayal", new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Gr.Fl","Inevitable Betrayal (failed Green)", "Failed Green",0),
             new PlayerDstHitMechanic(EffigyPulse, "Effigy Pulse", new MechanicPlotlySetting(Symbols.TriangleDownOpen,Colors.Red), "S.Pls","Effigy Pulse (Stood in Spear AoE)", "Spear Aoe",0),
@@ -64,7 +65,7 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             return new List<InstantCastFinder>()
             {
-                new DamageCastFinder(BrutalAura , BrutalAura ), // Brutal aura
+                new DamageCastFinder(BrutalAura, BrutalAura),
             };
         }
 
@@ -136,19 +137,23 @@ namespace GW2EIEvtcParser.EncounterLogic
             return phases;
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
-            /*var spearAgents = combatData.Where(x => x.DstAgent == 104580 && x.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate).Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxWidth == 100 && x.HitboxHeight == 300).ToList();
-            if (spearAgents.Any())
+            // With lingering agents, last aware of the spears are properly set
+            if (evtcVersion >= ArcDPSEnums.ArcDPSBuilds.LingeringAgents)
             {
-                foreach (AgentItem spear in spearAgents)
+                var spearAgents = combatData.Where(x => x.DstAgent == 104580 && x.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate).Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxWidth == 100 && x.HitboxHeight == 300).ToList();
+                if (spearAgents.Any())
                 {
-                    spear.OverrideType(AgentItem.AgentType.NPC);
-                    spear.OverrideID((int)ArcDPSEnums.TrashID.SpearAggressionRevulsion);
+                    foreach (AgentItem spear in spearAgents)
+                    {
+                        spear.OverrideType(AgentItem.AgentType.NPC);
+                        spear.OverrideID((int)ArcDPSEnums.TrashID.SpearAggressionRevulsion);
+                    }
+                    agentData.Refresh();
                 }
-                agentData.Refresh();
-            }*/
-            base.EIEvtcParse(gw2Build, fightData, agentData, combatData, extensions);
+            }
+            base.EIEvtcParse(gw2Build, evtcVersion, fightData, agentData, combatData, extensions);
             int curGuldhem = 1;
             int curRigom = 1;
             foreach (AbstractSingleActor target in Targets)
@@ -188,26 +193,26 @@ namespace GW2EIEvtcParser.EncounterLogic
             switch (target.ID)
             {
                 case (int)ArcDPSEnums.TargetID.Samarog:
-                    List<AbstractBuffEvent> brutalize = GetFilteredList(log.CombatData, FanaticalResilience, target, true, true);
-                    int brutStart = 0;
-                    foreach (AbstractBuffEvent c in brutalize)
+                    var brutalize = target.GetBuffStatus(log, FanaticalResilience, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+                    foreach (Segment seg in brutalize)
                     {
-                        if (c is BuffApplyEvent)
-                        {
-                            brutStart = (int)c.Time;
-                        }
-                        else
-                        {
-                            int brutEnd = (int)c.Time;
-                            replay.Decorations.Add(new CircleDecoration(true, 0, 120, (brutStart, brutEnd), "rgba(0, 180, 255, 0.3)", new AgentConnector(target)));
-                        }
+                        replay.Decorations.Add(new CircleDecoration(120, seg, Colors.LightBlue, 0.3, new AgentConnector(target)));
                     }
                     break;
                 case (int)ArcDPSEnums.TrashID.Rigom:
                 case (int)ArcDPSEnums.TrashID.Guldhem:
                     break;
                 case (int)ArcDPSEnums.TrashID.SpearAggressionRevulsion:
-                    replay.Decorations.Add(new CircleDecoration(true, 0, 240, ((int)target.FirstAware, (int)target.LastAware), "rgba(255, 100, 0, 0.1)", new AgentConnector(target)));
+                    var spearLifespan = new Segment(target.FirstAware, target.LastAware, 1);
+                    replay.Decorations.Add(new CircleDecoration(240, spearLifespan, Colors.Orange, 0.1, new AgentConnector(target)));
+                    if (log.CombatData.GetBuffData(SpearOfAggressionBuff).Any(x => x.To == target.AgentItem))
+                    {
+                        replay.AddOverheadIcon(spearLifespan, target, BuffImages.Taunt, 15);
+                    } 
+                    else
+                    {
+                        replay.AddOverheadIcon(spearLifespan, target, BuffImages.Fear, 15);
+                    }
                     break;
                 default:
                     break;
@@ -216,14 +221,15 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
             // big bomb
             var bigbomb = log.CombatData.GetBuffData(InevitableBetrayalBig).Where(x => (x.To == p.AgentItem && x is BuffApplyEvent)).ToList();
             foreach (AbstractBuffEvent c in bigbomb)
             {
                 int bigStart = (int)c.Time;
                 int bigEnd = bigStart + 6000;
-                replay.Decorations.Add(new CircleDecoration(true, 0, 300, (bigStart, bigEnd), "rgba(150, 80, 0, 0.2)", new AgentConnector(p)));
-                replay.Decorations.Add(new CircleDecoration(true, bigEnd, 300, (bigStart, bigEnd), "rgba(150, 80, 0, 0.2)", new AgentConnector(p)));
+                var circle = new CircleDecoration(300, (bigStart, bigEnd), "rgba(150, 80, 0, 0.2)", new AgentConnector(p));
+                replay.AddDecorationWithGrowing(circle, bigEnd);
             }
             // small bomb
             var smallbomb = log.CombatData.GetBuffData(InevitableBetrayalSmall).Where(x => (x.To == p.AgentItem && x is BuffApplyEvent)).ToList();
@@ -231,63 +237,37 @@ namespace GW2EIEvtcParser.EncounterLogic
             {
                 int smallStart = (int)c.Time;
                 int smallEnd = smallStart + 6000;
-                replay.Decorations.Add(new CircleDecoration(true, 0, 80, (smallStart, smallEnd), "rgba(80, 150, 0, 0.3)", new AgentConnector(p)));
+                replay.Decorations.Add(new CircleDecoration(80, (smallStart, smallEnd), "rgba(80, 150, 0, 0.3)", new AgentConnector(p)));
             }
-            // fixated
-            List<AbstractBuffEvent> fixatedSam = GetFilteredList(log.CombatData, FixatedSamarog, p, true, true);
-            int fixatedSamStart = 0;
-            foreach (AbstractBuffEvent c in fixatedSam)
+            // fixated Samarog
+            var fixatedSam = p.GetBuffStatus(log, FixatedSamarog, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            foreach (Segment seg in fixatedSam)
             {
-                if (c is BuffApplyEvent)
-                {
-                    fixatedSamStart = Math.Max((int)c.Time, 0);
-                }
-                else
-                {
-                    int fixatedSamEnd = (int)c.Time;
-                    replay.Decorations.Add(new CircleDecoration(true, 0, 80, (fixatedSamStart, fixatedSamEnd), "rgba(255, 80, 255, 0.3)", new AgentConnector(p)));
-                }
+                replay.Decorations.Add(new CircleDecoration(80, seg, "rgba(255, 80, 255, 0.3)", new AgentConnector(p)));
+                replay.AddOverheadIcon(seg, p, ParserIcons.FixationPurpleOverhead);
             }
-            //fixated Ghuldem
-            List<AbstractBuffEvent> fixatedGuldhem = GetFilteredList(log.CombatData, FixatedGuldhem, p, true, true);
-            int fixationGuldhemStart = 0;
-            AbstractSingleActor guldhem = null;
-            foreach (AbstractBuffEvent c in fixatedGuldhem)
+            List<AbstractBuffEvent> fixatedSamarog = GetFilteredList(log.CombatData, FixatedSamarog, p, true, true);
+            replay.AddTether(fixatedSamarog, "rgba(255, 80, 255, 0.3)");
+            //fixated Guldhem
+            var fixatedGuldhem = p.GetBuffStatus(log, FixatedGuldhem, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            foreach (Segment seg in fixatedGuldhem)
             {
-                if (c is BuffApplyEvent)
+                long mid = (seg.Start + seg.End) / 2;
+                AbstractSingleActor guldhem = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.Guldhem) && mid >= x.FirstAware && mid <= x.LastAware);
+                if (guldhem != null)
                 {
-                    fixationGuldhemStart = (int)c.Time;
-                    long logTime = c.Time;
-                    guldhem = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.Guldhem) && logTime >= x.FirstAware && logTime <= x.LastAware);
-                }
-                else
-                {
-                    int fixationGuldhemEnd = (int)c.Time;
-                    if (guldhem != null)
-                    {
-                        replay.Decorations.Add(new LineDecoration(0, (fixationGuldhemStart, fixationGuldhemEnd), "rgba(255, 100, 0, 0.3)", new AgentConnector(p), new AgentConnector(guldhem)));
-                    }
+                    replay.Decorations.Add(new LineDecoration(seg, Colors.Orange, 0.3, new AgentConnector(p), new AgentConnector(guldhem)));
                 }
             }
             //fixated Rigom
-            List<AbstractBuffEvent> fixatedRigom = GetFilteredList(log.CombatData, FixatedRigom, p, true, true);
-            int fixationRigomStart = 0;
-            AbstractSingleActor rigom = null;
-            foreach (AbstractBuffEvent c in fixatedRigom)
+            var fixatedRigom = p.GetBuffStatus(log, FixatedRigom, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
+            foreach (Segment seg in fixatedGuldhem)
             {
-                if (c is BuffApplyEvent)
+                long mid = (seg.Start + seg.End) / 2;
+                AbstractSingleActor rigom = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.Rigom) && mid >= x.FirstAware && mid <= x.LastAware);
+                if (rigom != null)
                 {
-                    fixationRigomStart = (int)c.Time;
-                    long logTime = c.Time;
-                    rigom = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.Rigom) && logTime >= x.FirstAware && logTime <= x.LastAware);
-                }
-                else
-                {
-                    int fixationRigomEnd = (int)c.Time;
-                    if (rigom != null)
-                    {
-                        replay.Decorations.Add(new LineDecoration(0, (fixationRigomStart, fixationRigomEnd), "rgba(255, 0, 0, 0.3)", new AgentConnector(p), new AgentConnector(rigom)));
-                    }
+                    replay.Decorations.Add(new LineDecoration(seg, Colors.Red, 0.3, new AgentConnector(p), new AgentConnector(rigom)));
                 }
             }
         }

@@ -6,6 +6,7 @@ namespace Gw2LogParser.GW2EIBuilders
     /// </summary>
     public class JsonDamageDist
     {
+
         /// <summary>
         /// Total damage done
         /// </summary>

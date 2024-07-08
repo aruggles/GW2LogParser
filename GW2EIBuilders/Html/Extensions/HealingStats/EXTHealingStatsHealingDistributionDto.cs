@@ -1,12 +1,13 @@
-﻿using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.Extensions;
-using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.Extensions;
+using Gw2LogParser.GW2EIBuilders;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class EXTHealingStatsHealingDistributionDto
     {
@@ -65,29 +66,13 @@ namespace Gw2LogParser.GW2EIBuilders
             {
                 isIndirectHealing = false;
             }
-            long timeCasting = 0;
-            int casts = 0, timeWasted = 0, timeSaved = 0;
+            long timeSpentCasting = 0, timeSpentCastingNoInterrupt = 0;
+            int numberOfCast = 0, numberOfCastNoInterrupt = 0, timeWasted = 0, timeSaved = 0;
+            long minTimeSpentCasting = 0, maxTimeSpentCasting = 0;
             if (!isIndirectHealing && castLogsBySkill != null && castLogsBySkill.TryGetValue(skill, out List<AbstractCastEvent> clList))
             {
-                foreach (AbstractCastEvent cl in clList)
-                {
-                    if (phase.InInterval(cl.Time))
-                    {
-                        casts++;
-                        switch (cl.Status)
-                        {
-                            case AbstractCastEvent.AnimationStatus.Interrupted:
-                                timeWasted += cl.SavedDuration;
-                                break;
-
-                            case AbstractCastEvent.AnimationStatus.Reduced:
-                                timeSaved += cl.SavedDuration;
-                                break;
-                        }
-                    }
-                    timeCasting += Math.Min(cl.EndTime, phase.End) - Math.Max(cl.Time, phase.Start);
-
-                }
+                (timeSpentCasting, timeSpentCastingNoInterrupt, minTimeSpentCasting, maxTimeSpentCasting, numberOfCast, numberOfCastNoInterrupt, timeSaved, timeWasted) = DmgDistributionDto.GetCastValues(clList, phase);
+                castLogsBySkill.Remove(skill);
             }
             object[] skillItem = {
                     isIndirectHealing,
@@ -95,17 +80,21 @@ namespace Gw2LogParser.GW2EIBuilders
                     totalhealing,
                     minhealing == int.MaxValue ? 0 : minhealing,
                     maxhealing == int.MinValue ? 0 : maxhealing,
-                    isIndirectHealing ? 0 : casts,
+                    isIndirectHealing ? 0 : numberOfCast,
                     isIndirectHealing ? 0 : -timeWasted / 1000.0,
                     isIndirectHealing ? 0 : timeSaved / 1000.0,
                     hits,
-                    isIndirectHealing ? 0 : timeCasting,
-                    totaldownedhealing
+                    isIndirectHealing ? 0 : timeSpentCasting,
+                    totaldownedhealing,
+                    isIndirectHealing ? 0 : minTimeSpentCasting,
+                    isIndirectHealing ? 0 : maxTimeSpentCasting,
+                    isIndirectHealing ? 0 : timeSpentCastingNoInterrupt,
+                    isIndirectHealing ? 0 : numberOfCastNoInterrupt,
                 };
             return skillItem;
         }
 
-        public static EXTHealingStatsHealingDistributionDto BuildIncomingHealingDistData(ParsedLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static EXTHealingStatsHealingDistributionDto BuildIncomingHealingDistData(ParsedEvtcLog log, AbstractSingleActor p, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new EXTHealingStatsHealingDistributionDto
             {
@@ -125,7 +114,7 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
 
-        private static List<object[]> BuildHealingDistBodyData(ParsedLog log, IReadOnlyList<AbstractCastEvent> casting, IReadOnlyList<EXTAbstractHealingEvent> healingLogs, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, PhaseData phase)
+        private static List<object[]> BuildHealingDistBodyData(ParsedEvtcLog log, IReadOnlyList<AbstractCastEvent> casting, IReadOnlyList<EXTAbstractHealingEvent> healingLogs, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, PhaseData phase)
         {
             var list = new List<object[]>();
             var castLogsBySkill = casting.GroupBy(x => x.Skill).ToDictionary(x => x.Key, x => x.ToList());
@@ -186,7 +175,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return list;
         }
 
-        private static EXTHealingStatsHealingDistributionDto BuildHealingDistDataInternal(ParsedLog log, EXTFinalOutgoingHealingStat outgoingHealingStats, AbstractSingleActor p, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static EXTHealingStatsHealingDistributionDto BuildHealingDistDataInternal(ParsedEvtcLog log, EXTFinalOutgoingHealingStat outgoingHealingStats, AbstractSingleActor p, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new EXTHealingStatsHealingDistributionDto();
             IReadOnlyList<AbstractCastEvent> casting = p.GetIntersectingCastEvents(log, phase.Start, phase.End);
@@ -200,13 +189,13 @@ namespace Gw2LogParser.GW2EIBuilders
         }
 
 
-        public static EXTHealingStatsHealingDistributionDto BuildFriendlyHealingDistData(ParsedLog log, AbstractSingleActor actor, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static EXTHealingStatsHealingDistributionDto BuildFriendlyHealingDistData(ParsedEvtcLog log, AbstractSingleActor actor, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             EXTFinalOutgoingHealingStat outgoingHealingStats = actor.EXTHealing.GetOutgoingHealStats(target, log, phase.Start, phase.End);
             return BuildHealingDistDataInternal(log, outgoingHealingStats, actor, target, phase, usedSkills, usedBuffs);
         }
 
-        private static EXTHealingStatsHealingDistributionDto BuildHealingDistDataMinionsInternal(ParsedLog log, EXTFinalOutgoingHealingStat outgoingHealingStats, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        private static EXTHealingStatsHealingDistributionDto BuildHealingDistDataMinionsInternal(ParsedEvtcLog log, EXTFinalOutgoingHealingStat outgoingHealingStats, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             var dto = new EXTHealingStatsHealingDistributionDto();
             IReadOnlyList<AbstractCastEvent> casting = minions.GetIntersectingCastEvents(log, phase.Start, phase.End);
@@ -218,7 +207,7 @@ namespace Gw2LogParser.GW2EIBuilders
             return dto;
         }
 
-        public static EXTHealingStatsHealingDistributionDto BuildFriendlyMinionHealingDistData(ParsedLog log, AbstractSingleActor actor, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public static EXTHealingStatsHealingDistributionDto BuildFriendlyMinionHealingDistData(ParsedEvtcLog log, AbstractSingleActor actor, Minions minions, AbstractSingleActor target, PhaseData phase, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             EXTFinalOutgoingHealingStat outgoingHealingStats = actor.EXTHealing.GetOutgoingHealStats(target, log, phase.Start, phase.End);
 

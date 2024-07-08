@@ -31,8 +31,18 @@ facingIcon.onload = function () {
 function ToRadians(degrees) {
     return degrees * (Math.PI / 180);
 }
+function ToDegrees(radians) {
+    return radians / (Math.PI / 180);
+}
 
 const resolutionMultiplier = 2.0;
+
+const maxOverheadAnimationFrame = 50;
+let overheadAnimationFrame = maxOverheadAnimationFrame / 2;
+let overheadAnimationIncrement = 1;
+
+const uint32 = new Uint32Array(1);
+const uint32ToUint8 = new Uint8Array(uint32.buffer);
 
 var animator = null;
 // reactive structures
@@ -69,9 +79,10 @@ class Animator {
             displaySelectedMinions: true,
             displayMechanics: true,
             displaySkillMechanics: true,
+            skillMechanicsMask: DefaultSkillDecorations,
             displayTrashMobs: true,
             useActorHitboxWidth: false,
-        };
+        };     
         this.coneControl = {
             enabled: false,
             openingAngle: 90,
@@ -82,6 +93,7 @@ class Animator {
         this.playerData = new Map();
         this.trashMobData = new Map();
         this.friendlyMobData = new Map();
+        this.overheadActorData = [];
         this.mechanicActorData = [];
         this.skillMechanicActorData = [];
         this.actorOrientationData = new Map();
@@ -93,7 +105,7 @@ class Animator {
         this.prevBGImage = null;
         this.animation = null;
         // manipulation
-        this.dragStart = null;
+        this.mouseDown = null;
         this.dragged = false;
         this.scale = 1.0;
         // options
@@ -124,7 +136,7 @@ class Animator {
         }
     }
 
-    attachDOM(mainCanvasID, bgCanvasID, timeRangeID, timeRangeDisplayID) {
+    attachDOM(mainCanvasID, bgCanvasID, pickCanvasID, timeRangeID, timeRangeDisplayID) {
         // animation
         this.timeSlider = document.getElementById(timeRangeID);
         this.timeSliderDisplay = document.getElementById(timeRangeDisplayID);
@@ -144,14 +156,25 @@ class Animator {
         this.bgCanvas.height *= resolutionMultiplier;
         this.bgContext = this.bgCanvas.getContext('2d');
         this.bgContext.imageSmoothingEnabled = true;
+        // pick canvas
+        this.pickCanvas = document.getElementById(pickCanvasID);
+        this.pickCanvas.style.width = this.pickCanvas.width + "px";
+        this.pickCanvas.style.height = this.pickCanvas.height + "px";
+        this.pickCanvas.width *= resolutionMultiplier;
+        this.pickCanvas.height *= resolutionMultiplier;
+        this.pickContext = this.pickCanvas.getContext('2d', {
+            willReadFrequently: true,
+        });
         // manipulation
         this.lastX = this.mainCanvas.width / 2;
         this.lastY = this.mainCanvas.height / 2;
         //
         this._trackTransforms(this.mainContext);
         this._trackTransforms(this.bgContext);
+        this._trackTransforms(this.pickContext);
         this.mainContext.scale(resolutionMultiplier, resolutionMultiplier);
         this.bgContext.scale(resolutionMultiplier, resolutionMultiplier);
+        this.pickContext.scale(resolutionMultiplier, resolutionMultiplier);
         this._initMouseEvents();
         this._initTouchEvents();
     }
@@ -162,13 +185,14 @@ class Animator {
         this.trashMobData.clear();
         this.friendlyMobData.clear();
         this.actorOrientationData.clear();
+        this.overheadActorData = [];
         this.mechanicActorData = [];
         for (let i = 0; i < actors.length; i++) {
             const actor = actors[i];
             if (!actor.isMechanicOrSkill) {
                 switch (actor.type) {
                     case "Player":
-                        this.playerData.set(actor.id, new SquadIconDrawable(actor.start, actor.end, actor.img, 22, actor.group, actor.positions, actor.dead, actor.down, actor.dc, actor.breakbarActive, this.inchToPixel * actor.hitboxWidth));
+                        this.playerData.set(actor.id, new SquadIconDrawable(actor.id,actor.start, actor.end, actor.img, 22, actor.group, actor.positions, actor.angles, actor.dead, actor.down, actor.dc, actor.hide, actor.breakbarActive, this.inchToPixel * actor.hitboxWidth));
                         if (this.times.length === 0) {
                             for (let j = 0; j < actor.positions.length / 2; j++) {
                                 this.times.push(j * this.pollingRate);
@@ -177,19 +201,25 @@ class Animator {
                         break;
                     case "Target":
                     case "TargetPlayer":
-                        this.targetData.set(actor.id, new NonSquadIconDrawable(actor.start, actor.end, actor.img, 30, actor.positions, actor.dead, actor.down, actor.dc, actor.breakbarActive, -1, this.inchToPixel * actor.hitboxWidth));
+                        this.targetData.set(actor.id, new NonSquadIconDrawable(actor.id,actor.start, actor.end, actor.img, 30, actor.positions, actor.angles, actor.dead, actor.down, actor.dc, actor.hide, actor.breakbarActive, -1, this.inchToPixel * actor.hitboxWidth));
                         break;
                     case "Mob":
-                        this.trashMobData.set(actor.id, new NonSquadIconDrawable(actor.start, actor.end, actor.img, 25, actor.positions, actor.dead, actor.down, actor.dc, actor.breakbarActive, actor.masterID, this.inchToPixel * actor.hitboxWidth));
+                        this.trashMobData.set(actor.id, new NonSquadIconDrawable(actor.id,actor.start, actor.end, actor.img, 25, actor.positions, actor.angles, actor.dead, actor.down, actor.dc, actor.hide, actor.breakbarActive, actor.masterID, this.inchToPixel * actor.hitboxWidth));
                         break;
                     case "Friendly":
-                        this.friendlyMobData.set(actor.id, new NonSquadIconDrawable(actor.start, actor.end, actor.img, 20, actor.positions, actor.dead, actor.down, actor.dc, actor.breakbarActive, actor.masterID, this.inchToPixel * actor.hitboxWidth));
+                        this.friendlyMobData.set(actor.id, new NonSquadIconDrawable(actor.id,actor.start, actor.end, actor.img, 20, actor.positions, actor.angles, actor.dead, actor.down, actor.dc, actor.hide, actor.breakbarActive, actor.masterID, this.inchToPixel * actor.hitboxWidth));
                         break;
                     case "ActorOrientation":
-                        this.actorOrientationData.set(actor.connectedTo, new FacingMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.facingData));
+                        this.actorOrientationData.set(actor.connectedTo.masterId, new FacingMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.rotationConnectedTo));
                         break;
                     case "MovingPlatform":
                         this.backgroundActorData.push(new MovingPlatformDrawable(actor.start, actor.end, actor.image, this.inchToPixel * actor.width, this.inchToPixel * actor.height, actor.positions));
+                        break;
+                    case "BackgroundIconDecoration":
+                        this.backgroundActorData.push( new BackgroundIconMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.rotationConnectedTo, actor.image, actor.pixelSize, this.inchToPixel * actor.worldSize , actor.opacities, actor.heights));
+                        break;
+                    case "IconOverheadDecoration":
+                        this.overheadActorData.push(new IconOverheadMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.rotationConnectedTo, actor.image, actor.pixelSize, this.inchToPixel * actor.worldSize , actor.opacity));
                         break;
                     default:
                         throw "Unknown decoration type";
@@ -198,35 +228,29 @@ class Animator {
                 let decoration = null;
                 switch (actor.type) {
                     case "Circle":
-                        decoration = new CircleMechanicDrawable(actor.start, actor.end, actor.fill, actor.growing, actor.color, this.inchToPixel * actor.radius, actor.connectedTo, this.inchToPixel * actor.minRadius);
+                        decoration = new CircleMechanicDrawable(actor.start, actor.end, actor.fill, {end: actor.growingEnd, reverse: actor.growingReverse}, actor.color, this.inchToPixel * actor.radius, actor.connectedTo, actor.rotationConnectedTo, this.inchToPixel * actor.minRadius);
                         break;
                     case "Rectangle":
-                        decoration = new RectangleMechanicDrawable(actor.start, actor.end, actor.fill, actor.growing, actor.color, this.inchToPixel * actor.width, this.inchToPixel * actor.height, actor.connectedTo);
-                        break;
-                    case "RotatedRectangle":
-                        decoration = new RotatedRectangleMechanicDrawable(actor.start, actor.end, actor.fill, actor.growing, actor.color, this.inchToPixel * actor.width, this.inchToPixel * actor.height, actor.rotation, this.inchToPixel * actor.radialTranslation, actor.spinAngle, actor.connectedTo);
+                        decoration = new RectangleMechanicDrawable(actor.start, actor.end, actor.fill, {end: actor.growingEnd, reverse: actor.growingReverse}, actor.color, this.inchToPixel * actor.width, this.inchToPixel * actor.height, actor.connectedTo, actor.rotationConnectedTo);
                         break;
                     case "Doughnut":
-                        decoration = new DoughnutMechanicDrawable(actor.start, actor.end, actor.fill, actor.growing, actor.color, this.inchToPixel * actor.innerRadius, this.inchToPixel * actor.outerRadius, actor.connectedTo);
+                        decoration = new DoughnutMechanicDrawable(actor.start, actor.end, actor.fill, {end: actor.growingEnd, reverse: actor.growingReverse}, actor.color, this.inchToPixel * actor.innerRadius, this.inchToPixel * actor.outerRadius, actor.connectedTo, actor.rotationConnectedTo);
                         break;
                     case "Pie":
-                        decoration = new PieMechanicDrawable(actor.start, actor.end, actor.fill, actor.growing, actor.color, actor.direction, actor.openingAngle, this.inchToPixel * actor.radius, actor.connectedTo);
+                        decoration = new PieMechanicDrawable(actor.start, actor.end, actor.fill, {end: actor.growingEnd, reverse: actor.growingReverse}, actor.color, actor.openingAngle, this.inchToPixel * actor.radius, actor.connectedTo, actor.rotationConnectedTo);
                         break;
                     case "Line":
-                        decoration = new LineMechanicDrawable(actor.start, actor.end, actor.fill, actor.growing, actor.color, actor.connectedFrom, actor.connectedTo);
+                        decoration = new LineMechanicDrawable(actor.start, actor.end, {end: actor.growingEnd, reverse: actor.growingReverse}, actor.color, actor.connectedFrom, actor.connectedTo);
                         break;
-                    case "FacingRectangle":
-                        decoration = new FacingRectangleMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.facingData, this.inchToPixel * actor.width, this.inchToPixel * actor.height, this.inchToPixel * actor.translation, actor.color);
-                        break;
-                    case "FacingPie":
-                        decoration = new FacingPieMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.facingData, actor.openingAngle, this.inchToPixel * actor.radius, actor.color);
+                    case "IconDecoration":
+                        decoration = new IconMechanicDrawable(actor.start, actor.end, actor.connectedTo, actor.rotationConnectedTo, actor.image, actor.pixelSize, this.inchToPixel * actor.worldSize , actor.opacity);
                         break;
                     default:
                         throw "Unknown decoration type";
                 }
                 if (decoration) {
                     if (actor.owner) {
-                        decoration.usingSkillMode(actor.owner, actor.drawOnSelect);
+                        decoration.usingSkillMode(actor.owner, actor.category);
                         this.skillMechanicActorData.push(decoration);
                     } else {
                         this.mechanicActorData.push(decoration);
@@ -302,12 +326,9 @@ class Animator {
         }
     }
 
-    selectActor(actorId) {
+    selectActor(actorId, keepIfEqual = false) {
         let actor = this.getActorData(actorId);
-        if (!actor) {
-            return;
-        }
-        if (this.selectedActor == actor) {
+        if (!actor || (!keepIfEqual && this.selectedActor === actor)) {
             this.selectedActor = null;
             this.reactiveDataStatus.selectedActorID = null;
         } else {
@@ -319,8 +340,12 @@ class Animator {
         }
     }
 
+    getSelectableActorData(actorId) {
+        return animator.targetData.get(actorId) || animator.playerData.get(actorId) || animator.friendlyMobData.get(actorId);
+    }
+
     getActorData(actorId) {
-        return animator.targetData.get(actorId) || animator.playerData.get(actorId) || animator.friendlyMobData.get(actorId) || animator.trashMobData.get(actorId);
+        return  this.getSelectableActorData(actorId) || animator.trashMobData.get(actorId);
     }
 
     toggleHighlightSelectedGroup() {
@@ -358,6 +383,15 @@ class Animator {
         animateCanvas(noUpdateTime);
     }
 
+    toggleSkillCategoryMask(mask) {
+        if ( (this.displaySettings.skillMechanicsMask & mask) > 0) {           
+            this.displaySettings.skillMechanicsMask &= ~mask;
+        } else {
+            this.displaySettings.skillMechanicsMask |= mask;
+        }
+        animateCanvas(noUpdateTime);
+    }
+
     toggleConeDisplay() {
         this.coneControl.enabled = !this.coneControl.enabled;
         animateCanvas(noUpdateTime);
@@ -373,31 +407,42 @@ class Animator {
         animateCanvas(noUpdateTime);
     }
 
+    resetViewpoint() {      
+        var canvas = this.mainCanvas;
+        var ctx = this.mainContext;
+        var bgCtx = this.bgContext;
+        var pickCtx = this.pickContext;
+
+        this.lastX = canvas.width / 2;
+        this.lastY = canvas.height / 2;
+        this.mouseDown = null;
+        this.dragged = false;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(resolutionMultiplier, resolutionMultiplier);
+        bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+        bgCtx.scale(resolutionMultiplier, resolutionMultiplier);
+        this.needBGUpdate = true;
+        pickCtx.setTransform(1, 0, 0, 1, 0, 0);
+        pickCtx.scale(resolutionMultiplier, resolutionMultiplier);
+        if (this.animation === null) {
+            animateCanvas(noUpdateTime);
+        }
+    }
+
     _initMouseEvents() {
         var _this = this;
         var canvas = this.mainCanvas;
         var ctx = this.mainContext;
         var bgCtx = this.bgContext;
-
-        canvas.addEventListener('dblclick', function (evt) {
-            _this.lastX = canvas.width / 2;
-            _this.lastY = canvas.height / 2;
-            _this.dragStart = null;
-            _this.dragged = false;
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.scale(resolutionMultiplier, resolutionMultiplier);
-            bgCtx.setTransform(1, 0, 0, 1, 0, 0);
-            bgCtx.scale(resolutionMultiplier, resolutionMultiplier);
-            _this.needBGUpdate = true;
-            if (_this.animation === null) {
-                animateCanvas(noUpdateTime);
-            }
-        }, false);
+        var pickCtx = this.pickContext;
 
         canvas.addEventListener('mousedown', function (evt) {
             _this.lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
             _this.lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
-            _this.dragStart = ctx.transformedPoint(_this.lastX, _this.lastY);
+            _this.mouseDown = {
+                pt: ctx.transformedPoint(_this.lastX, _this.lastY),
+                time: Date.now()
+            }
             _this.dragged = false;
         }, false);
 
@@ -405,10 +450,12 @@ class Animator {
             _this.lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
             _this.lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
             _this.dragged = true;
-            if (_this.dragStart) {
+            if (_this.mouseDown) {
                 var pt = ctx.transformedPoint(_this.lastX, _this.lastY);
-                ctx.translate(pt.x - _this.dragStart.x, pt.y - _this.dragStart.y);
-                bgCtx.translate(pt.x - _this.dragStart.x, pt.y - _this.dragStart.y);
+                var downPt = _this.mouseDown.pt;
+                ctx.translate(pt.x - downPt.x, pt.y - downPt.y);
+                bgCtx.translate(pt.x - downPt.x, pt.y - downPt.y);
+                pickCtx.translate(pt.x - downPt.x, pt.y - downPt.y);
                 _this.needBGUpdate = true;
                 if (_this.animation === null) {
                     animateCanvas(noUpdateTime);
@@ -417,7 +464,21 @@ class Animator {
         }, false);
 
         document.body.addEventListener('mouseup', function (evt) {
-            _this.dragStart = null;
+            if (_this.mouseDown && Date.now() - _this.mouseDown.time < 150) {
+                _this._drawPickCanvas();
+                var downPt = {
+                    x: Math.round(_this.lastX * resolutionMultiplier),
+                    y: Math.round(_this.lastY * resolutionMultiplier)
+                };
+                var pickedColor = pickCtx.getImageData(downPt.x, downPt.y, 1, 1).data;
+                uint32ToUint8[0] = pickedColor[0];
+                uint32ToUint8[1] = pickedColor[1];
+                uint32ToUint8[2] = pickedColor[2];
+                uint32ToUint8[3] = 0;
+                var actorID = uint32[0];
+                _this.selectActor(actorID, true);
+            }
+            _this.mouseDown = null;
         }, false);
 
         var zoom = function (evt) {
@@ -426,12 +487,15 @@ class Animator {
                 var pt = ctx.transformedPoint(_this.lastX, _this.lastY);
                 ctx.translate(pt.x, pt.y);
                 bgCtx.translate(pt.x, pt.y);
+                pickCtx.translate(pt.x, pt.y);
                 var factor = Math.pow(1.1, delta);
                 ctx.scale(factor, factor);
                 ctx.translate(-pt.x, -pt.y);
                 bgCtx.scale(factor, factor);
                 bgCtx.translate(-pt.x, -pt.y);
                 _this.needBGUpdate = true;
+                pickCtx.scale(factor, factor);
+                pickCtx.translate(-pt.x, -pt.y);
                 if (_this.animation === null) {
                     animateCanvas(noUpdateTime);
                 }
@@ -620,6 +684,57 @@ class Animator {
         }
     }
 
+    _drawPickCanvas() {
+        var _this = this;
+        var ctx = this.pickContext;
+        var canvas = this.pickCanvas;
+        var p1 = ctx.transformedPoint(0, 0);
+        var p2 = ctx.transformedPoint(canvas.width, canvas.height);
+        ctx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        
+        this.friendlyMobData.forEach(function (value, key, map) {
+            if (!value.isSelected()) {
+                value.drawPicking();
+            }
+        });
+        
+        if (!this.displaySettings.useActorHitboxWidth) {           
+            this.playerData.forEach(function (value, key, map) {
+                if (!value.isSelected()) {
+                    value.drawPicking();
+                }
+            });
+        }
+        
+        if (this.displaySettings.displayTrashMobs) {
+            this.trashMobData.forEach(function (value, key, map) {
+                if (!value.isSelected()) {
+                    value.drawPicking();
+                }
+            });
+        }
+        
+        this.targetData.forEach(function (value, key, map) {
+            if (!value.isSelected()) {
+                value.drawPicking();
+            }
+        });
+        if (this.displaySettings.useActorHitboxWidth) {           
+            this.playerData.forEach(function (value, key, map) {
+                if (!value.isSelected()) {
+                    value.drawPicking();
+                }
+            });
+        }
+        if (this.selectedActor !== null) {
+            this.selectedActor.drawPicking();     
+        }
+    }
+
     _drawMainCanvas() {
         var _this = this;
         var ctx = this.mainContext;
@@ -648,15 +763,15 @@ class Animator {
                 this.skillMechanicActorData[i].draw();
             }
         }
-
+        
         this.friendlyMobData.forEach(function (value, key, map) {
             if (!value.isSelected()) {
                 value.draw();
                 _this._drawActorOrientation(key);
             }
         });
-
-        if (!this.displaySettings.useActorHitboxWidth) {
+        
+        if (!this.displaySettings.useActorHitboxWidth) {           
             this.playerData.forEach(function (value, key, map) {
                 if (!value.isSelected()) {
                     value.draw();
@@ -664,7 +779,7 @@ class Animator {
                 }
             });
         }
-
+        
         if (this.displaySettings.displayTrashMobs) {
             this.trashMobData.forEach(function (value, key, map) {
                 if (!value.isSelected()) {
@@ -673,14 +788,14 @@ class Animator {
                 }
             });
         }
-
+        
         this.targetData.forEach(function (value, key, map) {
             if (!value.isSelected()) {
                 value.draw();
                 _this._drawActorOrientation(key);
             }
         });
-        if (this.displaySettings.useActorHitboxWidth) {
+        if (this.displaySettings.useActorHitboxWidth) {           
             this.playerData.forEach(function (value, key, map) {
                 if (!value.isSelected()) {
                     value.draw();
@@ -689,8 +804,13 @@ class Animator {
             });
         }
         if (this.selectedActor !== null) {
-            this.selectedActor.draw();
+            this.selectedActor.draw();     
             this._drawActorOrientation(this.reactiveDataStatus.selectedActorID);
+        }
+        if (this.displaySettings.displayMechanics) {
+            for (let i = 0; i < this.overheadActorData.length; i++) {
+                this.overheadActorData[i].draw();
+            }
         }
     }
 
@@ -699,8 +819,13 @@ class Animator {
             return;
         }
         //
+        //this._drawPickCanvas();
         this._drawBGCanvas();
         this._drawMainCanvas();
+        if (overheadAnimationFrame === maxOverheadAnimationFrame || overheadAnimationFrame === 0) {
+            overheadAnimationIncrement *= -1;
+        }
+        overheadAnimationFrame += overheadAnimationIncrement;
     }
 }
 
@@ -737,7 +862,7 @@ function initCombatReplay(actors, options) {
         }
         lastX = (touch.pageX - canvas.offsetLeft);
         lastY = (touch.pageY - canvas.offsetTop);
-        dragStart = ctx.transformedPoint(lastX, lastY);
+        mouseDown = ctx.transformedPoint(lastX, lastY);
         dragged = false;
         return evt.preventDefault() && false;
     }, false);
@@ -750,15 +875,15 @@ function initCombatReplay(actors, options) {
         lastX = (touch.pageX - canvas.offsetLeft);
         lastY = (touch.pageY - canvas.offsetTop);
         dragged = true;
-        if (dragStart) {
+        if (mouseDown) {
             var pt = ctx.transformedPoint(lastX, lastY);
-            ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
+            ctx.translate(pt.x - mouseDown.x, pt.y - mouseDown.y);
             animateCanvas(noUpdateTime);
         }
         return evt.preventDefault() && false;
     }, false);
     document.body.addEventListener('touchend', function (evt) {
-        dragStart = null;
+        mouseDown = null;
     }, false);
 }
 */

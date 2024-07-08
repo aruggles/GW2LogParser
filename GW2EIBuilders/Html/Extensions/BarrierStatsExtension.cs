@@ -1,10 +1,9 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.GW2EIBuilders.Html.Extensions.BarrierStats;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
+using GW2EIEvtcParser.ParsedData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class BarrierStatsExtension
     {
@@ -14,7 +13,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
         public List<List<EXTBarrierStatsPlayerChartDto>> PlayerBarrierCharts { get; }
 
-        public BarrierStatsExtension(ParsedLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
+        public BarrierStatsExtension(ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
         {
             BarrierPhases = new List<EXTBarrierStatsPhaseDto>();
             PlayerBarrierCharts = new List<List<EXTBarrierStatsPlayerChartDto>>();

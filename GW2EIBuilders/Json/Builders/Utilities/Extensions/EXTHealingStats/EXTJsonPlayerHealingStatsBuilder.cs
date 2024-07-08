@@ -1,6 +1,7 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using GW2EIBuilders;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
-using Gw2LogParser.EvtcParserExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,7 +9,8 @@ namespace Gw2LogParser.GW2EIBuilders
 {
     internal static class EXTJsonPlayerHealingStatsBuilder
     {
-        public static EXTJsonPlayerHealingStats BuildPlayerHealingStats(AbstractSingleActor a, ParsedLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+
+        public static EXTJsonPlayerHealingStats BuildPlayerHealingStats(AbstractSingleActor a, ParsedEvtcLog log, RawFormatSettings settings, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
         {
             var outgoingHealingAllies = new List<List<EXTJsonHealingStatistics.EXTJsonOutgoingHealingStatistics>>();
             var outgoingHealing = new List<EXTJsonHealingStatistics.EXTJsonOutgoingHealingStatistics>();
@@ -55,7 +57,7 @@ namespace Gw2LogParser.GW2EIBuilders
                 var allyConversionHealingHealing1S = new List<IReadOnlyList<int>>();
                 alliedConversionHealingHealing1S.Add(allyConversionHealingHealing1S);
                 var allyHybridHealing1S = new List<IReadOnlyList<int>>();
-                alliedHybridHealing1S.Add(allyConversionHealingHealing1S);
+                alliedHybridHealing1S.Add(allyHybridHealing1S);
                 //
                 var allyHealingDist = new List<List<EXTJsonHealingDist>>();
                 alliedHealingDist.Add(allyHealingDist);
@@ -91,9 +93,11 @@ namespace Gw2LogParser.GW2EIBuilders
                 res.AlliedHealing1S = null;
                 res.AlliedHealingPowerHealing1S = null;
                 res.AlliedConversionHealingHealing1S = null;
+                res.AlliedHybridHealing1S = null;
                 res.Healing1S = null;
                 res.HealingPowerHealing1S = null;
                 res.ConversionHealingHealing1S = null;
+                res.HybridHealing1S = null;
             }
             return res;
         }

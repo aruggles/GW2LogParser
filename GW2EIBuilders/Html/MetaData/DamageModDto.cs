@@ -1,8 +1,7 @@
-﻿
+﻿using System.Collections.Generic;
 using GW2EIEvtcParser.EIData;
-using System.Collections.Generic;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class DamageModDto
     {
@@ -14,7 +13,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool SkillBased { get; set; }
         public bool Approximate { get; set; }
 
-        public static void AssembleDamageModifiers(ICollection<DamageModifier> damageMods, Dictionary<string, DamageModDto> dict)
+        public static void AssembleDamageModifiers(IReadOnlyCollection<DamageModifier> damageMods, Dictionary<string, DamageModDto> dict)
         {
             foreach (DamageModifier mod in damageMods)
             {

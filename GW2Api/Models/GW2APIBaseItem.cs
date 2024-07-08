@@ -8,3 +8,4 @@ namespace GW2EIGW2API.GW2API
         public long Id { get; internal set; }
     }
 }
+

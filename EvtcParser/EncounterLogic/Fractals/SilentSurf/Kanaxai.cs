@@ -5,6 +5,8 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
+using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.EncounterLogic.EncounterCategory;
@@ -21,7 +23,7 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             MechanicList.AddRange(new List<Mechanic>
             {
-                new PlayerDstHitMechanic(RendingStorm, "Rending Storm", new MechanicPlotlySetting(Symbols.CircleXOpen, Colors.Red), "RendStm.H", "Hit by Rending Storm (Axe AoE)", "Rending Storm Hit", 0),
+                new PlayerDstHitMechanic(RendingStormSkill, "Rending Storm", new MechanicPlotlySetting(Symbols.CircleXOpen, Colors.Red), "RendStm.H", "Hit by Rending Storm (Axe AoE)", "Rending Storm Hit", 0),
                 new PlayerDstHitMechanic(new long [] { HarrowshotDeath, HarrowshotExposure, HarrowshotFear, HarrowshotLethargy, HarrowshotTorment }, "Harrowshot", new MechanicPlotlySetting(Symbols.Circle, Colors.Orange), "Harrowshot.H", "Harrowshot (Lost all boons)", "Harrowshot (Boonstrip)", 0),
                 new PlayerDstBuffApplyMechanic(ExtremeVulnerability, "Extreme Vulnerability", new MechanicPlotlySetting(Symbols.X, Colors.DarkRed), "ExtVuln.A", "Applied Extreme Vulnerability", "Extreme Vulnerability Application", 150),
                 new PlayerDstBuffApplyMechanic(ExposedPlayer, "Exposed", new MechanicPlotlySetting(Symbols.TriangleRight, Colors.Pink), "Expo.A", "Applied Exposed", "Exposed Application (Player)", 0),
@@ -65,7 +67,8 @@ namespace GW2EIEvtcParser.EncounterLogic
                                 long diff = dead.Time - remove.Time;
                                 return diff > -ServerDelayConstant && diff <= 1000;
                             });
-                    })
+                    }),
+                new PlayerDstBuffApplyMechanic(new long [] { RendingStormAxeTargetBuff1, RendingStormAxeTargetBuff2 }, "Rending Storm Target", new MechanicPlotlySetting(Symbols.CircleX, Colors.LightPurple), "RendStm.T", "Targetted by Rending Storm (Axe Throw)", "Rending Storm Target", 150),
             });
             Extension = "kanaxai";
             Icon = EncounterIconKanaxai;
@@ -83,7 +86,7 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             return new HashSet<int>
             {
-                (int)ArcDPSEnums.TargetID.KanaxaiScytheOfHouseAurkusCM,
+                (int)TargetID.KanaxaiScytheOfHouseAurkusCM,
             };
         }
 
@@ -91,12 +94,25 @@ namespace GW2EIEvtcParser.EncounterLogic
         {
             return new List<int>
             {
-                (int)ArcDPSEnums.TargetID.KanaxaiScytheOfHouseAurkusCM,
-                (int)ArcDPSEnums.TrashID.AspectOfTorment,
-                (int)ArcDPSEnums.TrashID.AspectOfLethargy,
-                (int)ArcDPSEnums.TrashID.AspectOfExposure,
-                (int)ArcDPSEnums.TrashID.AspectOfDeath,
-                (int)ArcDPSEnums.TrashID.AspectOfFear,
+                (int)TargetID.KanaxaiScytheOfHouseAurkusCM,
+                (int)TrashID.AspectOfTorment,
+                (int)TrashID.AspectOfLethargy,
+                (int)TrashID.AspectOfExposure,
+                (int)TrashID.AspectOfDeath,
+                (int)TrashID.AspectOfFear,
+            };
+        }
+
+        protected override Dictionary<int, int> GetTargetsSortIDs()
+        {
+            return new Dictionary<int, int>()
+            {
+                {(int)TargetID.KanaxaiScytheOfHouseAurkusCM, 0 },
+                {(int)TrashID.AspectOfTorment, 1 },
+                {(int)TrashID.AspectOfLethargy, 1 },
+                {(int)TrashID.AspectOfExposure, 1 },
+                {(int)TrashID.AspectOfDeath, 1 },
+                {(int)TrashID.AspectOfFear, 1 },
             };
         }
 
@@ -105,24 +121,24 @@ namespace GW2EIEvtcParser.EncounterLogic
             return FightData.EncounterMode.CMNoName;
         }
 
-        internal override void EIEvtcParse(ulong gw2Build, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
         {
-            base.EIEvtcParse(gw2Build, fightData, agentData, combatData, extensions);
+            base.EIEvtcParse(gw2Build, evtcVersion, fightData, agentData, combatData, extensions);
             var aspectCounts = new Dictionary<int, int>();
             foreach (AbstractSingleActor actor in Targets)
             {
-                switch(actor.ID)
+                switch (actor.ID)
                 {
-                    case (int)ArcDPSEnums.TrashID.AspectOfTorment:
-                    case (int)ArcDPSEnums.TrashID.AspectOfLethargy:
-                    case (int)ArcDPSEnums.TrashID.AspectOfExposure:
-                    case (int)ArcDPSEnums.TrashID.AspectOfDeath:
-                    case (int)ArcDPSEnums.TrashID.AspectOfFear:
+                    case (int)TrashID.AspectOfTorment:
+                    case (int)TrashID.AspectOfLethargy:
+                    case (int)TrashID.AspectOfExposure:
+                    case (int)TrashID.AspectOfDeath:
+                    case (int)TrashID.AspectOfFear:
                         if (aspectCounts.TryGetValue(actor.ID, out int count))
                         {
                             actor.OverrideName(actor.Character + " " + count);
                             aspectCounts[actor.ID] = count + 1;
-                        } 
+                        }
                         else
                         {
                             actor.OverrideName(actor.Character + " 1");
@@ -136,7 +152,7 @@ namespace GW2EIEvtcParser.EncounterLogic
         internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
         {
             List<PhaseData> phases = GetInitialPhase(log);
-            AbstractSingleActor kanaxai = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.KanaxaiScytheOfHouseAurkusCM));
+            AbstractSingleActor kanaxai = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.KanaxaiScytheOfHouseAurkusCM));
             if (kanaxai == null)
             {
                 throw new MissingKeyActorsException("Kanaxai not found");
@@ -167,14 +183,14 @@ namespace GW2EIEvtcParser.EncounterLogic
                         {
                             isRepeatedWorldCleaverPhase.Add(false);
                             curPhase.Name = baseName + (++worldCleaverCount);
-                        } 
+                        }
                         else
                         {
                             isRepeatedWorldCleaverPhase.Add(true);
                             curPhase.Name = baseName + (worldCleaverCount) + " Repeated " + repeatedCount;
                         }
                         repeatedCount++;
-                    } 
+                    }
                     else if (kanaxai.GetCurrentHealthPercent(log, midPhase) > 25)
                     {
                         if (worldCleaverCount == 1)
@@ -192,7 +208,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                             curPhase.Name = baseName + (worldCleaverCount) + " Repeated " + repeatedCount;
                         }
                         repeatedCount++;
-                    } 
+                    }
                     else
                     {
                         // No hp update events, buggy log
@@ -202,11 +218,11 @@ namespace GW2EIEvtcParser.EncounterLogic
                     {
                         switch (aspect.ID)
                         {
-                            case (int)ArcDPSEnums.TrashID.AspectOfTorment:
-                            case (int)ArcDPSEnums.TrashID.AspectOfLethargy:
-                            case (int)ArcDPSEnums.TrashID.AspectOfExposure:
-                            case (int)ArcDPSEnums.TrashID.AspectOfDeath:
-                            case (int)ArcDPSEnums.TrashID.AspectOfFear:
+                            case (int)TrashID.AspectOfTorment:
+                            case (int)TrashID.AspectOfLethargy:
+                            case (int)TrashID.AspectOfExposure:
+                            case (int)TrashID.AspectOfDeath:
+                            case (int)TrashID.AspectOfFear:
                                 if (log.CombatData.GetBuffRemoveAllData(Determined762).Any(x => x.To == aspect.AgentItem && x.Time >= curPhase.Start && x.Time <= curPhase.End))
                                 {
                                     curPhase.AddTarget(aspect);
@@ -215,7 +231,7 @@ namespace GW2EIEvtcParser.EncounterLogic
                         }
                     }
                     curPhase.AddTarget(kanaxai);
-                } 
+                }
                 else
                 {
                     isRepeatedWorldCleaverPhase.Add(false);
@@ -234,13 +250,13 @@ namespace GW2EIEvtcParser.EncounterLogic
                         if (isRepeatedWorldCleaverPhase[i + 1])
                         {
                             curPhase.Name = baseName + (phaseCount) + " Repeated " + (++repeatedCount);
-                        } 
+                        }
                         else
                         {
                             curPhase.Name = baseName + (++phaseCount);
                             repeatedCount = 0;
                         }
-                    } 
+                    }
                     else
                     {
                         curPhase.Name = baseName + (++phaseCount);
@@ -255,20 +271,24 @@ namespace GW2EIEvtcParser.EncounterLogic
 
         internal override void CheckSuccess(CombatData combatData, AgentData agentData, FightData fightData, IReadOnlyCollection<AgentItem> playerAgents)
         {
-            AbstractSingleActor kanaxai = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.KanaxaiScytheOfHouseAurkusCM));
+            AbstractSingleActor kanaxai = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.KanaxaiScytheOfHouseAurkusCM));
             if (kanaxai == null)
             {
                 throw new MissingKeyActorsException("Kanaxai not found");
             }
-            BuffApplyEvent invul762Gain = combatData.GetBuffData(Determined762).OfType<BuffApplyEvent>().Where(x => x.To == kanaxai.AgentItem).FirstOrDefault();
+            BuffApplyEvent invul762Gain = combatData.GetBuffData(Determined762).OfType<BuffApplyEvent>().Where(x => x.To == kanaxai.AgentItem).FirstOrDefault(x => x.Time > 0);
             if (invul762Gain != null)
             {
                 fightData.SetSuccess(true, invul762Gain.Time);
             }
         }
-        
+
         internal override void ComputePlayerCombatReplayActors(AbstractPlayer player, ParsedEvtcLog log, CombatReplay replay)
         {
+            base.ComputePlayerCombatReplayActors(player, log, replay);
+            long maxEnd = log.FightData.FightEnd;
+
+            // Orange Tether from Aspect to player
             IEnumerable<AbstractBuffEvent> tethers = log.CombatData.GetBuffData(AspectTetherBuff).Where(x => x.To == player.AgentItem);
             IEnumerable<BuffApplyEvent> tetherApplies = tethers.OfType<BuffApplyEvent>();
             IEnumerable<BuffRemoveAllEvent> tetherRemoves = tethers.OfType<BuffRemoveAllEvent>();
@@ -279,24 +299,238 @@ namespace GW2EIEvtcParser.EncounterLogic
                 int start = (int)apply.Time;
                 BuffApplyEvent replace = tetherApplies.FirstOrDefault(x => x.Time >= apply.Time && x.By != tetherAspect);
                 BuffRemoveAllEvent remove = tetherRemoves.FirstOrDefault(x => x.Time >= apply.Time);
-                long end = Math.Min(replace?.Time ?? long.MaxValue, remove?.Time ?? long.MaxValue);
-                if (end != long.MaxValue)
+                long end = Math.Min(replace?.Time ?? maxEnd, remove?.Time ?? maxEnd);
+                replay.Decorations.Add(new LineDecoration((start, (int)end), Colors.Yellow, 0.5, new AgentConnector(tetherAspect), new AgentConnector(player)));
+            }
+
+            // Blue tether from Aspect to player, appears when the player gains Phantasmagoria
+            // Custom decoration not visible in game
+            List<AbstractBuffEvent> phantasmagorias = GetFilteredList(log.CombatData, Phantasmagoria, player, true, true);
+            replay.AddTether(phantasmagorias, Colors.LightBlue, 0.5);
+
+            // Rending Storm - Axe AoE attached to players - There are 2 buffs for the targetting
+            IEnumerable<Segment> axes = player.GetBuffStatus(log, new long[] { RendingStormAxeTargetBuff1, RendingStormAxeTargetBuff2 }, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0);
+            foreach (Segment segment in axes)
+            {
+                replay.AddDecorationWithGrowing(new CircleDecoration(180, segment, Colors.Orange, 0.2, new AgentConnector(player)), segment.End);
+            }
+
+            // Frightening Speed - Numbers spread AoEs
+            IEnumerable<Segment> spreads = player.GetBuffStatus(log, KanaxaiSpreadOrangeAoEBuff, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0);
+            foreach (Segment spreadSegment in spreads)
+            {
+                replay.Decorations.Add(new CircleDecoration(380, spreadSegment, Colors.Orange, 0.2, new AgentConnector(player)));
+            }
+
+            // Target Order Overhead
+            replay.AddOverheadIcons(player.GetBuffStatus(log, TargetOrder1, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), player, ParserIcons.TargetOrder1Overhead);
+            replay.AddOverheadIcons(player.GetBuffStatus(log, TargetOrder2, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), player, ParserIcons.TargetOrder2Overhead);
+            replay.AddOverheadIcons(player.GetBuffStatus(log, TargetOrder3, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), player, ParserIcons.TargetOrder3Overhead);
+            replay.AddOverheadIcons(player.GetBuffStatus(log, TargetOrder4, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), player, ParserIcons.TargetOrder4Overhead);
+            replay.AddOverheadIcons(player.GetBuffStatus(log, TargetOrder5, log.FightData.LogStart, log.FightData.LogEnd).Where(x => x.Value > 0), player, ParserIcons.TargetOrder5Overhead);
+        }
+
+        internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
+        {
+            IReadOnlyList<AbstractCastEvent> casts = target.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd);
+
+            switch (target.ID)
+            {
+                case (int)TargetID.KanaxaiScytheOfHouseAurkusCM:
+                    // World Cleaver
+                    var worldCleaver = casts.Where(x => x.SkillId == WorldCleaver).ToList();
+                    foreach (AbstractCastEvent c in worldCleaver)
+                    {
+                        int castDuration = 26320;
+                        var hits = log.CombatData.GetDamageData(WorldCleaver).Where(x => x.Time > c.Time).ToList();
+                        (long start, long end) lifespan = (c.Time, c.Time + castDuration);
+                        if (hits.Count != 0)
+                        {
+                            (long start, long end) lifespanHit = (c.Time, hits.FirstOrDefault(x => x.Time > c.Time).Time);
+                            AddWorldCleaverDecoration(target, replay, lifespanHit, lifespan.end);
+                        }
+                        else
+                        {
+                            AddWorldCleaverDecoration(target, replay, lifespan, lifespan.end);
+                        }
+                    }
+                    // Dread Visage
+                    var dreadVisage = casts.Where(x => x.SkillId == DreadVisageKanaxaiSkill || x.SkillId == DreadVisageKanaxaiSkillIsland).ToList();
+                    foreach (AbstractCastEvent c in dreadVisage)
+                    {
+                        int castDuration = 5400;
+                        int expectedEndCastTime = (int)c.Time + castDuration;
+                        double actualDuration = ComputeCastTimeWithQuickness(log, target, c.Time, castDuration);
+                        if (actualDuration > 0)
+                        {
+                            replay.AddOverheadIcon(new Segment(c.Time, c.Time + (long)Math.Ceiling(actualDuration), 1), target, ParserIcons.EyeOverhead, 30);
+                        }
+                        else
+                        {
+                            replay.AddOverheadIcon(new Segment(c.Time, expectedEndCastTime, 1), target, ParserIcons.EyeOverhead, 30);
+                        }
+                    }
+                    break;
+                case (int)TrashID.AspectOfTorment:
+                case (int)TrashID.AspectOfLethargy:
+                case (int)TrashID.AspectOfExposure:
+                case (int)TrashID.AspectOfDeath:
+                case (int)TrashID.AspectOfFear:
+                    // Tether casts performed by Aspects
+                    IEnumerable<AnimatedCastEvent> tetherCasts = log.CombatData.GetAnimatedCastData(target.AgentItem).Where(x => x.SkillId == AspectTetherSkill);
+                    foreach (AnimatedCastEvent cast in tetherCasts)
+                    {
+                        int start = (int)cast.Time;
+                        int end = (int)cast.ExpectedEndTime; // actual end is often much later, just use expected end for short highlight
+                        replay.Decorations.Add(new CircleDecoration(180, 20, (start, end), Colors.LightBlue, 0.5, new AgentConnector(target)).UsingFilled(false));
+                    }
+                    // Dread Visage
+                    var dreadVisageAspects = casts.Where(x => x.SkillId == DreadVisageAspectSkill).ToList();
+                    // Check if the log contains Sugar Rush
+                    bool hasSugarRush = log.CombatData.GetBuffData(MistlockInstabilitySugarRush).Any(x => x.To.IsPlayer);
+
+                    foreach (AbstractCastEvent c in dreadVisageAspects)
+                    {
+                        int castDuration = 5400;
+                        int expectedEndCastTime = (int)c.Time + castDuration;
+                        
+                        Segment quickness = target.GetBuffStatus(log, Quickness, c.Time, expectedEndCastTime).Where(x => x.Value == 1).FirstOrDefault();
+
+                        // If the aspect has Sugar Rush AND Quickness
+                        if (hasSugarRush && quickness != null)
+                        {
+                            double actualDuration = ComputeCastTimeWithQuicknessAndSugarRush(log, target, c.Time, castDuration);
+                            var duration = new Segment(c.Time, c.Time + (int)Math.Ceiling(actualDuration), 1);
+                            replay.AddOverheadIcon(duration, target, ParserIcons.EyeOverhead, 30);
+                        }
+
+                        // If the aspect has Sugar rush AND NOT Quickness
+                        if (hasSugarRush && quickness == null)
+                        {
+                            var actualDuration = ComputeCastTimeWithSugarRush(castDuration);
+                            var duration = new Segment(c.Time, c.Time + (int)Math.Ceiling(actualDuration), 1);
+                            replay.AddOverheadIcon(duration, target, ParserIcons.EyeOverhead, 30);
+                        }
+
+                        // If the aspect DOESN'T have Sugar rush but HAS Quickness
+                        if (!hasSugarRush && quickness != null)
+                        {
+                            double actualDuration = ComputeCastTimeWithQuickness(log, target, c.Time, castDuration);
+                            var duration = new Segment(c.Time, c.Time + (int)Math.Ceiling(actualDuration), 1);
+                            replay.AddOverheadIcon(duration, target, ParserIcons.EyeOverhead, 30);
+                        }
+
+                        // If the aspect DOESN'T have Sugar Rush and Quickness
+                        if (!hasSugarRush && quickness == null)
+                        {
+                            replay.AddOverheadIcon(new Segment((int)c.Time, expectedEndCastTime, 1), target, ParserIcons.EyeOverhead, 30);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log);
+
+            // Frightening Speed - Red AoE
+            if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.FrighteningSpeedRedAoE, out IReadOnlyList<EffectEvent> frighteningSpeedRedAoEs))
+            {
+                foreach (EffectEvent aoe in frighteningSpeedRedAoEs)
                 {
-                    replay.Decorations.Add(new LineDecoration(0, (start, (int)end), "rgba(255, 200, 0, 0.5)", new AgentConnector(tetherAspect), new AgentConnector(player)));
+                    (long start, long end) lifespan = (aoe.Time, aoe.Time + 1500);
+                    var circle = new CircleDecoration(380, lifespan, Colors.Red, 0.2, new PositionConnector(aoe.Position));
+                    EnvironmentDecorations.Add(circle);
+                    EnvironmentDecorations.Add(circle.Copy().UsingFilled(false));
                 }
             }
 
-            IEnumerable<AbstractBuffEvent> phantasmagoria = log.CombatData.GetBuffData(Phantasmagoria).Where(x => x.To == player.AgentItem);
-            IEnumerable<BuffRemoveAllEvent> phantasmagoriaRemoves = phantasmagoria.OfType<BuffRemoveAllEvent>();
-            foreach (BuffApplyEvent apply in phantasmagoria.OfType<BuffApplyEvent>())
+            // Rending Storm - Red Axe AoE
+            if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.AxeGroundAoE, out IReadOnlyList<EffectEvent> axeAoEs))
             {
-                int start = (int)apply.Time;
-                BuffRemoveAllEvent remove = phantasmagoriaRemoves.FirstOrDefault(x => x.Time >= apply.Time);
-                if (remove != null)
+                // Get World Cleaver casts
+                AbstractSingleActor kanaxai = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.KanaxaiScytheOfHouseAurkusCM));
+                IReadOnlyList<AbstractCastEvent> casts = kanaxai.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd);
+                
+                // Get Axe AoE Buffs
+                var axes = new List<AbstractBuffEvent>();
+                axes.AddRange(log.CombatData.GetBuffData(RendingStormAxeTargetBuff1));
+                axes.AddRange(log.CombatData.GetBuffData(RendingStormAxeTargetBuff2));
+                var orderedAxes = axes.OfType<BuffRemoveAllEvent>().OrderBy(x => x.Time).ToList();
+
+                foreach (EffectEvent aoe in axeAoEs)
                 {
-                    replay.Decorations.Add(new LineDecoration(0, (start, (int)remove.Time), "rgba(0, 100, 255, 0.5)", new AgentConnector(apply.By), new AgentConnector(player)));
+                    // Find the first cast time event present after the AoE effect time
+                    AbstractCastEvent cast = casts.Where(x => x.SkillId == WorldCleaver).FirstOrDefault(x => x.Time > aoe.Time);
+                    long worldCleaverTime = cast != null ? cast.Time : 0;
+
+                    // Find the first BuffRemoveAllEvent after the AoE effect Time or next World Cleaver cast time
+                    // World Cleaver is the time-limit of when the AoEs reset, in third phase we use FightEnd
+                    if (worldCleaverTime != 0)
+                    {
+                        AbstractBuffEvent axeBuffRemoval = orderedAxes.FirstOrDefault(buff => buff.Time > aoe.Time && buff.Time < worldCleaverTime);
+                        AddAxeAoeDecoration(aoe, axeBuffRemoval, worldCleaverTime);
+                    }
+                    else
+                    {
+                        AbstractBuffEvent axeBuffRemoval = orderedAxes.FirstOrDefault(buff => buff.Time > aoe.Time);
+                        AddAxeAoeDecoration(aoe, axeBuffRemoval, log.FightData.FightEnd);
+                    }
                 }
             }
+
+            // Harrowshot - Boonstrip AoE
+            if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.HarrowshotAoE, out IReadOnlyList<EffectEvent> harrowshots))
+            {
+                foreach (EffectEvent harrowshot in harrowshots)
+                {
+                    (long start, long end) lifespan = harrowshot.ComputeLifespan(log, 3000);
+                    var circle = new CircleDecoration(280, lifespan, Colors.Orange, 0.2, new PositionConnector(harrowshot.Position));
+                    EnvironmentDecorations.Add(circle);
+                    EnvironmentDecorations.Add(circle.Copy().UsingGrowingEnd(lifespan.end));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds the Axe AoE decoration.<br></br>
+        /// If the next orange AoE <see cref="BuffRemoveAllEvent"/> on players is after <see cref="WorldCleaver"/> cast time or not present,<br></br>
+        /// utilise the <see cref="WorldCleaver"/> cast time or <see cref="FightData.LogEnd"/>.
+        /// </summary>
+        /// <param name="aoe">Effect of the AoE.</param>
+        /// <param name="axeBuffRemoval">Buff removal of the orange AoE.</param>
+        /// <param name="time">Last time possible.</param>
+        private void AddAxeAoeDecoration(EffectEvent aoe, AbstractBuffEvent axeBuffRemoval, long time)
+        {
+            int duration;
+            if (axeBuffRemoval != null)
+            {
+                duration = (int)(axeBuffRemoval.Time - aoe.Time);
+            }
+            else
+            {
+                duration = (int)(time - aoe.Time);
+            }
+            int start = (int)aoe.Time;
+            int effectEnd = start + duration;
+            var circle = new CircleDecoration(180, (start, effectEnd), Colors.Red, 0.2, new PositionConnector(aoe.Position));
+            EnvironmentDecorations.Add(circle);
+            EnvironmentDecorations.Add(circle.Copy().UsingFilled(false));
+        }
+
+        /// <summary>
+        /// Adds the World Cleaver decoration.
+        /// </summary>
+        /// <param name="target">Kanaxai.</param>
+        /// <param name="replay">Combat Replay.</param>
+        /// <param name="lifespan">Start and End of the cast.</param>
+        /// <param name="growing">Duration of the channel.</param>
+        private static void AddWorldCleaverDecoration(NPC target, CombatReplay replay, (long start, long end) lifespan, long growing)
+        {
+            replay.AddDecorationWithGrowing(new CircleDecoration(1100, lifespan, Colors.Red, 0.2, new AgentConnector(target)), growing);
         }
     }
 }

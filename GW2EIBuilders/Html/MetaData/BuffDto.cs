@@ -1,11 +1,11 @@
-﻿using GW2EIEvtcParser;
-using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.ParsedData;
-using Gw2LogParser.EvtcParserExtensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using GW2EIEvtcParser;
+using GW2EIEvtcParser.EIData;
+using GW2EIEvtcParser.Extensions;
+using GW2EIEvtcParser.ParsedData;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     internal class BuffDto : AbstractSkillDto
     {
@@ -14,7 +14,7 @@ namespace Gw2LogParser.GW2EIBuilders
         public bool Consumable { get; set; }
         public bool FightSpecific { get; set; }
 
-        public BuffDto(Buff buff, ParsedLog log) : base(buff, log)
+        public BuffDto(Buff buff, ParsedEvtcLog log) : base(buff, log)
         {
             Stacking = (buff.Type == Buff.BuffType.Intensity);
             Consumable = (buff.Classification == Buff.BuffClassification.Nourishment || buff.Classification == Buff.BuffClassification.Enhancement || buff.Classification == Buff.BuffClassification.OtherConsumable);
@@ -23,6 +23,7 @@ namespace Gw2LogParser.GW2EIBuilders
             if (buffInfoEvent != null)
             {
                 var descriptions = new List<string>() {
+                    "ID: " + buff.ID,
                     "Max Stack(s) " + buffInfoEvent.MaxStacks
                 };
                 if (buffInfoEvent.DurationCap > 0)
@@ -49,7 +50,7 @@ namespace Gw2LogParser.GW2EIBuilders
             }
         }
 
-        public static void AssembleBoons(ICollection<Buff> buffs, Dictionary<string, BuffDto> dict, ParsedLog log)
+        public static void AssembleBoons(ICollection<Buff> buffs, Dictionary<string, BuffDto> dict, ParsedEvtcLog log)
         {
             foreach (Buff buff in buffs)
             {

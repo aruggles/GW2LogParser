@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders
 {
     public class HTMLAssets
     {
@@ -16,10 +16,10 @@ namespace Gw2LogParser.GW2EIBuilders
         {
             var orderedScripts = new List<string>()
             {
-                Properties.Resources.global,
-                Properties.Resources.mixins,
-                Properties.Resources.functions,
-                Properties.Resources.main_js,
+                Gw2LogParser.Properties.Resources.global,
+                Gw2LogParser.Properties.Resources.mixins,
+                Gw2LogParser.Properties.Resources.functions,
+                Gw2LogParser.Properties.Resources.main_js,
             };
             string scriptContent = orderedScripts[0];
             for (int i = 1; i < orderedScripts.Count; i++)
@@ -31,9 +31,9 @@ namespace Gw2LogParser.GW2EIBuilders
             //
             var orderedCRScripts = new List<string>()
             {
-                Properties.Resources.animator,
-                Properties.Resources.actors,
-                Properties.Resources.decorations,
+                Gw2LogParser.Properties.Resources.animator,
+                Gw2LogParser.Properties.Resources.actors,
+                Gw2LogParser.Properties.Resources.decorations,
             };
             string scriptCRContent = orderedCRScripts[0];
             for (int i = 1; i < orderedCRScripts.Count; i++)
@@ -45,8 +45,8 @@ namespace Gw2LogParser.GW2EIBuilders
             //
             var orderedHealingExtScripts = new List<string>()
             {
-                Properties.Resources.healingExtGlobals,
-                Properties.Resources.healingExtFunctions,
+                Gw2LogParser.Properties.Resources.healingExtGlobals,
+                Gw2LogParser.Properties.Resources.healingExtFunctions,
             };
             string scriptHealingExtContent = orderedHealingExtScripts[0];
             for (int i = 1; i < orderedHealingExtScripts.Count; i++)
@@ -73,48 +73,56 @@ namespace Gw2LogParser.GW2EIBuilders
         {
             var templates = new List<string>
             {
-                Properties.Resources.tmplBuffStats,
-                Properties.Resources.tmplBuffStatsTarget,
-                Properties.Resources.tmplBuffTable,
-                Properties.Resources.tmplDamageDistPlayer,
-                Properties.Resources.tmplDamageDistTable,
-                Properties.Resources.tmplDamageDistTarget,
-                Properties.Resources.tmplDamageModifierTable,
-                Properties.Resources.tmplDamageModifierStats,
-                Properties.Resources.tmplDamageModifierPersStats,
-                Properties.Resources.tmplDamageTable,
-                Properties.Resources.tmplDamageTaken,
-                Properties.Resources.tmplDeathRecap,
-                Properties.Resources.tmplDefenseTable,
-                Properties.Resources.tmplEncounter,
-                Properties.Resources.tmplFood,
-                Properties.Resources.tmplGameplayTable,
-                Properties.Resources.tmplBuffTables,
-                Properties.Resources.tmplStatTables,
-                Properties.Resources.tmplMechanicsTable,
-                Properties.Resources.tmplGearBuffTable,
-                Properties.Resources.tmplConditionsTable,
-                Properties.Resources.tmplPersonalBuffTable,
-                Properties.Resources.tmplPhase,
-                Properties.Resources.tmplPlayers,
-                Properties.Resources.tmplPlayerStats,
-                Properties.Resources.tmplPlayerTab,
-                Properties.Resources.tmplSimpleRotation,
-                Properties.Resources.tmplAdvancedRotation,
-                Properties.Resources.tmplSupportTable,
-                Properties.Resources.tmplTargets,
-                Properties.Resources.tmplTargetStats,
-                Properties.Resources.tmplTargetTab,
-                Properties.Resources.tmplDPSGraph,
-                Properties.Resources.tmplDPSGraphModeSelector,
-                Properties.Resources.tmplGraphStats,
-                Properties.Resources.tmplPlayerTabGraph,
-                Properties.Resources.tmplPlayersRotation,
-                Properties.Resources.tmplPlayersRotationTab,
-                Properties.Resources.tmplRotationLegend,
-                Properties.Resources.tmplTargetTabGraph,
-                Properties.Resources.tmplTargetData,
-                Properties.Resources.tmplMainView,
+                Gw2LogParser.Properties.Resources.tmplBuffStats,
+                Gw2LogParser.Properties.Resources.tmplBuffStatsPlayer,
+                Gw2LogParser.Properties.Resources.tmplBuffStatsTarget,
+                Gw2LogParser.Properties.Resources.tmplBuffTable,
+                Gw2LogParser.Properties.Resources.tmplDamageDistPlayer,
+                Gw2LogParser.Properties.Resources.tmplDamageDistTable,
+                Gw2LogParser.Properties.Resources.tmplDamageDistTarget,
+                Gw2LogParser.Properties.Resources.tmplDamageModifierTable,
+                Gw2LogParser.Properties.Resources.tmplDamageModifierStatsContainer,
+                Gw2LogParser.Properties.Resources.tmplDamageModifierStats,
+                Gw2LogParser.Properties.Resources.tmplDamageModifierPersStats,
+                Gw2LogParser.Properties.Resources.tmplDamageTable,
+                Gw2LogParser.Properties.Resources.tmplDamageTaken,
+                Gw2LogParser.Properties.Resources.tmplDeathRecap,
+                Gw2LogParser.Properties.Resources.tmplDefenseTable,
+                Gw2LogParser.Properties.Resources.tmplEncounter,
+                Gw2LogParser.Properties.Resources.tmplFood,
+                Gw2LogParser.Properties.Resources.tmplGameplayTable,
+                Gw2LogParser.Properties.Resources.tmplOffensiveTable,
+                Gw2LogParser.Properties.Resources.tmplBuffTables,
+                Gw2LogParser.Properties.Resources.tmplStatTables,
+                Gw2LogParser.Properties.Resources.tmplMechanicsTable,
+                Gw2LogParser.Properties.Resources.tmplGearBuffTable,
+                Gw2LogParser.Properties.Resources.tmplNourishmentBuffTable,
+                Gw2LogParser.Properties.Resources.tmplEnhancementBuffTable,
+                Gw2LogParser.Properties.Resources.tmplOtherConsumableBuffTable,
+                Gw2LogParser.Properties.Resources.tmplDebuffTable,
+                Gw2LogParser.Properties.Resources.tmplConditionsTable,
+                Gw2LogParser.Properties.Resources.tmplPersonalBuffTable,
+                Gw2LogParser.Properties.Resources.tmplPhase,
+                Gw2LogParser.Properties.Resources.tmplPlayers,
+                Gw2LogParser.Properties.Resources.tmplPlayerStats,
+                Gw2LogParser.Properties.Resources.tmplPlayerTab,
+                Gw2LogParser.Properties.Resources.tmplSimpleRotation,
+                Gw2LogParser.Properties.Resources.tmplAdvancedRotation,
+                Gw2LogParser.Properties.Resources.tmplSupportTable,
+                Gw2LogParser.Properties.Resources.tmplTargets,
+                Gw2LogParser.Properties.Resources.tmplTargetStats,
+                Gw2LogParser.Properties.Resources.tmplTargetTab,
+                Gw2LogParser.Properties.Resources.tmplDPSGraph,
+                Gw2LogParser.Properties.Resources.tmplDPSGraphModeSelector,
+                Gw2LogParser.Properties.Resources.tmplGraphStats,
+                Gw2LogParser.Properties.Resources.tmplPlayerTabGraph,
+                Gw2LogParser.Properties.Resources.tmplPlayersRotation,
+                Gw2LogParser.Properties.Resources.tmplPlayersRotationTab,
+                Gw2LogParser.Properties.Resources.tmplRotationLegend,
+                Gw2LogParser.Properties.Resources.tmplTargetTabGraph,
+                Gw2LogParser.Properties.Resources.tmplTargetTabPerPlayerGraph,
+                Gw2LogParser.Properties.Resources.tmplTargetData,
+                Gw2LogParser.Properties.Resources.tmplMainView,
             };
             var res = new List<string>();
             foreach (string template in templates)
@@ -128,23 +136,23 @@ namespace Gw2LogParser.GW2EIBuilders
         {
             var templates = new List<string>
             {
-                Properties.Resources.tmplCombatReplayDamageData,
-                Properties.Resources.tmplCombatReplayStatusData,
-                Properties.Resources.tmplCombatReplayDamageTable,
-                Properties.Resources.tmplCombatReplayActorBuffStats,
-                Properties.Resources.tmplCombatReplayPlayerStats,
-                Properties.Resources.tmplCombatReplayPlayerStatus,
-                Properties.Resources.tmplCombatReplayActorRotation,
-                Properties.Resources.tmplCombatReplayTargetStats,
-                Properties.Resources.tmplCombatReplayTargetStatus,
-                Properties.Resources.tmplCombatReplayTargetsStats,
-                Properties.Resources.tmplCombatReplayPlayersStats,
-                Properties.Resources.tmplCombatReplayUI,
-                Properties.Resources.tmplCombatReplayPlayerSelect,
-                Properties.Resources.tmplCombatReplayTargetSelect,
-                Properties.Resources.tmplCombatReplayExtraDecorations,
-                Properties.Resources.tmplCombatReplayAnimationControl,
-                Properties.Resources.tmplCombatReplayMechanicsList
+                Gw2LogParser.Properties.Resources.tmplCombatReplayDamageData,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayStatusData,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayDamageTable,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayActorBuffStats,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayPlayerStats,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayPlayerStatus,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayActorRotation,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayTargetStats,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayTargetStatus,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayTargetsStats,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayPlayersStats,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayUI,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayPlayerSelect,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayTargetSelect,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayExtraDecorations,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayAnimationControl,
+                Gw2LogParser.Properties.Resources.tmplCombatReplayMechanicsList
             };
             var res = new List<string>();
             foreach (string template in templates)
@@ -158,20 +166,23 @@ namespace Gw2LogParser.GW2EIBuilders
         {
             var templates = new List<string>
             {
-                Properties.Resources.tmplHealingExtensionView,
-                Properties.Resources.tmplTargetPlayers,
-                Properties.Resources.tmplIncomingHealingTable,
-                Properties.Resources.tmplHealingStatTables,
-                Properties.Resources.tmplOutgoingHealingTable,
-                Properties.Resources.tmplHPSGraphModeSelector,
-                Properties.Resources.tmplHPSGraph,
-                Properties.Resources.tmplHealingGraphStats,
-                Properties.Resources.tmplHealingDistPlayer,
-                Properties.Resources.tmplHealingDistTable,
-                Properties.Resources.tmplPlayerHealingStats,
-                Properties.Resources.tmplPlayerHealingTab,
-                Properties.Resources.tmplHealingTaken,
-                Properties.Resources.tmplPlayerHealingTabGraph,
+                Gw2LogParser.Properties.Resources.tmplHealingExtensionView,
+                Gw2LogParser.Properties.Resources.tmplTargetPlayers,
+                Gw2LogParser.Properties.Resources.tmplIncomingHealingTable,
+                Gw2LogParser.Properties.Resources.tmplHealingStatTables,
+                Gw2LogParser.Properties.Resources.tmplOutgoingHealingTable,
+                Gw2LogParser.Properties.Resources.tmplHPSGraphModeSelector,
+                Gw2LogParser.Properties.Resources.tmplHPSGraph,
+                Gw2LogParser.Properties.Resources.tmplHealingGraphStats,
+                Gw2LogParser.Properties.Resources.tmplHealingDistPlayer,
+                Gw2LogParser.Properties.Resources.tmplHealingDistTable,
+                Gw2LogParser.Properties.Resources.tmplPlayerHealingStats,
+                Gw2LogParser.Properties.Resources.tmplPlayerHealingTab,
+                Gw2LogParser.Properties.Resources.tmplHealingTaken,
+                Gw2LogParser.Properties.Resources.tmplPlayerHealingTabGraph,
+                Gw2LogParser.Properties.Resources.tmplBarrierDistPlayer,
+                Gw2LogParser.Properties.Resources.tmplBarrierDistTable,
+                Gw2LogParser.Properties.Resources.tmplBarrierTaken,
             };
             var res = new List<string>();
             foreach (string template in templates)

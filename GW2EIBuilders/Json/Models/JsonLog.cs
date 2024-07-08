@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Gw2LogParser.GW2EIBuilders
 {
+    /// <summary>
+    /// The root of the JSON
+    /// </summary>
     public class JsonLog
     {
         /// <summary>
@@ -157,6 +160,7 @@ namespace Gw2LogParser.GW2EIBuilders
 
             }
 
+
             /// <summary>
             /// Name of the damage modifier
             /// </summary>
@@ -186,6 +190,10 @@ namespace Gw2LogParser.GW2EIBuilders
             /// True if the modifier is an approximation
             /// </summary>
             public bool Approximate { get; set; }
+            /// <summary>
+            /// True if the modifier is an incoming damage modifier
+            /// </summary>
+            public bool Incoming { get; set; }
         }
 
         /// <summary>
@@ -245,6 +253,11 @@ namespace Gw2LogParser.GW2EIBuilders
         public string RecordedBy { get; set; }
 
         /// <summary>
+        /// The account name of the player who recorded the fight
+        /// </summary>
+        public string RecordedAccountBy { get; set; }
+
+        /// <summary>
         /// DEPRECATED: use TimeStartStd instead \n
         /// The time at which the fight started in "yyyy-mm-dd hh:mm:ss zz" format \n
         /// The value will be <see cref="LogData.DefaultTimeValue"/> if the event does not exist
@@ -295,6 +308,32 @@ namespace Gw2LogParser.GW2EIBuilders
         /// If the fight is in challenge mode
         /// </summary>
         public bool IsCM { get; set; }
+        /// <summary>
+        /// If the fight is in legendary challenge mode. \n
+        /// If this is true, <see cref="IsCM"/> will also be true
+        /// </summary>
+        public bool IsLegendaryCM { get; set; }
+        /// <summary>
+        /// True if EI detected that the encounter started later than expected. \n
+        /// This value being false does not mean the encounter could not have started later than expected.
+        /// </summary>
+        public bool IsLateStart { get; set; }
+        /// <summary>
+        /// True if an encounter that is supposed to have a pre-event does not have it.
+        /// </summary>
+        public bool MissingPreEvent { get; set; }
+
+        /// <summary>
+        /// If the log was parsed in anonymous mode
+        /// </summary>
+        public bool Anonymous { get; set; }
+
+
+        /// <summary>
+        /// If the log was parsed in detailed mode. \n
+        /// Only for WvW logs
+        /// </summary>
+        public bool DetailedWvW { get; set; }
 
         /// <summary>
         /// The list of targets
@@ -350,6 +389,12 @@ namespace Gw2LogParser.GW2EIBuilders
         public IReadOnlyDictionary<string, IReadOnlyCollection<long>> PersonalBuffs { get; set; }
 
         /// <summary>
+        /// Dictionary of damage modifiers. The key is the profession, the value is a list of damage mod ids
+        /// </summary>
+        /// <seealso cref="DamageModMap"/>
+        public IReadOnlyDictionary<string, IReadOnlyCollection<long>> PersonalDamageMods { get; set; }
+
+        /// <summary>
         /// List of present fractal instabilities, the values are buff ids. DEPRECATED: use PresentInstanceBuffs instead
         /// </summary>
         /// <seealso cref="BuffMap"/>
@@ -380,5 +425,6 @@ namespace Gw2LogParser.GW2EIBuilders
         {
 
         }
+
     }
 }
