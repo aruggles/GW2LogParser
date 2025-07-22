@@ -1,50 +1,55 @@
 ﻿using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
-using System.Linq;
+using GW2EIEvtcParser.ParsedData;
+using GW2EIJSON;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.JsonModels.JsonActorUtilities.JsonExtensions.EXTHealing;
+
+internal static class EXTJsonMinionsHealingStatsBuilder
 {
-    internal static class EXTJsonMinionsHealingStatsBuilder
-    {
 
-        public static EXTJsonMinionsHealingStats BuildMinionsHealingStats(Minions minions, ParsedEvtcLog log, Dictionary<string, JsonLog.SkillDesc> skillDesc, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+    public static EXTJsonMinionsHealingStats BuildMinionsHealingStats(Minions minions, ParsedEvtcLog log, Dictionary<long, SkillItem> skillMap, Dictionary<long, Buff> buffMap)
+    {
+        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        var totalHealing = new List<int>(phases.Count);
+        var totalAlliedHealing = new List<List<int>>(log.Friendlies.Count);
+        var totalIncomingHealing = new List<int>(phases.Count);
+        var alliedHealingDist = new List<List<List<EXTJsonHealingDist>>>(log.Friendlies.Count);
+        var totalHealingDist = new List<List<EXTJsonHealingDist>>(phases.Count);
+        var totalIncomingHealingDist = new List<List<EXTJsonHealingDist>>(phases.Count);
+        var res = new EXTJsonMinionsHealingStats()
         {
-            var totalHealing = new List<int>();
-            var totalAlliedHealing = new List<List<int>>();
-            var alliedHealingDist = new List<List<List<EXTJsonHealingDist>>>();
-            var totalHealingDist = new List<List<EXTJsonHealingDist>>();
-            var res = new EXTJsonMinionsHealingStats()
-            {
-                TotalHealing = totalHealing,
-                TotalAlliedHealing = totalAlliedHealing,
-                AlliedHealingDist = alliedHealingDist,
-                TotalHealingDist = totalHealingDist
-            };
-            IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
-            foreach (AbstractSingleActor friendly in log.Friendlies)
-            {
-                var totalAllyHealing = new List<int>();
-                totalAlliedHealing.Add(totalAllyHealing);
-                //
-                var allyHealingDist = new List<List<EXTJsonHealingDist>>();
-                alliedHealingDist.Add(allyHealingDist);
-                foreach (PhaseData phase in phases)
-                {
-                    IReadOnlyList<GW2EIEvtcParser.Extensions.EXTAbstractHealingEvent> list = minions.EXTHealing.GetOutgoingHealEvents(friendly, log, phase.Start, phase.End);
-                    totalAllyHealing.Add(list.Sum(x => x.HealingDone));
-                    allyHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(list.GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
-                }
-            }
+            TotalHealing = totalHealing,
+            TotalAlliedHealing = totalAlliedHealing,
+            TotalIncomingHealing = totalIncomingHealing,
+            AlliedHealingDist = alliedHealingDist,
+            TotalHealingDist = totalHealingDist,
+            TotalIncomingHealingDist = totalIncomingHealingDist
+        };
+        foreach (SingleActor friendly in log.Friendlies)
+        {
+            var totalAllyHealing = new List<int>(phases.Count);
+            totalAlliedHealing.Add(totalAllyHealing);
+            //
+            var allyHealingDist = new List<List<EXTJsonHealingDist>>(phases.Count);
+            alliedHealingDist.Add(allyHealingDist);
             foreach (PhaseData phase in phases)
             {
-                IReadOnlyList<GW2EIEvtcParser.Extensions.EXTAbstractHealingEvent> list = minions.EXTHealing.GetOutgoingHealEvents(null, log, phase.Start, phase.End);
-                totalHealing.Add(list.Sum(x => x.HealingDone));
-                totalHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(list.GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()), log, skillDesc, buffDesc));
+                var list = minions.EXTHealing.GetOutgoingHealEvents(friendly, log, phase.Start, phase.End).ToList(); //TODO(Rennorb) @perf
+                totalAllyHealing.Add(list.Sum(x => x.HealingDone));
+                allyHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(list.GroupBy(x => x.SkillId), log, skillMap, buffMap));
             }
-            return res;
         }
-
+        foreach (PhaseData phase in phases)
+        {
+            var list = minions.EXTHealing.GetOutgoingHealEvents(null, log, phase.Start, phase.End).ToList(); //TODO(Rennorb) @perf
+            totalHealing.Add(list.Sum(x => x.HealingDone));
+            totalHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(list.GroupBy(x => x.SkillId), log, skillMap, buffMap));
+            var listInc = minions.EXTHealing.GetIncomingHealEvents(null, log, phase.Start, phase.End).ToList(); //TODO(Rennorb) @perf
+            totalIncomingHealing.Add(listInc.Sum(x => x.HealingDone));
+            totalIncomingHealingDist.Add(EXTJsonHealingStatsBuilderCommons.BuildHealingDistList(listInc.GroupBy(x => x.SkillId), log, skillMap, buffMap));
+        }
+        return res;
     }
+
 }

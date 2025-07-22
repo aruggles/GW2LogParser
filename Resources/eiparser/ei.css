@@ -73,7 +73,7 @@
 }
 
 .ei-container-small {
-    max-width: 1450px;
+    max-width: min(1600px, 90%);
     min-width: 1450px;
     margin-right: auto;
     margin-left: auto;
@@ -120,20 +120,20 @@
 
 .player-status {
     color: #DDDDDD;
-    width: 130px;
+    width: 170px;
     height: 35px;
     cursor: pointer;
     user-select: none;
 }
 
 .actor-rotation {
-    width: 120px;
+    width: 150px;
     height: 48px;
 }
 
 .target-status {
     color: #DDDDDD;
-    width: 180px;
+    width: 210px;
     height: 35px;
     cursor: pointer;
     user-select: none;
@@ -142,24 +142,27 @@
 .cr-hp-display {
     font-size: 0.65rem;
     position: relative;
-    top: -12px;
     width: 45px;
+    top: -12px;
+    left: 0%;
+    height: 16px;
     pointer-events: none;
 }
 
 .cr-barrier-display {
     font-size: 0.65rem;
-    top: -43px;
     position: relative;
     width: 45px;
+    top: -44px;
+    height: 16px;
     pointer-events: none;
 }
 
-.cr-barrier { 
+.cr-barrier {
     position: relative;
     width: 100%;
+    top: -99px;
     height: 100%;
-    top: -97px;
     pointer-events: none;
 }
 
@@ -171,6 +174,7 @@
 .cr-breakbar-bar {
     color: #DDDDDD;
     width: 130px;
+    height: 16px;
 }
 
 .cr-breakbar-phase-display {
@@ -178,24 +182,17 @@
     width: 180px;
 }
 
-.cr-hp-display-player {
-    left: 0%;
-}
-
 .cr-barrier-display-player {
-    left: 53%;
-}
-
-.cr-hp-display-target {
-    left: 0%;
+    left: 68%;
 }
 
 .cr-barrier-display-target {
-    left: 70%;
+    left: 77%;
 }
 
-h6.actor-shorten {
+h6.actor-shorten-cr {
     width: 100%;
+    height: 21px;
     margin-top: 7px;
     margin-bottom: 7px;
     overflow: hidden;
@@ -276,20 +273,20 @@ body {
 }
 
 .theme-yeti .player-cell{
-    box-shadow: 
-    1px 0 0 0 #dee2e6, 
-    0 1px 0 0 #dee2e6, 
+    box-shadow:
+    1px 0 0 0 #dee2e6,
+    0 1px 0 0 #dee2e6,
     1px 1px 0 0 #dee2e6,
-    1px 0 0 0 #dee2e6 inset, 
+    1px 0 0 0 #dee2e6 inset,
     0 1px 0 0 #dee2e6 inset;
 }
 
 .theme-slate .player-cell {
-    box-shadow: 
-    1px 0 0 0 rgb(10, 10, 10), 
-    0 1px 0 0 rgb(10, 10, 10), 
+    box-shadow:
+    1px 0 0 0 rgb(10, 10, 10),
+    0 1px 0 0 rgb(10, 10, 10),
     1px 1px 0 0 rgb(10, 10, 10),
-    1px 0 0 0 rgb(10, 10, 10) inset, 
+    1px 0 0 0 rgb(10, 10, 10) inset,
     0 1px 0 0 rgb(10, 10, 10) inset;
 }
 
@@ -443,7 +440,7 @@ th:hover img.icon-hover,
     filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=3, OffY=3, Color='#000')";
 }
 
-.sub-cell { 
+.sub-cell {
     width: 20px ;
 }
 
@@ -451,8 +448,8 @@ th:hover img.icon-hover,
     width: 5px;
 }
 
-span.ellipsis {
-    width: 150px;
+.cr-ellipsis {
+    width: 130px;
     display: block;
     overflow: hidden;
     white-space: nowrap;
@@ -472,11 +469,15 @@ span.ellipsis {
 }
 
 .name-cr-cell {
-    width: 150px;
+    width: 130px;
+}
+
+.damage-cr-cell-small {
+    width: 80px;
 }
 
 .damage-cr-cell {
-    width: 170px;
+    width: 130px;
 }
 
 .sub-tabs {
@@ -564,6 +565,11 @@ th {
 .rot-swap:after {
     content: '\A';
     white-space: pre;
+}
+
+.rot-highlight:not(.rot-highlight-active) {
+    opacity: 0.5;
+    filter: grayscale(0.7);
 }
 
 .theme-slate .player-cell.active {
@@ -790,4 +796,70 @@ td.higherOrEqual::before {
 td.approximate::before {
     content: "\2248";
 }
-  
+
+.scrollabledropdown {
+    max-height: 500px;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.card-header {
+    padding: 0.25rem 1.25rem !important;
+}
+
+.card-header-fightMode {
+    padding: 0.10rem 1.25rem;
+    margin-bottom: 0px;
+}
+
+.card-body-encounter {
+    padding: 1rem !important;
+}
+
+/* Fight Mode Header - Light Theme */
+.fightModeStory-light {
+    background-color: #EEEEEE;
+}
+
+.fightModeEmboldened-light {
+    background-color: #39925A;
+}
+
+.fightModeNormal-light {
+    background-color: #00779E;
+}
+
+.fightModeChallenge-light {
+    background-color: #E99002;
+}
+
+.fightModeLegendary-light {
+    background-color: #C9A0FF;
+}
+
+/* Fight Mode Header - Dark Theme */
+.fightModeStory-dark {
+    background-color: #515960;
+}
+
+.fightModeEmboldened-dark {
+    background-color: #036E09;
+}
+
+.fightModeNormal-dark {
+    background-color: #0C5E94;
+}
+
+.fightModeChallenge-dark {
+    background-color: #736625;
+}
+
+.fightModeLegendary-dark {
+    background-color: #6C4DA3;
+}
+
+.healthBar {
+    height: 7px;
+    width: 100%;
+    border-radius: 5px;
+}

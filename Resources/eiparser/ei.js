@@ -1,56 +1,6 @@
 /*jshint esversion: 6 */
 "use strict";
 function compileTemplates() {
-    Vue.component("graph-component", {
-        props: ['id', 'layout', 'data'],
-        template: '<div :id="id" class="d-flex flex-row justify-content-center"></div>',
-        activated: function () {
-            var div = document.querySelector(this.queryID);
-            Plotly.react(div, this.data, this.layout, { showEditInChartStudio: true, plotlyServerURL: "https://chart-studio.plotly.com" });
-            var _this = this;
-            div.on('plotly_animated', function () {
-                Plotly.relayout(div, _this.layout);
-            });
-        },
-        computed: {
-            queryID: function () {
-                return "#" + this.id;
-            }
-        },
-        watch: {
-            layout: {
-                handler: function () {
-                    var div = document.querySelector(this.queryID);
-                    if (!div) {
-                        return;
-                    }
-                    var duration = 1000;
-                    Plotly.animate(div, {
-                        data: this.data
-                    }, {
-                        transition: {
-                            duration: duration,
-                            easing: 'cubic-in-out'
-                        },
-                        frame: {
-                            duration: 0.75 * duration
-                        }
-                    });
-                },
-                deep: true
-            },
-            data: {
-                handler: function () {
-                    var div = document.querySelector(this.queryID);
-                    if (!div) {
-                        return;
-                    }
-                    Plotly.react(div, this.data, this.layout, { showEditInChartStudio: true, plotlyServerURL: "https://chart-studio.plotly.com" });
-                },
-                deep: true
-            }
-        }
-    });
     Vue.component("custom-numberform-component", {
         props: ["minValue", "maxValue", "id", "placeholderValue"],
         template: `
@@ -126,9 +76,45 @@ function compileTemplates() {
     TEMPLATE_COMPILE
 };
 
+function getDefaultMainComponent() {
+    const setting = EIUrlParams.get("startPage");
+    if (!setting) {
+        return 0;
+    }
+    const mainCompo = setting.split('/')[0];
+    switch (mainCompo) {
+        case "Statistics":
+            return 0;
+        case "CombatReplay":
+            return !!crData ? 1 : 0;
+        case "HealingStatistics":
+            return !!healingStatsExtension ? 2 : 0;
+    }
+    return 0;
+}
+
+const DEBUG = EIUrlParams.get("debug") === "true";
+
+function getDefaultPhase() {
+    const setting = EIUrlParams.get("phase");
+    if (!setting) {
+        return 0;
+    }
+    return parseInt(setting);
+}
+
 function mainLoad() {
+    if (!apiRenderServiceOkay) {
+        for (let key in WeaponIcons) {
+            WeaponIcons[key] = _buildFallBackURL(WeaponIcons[key]);
+        }
+        for (let key in UIIcons) {
+            UIIcons[key] = _buildFallBackURL(UIIcons[key]);
+        }
+    }
     // make some additional variables reactive
-    var firstActive = logData.phases[0];
+    var activePhaseIndex = getDefaultPhase();
+    var firstActive = logData.phases[activePhaseIndex] ? logData.phases[activePhaseIndex] : logData.phases[0];
     for (var i = 0; i < logData.phases.length; i++) {
         var phase = logData.phases[i];
         phase.durationS = phase.duration / 1000.0
@@ -155,8 +141,10 @@ function mainLoad() {
         for (var j = 0; j < logData.phases.length; j++) {
             var phase = logData.phases[j];
             var phaseTarget = phase.targets.indexOf(i);
+            var priority = phase.targetPriorities[phaseTarget];
             activeArray.push({
-                active: phaseTarget > -1 ? !phase.secondaryTargets[phaseTarget] : false
+                active: typeof priority !== "undefined" && priority < 2,
+                secondary: typeof priority === "undefined" || priority > 0
             });
         }
         target.id = i;
@@ -182,9 +170,9 @@ function mainLoad() {
         el: "#content",
         data: {
             light: typeof (window.theme) !== "undefined" ? (window.theme === 'yeti') : logData.lightTheme,
-            mode: 0,
+            mode: getDefaultMainComponent(),
             cr: !!crData,
-            healingExtShow: !!healingStatsExtension || logData.evtcVersion >= 20210701,
+            healingExtShow: !!healingStatsExtension || logData.evtcBuild >= 20210701,
             healingExt: !!healingStatsExtension
         },
         methods: {
@@ -235,6 +223,9 @@ function mainLoad() {
                     return null;
                 }
                 return logData.usedExtensions;
+            },
+            UIIcons: function () {
+                return UIIcons;
             }
         },
         mounted() {
@@ -252,19 +243,32 @@ function mainLoad() {
 window.onload = function () {
     Vue.config.devtools = true;
     // trick from
-    var img = document.createElement("img");
-    img.style.display = "none";
-    document.body.appendChild(img);
-    img.onload = function () {
+    var imgOfficialAPI = document.createElement("img");
+    imgOfficialAPI.style.display = "none";
+    document.body.appendChild(imgOfficialAPI);
+    imgOfficialAPI.onload = function () {
+        console.info("Info: GW2 Render service available");
         mainLoad();
-        document.body.removeChild(img);
+        document.body.removeChild(imgOfficialAPI);
     };
-    img.onerror = function () {
-        apiRenderServiceOkay = false;
-        console.warn("Warning: GW2 Render service unavailable, switching to darthmaim-cdn");
-        console.warn("More info at https://dev.gw2treasures.com/services/icons");
-        mainLoad();
-        document.body.removeChild(img);
+    imgOfficialAPI.onerror = function () {
+        apiRenderServiceOkay = false;      
+        document.body.removeChild(imgOfficialAPI);
+        var imgDarthmaim = document.createElement("img");
+        imgDarthmaim.style.display = "none";
+        imgDarthmaim.onload = function () {
+            console.warn("Warning: GW2 Render service unavailable, switching to https://icons-gw2.darthmaim-cdn.com");
+            useDarthmaim = true;
+            mainLoad();
+            document.body.removeChild(imgDarthmaim);
+        };
+        imgDarthmaim.onerror = function() {
+            console.warn("Warning: GW2 Render service unavailable, switching to https://assets.gw2dat.com");
+            useDarthmaim = false;
+            mainLoad();
+            document.body.removeChild(imgDarthmaim);
+        }
+        imgDarthmaim.src = "https://icons-gw2.darthmaim-cdn.com/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
     };
-    img.src = "https://render.guildwars2.com/file/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
+    imgOfficialAPI.src = "https://render.guildwars2.com/file/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
 }

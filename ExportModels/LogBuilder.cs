@@ -4,9 +4,6 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
 using Gw2LogParser.EvtcParserExtensions;
 using Gw2LogParser.ExportModels.Report;
-using Gw2LogParser.GW2EIBuilders;
-using System;
-using System.Collections.Generic;
 
 namespace Gw2LogParser.ExportModels
 {
@@ -180,7 +177,7 @@ namespace Gw2LogParser.ExportModels
             for (var i = 0; i < original.BoonStats.Count; i++)
             {
                 var originalBoon = original.BoonStats[i];
-                
+
                 if (report.BoonStats.Count > i)
                 {
                     var reportBoon = report.BoonStats[i];
@@ -188,6 +185,7 @@ namespace Gw2LogParser.ExportModels
                     originalBoon.Wasted += reportBoon.Wasted;
                     originalBoon.Uptime += reportBoon.Uptime;
                     originalBoon.Extended += reportBoon.Extended;
+                    originalBoon.Overstack += reportBoon.Overstack;
                 }
             }
             for (var i = 0; i < original.BoonGenSelfStats.Count; i++)
@@ -200,6 +198,7 @@ namespace Gw2LogParser.ExportModels
                     originalBoon.Wasted += reportBoon.Wasted;
                     originalBoon.Uptime += reportBoon.Uptime;
                     originalBoon.Extended += reportBoon.Extended;
+                    originalBoon.Overstack += reportBoon.Overstack;
                 }
             }
             for (var i = 0; i < original.BoonGenGroupStats.Count; i++)
@@ -212,6 +211,7 @@ namespace Gw2LogParser.ExportModels
                     originalBoon.Wasted += reportBoon.Wasted;
                     originalBoon.Uptime += reportBoon.Uptime;
                     originalBoon.Extended += reportBoon.Extended;
+                    originalBoon.Overstack += reportBoon.Overstack;
                 }
             }
             for (var i = 0; i < original.BoonGenOGroupStats.Count; i++)
@@ -224,6 +224,7 @@ namespace Gw2LogParser.ExportModels
                     originalBoon.Wasted += reportBoon.Wasted;
                     originalBoon.Uptime += reportBoon.Uptime;
                     originalBoon.Extended += reportBoon.Extended;
+                    originalBoon.Overstack += reportBoon.Overstack;
                 }
             }
             for (var i = 0; i < original.BoonGenSquadStats.Count; i++)
@@ -236,6 +237,7 @@ namespace Gw2LogParser.ExportModels
                     originalBoon.Wasted += reportBoon.Wasted;
                     originalBoon.Uptime += reportBoon.Uptime;
                     originalBoon.Extended += reportBoon.Extended;
+                    originalBoon.Overstack += reportBoon.Overstack;
                 }
             }
             if (report.healing != null)
@@ -271,9 +273,13 @@ namespace Gw2LogParser.ExportModels
 
         public void UpdateLogReport(LogReport report, LogDataDto data)
         {
-            for (int playerIndex = 0; playerIndex < data.Players.Count; playerIndex++)
+            for (int playerIndex = 0; playerIndex < data.Players?.Count; playerIndex++)
             {
                 var player = data.Players[playerIndex];
+                if (player == null || player.Group == 51)
+                {
+                    continue;
+                }
                 var playerReport = new PlayerReport()
                 {
                     Account = player.Acc,
@@ -329,12 +335,25 @@ namespace Gw2LogParser.ExportModels
                     playerReport.Defense.Downed = Parse<int>(phase.DefStats[playerIndex][12]);
                     playerReport.Defense.Dead = Parse<int>(phase.DefStats[playerIndex][14]);
                     playerReport.Gameplay = BuildGameplayReport(phase.GameplayStats[playerIndex], phase.OffensiveStats[playerIndex]);
-
-                    playerReport.setBoonStats(phase.BoonStats[playerIndex].Data);
-                    playerReport.setBoonGenSquadStats(phase.BoonGenSquadStats[playerIndex].Data);
-                    playerReport.setBoonGenSelfStats(phase.BoonGenSelfStats[playerIndex].Data);
-                    playerReport.setBoonGenOGroupStats(phase.BoonGenOGroupStats[playerIndex].Data);
-                    playerReport.setBoonGenGroupStats(phase.BoonGenGroupStats[playerIndex].Data);
+                    for (int b = 0; b < phase.BuffsStatContainer.BoonStats[playerIndex].Data.Count; b++) {
+                        playerReport.BoonStats.Add(new BoonReport(phase.BuffsStatContainer.BoonStats[playerIndex].Data[b]));
+                    }
+                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenSquadStats[playerIndex].Data.Count; b++)
+                    {
+                        playerReport.BoonGenSquadStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenSquadStats[playerIndex].Data[b]));
+                    }
+                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenSelfStats[playerIndex].Data.Count; b++)
+                    {
+                        playerReport.BoonGenSelfStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenSelfStats[playerIndex].Data[b]));
+                    }
+                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenOGroupStats[playerIndex].Data.Count; b++)
+                    {
+                        playerReport.BoonGenOGroupStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenOGroupStats[playerIndex].Data[b]));
+                    }
+                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenGroupStats[playerIndex].Data.Count; b++)
+                    {
+                        playerReport.BoonGenGroupStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenGroupStats[playerIndex].Data[b]));
+                    }
                     if (data.HealingStatsExtension != null)
                     {
                         var healingReport = new HealingReport();
@@ -382,7 +401,7 @@ namespace Gw2LogParser.ExportModels
             }
         }
 
-        private GameplayReport BuildGameplayReport(List<object> DmgStats, List<object> OffStats)
+        private GameplayReport BuildGameplayReport(List<double> DmgStats, List<double> OffStats)
         {
             var report = new GameplayReport();
             report.Wasted = Parse<float>(DmgStats[0]);

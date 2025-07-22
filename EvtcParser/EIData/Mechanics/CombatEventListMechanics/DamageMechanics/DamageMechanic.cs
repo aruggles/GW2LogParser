@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+internal abstract class DamageMechanic : CombatEventListMechanic<HealthDamageEvent>
 {
-    internal abstract class DamageMechanic : CombatEventListMechanic<AbstractHealthDamageEvent>
-    {
 
-        public DamageMechanic(string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(inGameName, plotlySetting, shortName, description, fullName, internalCoolDown, getter)
-        {
-        }
+    public DamageMechanic(MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(plotlySetting, shortName, description, fullName, internalCoolDown, getter)
+    {
     }
 }

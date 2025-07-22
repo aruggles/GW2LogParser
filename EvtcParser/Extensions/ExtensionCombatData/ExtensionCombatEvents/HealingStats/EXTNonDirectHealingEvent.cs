@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
 
-namespace GW2EIEvtcParser.Extensions
+namespace GW2EIEvtcParser.Extensions;
+
+public class EXTNonDirectHealingEvent : EXTHealingEvent
 {
-    public class EXTNonDirectHealingEvent : EXTAbstractHealingEvent
-    {
 
-        internal EXTNonDirectHealingEvent(CombatItem evtcItem, AgentData agentData, SkillData skillData) : base(evtcItem, agentData, skillData)
-        {
-            HealingDone = -evtcItem.BuffDmg;
-        }
+    internal EXTNonDirectHealingEvent(CombatItem evtcItem, AgentData agentData, SkillData skillData) : base(evtcItem, agentData, skillData)
+    {
+        HealingDone = -evtcItem.BuffDmg;
     }
 }

@@ -1,29 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.Exceptions;
-using GW2EIEvtcParser.Extensions;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using static GW2EIEvtcParser.ParserHelper;
-using static GW2EIEvtcParser.SkillIDs;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
+using static GW2EIEvtcParser.SpeciesIDs;
 
-namespace GW2EIEvtcParser.EncounterLogic
+namespace GW2EIEvtcParser.EncounterLogic;
+
+internal abstract class StoryInstance : FightLogic
 {
-    internal abstract class StoryInstance : FightLogic
+    public StoryInstance(int triggerID) : base(triggerID)
     {
-        public StoryInstance(int triggerID) : base(triggerID)
-        {
-            EncounterCategoryInformation.Category = EncounterCategory.FightCategory.Story;
-            EncounterCategoryInformation.SubCategory = EncounterCategory.SubFightCategory.Story;
-            EncounterID |= EncounterIDs.EncounterMasks.StoryInstanceMask;
-        }
-        internal override long GetFightOffset(int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
-        {
-            return GetGenericFightOffset(fightData);
-        }
+        EncounterCategoryInformation.Category = EncounterCategory.FightCategory.Story;
+        EncounterCategoryInformation.SubCategory = EncounterCategory.SubFightCategory.Story;
+        EncounterID |= EncounterIDs.EncounterMasks.StoryInstanceMask;
+    }
+    internal override FightData.EncounterMode GetEncounterMode(CombatData combatData, AgentData agentData, FightData fightData)
+    {
+        return FightData.EncounterMode.Story;
+    }
+
+    internal override long GetFightOffset(EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+    {
+        return GetGenericFightOffset(fightData);
+    }
+    protected override IReadOnlyList<TargetID> GetTargetsIDs()
+    {
+        return new[] { GetTargetID(GenericTriggerID) };
     }
 }

@@ -1,29 +1,27 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+
+internal class PlayerSrcPlayerDstBuffApplyMechanic : PlayerSrcBuffApplyMechanic
 {
 
-    internal class PlayerSrcPlayerDstBuffApplyMechanic : PlayerSrcBuffApplyMechanic
+    public PlayerSrcPlayerDstBuffApplyMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+    }
 
-        public PlayerSrcPlayerDstBuffApplyMechanic(long mechanicID, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
-        {
-        }
+    public PlayerSrcPlayerDstBuffApplyMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
+    {
+    }
 
-        public PlayerSrcPlayerDstBuffApplyMechanic(long[] mechanicIDs, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
+    protected override void AddMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, BuffApplyEvent ba, SingleActor actor)
+    {
+        SingleActor? dst = MechanicHelper.FindPlayerActor(log, ba.To);
+        if (dst != null)
         {
-        }
-
-        protected override void AddMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, BuffApplyEvent ba, AbstractSingleActor actor)
-        {
-            AbstractSingleActor dst = MechanicHelper.FindPlayerActor(log, ba.To);
-            if (dst != null)
-            {
-                mechanicLogs[this].Add(new MechanicEvent(ba.Time, this, actor));
-                mechanicLogs[this].Add(new MechanicEvent(ba.Time, this, dst));
-            }
+            InsertMechanic(log, mechanicLogs, ba.Time, actor);
+            InsertMechanic(log, mechanicLogs, ba.Time, dst);
         }
     }
 }

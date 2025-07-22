@@ -1,7 +1,7 @@
 /*jshint esversion: 6 */
 /* jshint node: true */
 /*jslint browser: true */
-/*global animator, animateCanvas, noUpdateTime, deadIcon, dcIcon, downIcon*/
+/*global animator, animateCanvas, noUpdateTime, deadIcon, dcIcon, downAllyIcon, downEnemyIcon*/
 "use strict";
 //// ACTORS
 
@@ -16,27 +16,28 @@ function IsPresentInArray(array) {
 }
 
 class IconDrawable {
-    constructor(id, pos, angles, start, end, imgSrc, pixelSize, dead, down, dc, hide, breakbarActive, hitboxWidth) {
-        this.pos = pos;
-        this.angles = angles;
-        this.start = start;
-        this.end = end;
+    constructor(params, pixelSize) {
+        this.positions = params.positions;
+        this.angles = params.angles;
+        this.start = params.start;
+        this.end = params.end;
         this.img = new Image();
-        this.img.src = imgSrc;
+        this.img.src = params.img;
         this.img.onload = function () {
             animateCanvas(noUpdateTime);
         };
         this.pixelSize = pixelSize;
         this.group = null;
-        this.dead = typeof dead !== "undefined" ? dead : null;
-        this.down = typeof down !== "undefined" ? down : null;
-        this.dc = typeof dc !== "undefined" ? dc : null;
-        this.hide = typeof hide !== "undefined" ? hide : null;
-        this.breakbarActive = typeof breakbarActive !== "undefined" ? breakbarActive : null;
-        this.hitboxWidth = hitboxWidth;
+        this.dead = typeof params.dead !== "undefined" ? params.dead : null;
+        this.down = typeof params.down !== "undefined" ? params.down : null;
+        this.dc = typeof params.dc !== "undefined" ? params.dc : null;
+        this.hide = typeof params.hide !== "undefined" ? params.hide : null;
+        this.breakbarActive = typeof params.breakbarActive !== "undefined" ? params.breakbarActive : null;
+        this.hitboxWidth = InchToPixel * params.hitboxWidth;
         //
-        uint32[0] = id;
-        this.pickingColor = `rgba(${uint32ToUint8[0]}, ${uint32ToUint8[1]}, ${uint32ToUint8[2]}, 1)`;
+        this.id = params.id;
+        uint32[0] = params.id;
+        this.pickingColor = params.img && params.img.length > 0 ? `rgba(${uint32ToUint8[0]}, ${uint32ToUint8[1]}, ${uint32ToUint8[2]}, 1)` : null;
     }
 
     isSelected() {
@@ -75,12 +76,16 @@ class IconDrawable {
         return IsPresentInArray(this.breakbarActive);
     }
 
+    _isFriendly() {
+        return animator.playerData.has(this.id) || animator.friendlyMobData.has(this.id) || animator.friendlyPlayerData.has(this.id);
+    }
+
     getIcon() {
         if (this.died()) {
             return deadIcon;
         }
         if (this.downed()) {
-            return downIcon;
+            return this._isFriendly() ? downAllyIcon : downEnemyIcon;
         }
         if (this.disconnected()) {
             return dcIcon;
@@ -112,18 +117,18 @@ class IconDrawable {
 
     getInterpolatedPosition(startIndex, currentIndex) {
         const offsetedIndex = currentIndex - startIndex;
-        const positionX = this.pos[2 * offsetedIndex];
-        const positionY = this.pos[2 * offsetedIndex + 1];
+        const positionX = this.positions[2 * offsetedIndex];
+        const positionY = this.positions[2 * offsetedIndex + 1];
         const timeValue = animator.times[currentIndex];
         var pt = {
             x: 0,
             y: 0
         };
         var time = animator.reactiveDataStatus.time;
-        if (time - timeValue > 0 && offsetedIndex < 0.5 * this.pos.length - 1) {
+        if (time - timeValue > 0 && offsetedIndex < 0.5 * this.positions.length - 1) {
             const nextTimeValue = animator.times[currentIndex + 1];
-            const nextPositionX = this.pos[2 * offsetedIndex + 2];
-            const nextPositionY = this.pos[2 * offsetedIndex + 3];
+            const nextPositionX = this.positions[2 * offsetedIndex + 2];
+            const nextPositionY = this.positions[2 * offsetedIndex + 3];
             pt.x = positionX + (time - timeValue) / (nextTimeValue - timeValue) * (nextPositionX - positionX);
             pt.y = positionY + (time - timeValue) / (nextTimeValue - timeValue) * (nextPositionY - positionY);
         } else {
@@ -159,24 +164,27 @@ class IconDrawable {
         return this.getInterpolatedRotation(startIndex, Math.max(currentIndex, startIndex));
     }
 
-    getPosition() {
-        if (this.pos === null || this.pos.length === 0 || this.disconnected()) {
+    _getPosition(time) {
+        if (this.positions === null || this.positions.length === 0 || this.disconnected()) {
             return null;
         }
-        var time = animator.reactiveDataStatus.time;
         if (this.start !== -1 && (this.start > time || this.end < time)) {
             return null;
         }
-        if (this.pos.length === 2) {
+        if (this.positions.length === 2) {
             return {
-                x: this.pos[0],
-                y: this.pos[1]
+                x: this.positions[0],
+                y: this.positions[1]
             };
         }
         const lastTime = animator.times[animator.times.length - 1];
         const startIndex = Math.ceil((animator.times.length - 1) * Math.max(this.start, 0) / lastTime);
         const currentIndex = Math.floor((animator.times.length - 1) * time / lastTime);
         return this.getInterpolatedPosition(startIndex, Math.max(currentIndex, startIndex));
+    }
+
+    getPosition(_time) {
+        return this._getPosition(animator.reactiveDataStatus.time);
     }
 
     getSize() {
@@ -188,7 +196,7 @@ class IconDrawable {
     }
 
     draw() {
-        if (!this.canDraw()) {
+        if (!this.canDraw() || this.pickingColor == null) {
             return;
         }
         const pos = this.getPosition();
@@ -219,16 +227,15 @@ class IconDrawable {
                 ctx.beginPath();
                 ctx.lineWidth = (2 / animator.scale).toString();
                 ctx.strokeStyle = 'green';
-                ctx.arc(pos.x, pos.y, animator.inchToPixel * element.radius, 0, 2 * Math.PI);
+                ctx.arc(pos.x, pos.y, InchToPixel * element.radius, 0, 2 * Math.PI);
                 ctx.stroke();
             });
-        }
-        ctx.drawImage(this.getIcon(),
-            pos.x - halfSize, pos.y - halfSize, fullSize, fullSize);
+        }      
+        ctx.drawImage(this.getIcon(), pos.x - halfSize, pos.y - halfSize, fullSize, fullSize);
     }
 
     drawPicking() {
-        if (!this.canDraw()) {
+        if (!this.canDraw() || !this.pickingColor) {
             return;
         }
         const pos = this.getPosition();
@@ -249,10 +256,11 @@ class IconDrawable {
     }
 }
 
-class SquadIconDrawable extends IconDrawable {
-    constructor(id, start, end, imgSrc, pixelSize, group, pos, angles, dead, down, dc, hide, breakbarActive, hitboxWidth) {
-        super(id, pos, angles, start, end, imgSrc, pixelSize, dead, down, dc, hide, breakbarActive, hitboxWidth);
-        this.group = group;
+class PlayerIconDrawable extends IconDrawable {
+    constructor(params, pixelSize) {
+        super(params, pixelSize);
+        this.group = params.group;
+        this.img.crossOrigin = "Anonymous";
     }
 
     inSelectedGroup() {
@@ -262,9 +270,9 @@ class SquadIconDrawable extends IconDrawable {
 }
 
 class NonSquadIconDrawable extends IconDrawable {
-    constructor(id, start, end, imgSrc, pixelSize, pos, angles, dead, down, dc, hide, breakbarActive, masterID, hitboxWidth) {
-        super(id, pos, angles, start, end, imgSrc, pixelSize, dead, down, dc, hide, breakbarActive, hitboxWidth);
-        this.masterID = typeof masterID === "undefined" ? -1 : masterID;
+    constructor(params, pixelSize) {
+        super(params, pixelSize);
+        this.masterID = typeof params.masterID !== "undefined" && params.masterID >= 0 ? params.masterID : -1;
         this.master = null;
     }
 
@@ -279,5 +287,119 @@ class NonSquadIconDrawable extends IconDrawable {
             return (this.master.isSelected() || this.isSelected()) && animator.displaySettings.displaySelectedMinions;
         }
         return true;
+    }
+}
+
+class NPCIconDrawable extends NonSquadIconDrawable {
+    constructor(params, pixelSize) {
+        super(params, pixelSize);
+    }
+}
+
+let adjustedEnemyDeadIcon = null;
+let adjustedFriendlyDeadIcon = null;
+let adjustedFriendlyDownIcon = null;
+
+function adjustImageColor(image, colorAdjuster) {
+
+    const imageWidth = image.width;
+    const imageHeight = image.height;
+    const offscreen = new OffscreenCanvas(imageWidth, imageHeight);
+    const ctx = offscreen.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+    const imageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+        let color = colorAdjuster(imageData.data[i + 0], imageData.data[i + 1], imageData.data[i + 2]);
+        imageData.data[i + 0] = color.r;
+        imageData.data[i + 1] = color.g;
+        imageData.data[i + 2] = color.b;
+    }
+    ctx.putImageData(imageData, 0, 0);
+    offscreen.complete = true;
+    offscreen.naturalWidth = imageWidth;
+    offscreen.naturalHeight = imageHeight;
+    return offscreen;
+}
+
+class NonSquadPlayerDrawable extends NonSquadIconDrawable {  
+    constructor(params, pixelSize) {
+        super(params, pixelSize);
+        this.img.crossOrigin = "Anonymous";
+        this.adjustedImg = null;
+        this.colorAdjuster = null;
+    }
+
+    _getDownIcon() {
+        return null;
+    }
+
+    _getDeadIcon() {
+        return null;
+    }
+
+    getIcon() {
+        if (this.died()) {
+            return this._getDeadIcon();
+        }
+        if (this.downed()) {   
+            return this._getDownIcon();
+        }
+        if (this.disconnected()) {
+            return dcIcon;
+        }
+        if (!this.adjustedImg && this.img.complete) {
+            this.adjustedImg = adjustImageColor(this.img, this.colorAdjuster)
+        }
+        return this.adjustedImg;
+    }
+}
+
+class EnemyPlayerDrawable extends NonSquadPlayerDrawable {
+    constructor(params, pixelSize) {
+        super(params, pixelSize);
+        this.colorAdjuster = (r, g, b) => {
+            let grayScale = 0.299 * r + 0.587 * g + 0.114*b;
+            return {
+                r: grayScale,
+                g: 0.3 * grayScale,
+                b: 0.3 * grayScale
+            };
+        }
+    }
+    _getDownIcon() {
+        return downEnemyIcon;
+    }
+
+    _getDeadIcon() {
+        if (!adjustedEnemyDeadIcon && deadIcon.complete) {
+            adjustedEnemyDeadIcon = adjustImageColor(deadIcon, this.colorAdjuster);
+        }
+        return adjustedEnemyDeadIcon;
+    }
+}
+
+class FriendlyPlayerDrawable extends NonSquadPlayerDrawable {
+    constructor(params, pixelSize) {
+        super(params, pixelSize);
+        this.colorAdjuster = (r, g, b) => {
+            let grayScale = 0.299 * r + 0.587 * g + 0.114*b;
+            return {
+                r: 0.3 * grayScale,
+                g: grayScale,
+                b: 0.3 * grayScale
+            };
+        }
+    }
+    _getDownIcon() {
+        if (!adjustedFriendlyDownIcon && downAllyIcon.complete) {
+            adjustedFriendlyDownIcon = adjustImageColor(downAllyIcon, this.colorAdjuster);
+        }
+        return adjustedFriendlyDownIcon;
+    }
+    _getDeadIcon() {
+        if (!adjustedFriendlyDeadIcon && deadIcon.complete) {
+            adjustedFriendlyDeadIcon = adjustImageColor(deadIcon, this.colorAdjuster);
+        }
+        return adjustedFriendlyDeadIcon;
     }
 }

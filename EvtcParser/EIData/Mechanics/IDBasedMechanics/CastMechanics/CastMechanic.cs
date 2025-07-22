@@ -1,42 +1,38 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+
+internal abstract class CastMechanic : IDBasedMechanic<CastEvent>
 {
 
-    internal abstract class CastMechanic : IDBasedMechanic<AbstractCastEvent>
+    protected abstract long GetTime(CastEvent evt);
+
+    protected abstract bool TryGetActor(ParsedEvtcLog log, AgentItem agentItem, Dictionary<int, SingleActor> regroupedMobs, [NotNullWhen(true)] out SingleActor? actor);
+
+    public CastMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([mechanicID], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+    }
 
-        protected abstract long GetTime(AbstractCastEvent evt);
+    public CastMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
+    {
+    }
 
-        protected abstract AbstractSingleActor GetActor(ParsedEvtcLog log, AgentItem agentItem, Dictionary<int, AbstractSingleActor> regroupedMobs);
-
-        public CastMechanic(long mechanicID, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this(new long[] { mechanicID }, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
+    internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs)
+    {
+        foreach (long mechanicID in MechanicIDs)
         {
-        }
-
-        public CastMechanic(long[] mechanicIDs, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
-        {
-        }
-
-        internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, AbstractSingleActor> regroupedMobs)
-        {
-            foreach (long mechanicID in MechanicIDs)
+            foreach (CastEvent c in log.CombatData.GetAnimatedCastData(mechanicID))
             {
-                foreach (AbstractCastEvent c in log.CombatData.GetAnimatedCastData(mechanicID))
+                if (TryGetActor(log, c.Caster, regroupedMobs, out var amp) && Keep(c, log))
                 {
-                    if (Keep(c, log))
-                    {
-                        AbstractSingleActor amp = GetActor(log, c.Caster, regroupedMobs);
-                        if (amp != null)
-                        {
-                            mechanicLogs[this].Add(new MechanicEvent(GetTime(c), this, amp));
-                        }
-                    }
+                    InsertMechanic(log, mechanicLogs, GetTime(c), amp);
                 }
             }
-
         }
 
     }
+
 }

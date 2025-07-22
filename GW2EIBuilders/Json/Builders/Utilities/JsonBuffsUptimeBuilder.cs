@@ -1,80 +1,76 @@
-﻿using GW2EIBuilders;
-using GW2EIEvtcParser;
+﻿using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
-using Gw2LogParser.EvtcParserExtensions;
-using System.Collections.Generic;
-using System.Linq;
-using static Gw2LogParser.GW2EIBuilders.JsonBuffsUptime;
+using GW2EIJSON;
+using static GW2EIJSON.JsonBuffsUptime;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.JsonModels.JsonActorUtilities;
+
+/// <summary>
+/// Class representing buff on targets
+/// </summary>
+internal static class JsonBuffsUptimeBuilder
 {
-    /// <summary>
-    /// Class representing buff on targets
-    /// </summary>
-    internal static class JsonBuffsUptimeBuilder
+    private static Dictionary<string, double> ConvertKeys(IReadOnlyDictionary<SingleActor, double> toConvert)
     {
-        private static Dictionary<string, double> ConvertKeys(IReadOnlyDictionary<AbstractSingleActor, double> toConvert)
+        var res = new Dictionary<string, double>(toConvert.Count);
+        foreach (KeyValuePair<SingleActor, double> pair in toConvert)
         {
-            var res = new Dictionary<string, double>();
-            foreach (KeyValuePair<AbstractSingleActor, double> pair in toConvert)
-            {
-                res[pair.Key.Character] = pair.Value;
-            }
-            return res;
+            res[pair.Key.Character] = pair.Value;
         }
+        return res;
+    }
 
-        public static JsonBuffsUptimeData BuildJsonBuffsUptimeData(FinalActorBuffs buffs, FinalBuffsDictionary buffsDictionary)
+    public static JsonBuffsUptimeData BuildJsonBuffsUptimeData(BuffStatistics buffs, BuffByActorStatistics buffsDictionary)
+    {
+        var jsonBuffsUptimeData = new JsonBuffsUptimeData
         {
-            var jsonBuffsUptimeData = new JsonBuffsUptimeData
-            {
-                Uptime = buffs.Uptime,
-                Presence = buffs.Presence,
-                Generated = ConvertKeys(buffsDictionary.Generated),
-                Overstacked = ConvertKeys(buffsDictionary.Overstacked),
-                Wasted = ConvertKeys(buffsDictionary.Wasted),
-                UnknownExtended = ConvertKeys(buffsDictionary.UnknownExtension),
-                ByExtension = ConvertKeys(buffsDictionary.Extension),
-                Extended = ConvertKeys(buffsDictionary.Extended)
-            };
-            return jsonBuffsUptimeData;
+            Uptime = buffs.Uptime,
+            Presence = buffs.Presence,
+            Generated = ConvertKeys(buffsDictionary.GeneratedBy),
+            Overstacked = ConvertKeys(buffsDictionary.OverstackedBy),
+            Wasted = ConvertKeys(buffsDictionary.WastedFrom),
+            UnknownExtended = ConvertKeys(buffsDictionary.UnknownExtensionFrom),
+            ByExtension = ConvertKeys(buffsDictionary.ExtensionBy),
+            Extended = ConvertKeys(buffsDictionary.ExtendedFrom)
+        };
+        return jsonBuffsUptimeData;
+    }
+
+
+    public static JsonBuffsUptime BuildJsonBuffsUptime(SingleActor actor, long buffID, ParsedEvtcLog log, RawFormatSettings settings, List<JsonBuffsUptimeData> buffData, Dictionary<long, Buff> buffMap)
+    {
+        var jsonBuffsUptime = new JsonBuffsUptime
+        {
+            Id = buffID,
+            BuffData = buffData
+        };
+        if (!buffMap.ContainsKey(buffID))
+        {
+            buffMap[buffID] = log.Buffs.BuffsByIds[buffID];
         }
-
-
-        public static JsonBuffsUptime BuildJsonBuffsUptime(AbstractSingleActor actor, long buffID, ParsedEvtcLog log, RawFormatSettings settings, List<JsonBuffsUptimeData> buffData, Dictionary<string, JsonLog.BuffDesc> buffDesc)
+        if (settings.RawFormatTimelineArrays)
         {
-            var jsonBuffsUptime = new JsonBuffsUptime
+            jsonBuffsUptime.States = GetBuffStates(actor.GetBuffGraphs(log)[buffID]).ToList();
+            IReadOnlyDictionary<long, BuffByActorStatistics> buffDicts = actor.GetBuffsDictionary(log, log.FightData.FightStart, log.FightData.FightEnd);
+            if (buffDicts.TryGetValue(buffID, out var buffDict))
             {
-                Id = buffID,
-                BuffData = buffData
-            };
-            if (!buffDesc.ContainsKey("b" + buffID))
-            {
-                buffDesc["b" + buffID] = JsonLogBuilder.BuildBuffDesc(log.Buffs.BuffsByIds[buffID], log);
-            }
-            if (settings.RawFormatTimelineArrays)
-            {
-                jsonBuffsUptime.States = GetBuffStates(actor.GetBuffGraphs(log)[buffID]);
-                IReadOnlyDictionary<long, FinalBuffsDictionary> buffDicts = actor.GetBuffsDictionary(log, log.FightData.FightStart, log.FightData.FightEnd);
-                if (buffDicts.TryGetValue(buffID, out FinalBuffsDictionary buffDict))
+                var statesPerSource = new Dictionary<string, IReadOnlyList<IReadOnlyList<long>>>(buffDict.GeneratedBy.Count);
+                foreach (SingleActor source in buffDict.GeneratedBy.Keys)
                 {
-                    var statesPerSource = new Dictionary<string, IReadOnlyList<IReadOnlyList<int>>>();
-                    foreach (AbstractSingleActor source in buffDict.Generated.Keys)
-                    {
-                        statesPerSource[source.Character] = GetBuffStates(actor.GetBuffGraphs(log, source)[buffID]);
-                    }
-                    jsonBuffsUptime.StatesPerSource = statesPerSource;
+                    statesPerSource[source.Character] = GetBuffStates(actor.GetBuffGraphs(log, source)[buffID]).ToList();
                 }
+                jsonBuffsUptime.StatesPerSource = statesPerSource;
             }
-            return jsonBuffsUptime;
         }
-        public static List<int[]> GetBuffStates(BuffsGraphModel bgm)
+        return jsonBuffsUptime;
+    }
+    public static IEnumerable<IReadOnlyList<long>> GetBuffStates(BuffGraph? bgm)
+    {
+        if (bgm == null || bgm.Values.Count == 0)
         {
-            if (bgm == null || bgm.BuffChart.Count == 0)
-            {
-                return null;
-            }
-            var res = bgm.BuffChart.Select(x => new int[2] { (int)x.Start, (int)x.Value }).ToList();
-            return res.Count > 0 ? res : null;
+            return [];
         }
+
+        return bgm.Values.Select(x => new List<long>() { x.Start, (int)x.Value });
     }
 }

@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.7.0.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.24.2.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.1/dist/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.min.js"></script>
     <!--${CompressionRequire}-->
@@ -34,15 +34,24 @@
         initTheme();
     </script>
     <script>
-        var _logData = '${logDataJson}';
-        var logData = _logData;
+        const _logData = '${logDataJson}';
+        const _crData = '${CRDataJson}';
+        const _graphData = '${graphDataJson}';
+        const _healingStatsExtension = '${healingDataJson}';
+        const _barrierStatsExtension = '${barrierDataJson}';
+
+        let logData = _logData;
+        let crData = _crData;
+        let graphData = _graphData;
+        let healingStatsExtension = _healingStatsExtension;
+        let barrierStatsExtension = _barrierStatsExtension;
         if (window.pako) {
-            logData = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(logData))))
+            logData = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(_logData))));
+            crData = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(_crData))));
+            graphData = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(_graphData))));
+            healingStatsExtension = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(_healingStatsExtension))));
+            barrierStatsExtension = JSON.parse(new TextDecoder("utf-8").decode(pako.inflate(base64DecToArr(_barrierStatsExtension))));
         }
-        var graphData = logData.graphData;
-        var healingStatsExtension = logData.healingStatsExtension;
-        var barrierStatsExtension = logData.barrierStatsExtension;
-        var crData = logData.crData;
     </script>
     <!--${Js}-->
     <!--${CombatReplayJS}-->
@@ -63,9 +72,9 @@
     <div v-cloak id="content" :class="{'ei-container-small':mode !== 1, 'ei-container-big':mode === 1}">
         <div class="d-flex flex-row justify-content-center align-items-center mt-2 ">
             <div v-if="!!errorMessages" class="d-flex flex-column justify-content-center align-items-center">
-                <img v-for="message in errorMessages" class="mb-1 icon" src="https://i.imgur.com/k3tdKEQ.png" :data-original-title="message" />
+                <img v-for="message in errorMessages" class="mb-1 icon" :src="UIIcons.ExclamationMark" :data-original-title="message" />
             </div>
-            <encounter-component></encounter-component>
+            <encounter-component :light="light"></encounter-component>
             <div class="d-flex flex-column justify-content-center align-items-center ml-5">
                 <div class="d-flex flex-row justify-content-center align-items-center mt-2 mb-2">
                     <ul class="nav nav-pills" style="pointer-events:auto;">
@@ -107,7 +116,8 @@
             </div>
         </div>
         <div class="footer">
-            <div>Time Start: {{getLogData().encounterStart}} | Time End: {{getLogData().encounterEnd}}</div>
+            <div>Time Start: {{getLogData().encounterStart}} | Time End: {{getLogData().encounterEnd}} | EVTC Duration: {{ getLogData().evtcRecordingDuration}}</div>      
+            <div v-if="getLogData().instanceStart">Instance Start: {{getLogData().instanceStart}} {{ getLogData().instanceIP ? ' | Instance IP: ' + getLogData().instanceIP : '' }}</div>
             <div>ARC: {{getLogData().arcVersion}} | GW2 Build: {{getLogData().gw2Build}} | Trigger ID: {{getLogData().triggerID}} | Encounter ID: {{getLogData().encounterID}} | {{getLogData().parser}}</div>
             <div v-if="uploadLinks">
                 <p v-for="link in uploadLinks" v-if="link.url.length > 0">{{link.key}}: <a :href="link.url">{{link.url}}</a> </p>

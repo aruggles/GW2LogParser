@@ -1,286 +1,313 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.EncounterLogic.EncounterCategory;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
+using static GW2EIEvtcParser.ParserHelpers.EncounterImages;
+using static GW2EIEvtcParser.SpeciesIDs;
 
-namespace GW2EIEvtcParser.EncounterLogic
+namespace GW2EIEvtcParser.EncounterLogic;
+
+internal class Instance : FightLogic
 {
-    internal class Instance : FightLogic
+    public bool StartedLate { get; private set; }
+    public bool EndedBeforeExpectedEnd { get; private set; }
+    private readonly List<TargetID> _targetIDs = [];
+    private readonly List<TargetID> _trashIDs = [];
+    public Instance(int id) : base(id)
     {
-        public bool StartedLate { get; private set; }
-        public bool EndedBeforeExpectedEnd { get; private set; }
-        private readonly List<FightLogic> _subLogics = new List<FightLogic>();
-        private readonly List<int> _targetIDs = new List<int>();
-        public Instance(int id) : base(id)
-        {
-            Extension = "instance";
-            ParseMode = ParseModeEnum.FullInstance;
-            SkillMode = SkillModeEnum.PvE;
-            Icon = InstanceIconGeneric;
-            EncounterCategoryInformation.Category = FightCategory.UnknownEncounter;
-            EncounterCategoryInformation.SubCategory = SubFightCategory.UnknownEncounter;
-        }
+        Extension = "instance";
+        ParseMode = ParseModeEnum.FullInstance;
+        SkillMode = SkillModeEnum.PvE;
+        Icon = InstanceIconGeneric;
+        EncounterCategoryInformation.Category = FightCategory.UnknownEncounter;
+        EncounterCategoryInformation.SubCategory = SubFightCategory.UnknownEncounter;
+    }
 
-        private void FillSubLogics(AgentData agentData)
+    private void FindGenericTargetIDs(AgentData agentData, IReadOnlyList<CombatItem> combatData)
+    {
+        var allTargetIDs = Enum.GetValues(typeof(TargetID));
+        var maxHPUpdates = combatData.Where(x => x.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate && agentData.GetAgent(x.SrcAgent, x.Time).Type == AgentItem.AgentType.NPC && MaxHealthUpdateEvent.GetMaxHealth(x) > 0).GroupBy(x => agentData.GetAgent(x.SrcAgent, x.Time).ID).ToDictionary(x => x.Key, x => x.ToList());
+        var blackList = new HashSet<TargetID>()
         {
-            var allTargetIDs = Enum.GetValues(typeof(ArcDPSEnums.TargetID)).Cast<int>().ToList();
-            var blackList = new HashSet<int>()
+            TargetID.Environment,
+            TargetID.Artsariiv,
+            TargetID.Deimos,
+            TargetID.ConjuredAmalgamate,
+            TargetID.CALeftArm_CHINA,
+            TargetID.CARightArm_CHINA,
+            TargetID.ConjuredAmalgamate_CHINA,
+        };
+        foreach (TargetID targetID in allTargetIDs)
+        {
+            //TODO(Rennorb) @perf: invert this iteration?  make the agentData the outer loop and then just test the enum for isDefined?
+            if (agentData.GetNPCsByID(targetID).Any())
             {
-                (int) ArcDPSEnums.TargetID.Artsariiv,
-                (int) ArcDPSEnums.TargetID.Deimos,
-                (int) ArcDPSEnums.TargetID.ConjuredAmalgamate,
-                (int) ArcDPSEnums.TargetID.CALeftArm_CHINA,
-                (int) ArcDPSEnums.TargetID.CARightArm_CHINA,
-                (int) ArcDPSEnums.TargetID.ConjuredAmalgamate_CHINA,
-            };
-            foreach (int targetID in allTargetIDs)
-            {
-                if (agentData.GetNPCsByID(targetID).Any())
+                if (blackList.Contains(targetID) || !maxHPUpdates.TryGetValue((int)targetID, out var maxHPs) || !maxHPs.Any(x => MaxHealthUpdateEvent.GetMaxHealth(x) > 5e5))
                 {
-                    if (blackList.Contains(targetID))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
+                if (maxHPs.Any(x => MaxHealthUpdateEvent.GetMaxHealth(x) > 1e6))
+                {
                     _targetIDs.Add(targetID);
-                    /*switch (targetID)
-                    {
-                        case (int)ArcDPSEnums.TargetID.AiKeeperOfThePeak:
-                            //_subLogics.Add(new AiKeeperOfThePeak(targetID));
-                            break;
-                        default:
-                            break;
-                    }*/
+                }
+                else
+                {
+                    _trashIDs.Add(targetID);
                 }
             }
         }
+    }
 
-        internal override long GetFightOffset(int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+    internal override FightLogic AdjustLogic(AgentData agentData, List<CombatItem> combatData, EvtcParserSettings parserSettings)
+    {
+        CombatItem? mapIDEvent = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.MapID);
+        // Handle potentially wrongly associated logs
+        if (mapIDEvent != null)
         {
-            return GetGenericFightOffset(fightData);
-        }
-
-        internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
-        {
-            if (!_targetIDs.Any())
+            switch (MapIDEvent.GetMapID(mapIDEvent))
             {
-                return base.GetPhases(log, requirePhases);
+                // EB
+                case 38:
+                // Green Alpine
+                case 95:
+                // Blue Alpine
+                case 96:
+                // Red Desert
+                case 1099:
+                // EoM
+                case 968:
+                // Bastion
+                case 1315:
+                    return new WvWFight(GenericTriggerID, parserSettings.DetailedWvWParse, true);
             }
-            List<PhaseData> phases = GetInitialPhase(log);
-            phases[0].AddTargets(Targets);
-            int phaseCount = 0;
-            foreach (NPC target in Targets)
+        }
+        return base.AdjustLogic(agentData, combatData, parserSettings);
+    }
+
+    internal override long GetFightOffset(EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+    {
+        return GetGenericFightOffset(fightData);
+    }
+
+    internal override void UpdatePlayersSpecAndGroup(IReadOnlyList<Player> players, CombatData combatData, FightData fightData)
+    {
+        // Nothing to do
+    }
+
+    internal static void AddPhasesPerTarget(ParsedEvtcLog log, List<PhaseData> phases, IEnumerable<SingleActor> targets)
+    {
+        phases[0].AddTargets(targets, log);
+        foreach (SingleActor target in targets)
+        {
+            var phase = new PhaseData(Math.Max(log.FightData.FightStart, target.FirstAware), Math.Min(target.LastAware, log.FightData.FightEnd), target.Character);
+            phase.AddTarget(target, log);
+            phase.AddParentPhase(phases[0]);
+            phases.Add(phase);
+        }
+    }
+
+    internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
+    {
+        List<PhaseData> phases;
+        if (_targetIDs.Count == 0)
+        {
+            phases = base.GetPhases(log, requirePhases);
+            if (log.CombatData.GetEvtcVersionEvent().Build >= ArcDPSBuilds.LogStartLogEndPerCombatSequenceOnInstanceLogs)
             {
-                var phase = new PhaseData(Math.Max(log.FightData.FightStart, target.FirstAware), Math.Min(target.LastAware, log.FightData.FightEnd), "Phase " + (++phaseCount));
-                phase.AddTarget(target);
-                phases.Add(phase);
+                var fightPhases = GetPhasesBySquadCombatStartEnd(log);
+                fightPhases.ForEach(x =>
+                {
+                    x.AddTargets(phases[0].Targets.Keys, log);
+                    x.AddParentPhase(phases[0]);
+                });
+                phases.AddRange(fightPhases);
             }
             return phases;
         }
+        phases = GetInitialPhase(log);
+        AddPhasesPerTarget(log, phases, Targets.Where(x => x.GetHealth(log.CombatData) > 3e6 && x.LastAware - x.FirstAware > ParserHelper.MinimumInCombatDuration));
+        return phases;
+    }
 
-        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+    internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
+    {
+        FindGenericTargetIDs(agentData, combatData);
+        Targetless = _targetIDs.Count == 0;
+        if (Targetless)
         {
-            FillSubLogics(agentData);
-            foreach (FightLogic logic in _subLogics)
-            {
-                logic.EIEvtcParse(gw2Build, evtcVersion, fightData, agentData, combatData, extensions);
-                _targets.AddRange(logic.Targets);
-                _trashMobs.AddRange(logic.TrashMobs);
-                _nonPlayerFriendlies.AddRange(logic.NonPlayerFriendlies);
-            }
-            _targets.RemoveAll(x => x.IsSpecies(ArcDPSEnums.TargetID.DummyTarget));
-            AgentItem dummyAgent = agentData.AddCustomNPCAgent(fightData.FightStart, fightData.FightEnd, "Dummy Instance Target", ParserHelper.Spec.NPC, ArcDPSEnums.TargetID.Instance, true);
-            ComputeFightTargets(agentData, combatData, extensions);
-            _targets.RemoveAll(x => x.LastAware - x.FirstAware < ParserHelper.MinimumInCombatDuration);
-            TargetAgents = new HashSet<AgentItem>(_targets.Select(x => x.AgentItem));
+            agentData.AddCustomNPCAgent(fightData.FightStart, fightData.FightEnd, "Dummy Instance Target", ParserHelper.Spec.NPC, TargetID.Instance, true);
         }
+        base.EIEvtcParse(gw2Build, evtcVersion, fightData, agentData, combatData, extensions);
+        // Generic name override
+        if (!Targetless)
+        {
+            EncounterLogicUtils.NumericallyRenameSpecies(Targets);
+        }
+    }
 
-        internal override void CheckSuccess(CombatData combatData, AgentData agentData, FightData fightData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, FightData fightData, IReadOnlyCollection<AgentItem> playerAgents)
+    {
+        fightData.SetSuccess(true, fightData.FightEnd);
+    }
+
+    internal static FightData.EncounterStartStatus GetInstanceStartStatus(CombatData combatData, long threshold = 10000)
+    {
+        InstanceStartEvent? evt = combatData.GetInstanceStartEvent();
+        if (evt == null)
         {
-            fightData.SetSuccess(true, fightData.FightEnd);
-            InstanceStartEvent evt = combatData.GetInstanceStartEvent();
-            if (evt == null)
-            {
-                StartedLate = true;
-            }
-            else
-            {
-                StartedLate = Math.Abs(evt.OffsetFromInstanceCreation - fightData.LogOffset) < 20000;
-            }
+            return FightData.EncounterStartStatus.Normal;
         }
-        internal override string GetLogicName(CombatData combatData, AgentData agentData)
+        else
         {
-            MapIDEvent mapID = combatData.GetMapIDEvents().LastOrDefault();
-            if (mapID == null)
-            {
-                return base.GetLogicName(combatData, agentData);
-            }
-            switch(mapID.MapID)
-            {
-                // Raids
-                case 1062:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.SpiritVale;
-                    Icon = InstanceIconSpiritVale;
-                    Extension = "sprtvale";
-                    return "Spirit Vale";
-                case 1149:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.SalvationPass;
-                    Icon = InstanceIconSalvationPass;
-                    Extension = "salvpass";
-                    return "Salvation Pass";
-                case 1156:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.StrongholdOfTheFaithful;
-                    Icon = InstanceIconStrongholdOfTheFaithful;
-                    Extension = "strgldfaith";
-                    return "Stronghold Of The Faithful";
-                case 1188:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.BastionOfThePenitent;
-                    Icon = InstanceIconBastionOfThePenitent;
-                    Extension = "bstpen";
-                    return "Bastion Of The Penitent";
-                case 1264:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.HallOfChains;
-                    Icon = InstanceIconHallOfChains;
-                    Extension = "hallchains";
-                    return "Hall Of Chains";
-                case 1303:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.MythwrightGambit;
-                    Icon = InstanceIconMythwrightGambit;
-                    Extension = "mythgamb";
-                    return "Mythwright Gambit";
-                case 1323:
-                    EncounterCategoryInformation.Category = FightCategory.Raid;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.TheKeyOfAhdashim;
-                    Icon = InstanceIconTheKeyOfAhdashim;
-                    Extension = "keyadash";
-                    return "The Key Of Ahdashim";
-                // Fractals
-                case 960:
-                    EncounterCategoryInformation.Category = FightCategory.Fractal;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.CaptainMaiTrinBossFractal;
-                    Icon = InstanceIconCaptainMaiTrin;
-                    Extension = "captnmai";
-                    return "Captain Mai Trin Boss Fractal";
-                case 1177:
-                    EncounterCategoryInformation.Category = FightCategory.Fractal;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.Nightmare;
-                    Icon = InstanceIconNightmare;
-                    Extension = "nightmare";
-                    return "Nightmare";
-                case 1205:
-                    EncounterCategoryInformation.Category = FightCategory.Fractal;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.ShatteredObservatory;
-                    Icon = InstanceIconShatteredObservatory;
-                    Extension = "shatrdobs";
-                    return "Shattered Observatory";
-                case 1290:
-                    EncounterCategoryInformation.Category = FightCategory.Fractal;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.Deepstone;
-                    Icon = InstanceIconDeepstone;
-                    Extension = "deepstone";
-                    return "Deepstone";
-                case 1384:
-                    EncounterCategoryInformation.Category = FightCategory.Fractal;
-                    EncounterCategoryInformation.SubCategory = SubFightCategory.SunquaPeak;
-                    Icon = InstanceIconSunquaPeak;
-                    Extension = "snqpeak";
-                    return "Sunqua Peak";
-            }
+            return evt.TimeOffsetFromInstanceCreation > threshold ? FightData.EncounterStartStatus.Late : FightData.EncounterStartStatus.Normal;
+        }
+    }
+
+    internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+    {
+        return GetInstanceStartStatus(combatData);
+    }
+
+    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    {
+        MapIDEvent? mapID = combatData.GetMapIDEvents().LastOrDefault();
+        if (mapID == null)
+        {
             return base.GetLogicName(combatData, agentData);
         }
-        internal override List<InstantCastFinder> GetInstantCastFinders()
+        switch (mapID.MapID)
         {
-            var res = new List<InstantCastFinder>();
-            foreach (FightLogic logic in _subLogics)
-            {
-                res.AddRange(logic.GetInstantCastFinders());
-            }
-            return res;
+            // Raids
+            case 1062:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.SpiritVale;
+                Icon = InstanceIconSpiritVale;
+                Extension = "sprtvale";
+                return "Spirit Vale";
+            case 1149:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.SalvationPass;
+                Icon = InstanceIconSalvationPass;
+                Extension = "salvpass";
+                return "Salvation Pass";
+            case 1156:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.StrongholdOfTheFaithful;
+                Icon = InstanceIconStrongholdOfTheFaithful;
+                Extension = "strgldfaith";
+                return "Stronghold Of The Faithful";
+            case 1188:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.BastionOfThePenitent;
+                Icon = InstanceIconBastionOfThePenitent;
+                Extension = "bstpen";
+                return "Bastion Of The Penitent";
+            case 1264:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.HallOfChains;
+                Icon = InstanceIconHallOfChains;
+                Extension = "hallchains";
+                return "Hall Of Chains";
+            case 1303:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.MythwrightGambit;
+                Icon = InstanceIconMythwrightGambit;
+                Extension = "mythgamb";
+                return "Mythwright Gambit";
+            case 1323:
+                EncounterCategoryInformation.Category = FightCategory.Raid;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.TheKeyOfAhdashim;
+                Icon = InstanceIconTheKeyOfAhdashim;
+                Extension = "keyadash";
+                return "The Key Of Ahdashim";
+            // Fractals
+            case 960:
+                EncounterCategoryInformation.Category = FightCategory.Fractal;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.CaptainMaiTrinBossFractal;
+                Icon = InstanceIconCaptainMaiTrin;
+                Extension = "captnmai";
+                return "Captain Mai Trin Boss Fractal";
+            case 1177:
+                EncounterCategoryInformation.Category = FightCategory.Fractal;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.Nightmare;
+                Icon = InstanceIconNightmare;
+                Extension = "nightmare";
+                return "Nightmare";
+            case 1205:
+                EncounterCategoryInformation.Category = FightCategory.Fractal;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.ShatteredObservatory;
+                Icon = InstanceIconShatteredObservatory;
+                Extension = "shatrdobs";
+                return "Shattered Observatory";
+            case 1290:
+                EncounterCategoryInformation.Category = FightCategory.Fractal;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.Deepstone;
+                Icon = InstanceIconDeepstone;
+                Extension = "deepstone";
+                return "Deepstone";
+            case 1384:
+                EncounterCategoryInformation.Category = FightCategory.Fractal;
+                EncounterCategoryInformation.SubCategory = SubFightCategory.SunquaPeak;
+                Icon = InstanceIconSunquaPeak;
+                Extension = "snqpeak";
+                return "Sunqua Peak";
         }
-        internal override List<ErrorEvent> GetCustomWarningMessages(FightData fightData, int arcdpsVersion)
-        {
-            var res = new List<ErrorEvent>();
-            foreach (FightLogic logic in _subLogics)
-            {
-                res.AddRange(logic.GetCustomWarningMessages(fightData, arcdpsVersion));
-            }
-            return res;
-        }
-        internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
-        {
-            foreach (FightLogic logic in _subLogics)
-            {
-                logic.ComputePlayerCombatReplayActors(p, log, replay);
-            }
-        }
-        internal override List<AbstractBuffEvent> SpecialBuffEventProcess(CombatData combatData, SkillData skillData)
-        {
-            var res = new List<AbstractBuffEvent>();
-            foreach (FightLogic logic in _subLogics)
-            {
-                res.AddRange(logic.SpecialBuffEventProcess(combatData, skillData));
-            }
-            return res;
-        }
-        internal override List<AbstractCastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
-        {
-            var res = new List<AbstractCastEvent>();
-            foreach (FightLogic logic in _subLogics)
-            {
-                res.AddRange(logic.SpecialCastEventProcess(combatData, skillData));
-            }
-            return res;
-        }
-        internal override List<AbstractHealthDamageEvent> SpecialDamageEventProcess(CombatData combatData, SkillData skillData)
-        {
-            var res = new List<AbstractHealthDamageEvent>();
-            foreach (FightLogic logic in _subLogics)
-            {
-                res.AddRange(logic.SpecialDamageEventProcess(combatData, skillData));
-            }
-            return res;
-        }
-        internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
-        {
-            foreach (FightLogic logic in _subLogics)
-            {
-                logic.ComputeNPCCombatReplayActors(target, log, replay);
-            }
-        }
-        protected override List<int> GetTargetsIDs()
-        {
-            if (_targetIDs.Any())
-            {
-                return _targetIDs;
-            }
-            return new List<int>()
-            {
-                GenericTriggerID
-            };
-        }
-        protected override List<ArcDPSEnums.TrashID> GetTrashMobsIDs()
-        {
-            return new List<ArcDPSEnums.TrashID>();
-        }
-        protected override HashSet<int> GetUniqueNPCIDs()
-        {
-            return new HashSet<int>();
-        }
-        protected override List<int> GetFriendlyNPCIDs()
-        {
-            return new List<int>();
-        }
+        return base.GetLogicName(combatData, agentData);
+    }
+    internal override List<InstantCastFinder> GetInstantCastFinders()
+    {
+        return [];
+    }
+    internal override IEnumerable<ErrorEvent> GetCustomWarningMessages(FightData fightData, EvtcVersionEvent evtcVersion)
+    {
+        return base.GetCustomWarningMessages(fightData, evtcVersion);
+    }
+    internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
+    {
+    }
+    internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
+    {
+    }
+    internal override List<BuffEvent> SpecialBuffEventProcess(CombatData combatData, SkillData skillData)
+    {
+        return [];
+    }
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    {
+        return [];
+    }
+    internal override List<HealthDamageEvent> SpecialDamageEventProcess(CombatData combatData, SkillData skillData)
+    {
+        return [];
+    }
+    protected override IReadOnlyList<TargetID> GetTargetsIDs()
+    {
+        return _targetIDs.Count > 0 ? _targetIDs : [TargetID.Instance];
+    }
+    protected override IReadOnlyList<TargetID> GetTrashMobsIDs()
+    {
+        return _trashIDs;
+    }
+    protected override IReadOnlyList<TargetID> GetUniqueNPCIDs()
+    {
+        return [];
+    }
+    protected override IReadOnlyList<TargetID> GetFriendlyNPCIDs()
+    {
+        return [];
+    }
+
+    protected override Dictionary<TargetID, int> GetTargetsSortIDs()
+    {
+        return [];
+    }
+
+    internal override List<PhaseData> GetBreakbarPhases(ParsedEvtcLog log, bool requirePhases)
+    {
+        return [];
     }
 }

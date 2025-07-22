@@ -1,61 +1,54 @@
-﻿using System;
+﻿using GW2EIEvtcParser.ParsedData;
 using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+using System.Diagnostics.CodeAnalysis;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+
+internal abstract class SkillMechanic : IDBasedMechanic<HealthDamageEvent>
 {
 
-    internal abstract class SkillMechanic : IDBasedMechanic<AbstractHealthDamageEvent>
+    protected bool Minions { get; private set; } = false;
+
+    public SkillMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+    }
 
-        protected bool Minions { get; private set; } = false;
+    public SkillMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
+    {
+    }
 
-        public SkillMechanic(long mechanicID, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
+    public SkillMechanic WithMinions()
+    {
+        Minions = true;
+        return this;
+    }
+
+    protected abstract AgentItem GetAgentItem(HealthDamageEvent ahde);
+
+    protected AgentItem GetCreditedAgentItem(HealthDamageEvent ahde)
+    {
+        AgentItem agentItem = GetAgentItem(ahde);
+        if (Minions)
         {
+            agentItem = agentItem.GetFinalMaster();
         }
+        return agentItem!;
+    }
+    protected abstract bool TryGetActor(ParsedEvtcLog log, AgentItem agentItem, Dictionary<int, SingleActor> regroupedMobs, [NotNullWhen(true)] out SingleActor? actor);
 
-        public SkillMechanic(long[] mechanicIDs, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
+    internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs)
+    {
+        foreach (long skillID in MechanicIDs)
         {
-        }
-
-        public SkillMechanic WithMinions(bool withMinions)
-        {
-            Minions = withMinions;
-            return this;
-        }
-
-        protected abstract AgentItem GetAgentItem(AbstractHealthDamageEvent ahde);
-
-        protected AgentItem GetCreditedAgentItem(AbstractHealthDamageEvent ahde)
-        {
-            AgentItem agentItem = GetAgentItem(ahde);
-            if (Minions && agentItem != null)
+            foreach (HealthDamageEvent ahde in log.CombatData.GetDamageData(skillID))
             {
-                agentItem = agentItem.GetFinalMaster();
-            }
-            return agentItem;
-        }
-
-        protected abstract AbstractSingleActor GetActor(ParsedEvtcLog log, AgentItem agentItem, Dictionary<int, AbstractSingleActor> regroupedMobs);
-
-        internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, AbstractSingleActor> regroupedMobs)
-        {
-            foreach (long skillID in MechanicIDs)
-            {
-                foreach (AbstractHealthDamageEvent ahde in log.CombatData.GetDamageData(skillID))
+                if (TryGetActor(log, GetCreditedAgentItem(ahde), regroupedMobs, out var amp) && Keep(ahde, log))
                 {
-                    AbstractSingleActor amp = null;
-                    if (Keep(ahde, log))
-                    {
-                        amp = GetActor(log, GetCreditedAgentItem(ahde), regroupedMobs);
-                    }
-                    if (amp != null)
-                    {
-                        mechanicLogs[this].Add(new MechanicEvent(ahde.Time, this, amp));
-                    }
+                    InsertMechanic(log, mechanicLogs, ahde.Time, amp);
                 }
             }
         }
-
     }
+
 }

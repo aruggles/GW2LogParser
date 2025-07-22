@@ -1,42 +1,37 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+
+internal abstract class PlayerBuffRemoveSingleMechanic : PlayerBuffRemoveMechanic<AbstractBuffRemoveEvent>
 {
-
-    internal abstract class PlayerBuffRemoveSingleMechanic : PlayerBuffRemoveMechanic<AbstractBuffRemoveEvent>
+    public PlayerBuffRemoveSingleMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName) : base(mechanicID, plotlySetting, shortName, description, fullName, 0)
     {
-        public PlayerBuffRemoveSingleMechanic(long mechanicID, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName) : base(mechanicID, inGameName, plotlySetting, shortName, description, fullName, 0)
-        {
-        }
+    }
 
-        public PlayerBuffRemoveSingleMechanic(long[] mechanicIDs, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName) : base(mechanicIDs, inGameName, plotlySetting, shortName, description, fullName, 0)
-        {
-        }
+    public PlayerBuffRemoveSingleMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName) : base(mechanicIDs, plotlySetting, shortName, description, fullName, 0)
+    {
+    }
 
-        internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, AbstractSingleActor> regroupedMobs)
+    internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs)
+    {
+        foreach (long mechanicID in MechanicIDs)
         {
-            foreach (long mechanicID in MechanicIDs)
+            foreach (BuffEvent c in log.CombatData.GetBuffData(mechanicID))
             {
-                foreach (AbstractBuffEvent c in log.CombatData.GetBuffData(mechanicID))
+                if (c is AbstractBuffRemoveEvent abre && TryGetActor(log, GetAgentItem(abre), regroupedMobs, out var amp) && Keep(abre, log))
                 {
-                    if (c is AbstractBuffRemoveEvent abre && Keep(abre, log))
+                    if (abre is BuffRemoveAllEvent brae)
                     {
-                        AbstractSingleActor amp = GetActor(log, GetAgentItem(abre), regroupedMobs);
-                        if (amp != null)
+                        for (int i = 0; i < brae.RemovedStacks; i++)
                         {
-                            if (abre is BuffRemoveAllEvent brae)
-                            {
-                                for (int i = 0; i < brae.RemovedStacks; i++)
-                                {
-                                    AddMechanic(log, mechanicLogs, brae, amp);
-                                }
-                            }
-                            else if (abre is BuffRemoveSingleEvent brse)
-                            {
-                                AddMechanic(log, mechanicLogs, brse, amp);
-                            }
+                            AddMechanic(log, mechanicLogs, brae, amp);
                         }
+                    }
+                    else if (abre is BuffRemoveSingleEvent brse)
+                    {
+                        AddMechanic(log, mechanicLogs, brse, amp);
                     }
                 }
             }

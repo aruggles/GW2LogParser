@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using GW2EIEvtcParser.ParsedData;
+﻿using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData.BuffSourceFinders
+namespace GW2EIEvtcParser.EIData.BuffSourceFinders;
+
+internal class BuffSourceFinder20221018 : BuffSourceFinder20210921
 {
-    internal class BuffSourceFinder20221018 : BuffSourceFinder20210921
+    public BuffSourceFinder20221018(HashSet<long> boonIds) : base(boonIds)
     {
-        public BuffSourceFinder20221018(HashSet<long> boonIds) : base(boonIds)
-        {
-            ImperialImpactExtension = 1000;
-        }
-
+        ImperialImpactExtension = 1000;
     }
+
 }

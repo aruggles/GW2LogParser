@@ -28,143 +28,155 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.dataGridView = new System.Windows.Forms.DataGridView();
-            this.locationDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.statusDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.buttonTextDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.gridBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.btnParse = new System.Windows.Forms.Button();
-            this.btnCancel = new System.Windows.Forms.Button();
-            this.btnClear = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
-            this.btnRefreshAPI = new System.Windows.Forms.Button();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridBindingSource)).BeginInit();
-            this.SuspendLayout();
+            components = new System.ComponentModel.Container();
+            dataGridView = new DataGridView();
+            gridBindingSource = new BindingSource(components);
+            btnParse = new Button();
+            btnCancel = new Button();
+            btnClear = new Button();
+            label1 = new Label();
+            btnRefreshAPI = new Button();
+            InputFile = new DataGridViewTextBoxColumn();
+            statusDataGridViewTextBoxColumn = new DataGridViewTextBoxColumn();
+            ButtonText = new DataGridViewTextBoxColumn();
+            ((System.ComponentModel.ISupportInitialize)dataGridView).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridBindingSource).BeginInit();
+            SuspendLayout();
             // 
             // dataGridView
             // 
-            this.dataGridView.AllowDrop = true;
-            this.dataGridView.AllowUserToAddRows = false;
-            this.dataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.dataGridView.AutoGenerateColumns = false;
-            this.dataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
-            this.dataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.locationDataGridViewTextBoxColumn,
-            this.statusDataGridViewTextBoxColumn,
-            this.buttonTextDataGridViewTextBoxColumn});
-            this.dataGridView.DataSource = this.gridBindingSource;
-            this.dataGridView.Location = new System.Drawing.Point(12, 64);
-            this.dataGridView.MultiSelect = false;
-            this.dataGridView.Name = "dataGridView";
-            this.dataGridView.ReadOnly = true;
-            this.dataGridView.Size = new System.Drawing.Size(776, 302);
-            this.dataGridView.TabIndex = 0;
-            this.dataGridView.DragDrop += new System.Windows.Forms.DragEventHandler(this.dataGridView_DragDrop);
-            this.dataGridView.DragEnter += new System.Windows.Forms.DragEventHandler(this.dataGridView_DragEnter);
-            // 
-            // locationDataGridViewTextBoxColumn
-            // 
-            this.locationDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.locationDataGridViewTextBoxColumn.DataPropertyName = "Location";
-            this.locationDataGridViewTextBoxColumn.HeaderText = "Location";
-            this.locationDataGridViewTextBoxColumn.Name = "locationDataGridViewTextBoxColumn";
-            this.locationDataGridViewTextBoxColumn.ReadOnly = true;
-            // 
-            // statusDataGridViewTextBoxColumn
-            // 
-            this.statusDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.statusDataGridViewTextBoxColumn.DataPropertyName = "Status";
-            this.statusDataGridViewTextBoxColumn.HeaderText = "Status";
-            this.statusDataGridViewTextBoxColumn.Name = "statusDataGridViewTextBoxColumn";
-            this.statusDataGridViewTextBoxColumn.ReadOnly = true;
-            // 
-            // buttonTextDataGridViewTextBoxColumn
-            // 
-            this.buttonTextDataGridViewTextBoxColumn.DataPropertyName = "ButtonText";
-            this.buttonTextDataGridViewTextBoxColumn.HeaderText = "";
-            this.buttonTextDataGridViewTextBoxColumn.Name = "buttonTextDataGridViewTextBoxColumn";
-            this.buttonTextDataGridViewTextBoxColumn.ReadOnly = true;
+            dataGridView.AllowDrop = true;
+            dataGridView.AllowUserToAddRows = false;
+            dataGridView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dataGridView.AutoGenerateColumns = false;
+            dataGridView.BackgroundColor = SystemColors.Control;
+            dataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridView.Columns.AddRange(new DataGridViewColumn[] { InputFile, statusDataGridViewTextBoxColumn, ButtonText });
+            dataGridView.DataSource = gridBindingSource;
+            dataGridView.Location = new Point(16, 98);
+            dataGridView.Margin = new Padding(4, 5, 4, 5);
+            dataGridView.MultiSelect = false;
+            dataGridView.Name = "dataGridView";
+            dataGridView.ReadOnly = true;
+            dataGridView.RowHeadersWidth = 51;
+            dataGridView.Size = new Size(1035, 465);
+            dataGridView.TabIndex = 0;
+            dataGridView.DragDrop += DataGridView_DragDrop;
+            dataGridView.DragEnter += DataGridView_DragEnter;
             // 
             // gridBindingSource
             // 
-            this.gridBindingSource.AllowNew = false;
-            this.gridBindingSource.DataSource = typeof(Gw2LogParser.GridRow);
+            gridBindingSource.AllowNew = false;
+            gridBindingSource.DataSource = typeof(EvtcParserExtensions.FormOperationController);
             // 
             // btnParse
             // 
-            this.btnParse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnParse.Location = new System.Drawing.Point(631, 372);
-            this.btnParse.Name = "btnParse";
-            this.btnParse.Size = new System.Drawing.Size(157, 23);
-            this.btnParse.TabIndex = 1;
-            this.btnParse.Text = "Parse";
-            this.btnParse.UseVisualStyleBackColor = true;
-            this.btnParse.Click += new System.EventHandler(this.btnParse_Click);
+            btnParse.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnParse.Location = new Point(841, 572);
+            btnParse.Margin = new Padding(4, 5, 4, 5);
+            btnParse.Name = "btnParse";
+            btnParse.Size = new Size(209, 35);
+            btnParse.TabIndex = 1;
+            btnParse.Text = "Parse";
+            btnParse.UseVisualStyleBackColor = true;
+            btnParse.Click += BtnParse_Click;
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnCancel.Location = new System.Drawing.Point(631, 402);
-            this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 2;
-            this.btnCancel.Text = "Cancel";
-            this.btnCancel.UseVisualStyleBackColor = true;
-            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnCancel.Location = new Point(841, 618);
+            btnCancel.Margin = new Padding(4, 5, 4, 5);
+            btnCancel.Name = "btnCancel";
+            btnCancel.Size = new Size(100, 35);
+            btnCancel.TabIndex = 2;
+            btnCancel.Text = "Cancel";
+            btnCancel.UseVisualStyleBackColor = true;
+            btnCancel.Click += BtnCancel_Click;
             // 
             // btnClear
             // 
-            this.btnClear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnClear.Location = new System.Drawing.Point(713, 402);
-            this.btnClear.Name = "btnClear";
-            this.btnClear.Size = new System.Drawing.Size(75, 23);
-            this.btnClear.TabIndex = 3;
-            this.btnClear.Text = "Clear";
-            this.btnClear.UseVisualStyleBackColor = true;
-            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
+            btnClear.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnClear.Location = new Point(951, 618);
+            btnClear.Margin = new Padding(4, 5, 4, 5);
+            btnClear.Name = "btnClear";
+            btnClear.Size = new Size(100, 35);
+            btnClear.TabIndex = 3;
+            btnClear.Text = "Clear";
+            btnClear.UseVisualStyleBackColor = true;
+            btnClear.Click += BtnClear_Click;
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 45);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(150, 13);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "Drag and Drop Log files below";
+            label1.AutoSize = true;
+            label1.Location = new Point(16, 69);
+            label1.Margin = new Padding(4, 0, 4, 0);
+            label1.Name = "label1";
+            label1.Size = new Size(214, 20);
+            label1.TabIndex = 4;
+            label1.Text = "Drag and Drop Log files below";
             // 
             // btnRefreshAPI
             // 
-            this.btnRefreshAPI.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRefreshAPI.Location = new System.Drawing.Point(520, 372);
-            this.btnRefreshAPI.Name = "btnRefreshAPI";
-            this.btnRefreshAPI.Size = new System.Drawing.Size(105, 23);
-            this.btnRefreshAPI.TabIndex = 4;
-            this.btnRefreshAPI.Text = "Reresh API Cache";
-            this.btnRefreshAPI.UseVisualStyleBackColor = true;
-            this.btnRefreshAPI.Click += new System.EventHandler(this.btnRefreshAPI_Click);
+            btnRefreshAPI.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnRefreshAPI.Location = new Point(693, 572);
+            btnRefreshAPI.Margin = new Padding(4, 5, 4, 5);
+            btnRefreshAPI.Name = "btnRefreshAPI";
+            btnRefreshAPI.Size = new Size(140, 35);
+            btnRefreshAPI.TabIndex = 4;
+            btnRefreshAPI.Text = "Reresh API Cache";
+            btnRefreshAPI.UseVisualStyleBackColor = true;
+            btnRefreshAPI.Click += BtnRefreshAPI_Click;
+            // 
+            // InputFile
+            // 
+            InputFile.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            InputFile.DataPropertyName = "InputFile";
+            InputFile.FillWeight = 60F;
+            InputFile.Frozen = true;
+            InputFile.HeaderText = "InputFile";
+            InputFile.MinimumWidth = 6;
+            InputFile.Name = "InputFile";
+            InputFile.ReadOnly = true;
+            InputFile.Width = 395;
+            // 
+            // statusDataGridViewTextBoxColumn
+            // 
+            statusDataGridViewTextBoxColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            statusDataGridViewTextBoxColumn.DataPropertyName = "Status";
+            statusDataGridViewTextBoxColumn.FillWeight = 30F;
+            statusDataGridViewTextBoxColumn.HeaderText = "Status";
+            statusDataGridViewTextBoxColumn.MinimumWidth = 6;
+            statusDataGridViewTextBoxColumn.Name = "statusDataGridViewTextBoxColumn";
+            statusDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // ButtonText
+            // 
+            ButtonText.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            ButtonText.DataPropertyName = "ButtonText";
+            ButtonText.FillWeight = 10F;
+            ButtonText.HeaderText = "Action";
+            ButtonText.MinimumWidth = 6;
+            ButtonText.Name = "ButtonText";
+            ButtonText.ReadOnly = true;
             // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.btnRefreshAPI);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.btnClear);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnParse);
-            this.Controls.Add(this.dataGridView);
-            this.Name = "MainForm";
-            this.Text = "Guild Wars 2 Log Parser";
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.gridBindingSource)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1067, 692);
+            Controls.Add(btnRefreshAPI);
+            Controls.Add(label1);
+            Controls.Add(btnClear);
+            Controls.Add(btnCancel);
+            Controls.Add(btnParse);
+            Controls.Add(dataGridView);
+            Margin = new Padding(4, 5, 4, 5);
+            Name = "MainForm";
+            Text = "Guild Wars 2 Log Parser";
+            ((System.ComponentModel.ISupportInitialize)dataGridView).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridBindingSource).EndInit();
+            ResumeLayout(false);
+            PerformLayout();
 
         }
 
@@ -177,9 +189,10 @@
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.DataGridViewTextBoxColumn locationDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn statusDataGridViewTextBoxColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn buttonTextDataGridViewTextBoxColumn;
         private System.Windows.Forms.Button btnRefreshAPI;
+        private DataGridViewTextBoxColumn InputFile;
+        private DataGridViewTextBoxColumn statusDataGridViewTextBoxColumn;
+        private DataGridViewTextBoxColumn ButtonText;
     }
 }
 

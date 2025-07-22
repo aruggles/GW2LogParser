@@ -1,56 +1,58 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser;
+﻿using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
 
-namespace GW2EIBuilders
+namespace GW2EIBuilders.HtmlModels.HTMLCharts;
+
+internal class PlayerChartDataDto : ActorChartDataDto
 {
-    internal class PlayerChartDataDto : ActorChartDataDto
+    public readonly PlayerDamageChartDto<int> Damage;
+    public readonly PlayerDamageChartDto<int> PowerDamage;
+    public readonly PlayerDamageChartDto<int> ConditionDamage;
+    public readonly PlayerDamageChartDto<double> BreakbarDamage;
+
+    private PlayerChartDataDto(ParsedEvtcLog log, PhaseData phase, SingleActor p) : base(log, phase, p, true)
     {
-        public PlayerDamageChartDto<int> Damage { get; }
-        public PlayerDamageChartDto<int> PowerDamage { get; }
-        public PlayerDamageChartDto<int> ConditionDamage { get; }
-        public PlayerDamageChartDto<double> BreakbarDamage { get; }
-
-        private PlayerChartDataDto(ParsedEvtcLog log, PhaseData phase, AbstractSingleActor p) : base(log, phase, p, true)
+        Damage = new PlayerDamageChartDto<int>()
         {
-            Damage = new PlayerDamageChartDto<int>()
-            {
-                Total = p.Get1SDamageList(log, phase.Start, phase.End, null, ParserHelper.DamageType.All),
-                Targets = new List<IReadOnlyList<int>>()
-            };
-            PowerDamage = new PlayerDamageChartDto<int>()
-            {
-                Total = p.Get1SDamageList(log, phase.Start, phase.End, null, ParserHelper.DamageType.Power),
-                Targets = new List<IReadOnlyList<int>>()
-            };
-            ConditionDamage = new PlayerDamageChartDto<int>()
-            {
-                Total = p.Get1SDamageList(log, phase.Start, phase.End, null, ParserHelper.DamageType.Condition),
-                Targets = new List<IReadOnlyList<int>>()
-            };
-            BreakbarDamage = new PlayerDamageChartDto<double>()
-            {
-                Total = p.Get1SBreakbarDamageList(log, phase.Start, phase.End, null),
-                Targets = new List<IReadOnlyList<double>>()
-            };
-            foreach (AbstractSingleActor target in phase.AllTargets)
-            {
-                Damage.Targets.Add(p.Get1SDamageList(log, phase.Start, phase.End, target, ParserHelper.DamageType.All));
-                PowerDamage.Targets.Add(p.Get1SDamageList(log, phase.Start, phase.End, target, ParserHelper.DamageType.Power));
-                ConditionDamage.Targets.Add(p.Get1SDamageList(log, phase.Start, phase.End, target, ParserHelper.DamageType.Condition));
-                BreakbarDamage.Targets.Add(p.Get1SBreakbarDamageList(log, phase.Start, phase.End, target));
-            }
-        }
-
-        public static List<PlayerChartDataDto> BuildPlayersGraphData(ParsedEvtcLog log, PhaseData phase)
+            Total = p.GetDamageGraph(log, phase.Start, phase.End, null, ParserHelper.DamageType.All).Values,
+            Taken = p.GetDamageTakenGraph(log, phase.Start, phase.End, null, ParserHelper.DamageType.All).Values,
+            Targets = new(phase.Targets.Count)
+        };
+        PowerDamage = new PlayerDamageChartDto<int>()
         {
-            var list = new List<PlayerChartDataDto>();
-
-            foreach (AbstractSingleActor actor in log.Friendlies)
-            {
-                list.Add(new PlayerChartDataDto(log, phase, actor));
-            }
-            return list;
+            Total = p.GetDamageGraph(log, phase.Start, phase.End, null, ParserHelper.DamageType.Power).Values,
+            Taken = p.GetDamageTakenGraph(log, phase.Start, phase.End, null, ParserHelper.DamageType.Power).Values,
+            Targets = new(phase.Targets.Count)
+        };
+        ConditionDamage = new PlayerDamageChartDto<int>()
+        {
+            Total = p.GetDamageGraph(log, phase.Start, phase.End, null, ParserHelper.DamageType.Condition).Values,
+            Taken = p.GetDamageTakenGraph(log, phase.Start, phase.End, null, ParserHelper.DamageType.Condition).Values,
+            Targets = new(phase.Targets.Count)
+        };
+        BreakbarDamage = new PlayerDamageChartDto<double>()
+        {
+            Total = p.GetBreakbarDamageGraph(log, phase.Start, phase.End, null)?.Values,
+            Taken = p.GetBreakbarDamageTakenGraph(log, phase.Start, phase.End, null)?.Values,
+            Targets = new(phase.Targets.Count)
+        };
+        foreach (SingleActor target in phase.Targets.Keys)
+        {
+            Damage.Targets.Add(p.GetDamageGraph(log, phase.Start, phase.End, target, ParserHelper.DamageType.All).Values);
+            PowerDamage.Targets.Add(p.GetDamageGraph(log, phase.Start, phase.End, target, ParserHelper.DamageType.Power).Values);
+            ConditionDamage.Targets.Add(p.GetDamageGraph(log, phase.Start, phase.End, target, ParserHelper.DamageType.Condition).Values);
+            BreakbarDamage.Targets.Add(p.GetBreakbarDamageGraph(log, phase.Start, phase.End, target)?.Values);
         }
+    }
+
+    public static List<PlayerChartDataDto> BuildPlayersGraphData(ParsedEvtcLog log, PhaseData phase)
+    {
+        var list = new List<PlayerChartDataDto>(log.Friendlies.Count);
+
+        foreach (SingleActor actor in log.Friendlies)
+        {
+            list.Add(new PlayerChartDataDto(log, phase, actor));
+        }
+        return list;
     }
 }

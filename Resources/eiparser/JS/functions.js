@@ -30,18 +30,27 @@ function computeSliderGradient(color, fillColor, startPercent, endPercent) {
     return template;
 };
 
+function _buildFallBackURL(url) {
+    if (!url.includes("render")) {
+        // not using API render service
+        return url;
+    }
+    var splitIcon = url.split('/');
+    var id = splitIcon[splitIcon.length - 1];
+    if (useDarthmaim) {
+        var signature = splitIcon[splitIcon.length - 2];
+        return "https://icons-gw2.darthmaim-cdn.com/" + signature + "/" + id;
+    } else {
+        return "https://assets.gw2dat.com/"+ id;
+    }
+}
+
 function buildFallBackURL(skill) {
     if (!skill.icon || skill.fallBack) {
         return;
     }
     var apiIcon = skill.icon;
-    if (!apiIcon.includes("render")) {
-        return;
-    }
-    var splitIcon = apiIcon.split('/');
-    var signature = splitIcon[splitIcon.length - 2];
-    var id = splitIcon[splitIcon.length - 1].split('.')[0] + "-64px.png";
-    skill.icon = "https://darthmaim-cdn.de/gw2treasures/icons/" + signature + "/" + id;
+    skill.icon = _buildFallBackURL(apiIcon);
     skill.fallBack = true;
 }
 
@@ -126,7 +135,7 @@ function addMechanicsToGraph(data, phase, phaseIndex) {
                 if (tarId >= 0) {
                     var target = logData.targets[tarId];
                     for (var k = 0; k < pts.length; k++) {
-                        var time = pts[k];
+                        var time = pts[k][0];
                         chart.x.push(time);
                         chart.text.push(time + 's: ' + target.name);
                     }
@@ -143,7 +152,7 @@ function addMechanicsToGraph(data, phase, phaseIndex) {
                 var pts = mech.points[phaseIndex][j];
                 var player = logData.players[j];
                 for (var k = 0; k < pts.length; k++) {
-                    var time = pts[k];
+                    var time = pts[k][0];
                     chart.x.push(time);
                     chart.text.push(time + 's: ' + player.name);
                 }
@@ -178,7 +187,7 @@ function updateMechanicsYValues(res, phase, phaseIndex, phaseGraphData, max) {
             for (var j = 0; j < mech.points[phaseIndex].length; j++) {
                 var pts = mech.points[phaseIndex][j];
                 for (var k = 0; k < pts.length; k++) {
-                    var time = pts[k];
+                    var time = pts[k][0];
                     var ftime = Math.floor(time);
                     var y = res[j][ftime];
                     var yp1 = res[j][ftime + 1];
@@ -268,7 +277,7 @@ function computeRotationData(rotationData, images, data, phase, actor, yAxis) {
                 name = skill.name;
             }
 
-            if (!icon.includes("render") && !icon.includes("darthmaim")) {
+            if (!icon.includes("render") && !icon.includes("darthmaim") && !icon.includes("gw2dat")) {
                 icon = null;
             }
 
@@ -413,21 +422,25 @@ function computePhaseMarkups(shapes, annotations, phase, linecolor) {
 }
 
 
-function computePlayerDPS(player, damageData, lim, phasebreaks, activetargets, cacheID, times, graphMode, damageMode) {
+function computePlayerDPS(player, damageGraphs, lim, phasebreaks, activetargets, cacheID, times, graphMode, damageMode) {
     if (player.dpsGraphCache.has(cacheID)) {
         return player.dpsGraphCache.get(cacheID);
     }
     var totalDamage = 0;
+    var totalDamageTaken = 0;
     var targetDamage = 0;
     var totalDPS = [0];
     var cleaveDPS = [0];
     var targetDPS = [0];
+    var takenDPS = [0];
     var maxDPS = {
         total: 0,
         cleave: 0,
-        target: 0
+        target: 0,
+        taken: 0
     };
-    if (graphMode === GraphType.CenteredDPS) {
+    var centeredDPS = graphMode === GraphType.CenteredDPS && times[times.length - 1] > 2;
+    if (centeredDPS) {
         lim /= 2;
     }
     var end = times.length;
@@ -441,7 +454,7 @@ function computePlayerDPS(player, damageData, lim, phasebreaks, activetargets, c
             left = j;
         }
         right = j;    
-        if (graphMode === GraphType.CenteredDPS) {
+        if (centeredDPS) {
             if (lim > 0) {
                 right = Math.min(Math.round(time + lim), end - 1);
             } else if (phasebreaks) {
@@ -456,18 +469,21 @@ function computePlayerDPS(player, damageData, lim, phasebreaks, activetargets, c
             }
         }          
         var div = graphMode !== GraphType.Damage ? Math.max(times[right] - times[left], 1) : 1;
-        totalDamage = damageData.total[right] - damageData.total[left];
+        totalDamage = damageGraphs.total[right] - damageGraphs.total[left];
+        totalDamageTaken = damageGraphs.taken[right] - damageGraphs.taken[left];
         targetDamage = 0;
         for (k = 0; k < activetargets.length; k++) {
             targetid = activetargets[k];
-            targetDamage += damageData.targets[targetid][right] - damageData.targets[targetid][left];
+            targetDamage += damageGraphs.targets[targetid][right] - damageGraphs.targets[targetid][left];
         }
         totalDPS[j] = roundingToUse(totalDamage / div);
         targetDPS[j] = roundingToUse(targetDamage / div);
         cleaveDPS[j] = roundingToUse((totalDamage - targetDamage) / div);
+        takenDPS[j] = roundingToUse(totalDamageTaken / div);
         maxDPS.total = Math.max(maxDPS.total, totalDPS[j]);
         maxDPS.target = Math.max(maxDPS.target, targetDPS[j]);
         maxDPS.cleave = Math.max(maxDPS.cleave, cleaveDPS[j]);
+        maxDPS.taken = Math.max(maxDPS.taken, takenDPS[j]);
     }
     if (maxDPS.total < 1e-6) {
         maxDPS.total = 10;
@@ -478,11 +494,15 @@ function computePlayerDPS(player, damageData, lim, phasebreaks, activetargets, c
     if (maxDPS.cleave < 1e-6) {
         maxDPS.cleave = 10;
     }
+    if (maxDPS.taken < 1e-6) {
+        maxDPS.taken = 10;
+    }
     var res = {
         dps: {
             total: totalDPS,
             target: targetDPS,
-            cleave: cleaveDPS
+            cleave: cleaveDPS,
+            taken: takenDPS
         },
         maxDPS: maxDPS
     };
@@ -509,8 +529,8 @@ function findState(states, timeS, start, end) {
     }
 }
 
-function getActorGraphLayout(images, color, hasBuffs) {
-    return {
+function getActorGraphLayout(images, color, hasBuffs, noIncoming) {
+    let layout =  {
         barmode: 'stack',
         yaxis2: {
             title: 'Rotation',
@@ -535,7 +555,7 @@ function getActorGraphLayout(images, color, hasBuffs) {
             fixedrange: true,
             side: 'right',
             range: [0, 1.5],
-            nticks: 1
+            nticks: 2
         },
         yaxis4: {
             title: 'Intensity Buffs',
@@ -546,13 +566,6 @@ function getActorGraphLayout(images, color, hasBuffs) {
             fixedrange: true,
             overlaying: 'y',
             nticks: 10,
-        },
-        yaxis3: {
-            title: 'DPS',
-            color: color,
-            tickformat: ",d",
-            gridcolor: color,
-            domain: hasBuffs ? [0.55, 1.0] : [0.1, 1.0]
         },
         images: images,
         font: {
@@ -573,10 +586,42 @@ function getActorGraphLayout(images, color, hasBuffs) {
         shapes: [],
         annotations: [],
         autosize: true,
-        width: 1300,
         height: 850,
         datarevision: new Date().getTime(),
     };
+    if (noIncoming) {
+        Object.assign(layout, {
+            yaxis3: {
+                title: 'Outgoing',
+                domain: hasBuffs ? [0.55, 1.0] : [0.1, 1.0],
+                color: color,
+                fixedrange: true,
+                gridcolor: color,
+                tickformat: ",d",
+            },
+        });
+    } else {
+        Object.assign(layout, {
+            yaxis3: {
+                title: 'Outgoing',
+                domain: hasBuffs ? [0.68, 1.0] : [0.23, 1.0],
+                color: color,
+                fixedrange: true,
+                gridcolor: color,
+                tickformat: ",d",
+            },
+            yaxis5: {
+                title: 'Incoming',
+                domain: hasBuffs ? [0.55, 0.67] : [0.1, 0.22],
+                color: color,
+                fixedrange: true,
+                gridcolor: color,
+                tickformat: ",d",
+                nticks: 2,
+            },
+        });
+    }
+    return layout;
 }
 
 function _computeTargetGraphData(graph, targets, phase, data, yaxis, jsonGraphName, percentName, graphName, visible) {
@@ -695,7 +740,7 @@ function computeBuffData(buffData, data) {
     return 0;
 }
 
-function computeTargetDPS(target, damageData, lim, phasebreaks, cacheID, times, graphMode) {
+function computeTargetDPS(target, damageGraphs, lim, phasebreaks, cacheID, times, graphMode) {
     if (target.dpsGraphCache.has(cacheID)) {
         return target.dpsGraphCache.get(cacheID);
     }
@@ -704,7 +749,8 @@ function computeTargetDPS(target, damageData, lim, phasebreaks, cacheID, times, 
     var maxDPS = 0;
     var left = 0, right = 0;
     var end = times.length;
-    if (graphMode === GraphType.CenteredDPS) {
+    var centeredDPS = graphMode === GraphType.CenteredDPS && times[times.length - 1] > 2;
+    if (centeredDPS) {
         lim /= 2;
     }
     for (var j = 0; j < end; j++) {
@@ -715,7 +761,7 @@ function computeTargetDPS(target, damageData, lim, phasebreaks, cacheID, times, 
             left = j;
         }
         right = j;
-        if (graphMode === GraphType.CenteredDPS) {
+        if (centeredDPS) {
             if (lim > 0) {
                 right = Math.min(Math.round(time + lim), end - 1);
             } else if (phasebreaks) {
@@ -730,7 +776,7 @@ function computeTargetDPS(target, damageData, lim, phasebreaks, cacheID, times, 
             }
         }
         var div = graphMode !== GraphType.Damage ? Math.max(times[right] - times[left], 1) : 1;
-        totalDamage = damageData[right] - damageData[left];
+        totalDamage = damageGraphs[right] - damageGraphs[left];
         totalDPS[j] = Math.round(totalDamage / (div));
         maxDPS = Math.max(maxDPS, totalDPS[j]);
     }
@@ -807,7 +853,6 @@ function addTargetLayout(data, target, states, percentName, graphName, visible) 
         shapes: [],
         annotations: [],
         autosize: true,
-        width: 1100,
         height: 1100,
         datarevision: new Date().getTime(),
     };
@@ -891,3 +936,113 @@ function computeBuffData(buffData, data) {
         stacking: false
     };
 }*/
+
+function hasRotations() {
+    return logData.players.length > 1;
+}
+
+function hasOutgoingDamageMods() {
+    return Object.keys(logData.damageModMap).length !== 0;
+}
+
+function hasIncomingDamageMods() {
+    return Object.keys(logData.damageIncModMap).length !== 0 ;
+}
+
+function hasDamageMods() {
+    return hasOutgoingDamageMods() || hasIncomingDamageMods();
+}
+
+function playerMechanics() {
+    var playerMechanics = [];
+    for (var i = 0; i < logData.mechanicMap.length; i++) {
+        var mech = logData.mechanicMap[i];
+        if (mech.playerMech) {
+            playerMechanics.push(mech);
+        }
+    }
+    return playerMechanics;
+}
+
+function enemyMechanics() {
+    var enemyMechanics = [];
+    for (var i = 0; i < logData.mechanicMap.length; i++) {
+        var mech = logData.mechanicMap[i];
+        if (mech.enemyMech) {
+            enemyMechanics.push(mech);
+        }
+    }
+    return enemyMechanics;
+}
+
+function hasMechanics() {
+    if (logData.mechanicMap.length > 0 && !logData.noMechanics) {
+        return enemyMechanics().length > 0 || playerMechanics().length > 0;
+    }
+    return false;
+}
+
+function hasTargets() {
+    return !logData.targetless ;
+}
+
+function hasOffBuffs() {
+    return logData.offBuffs.length > 0;
+};
+function hasDefBuffs() {
+    return logData.defBuffs.length > 0;
+};
+function hasSupBuffs() {
+    return logData.supBuffs.length > 0;
+};
+function hasGearBuffs() {
+    return logData.gearBuffs.length > 0;
+};
+function hasDebuffs() {
+    return logData.debuffs.length > 0;
+};
+function hasConditions() {
+    return logData.conditions.length > 0;
+};
+function hasNourishments() {
+    return logData.nourishments.length > 0;
+};
+function hasEnhancements() {
+    return logData.enhancements.length > 0;
+};
+function hasOtherConsumables() {
+    return logData.otherConsumables.length > 0;
+};
+function hasPersBuffs() {
+    var hasPersBuffs = false;
+    if (logData.persBuffs) {
+        for (var prop in logData.persBuffs) {
+            if (logData.persBuffs.hasOwnProperty(prop) && logData.persBuffs[prop].length > 0) {
+                hasPersBuffs = true;
+                break;
+            }
+        }
+    }
+    return hasPersBuffs;
+};
+
+function showDeathRecap() {
+    for (var i = 0; i < logData.players.length; i++) {
+        if (!!logData.players[i].details.deathRecap) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasBarrierExtension() {
+    return !!barrierStatsExtension;
+}
+
+function validateStartPath(path) {  
+    const setting = EIUrlParams.get("startPage");
+    if (!setting) {
+        return false;
+    }
+    return setting.startsWith(path);
+}

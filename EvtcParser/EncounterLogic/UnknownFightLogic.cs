@@ -1,61 +1,89 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.EncounterLogic.EncounterCategory;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
+using static GW2EIEvtcParser.ParserHelpers.EncounterImages;
+using static GW2EIEvtcParser.SpeciesIDs;
 
-namespace GW2EIEvtcParser.EncounterLogic
+namespace GW2EIEvtcParser.EncounterLogic;
+
+internal class UnknownFightLogic : FightLogic
 {
-    internal class UnknownFightLogic : FightLogic
+    public UnknownFightLogic(int triggerID) : base(triggerID)
     {
-        public UnknownFightLogic(int triggerID) : base(triggerID)
-        {
-            Extension = "boss";
-            Icon = EncounterIconGeneric;
-            EncounterCategoryInformation.Category = FightCategory.UnknownEncounter;
-            EncounterCategoryInformation.SubCategory = SubFightCategory.UnknownEncounter;
-        }
+        Extension = "boss";
+        Icon = EncounterIconGeneric;
+        EncounterCategoryInformation.Category = FightCategory.UnknownEncounter;
+        EncounterCategoryInformation.SubCategory = SubFightCategory.UnknownEncounter;
+    }
 
-        protected override HashSet<int> GetUniqueNPCIDs()
-        {
-            return new HashSet<int>();
-        }
+    internal override void UpdatePlayersSpecAndGroup(IReadOnlyList<Player> players, CombatData combatData, FightData fightData)
+    {
+        // We don't know how an unknown fight could operate.
+    }
 
-        internal override long GetFightOffset(int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+    internal override long GetFightOffset(EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+    {
+        CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
+        if (logStartNPCUpdate != null)
         {
-            CombatItem logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == ArcDPSEnums.StateChange.LogStartNPCUpdate);
-            if (logStartNPCUpdate != null)
-            {
-                AgentItem target = agentData.GetNPCsByID(GenericTriggerID).FirstOrDefault() ?? agentData.GetGadgetsByID(GenericTriggerID).FirstOrDefault();
-                return GetPostLogStartNPCUpdateDamageEventTime(fightData, agentData, combatData, logStartNPCUpdate.Time, target);
-            }
-            return GetGenericFightOffset(fightData);
+            AgentItem? target = agentData.GetNPCsByID(GenericTriggerID).FirstOrDefault() ?? agentData.GetGadgetsByID(GenericTriggerID).FirstOrDefault();
+            return GetFirstDamageEventTime(fightData, agentData, combatData, target);
         }
+        return GetGenericFightOffset(fightData);
+    }
 
-        internal override void ComputeFightTargets(AgentData agentData, List<CombatItem> combatItems, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
+    internal override FightLogic AdjustLogic(AgentData agentData, List<CombatItem> combatData, EvtcParserSettings parserSettings)
+    {
+        CombatItem? mapIDEvent = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.MapID);
+        // Handle potentially wrongly associated logs
+        if (mapIDEvent != null && MapIDEvent.GetMapID(mapIDEvent) == GenericTriggerID && !agentData.GetNPCsByID(GenericTriggerID).Any() && !agentData.GetGadgetsByID(GenericTriggerID).Any())
         {
-            int id = GenericTriggerID;
-            AgentItem agentItem = agentData.GetNPCsByID(id).FirstOrDefault();
-            // Trigger ID is not NPC
-            if (agentItem == null)
-            {
-                agentItem = agentData.GetGadgetsByID(id).FirstOrDefault();
-                if (agentItem != null)
-                {
-                    _targets.Add(new NPC(agentItem));
-                }
-            }
-            else
+            return new Instance((int)TargetID.Instance).AdjustLogic(agentData, combatData, parserSettings);
+        }
+        return base.AdjustLogic(agentData, combatData, parserSettings);
+    }
+
+    internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
+    {
+        int id = GenericTriggerID;
+        AgentItem? agentItem = agentData.GetNPCsByID(id).FirstOrDefault();
+        // Trigger ID is not NPC
+        if (agentItem == null)
+        {
+            agentItem = agentData.GetGadgetsByID(id).FirstOrDefault();
+            if (agentItem != null)
             {
                 _targets.Add(new NPC(agentItem));
             }
-            //
-            FinalizeComputeFightTargets();
         }
+        else
+        {
+            _targets.Add(new NPC(agentItem));
+        }
+        //
+        FinalizeComputeFightTargets();
+    }
+
+    protected override IReadOnlyList<TargetID> GetUniqueNPCIDs()
+    {
+        throw new InvalidOperationException("UniqueNPCIDs not valid for Unknown");
+    }
+
+    protected override IReadOnlyList<TargetID> GetTargetsIDs()
+    {
+        throw new InvalidOperationException("GetTargetIDs not valid for Unknown");
+    }
+
+    protected override IReadOnlyList<TargetID> GetFriendlyNPCIDs()
+    {
+        throw new InvalidOperationException("GetFriendlyNPCIDs not valid for Unknown");
+    }
+
+    protected override IReadOnlyList<TargetID> GetTrashMobsIDs()
+    {
+        throw new InvalidOperationException("GetTrashMobsIDs not valid for Unknown");
     }
 }

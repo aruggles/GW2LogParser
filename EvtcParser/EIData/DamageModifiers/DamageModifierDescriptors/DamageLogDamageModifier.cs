@@ -1,41 +1,43 @@
-﻿using System;
+﻿using GW2EIEvtcParser.ParsedData;
 using System.Collections.Generic;
-using System.Linq;
-using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+internal class DamageLogDamageModifier : DamageModifierDescriptor
 {
-    internal class DamageLogDamageModifier : DamageModifierDescriptor
+
+    internal DamageLogDamageModifier(int id, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, Source src, string icon, DamageLogChecker checker, DamageModifierMode mode) : base(id, name, tooltip, damageSource, gainPerStack, srctype, compareType, src, icon, ByPresence, mode)
     {
+        base.UsingChecker(checker);
+    }
 
-        internal DamageLogDamageModifier(string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, ParserHelper.Source src, string icon, DamageLogChecker checker, DamageModifierMode mode) : base(name, tooltip, damageSource, gainPerStack, srctype, compareType, src, icon, ByPresence, mode)
+    protected override bool ComputeGain(IReadOnlyDictionary<long, BuffGraph>? bgms, HealthDamageEvent? dl, ParsedEvtcLog log, out double gain)
+    {
+        gain = GainComputer.ComputeGain(GainPerStack, 1);
+        return true;
+    }
+
+    internal override List<DamageModifierEvent> ComputeDamageModifier(SingleActor actor, ParsedEvtcLog log, DamageModifier damageModifier)
+    {
+        if (CheckEarlyExit(actor, log))
         {
-            base.UsingChecker(checker);
+            return [];
         }
-
-        protected override bool ComputeGain(IReadOnlyDictionary<long, BuffsGraphModel> bgms, AbstractHealthDamageEvent dl, ParsedEvtcLog log, out double gain)
+        var res = new List<DamageModifierEvent>();
+        if (ComputeGain(null, null, log, out double gain))
         {
-            gain = GainComputer.ComputeGain(GainPerStack, 1);
-            return true;
-        }
 
-        internal override List<DamageModifierEvent> ComputeDamageModifier(AbstractSingleActor actor, ParsedEvtcLog log, DamageModifier damageModifier)
-        {
-            var res = new List<DamageModifierEvent>();
-            if (ComputeGain(null, null, log, out double gain)) {
-
-                IReadOnlyList<AbstractHealthDamageEvent> typeHits = damageModifier.GetHitDamageEvents(actor, log, null, log.FightData.FightStart, log.FightData.FightEnd);
-                foreach (AbstractHealthDamageEvent evt in typeHits)
+            var typeHits = damageModifier.GetHitDamageEvents(actor, log, null, log.FightData.FightStart, log.FightData.FightEnd);
+            foreach (HealthDamageEvent evt in typeHits)
+            {
+                if (CheckCondition(evt, log))
                 {
-                    if (CheckCondition(evt, log))
-                    {
-                        res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));
-                    }
+                    res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));
                 }
             }
-            return res;
         }
+        return res;
     }
 }

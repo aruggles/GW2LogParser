@@ -574,6 +574,8 @@
                                 outgoingBarrier: value.healing.outgoingBarrier,
                                 outgoingTargetBarrier: value.healing.outgoingTargetBarrier
                             });
+                        } else {
+                            console.warn('Missing healing data');
                         }
                     }
                     return data;
@@ -632,7 +634,7 @@
                         case "Deadeye":
                             return "https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png";
                         case "Specter":
-                            return "https://i.imgur.com/UbvyFSt.png";
+                            return "https://i.imgur.com/nVAyYVQ.png";
                         //
                         case "Elementalist":
                             return "https://wiki.guildwars2.com/images/a/aa/Elementalist_tango_icon_20px.png";
@@ -641,7 +643,7 @@
                         case "Weaver":
                             return "https://wiki.guildwars2.com/images/f/fc/Weaver_tango_icon_20px.png";
                         case "Catalyst":
-                            return "https://i.imgur.com/UbvyFSt.png";
+                            return "https://i.imgur.com/2B73rSk.png";
                         //
                         case "Mesmer":
                             return "https://wiki.guildwars2.com/images/6/60/Mesmer_tango_icon_20px.png";
@@ -664,7 +666,7 @@
                     return '';
                 }
                 function nameFunction(data, type) {
-                    if (type === 'display') {
+                    if (type === 'display' && playerData[data] !== undefined) {
                         return '<a href=\"#' + playerData[data].identifier + '\">' + data + '</a>';
                     }
                     return data;
@@ -681,11 +683,16 @@
                 }
                 var playerArray = [];
                 for (const [_, value] of Object.entries(playerData)) {
-                    value.gameplay.critPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.critableHits / value.gameplay.criticalHits) * 100.0) + '%';
-                    value.gameplay.flankPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.flanking / value.gameplay.criticalHits) * 100.0) + '%';
-                    value.gameplay.glancePercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.glancing / value.gameplay.criticalHits) * 100.0) + '%';
-                    value.gameplay.avgToSquad = formatPercent(value.gameplay.avgDistanceToSquad / value.numberOfFights);
-                    value.gameplay.avgToTag = formatPercent(value.gameplay.avgDistanceToTag / value.numberOfFights);
+                    if (!value.gameplay) {
+                        console.error('MIssing gameplay');
+                        value.gameplay = { critPercent: 0, flankPercent: 0, glancePercent: 0, avgToSquad: 0, avgToTag: 0 }
+                    } else {
+                        value.gameplay.critPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.critableHits / value.gameplay.criticalHits) * 100.0) + '%';
+                        value.gameplay.flankPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.flanking / value.gameplay.criticalHits) * 100.0) + '%';
+                        value.gameplay.glancePercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.glancing / value.gameplay.criticalHits) * 100.0) + '%';
+                        value.gameplay.avgToSquad = formatPercent(value.gameplay.avgDistanceToSquad / value.numberOfFights);
+                        value.gameplay.avgToTag = formatPercent(value.gameplay.avgDistanceToTag / value.numberOfFights);
+                    }
                     playerArray.push(value);
                 }
 

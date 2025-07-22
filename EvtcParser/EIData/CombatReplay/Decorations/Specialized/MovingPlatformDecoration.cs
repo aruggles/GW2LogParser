@@ -1,31 +1,55 @@
-﻿using System.Collections.Generic;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+internal class MovingPlatformDecoration : BackgroundDecoration
 {
-    internal class MovingPlatformDecoration : BackgroundDecoration
+    internal class MovingPlatformDecorationMetadata : BackgroundDecorationMetadata
     {
-        public string Image { get; }
-        public int Width { get; }
-        public int Height { get; }
-
-        public List<(float x, float y, float z, float angle, float opacity, int time)> Positions { get; } =
-            new List<(float x, float y, float z, float angle, float opacity, int time)>();
-
-        public MovingPlatformDecoration(string image, int width, int height, (long start, long end) lifespan) : base(lifespan)
+        public readonly string Image;
+        public readonly int Width;
+        public readonly int Height;
+        public MovingPlatformDecorationMetadata(string image, int width, int height)
         {
             Image = image;
             Width = width;
             Height = height;
         }
 
-        public void AddPosition(float x, float y, float z, double angle, double opacity, int time)
+        public override string GetSignature()
         {
-            Positions.Add((x, y, z, (float)angle, (float)opacity, time));
+            return "MP" + Height + Image.GetHashCode().ToString() + Width;
         }
+        public override DecorationMetadataDescription GetCombatReplayMetadataDescription()
+        {
+            return new MovingPlatformDecorationMetadataDescription(this);
+        }
+    }
+    internal class MovingPlatformDecorationRenderingData((long, long) lifespan) : BackgroundDecorationRenderingData(lifespan)
+    {
+        public readonly List<(float x, float y, float z, float angle, float opacity, long time)> Positions = [];
 
-        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
+        public override DecorationRenderingDescription GetCombatReplayRenderingDescription(CombatReplayMap map, ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, string metadataSignature)
         {
-            return new MovingPlatformDecorationCombatReplayDescription(this, map);
+            return new MovingPlatformDecorationRenderingDescription(this, map, metadataSignature);
         }
+    }
+    private new MovingPlatformDecorationMetadata DecorationMetadata => (MovingPlatformDecorationMetadata)base.DecorationMetadata;
+    private new MovingPlatformDecorationRenderingData DecorationRenderingData => (MovingPlatformDecorationRenderingData)base.DecorationRenderingData;
+    //
+    public string Image => DecorationMetadata.Image;
+    public int Width => DecorationMetadata.Width;
+    public int Height => DecorationMetadata.Height;
+
+    public IReadOnlyList<(float x, float y, float z, float angle, float opacity, long time)> Positions => DecorationRenderingData.Positions;
+
+    public MovingPlatformDecoration(string image, int width, int height, (long start, long end) lifespan) : base(new MovingPlatformDecorationMetadata(image, width, height), new MovingPlatformDecorationRenderingData(lifespan))
+    {
+    }
+
+    public void AddPosition(float x, float y, float z, float angle, float opacity, long time)
+    {
+        DecorationRenderingData.Positions.Add((x, y, z, angle, opacity, time));
     }
 }

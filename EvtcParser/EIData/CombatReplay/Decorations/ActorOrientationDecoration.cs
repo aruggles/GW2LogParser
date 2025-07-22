@@ -1,31 +1,45 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+internal class ActorOrientationDecoration : AttachedDecoration
 {
-    internal class ActorOrientationDecoration : GenericAttachedDecoration
+    public class ActorOrientationDecorationMetadata : AttachedDecorationMetadata
     {
 
-        public ActorOrientationDecoration((long start, long end) lifespan, AgentItem agent) : base(lifespan, new AgentConnector(agent))
+        public override string GetSignature()
+        {
+            return "AO";
+        }
+        public override DecorationMetadataDescription GetCombatReplayMetadataDescription()
+        {
+            return new ActorOrientationDecorationMetadataDescription(this);
+        }
+    }
+    public class ActorOrientationDecorationRenderingData : AttachedDecorationRenderingData
+    {
+        public ActorOrientationDecorationRenderingData((long, long) lifespan, AgentItem agent) : base(lifespan, new AgentConnector(agent))
         {
             RotationConnectedTo = new AgentFacingConnector(agent);
         }
 
-        //
-
-        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
+        public override void UsingRotationConnector(RotationConnector? rotationConnectedTo)
         {
-            return new ActorOrientationDecorationCombatReplayDescription(log, this, map);
+        }
+        public override void UsingSkillMode(SkillModeDescriptor? skill)
+        {
         }
 
-        public override GenericAttachedDecoration UsingSkillMode(SkillModeDescriptor skill)
+        public override DecorationRenderingDescription GetCombatReplayRenderingDescription(CombatReplayMap map, ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, string metadataSignature)
         {
-            return this;
-        }
-
-        public override GenericAttachedDecoration UsingRotationConnector(RotationConnector rotationConnectedTo)
-        {
-            return this;
+            return new ActorOrientationDecorationRenderingDescription(log, this, map, usedSkills, usedBuffs, metadataSignature);
         }
     }
+
+    public ActorOrientationDecoration((long start, long end) lifespan, AgentItem agent) : base(new ActorOrientationDecorationMetadata(), new ActorOrientationDecorationRenderingData(lifespan, agent))
+    {
+    }
+
+    //
 }

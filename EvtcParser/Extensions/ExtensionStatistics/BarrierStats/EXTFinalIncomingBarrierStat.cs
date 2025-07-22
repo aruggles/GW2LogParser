@@ -1,29 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.ParsedData;
-using static GW2EIEvtcParser.Extensions.HealingStatsExtensionHandler;
+﻿using GW2EIEvtcParser.EIData;
 
-namespace GW2EIEvtcParser.Extensions
+namespace GW2EIEvtcParser.Extensions;
+
+public class EXTFinalIncomingBarrierStat
 {
-    public class EXTFinalIncomingBarrierStat
-    {
-        public int BarrierReceived { get; }
-        public int DownedBarrierReceived { get; }
+    public readonly int BarrierReceived;
+    public readonly int DownedBarrierReceived;
 
-        internal EXTFinalIncomingBarrierStat(ParsedEvtcLog log, long start, long end, AbstractSingleActor actor, AbstractSingleActor target)
+    internal EXTFinalIncomingBarrierStat(ParsedEvtcLog log, long start, long end, SingleActor actor, SingleActor? target)
+    {
+        foreach (EXTBarrierEvent barrierEvent in actor.EXTBarrier.GetIncomingBarrierEvents(target, log, start, end))
         {
-            foreach (EXTAbstractBarrierEvent barrierEvent in actor.EXTBarrier.GetIncomingBarrierEvents(target, log, start, end))
+            BarrierReceived += barrierEvent.BarrierGiven;
+            if (barrierEvent.AgainstDowned)
             {
-                BarrierReceived += barrierEvent.BarrierGiven;
-                if (barrierEvent.AgainstDowned)
-                {
-                    DownedBarrierReceived += barrierEvent.BarrierGiven;
-                }
+                DownedBarrierReceived += barrierEvent.BarrierGiven;
             }
         }
-
     }
-    
+
 }

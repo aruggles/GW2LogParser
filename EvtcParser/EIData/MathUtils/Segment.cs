@@ -1,141 +1,100 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+public static class SegmentExt
 {
-    public class Segment
+    public static double IntersectingArea(this in Segment self, in Segment other) => IntersectingArea(self, other.Start, other.End);
+
+    public static double IntersectingArea(this in Segment self, long start, long end)
     {
-        public long Start { get; internal set; }
-        public long End { get; internal set; }
-        public double Value { get; internal set; }
+        long maxStart = Math.Max(start, self.Start);
+        long minEnd = Math.Min(end, self.End);
+        return Math.Max(minEnd - maxStart, 0) * self.Value;
+    }
 
-        public Segment(long start, long end, double value)
+
+    /// <summary>
+    /// Fuse consecutive segments with same value. The list should not be empty.
+    /// </summary>
+    public static void FuseConsecutive<T>(this List<GenericSegment<T>> segments)
+    {
+
+        GenericSegment<T> last = segments[0];
+        int lastIndex = 0;
+        for (int i = 1; i < segments.Count; i++)
         {
-            Start = start;
-            End = end;
-            Value = value;
-        }
-
-        public Segment(long start, long end) : this(start, end, 0)
-        {
-        }
-
-        public Segment(Segment other) : this(other.Start, other.End, other.Value)
-        {
-
-        }
-
-        public bool IntersectSegment(Segment seg)
-        {
-            return IntersectSegment(seg.Start, seg.End);
-        }
-
-        public double IntersectingArea(Segment seg)
-        {
-            return IntersectingArea(seg.Start, seg.End);
-        }
-
-        public bool IntersectSegment(long start, long end)
-        {
-            if (Start > End)
+            var current = segments[i];
+            //TODO(Rennorb) perf
+            if (current.IsEmpty())
             {
-                return false;
+                continue;
             }
-            else if (Start == End)
+
+            if (current.Value != null && current.Value.Equals(last.Value))
             {
-                return ContainsPoint(start);
+                last.End = current.End;
+                segments[lastIndex] = last;
             }
-            long maxStart = Math.Max(start, Start);
-            long minEnd = Math.Min(end, End);
-            return minEnd - maxStart >= 0;
-        }
-
-        public double IntersectingArea(long start, long end)
-        {
-            long maxStart = Math.Max(start, Start);
-            long minEnd = Math.Min(end, End);
-            return Math.Max(minEnd - maxStart, 0) * Value;
-        }
-
-        public bool ContainsPoint(long time)
-        {
-            return Start <= time && End >= time;
-        }
-
-        public static List<Segment> FromStates(List<(long start, double state)> states, long min, long max)
-        {
-            if (!states.Any())
+            else
             {
-                return new List<Segment>();
+                segments[lastIndex] = last;
+                last = current;
+                lastIndex++;
             }
-            var res = new List<Segment>();
-            double lastValue = states.First().state;
-            foreach ((long start, double state) in states)
-            {
-                long end = Math.Min(Math.Max(start, min), max);
-                if (!res.Any())
-                {
-                    res.Add(new Segment(0, end, lastValue));
-                }
-                else
-                {
-                    res.Add(new Segment(res.Last().End, end, lastValue));
-                }
-                lastValue = state;
-            }
-            res.Add(new Segment(res.Last().End, max, lastValue));
-            res.RemoveAll(x => x.Start >= x.End);
-            return FuseSegments(res);
         }
+        segments[lastIndex++] = last;
 
+        segments.RemoveRange(lastIndex, segments.Count - lastIndex);
+    }
 
-        /// <summary>
-        /// Fuse consecutive segments with same value
-        /// </summary>
-        public static List<Segment> FuseSegments(List<Segment> input)
+    //TODO(Rennorb) @cleanup @perf
+    public static List<double[]> ToObjectList(this IReadOnlyList<Segment> segments, long start, long end)
+    {
+        var res = new List<double[]>(segments.Count + 1);
+        foreach (Segment seg in segments)
         {
-            var newChart = new List<Segment>();
-            Segment last = null;
-            foreach (Segment seg in input)
-            {
-                if (seg.Start == seg.End)
-                {
-                    continue;
-                }
-                if (last == null)
-                {
-                    newChart.Add(new Segment(seg));
-                    last = newChart.Last();
-                }
-                else
-                {
-                    if (seg.Value == last.Value)
-                    {
-                        last.End = seg.End;
-                    }
-                    else
-                    {
-                        newChart.Add(new Segment(seg));
-                        last = newChart.Last();
-                    }
-                }
-            }
-            return newChart;
+            double segStart = Math.Round(Math.Max(seg.Start - start, 0) / 1000.0, ParserHelper.TimeDigit);
+            res.Add([segStart, seg.Value]);
         }
+        Segment lastSeg = segments.Last();
+        double segEnd = Math.Round(Math.Min(lastSeg.End - start, end - start) / 1000.0, ParserHelper.TimeDigit);
+        res.Add([segEnd, lastSeg.Value]);
+        return res;
+    }
 
-        public static List<object[]> ToObjectList(List<Segment> segments, long start, long end)
+    //TODO(Rennorb) @cleanup
+    // https://www.c-sharpcorner.com/blogs/binary-search-implementation-using-c-sharp1
+    public static int BinarySearchRecursive(this IReadOnlyList<Segment> segments, long time, int minIndex, int maxIndex)
+    {
+        if (segments[minIndex].Start > time)
         {
-            var res = new List<object[]>();
-            foreach (Segment seg in segments)
+            return minIndex;
+        }
+        if (segments[maxIndex].Start < time)
+        {
+            return maxIndex;
+        }
+        if (minIndex > maxIndex)
+        {
+            return minIndex;
+        }
+        else
+        {
+            int midIndex = (minIndex + maxIndex) / 2;
+            if (segments[midIndex].ContainsPoint(time))
             {
-                double segStart = Math.Round(Math.Max(seg.Start - start, 0) / 1000.0, ParserHelper.TimeDigit);
-                res.Add(new object[] { segStart, seg.Value });
+                return midIndex;
             }
-            Segment lastSeg = segments.Last();
-            double segEnd = Math.Round(Math.Min(lastSeg.End - start, end - start) / 1000.0, ParserHelper.TimeDigit);
-            res.Add(new object[] { segEnd, lastSeg.Value });
-            return res;
+            else if (time < segments[midIndex].Start)
+            {
+                return BinarySearchRecursive(segments, time, minIndex, midIndex - 1);
+            }
+            else
+            {
+                return BinarySearchRecursive(segments, time, midIndex + 1, maxIndex);
+            }
         }
     }
 }

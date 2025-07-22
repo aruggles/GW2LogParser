@@ -1,55 +1,71 @@
 ﻿using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
-using System.Collections.Generic;
-using System.Linq;
+using GW2EIJSON;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.JsonModels;
+
+/// <summary>
+/// Class corresponding to a phase
+/// </summary>
+internal static class JsonPhaseBuilder
 {
-    /// <summary>
-    /// Class corresponding to a phase
-    /// </summary>
-    internal static class JsonPhaseBuilder
-    {
 
-        public static JsonPhase BuildJsonPhase(PhaseData phase, ParsedEvtcLog log)
+    public static JsonPhase BuildJsonPhase(PhaseData phase, ParsedEvtcLog log)
+    {
+        var jsPhase = new JsonPhase
         {
-            var jsPhase = new JsonPhase();
-            jsPhase.Start = phase.Start;
-            jsPhase.End = phase.End;
-            jsPhase.Name = phase.Name;
-            var targets = new List<int>();
-            var secondaryTargets = new List<int>();
-            jsPhase.BreakbarPhase = phase.BreakbarPhase;
-            foreach (AbstractSingleActor tar in phase.Targets)
+            Start = phase.Start,
+            End = phase.End,
+            Name = phase.Name
+        };
+        var targets = new List<int>(phase.Targets.Count);
+        var secondaryTargets = new List<int>(phase.Targets.Count);
+        var targetPriorities = new Dictionary<int, string>();
+        jsPhase.BreakbarPhase = phase.BreakbarPhase;
+        foreach (var pair in phase.Targets)
+        {
+            var tar = pair.Key;
+            var tarIndex = log.FightData.Logic.Targets.IndexOf(tar);
+            if (pair.Value.IsPrioritary(PhaseData.TargetPriority.Blocking))
             {
-                targets.Add(log.FightData.Logic.Targets.IndexOf(tar));
+                targets.Add(tarIndex);
             }
-            foreach (AbstractSingleActor tar in phase.SecondaryTargets)
+            else
             {
-                secondaryTargets.Add(log.FightData.Logic.Targets.IndexOf(tar));
+                secondaryTargets.Add(tarIndex);
             }
-            jsPhase.Targets = targets;
-            jsPhase.SecondaryTargets = secondaryTargets;
-            IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
-            if (!jsPhase.BreakbarPhase)
+
+            string priority = pair.Value.Priority switch
             {
-                var subPhases = new List<int>();
-                for (int j = 1; j < phases.Count; j++)
-                {
-                    PhaseData curPhase = phases[j];
-                    if (curPhase.Start < jsPhase.Start || curPhase.End > jsPhase.End ||
-                         (curPhase.Start == jsPhase.Start && curPhase.End == jsPhase.End) || !curPhase.CanBeSubPhase)
-                    {
-                        continue;
-                    }
-                    subPhases.Add(j);
-                }
-                if (subPhases.Any())
-                {
-                    jsPhase.SubPhases = subPhases;
-                }
-            }
-            return jsPhase;
+                PhaseData.TargetPriority.Blocking => "BLOCKING",
+                PhaseData.TargetPriority.Main => "MAIN",
+                PhaseData.TargetPriority.NonBlocking => "NONBLOCKING",
+                _ => throw new NotImplementedException("Support for given priority not implemented"),
+            };
+            targetPriorities[tarIndex] = priority;
         }
+        jsPhase.Targets = targets;
+        jsPhase.SecondaryTargets = secondaryTargets;
+        jsPhase.TargetPriorities = targetPriorities;
+        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        if (!jsPhase.BreakbarPhase)
+        {
+            var subPhases = new List<int>();
+            for (int j = 1; j < phases.Count; j++)
+            {
+                PhaseData curPhase = phases[j];
+                if (curPhase.Start < jsPhase.Start || curPhase.End > jsPhase.End ||
+                     (curPhase.Start == jsPhase.Start && curPhase.End == jsPhase.End) || !curPhase.CanBeASubPhaseOf(phase))
+                {
+                    continue;
+                }
+                subPhases.Add(j);
+            }
+            if (subPhases.Count != 0)
+            {
+                jsPhase.SubPhases = subPhases;
+            }
+        }
+        return jsPhase;
     }
 }

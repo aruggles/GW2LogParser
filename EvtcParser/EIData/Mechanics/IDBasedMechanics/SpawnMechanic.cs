@@ -1,32 +1,31 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+
+internal class SpawnMechanic : IDBasedMechanic<SingleActor>
 {
-
-    internal class SpawnMechanic : IDBasedMechanic<AbstractSingleActor>
+    public SpawnMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
-        public SpawnMechanic(long mechanicID, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
-        {
-            IsEnemyMechanic = true;
-        }
+        IsEnemyMechanic = true;
+    }
 
-        public SpawnMechanic(long[] mechanicIDs, string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, inGameName, plotlySetting, shortName, description, fullName, internalCoolDown)
-        {
-            IsEnemyMechanic = true;
-        }
+    public SpawnMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
+    {
+        IsEnemyMechanic = true;
+    }
 
-        internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, AbstractSingleActor> regroupedMobs)
+    internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs)
+    {
+        foreach (long mechanicID in MechanicIDs)
         {
-            foreach (long mechanicID in MechanicIDs)
+            foreach (AgentItem a in log.AgentData.GetNPCsByID((int)mechanicID))
             {
-                foreach (AgentItem a in log.AgentData.GetNPCsByID((int)mechanicID))
+                SingleActor? amp = MechanicHelper.FindEnemyActor(log, a, regroupedMobs);
+                if (amp != null && Keep(amp, log))
                 {
-                    AbstractSingleActor amp = MechanicHelper.FindEnemyActor(log, a, regroupedMobs);
-                    if (amp != null && Keep(amp, log))
-                    {
-                        mechanicLogs[this].Add(new MechanicEvent(a.FirstAware, this, amp));
-                    }
+                    InsertMechanic(log, mechanicLogs, a.FirstAware, amp);
                 }
             }
         }

@@ -1,48 +1,69 @@
-﻿using System;
+﻿using GW2EIEvtcParser.ParsedData;
+using System;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+internal class DoughnutDecoration : FormDecoration
 {
-    internal class DoughnutDecoration : FormDecoration
+    public class DoughnutDecorationMetadata : FormDecorationMetadata
     {
-        public uint OuterRadius { get; }
-        public uint InnerRadius { get; }
+        public readonly uint OuterRadius;
+        public readonly uint InnerRadius;
 
-        public DoughnutDecoration(uint innerRadius, uint outerRadius, (long start, long end) lifespan, string color, GeographicalConnector connector) : base(lifespan, color, connector)
+        public DoughnutDecorationMetadata(string color, uint innerRadius, uint outerRadius) : base(color)
         {
-            if (outerRadius <= innerRadius)
-            {
-                throw new InvalidOperationException("OuterRadius must be > then InnerRadius");
-            }
+            OuterRadius = Math.Max(outerRadius, 1);
             InnerRadius = innerRadius;
-            OuterRadius = outerRadius;
-        }
-        public DoughnutDecoration(uint innerRadius, uint outerRadius, (long start, long end) lifespan, Color color, double opacity, GeographicalConnector connector) : this(innerRadius, outerRadius, lifespan, color.WithAlpha(opacity).ToString(true), connector)
-        {
-        }
-        //
-
-        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
-        {
-            return new DoughnutDecorationCombatReplayDescription(log, this, map);
-        }
-        public override FormDecoration Copy()
-        {
-            return (FormDecoration)new DoughnutDecoration(InnerRadius, OuterRadius, Lifespan, Color, ConnectedTo).UsingFilled(Filled).UsingGrowingEnd(GrowingEnd, GrowingReverse).UsingRotationConnector(RotationConnectedTo).UsingSkillMode(SkillMode);
-        }
-
-        public override FormDecoration GetBorderDecoration(string borderColor = null)
-        {
-            if (!Filled)
+            if (OuterRadius <= InnerRadius)
             {
-                throw new InvalidOperationException("Non filled doughtnuts can't have borders");
+                throw new InvalidOperationException("OuterRadius must be > to InnerRadius");
             }
-            var copy = (DoughnutDecoration)Copy().UsingFilled(false);
-            if (borderColor != null)
-            {
-                copy.Color = borderColor;
-            }
-            return copy;
         }
 
+        public override string GetSignature()
+        {
+            return "Dough" + OuterRadius + Color + InnerRadius;
+        }
+        public override DecorationMetadataDescription GetCombatReplayMetadataDescription()
+        {
+            return new DoughnutDecorationMetadataDescription(this);
+        }
     }
+    public class DoughnutDecorationRenderingData : FormDecorationRenderingData
+    {
+        public DoughnutDecorationRenderingData((long, long) lifespan, GeographicalConnector connector) : base(lifespan, connector)
+        {
+        }
+
+        public override DecorationRenderingDescription GetCombatReplayRenderingDescription(CombatReplayMap map, ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, string metadataSignature)
+        {
+            return new DoughnutDecorationRenderingDescription(log, this, map, usedSkills, usedBuffs, metadataSignature);
+        }
+    }
+    private new DoughnutDecorationMetadata DecorationMetadata => (DoughnutDecorationMetadata)base.DecorationMetadata;
+    public uint OuterRadius => DecorationMetadata.OuterRadius;
+    public uint InnerRadius => DecorationMetadata.InnerRadius;
+
+    public DoughnutDecoration(uint innerRadius, uint outerRadius, (long start, long end) lifespan, string color, GeographicalConnector connector) : base(new DoughnutDecorationMetadata(color, innerRadius, outerRadius), new DoughnutDecorationRenderingData(lifespan, connector))
+    {
+    }
+    public DoughnutDecoration(uint innerRadius, uint outerRadius, (long start, long end) lifespan, Color color, double opacity, GeographicalConnector connector) : this(innerRadius, outerRadius, lifespan, color.WithAlpha(opacity).ToString(true), connector)
+    {
+    }
+    public override FormDecoration Copy(string? color = null)
+    {
+        return (FormDecoration)new DoughnutDecoration(InnerRadius, OuterRadius, Lifespan, color ?? Color, ConnectedTo).UsingFilled(Filled).UsingGrowingEnd(GrowingEnd, GrowingReverse).UsingRotationConnector(RotationConnectedTo).UsingSkillMode(SkillMode);
+    }
+
+    public override FormDecoration GetBorderDecoration(string? borderColor = null)
+    {
+        if (!Filled)
+        {
+            throw new InvalidOperationException("Non filled doughtnuts can't have borders");
+        }
+        return (DoughnutDecoration)Copy(borderColor).UsingFilled(false);
+    }
+    //
+
 }

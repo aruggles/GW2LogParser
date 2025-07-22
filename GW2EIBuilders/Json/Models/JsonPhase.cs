@@ -1,57 +1,60 @@
-﻿using System.Collections.Generic;
+﻿namespace GW2EIJSON;
 
-namespace Gw2LogParser.GW2EIBuilders
+/// <summary>
+/// Class corresponding to a phase
+/// </summary>
+public class JsonPhase
 {
     /// <summary>
-    /// Class corresponding to a phase
+    /// Start time of the phase
     /// </summary>
-    public class JsonPhase
-    {
+    public long Start;
 
-        /// <summary>
-        /// Start time of the phase
-        /// </summary>
-        public long Start { get; set; }
+    /// <summary>
+    /// End time of the phase
+    /// </summary>
+    public long End;
 
-        /// <summary>
-        /// End time of the phase
-        /// </summary>
-        public long End { get; set; }
+    /// <summary>
+    /// Name of the phase
+    /// </summary>
+    public string? Name;
 
-        /// <summary>
-        /// Name of the phase
-        /// </summary>
-        public string Name { get; set; }
+    /// <summary>
+    /// DEPRECATED please use <seealso cref="JsonPhase.TargetPriorities"/> instead. \n
+    /// Index of targets tracked during the phase
+    /// </summary>
+    /// <seealso cref="JsonLog.Targets"/>
+    public IReadOnlyList<int>? Targets;
 
-        /// <summary>
-        /// Index of targets tracked during the phase
-        /// </summary>
-        /// <seealso cref="JsonLog.Targets"/>
-        public IReadOnlyList<int> Targets { get; set; }
-
-        /// <summary>
-        /// Index of secondary targets tracked during the phase
-        /// </summary>
-        /// <seealso cref="JsonLog.Targets"/>
-        public IReadOnlyList<int> SecondaryTargets { get; set; }
-
-        /// <summary>
-        /// Index of sub phases
-        /// </summary>
-        /// <seealso cref="JsonLog.Phases"/>
-        public IReadOnlyList<int> SubPhases { get; set; }
-
-        /// <summary>
-        /// Indicates that the phase is a breakbar phase \n
-        /// Only one target will be present in <see cref="JsonPhase.Targets"/> \n
-        /// The targets breakbar will be active 2 seconds after the start of the phase
-        /// </summary>
-        public bool BreakbarPhase { get; set; }
+    /// <summary>
+    /// DEPRECATED please use <seealso cref="JsonPhase.TargetPriorities"/> instead. \n
+    /// Index of secondary targets tracked during the phase
+    /// </summary>
+    /// <seealso cref="JsonLog.Targets"/>
+    public IReadOnlyList<int>? SecondaryTargets;
 
 
-        public JsonPhase()
-        {
+    /// <summary>
+    /// Dictionary of index, indicating the priority of the target \n
+    /// string in : \n
+    /// "MAIN" is the main target of the phase\n
+    /// "BLOCKING" is an enemy that needs to be dealt with in order to progress the phase \n
+    /// "NONBLOCKING" is a relevant enemy but can be technically ignored \n
+    /// </summary>
+    /// <seealso cref="JsonLog.Targets"/>
+    public IReadOnlyDictionary<int, string>? TargetPriorities;
 
-        }
-    }
+    /// <summary>
+    /// Index of sub phases
+    /// </summary>
+    /// <seealso cref="JsonLog.Phases"/>
+    public IReadOnlyList<int>? SubPhases;
+
+    /// <summary>
+    /// Indicates that the phase is a breakbar phase \n
+    /// Only one target will be present in <see cref="Targets"/> \n
+    /// The targets breakbar will be active 2 seconds after the start of the phase
+    /// </summary>
+    public bool BreakbarPhase;
 }

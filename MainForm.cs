@@ -1,277 +1,374 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Windows.Forms;
-using Gw2LogParser.Exceptions;
+﻿using System.ComponentModel;
+using GW2EIEvtcParser;
+using GW2EIParserCommons.Exceptions;
 using Gw2LogParser.EvtcParserExtensions;
 
-namespace Gw2LogParser
+namespace Gw2LogParser;
+
+public partial class MainForm : Form
 {
-    public partial class MainForm : Form
+    private readonly List<string> _logFiles;
+    private int _runningCount = 0;
+    private bool _anyRunning => _runningCount > 0;
+    private readonly ProgramHelper _programHelper;
+    private readonly Queue<FormOperationController> _logQueue = new();
+    private readonly string _traceFileName;
+    private int _fileNameSorting = 1;
+
+    public MainForm(ProgramHelper programHelper)
     {
-        private readonly List<string> logFiles;
-        private int runningCount;
-        private bool isRunning;
-        private BackgroundWorker finalWorker;
-        private readonly Queue<GridRow> queue = new Queue<GridRow>();
+        _programHelper = programHelper;
+        _logFiles = [];
+        DateTime now = DateTime.Now;
+        _traceFileName = ProgramHelper.EILogPath + "EILogs-" + now.Year + "-" + now.Month + "-" + now.Day + "-" + now.Hour + "-" + now.Minute + "-" + now.Second + ".txt";
+        InitializeComponent();
+        
+        btnCancel.Enabled = false;
+        btnParse.Enabled = false;
+        btnClear.Enabled = true;
+         //finalWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
+    }
 
-        public MainForm()
+    private void DataGridView_DragEnter(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
-            InitializeComponent();
-            logFiles = new List<string>();
-            btnCancel.Enabled = false;
-            btnParse.Enabled = false;
-            btnClear.Enabled = true;
+            e.Effect = DragDropEffects.Move;
+        } else
+        {
+            e.Effect = DragDropEffects.None;
         }
+    }
 
-        private void dataGridView_DragEnter(object sender, DragEventArgs e)
+    private void DataGridView_DragDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data == null) { 
+            return;
+        }
+        string[] filesArray = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+        AddLogFiles(filesArray);
+    }
+
+    private void AddTraceMessage(string message)
+    {
+        if (dataGridView.InvokeRequired)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            dataGridView.Invoke(new Action(() => _AddTraceMessage(message)));
+        }
+        else
+        {
+            _AddTraceMessage(message);
+        }
+    }
+
+    /// <summary>
+    /// Adds log files to the bound data source for display in the interface
+    /// </summary>
+    /// <param name="filesArray"></param>
+    private void AddLogFiles(IEnumerable<string> filesArray)
+    {
+        bool any = false;
+        foreach (string file in filesArray)
+        {
+            if (_logFiles.Contains(file))
             {
-                e.Effect = DragDropEffects.Move;
-            } else
+                //Don't add doubles
+                continue;
+            }
+            any = true;
+            _logFiles.Add(file);
+            AddTraceMessage("UI: Added " + file);
+
+            var operation = new FormOperationController(file, "Ready to parse", dataGridView, gridBindingSource, _logFiles.Count);
+
+            if (Properties.Settings.Default.AutoParse)
             {
-                e.Effect = DragDropEffects.None;
+                QueueOrRunOperation(operation);
             }
         }
-
-        private void dataGridView_DragDrop(object sender, DragEventArgs e)
+        if (_fileNameSorting != 0)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                string[] fileList = (string[]) e.Data.GetData(DataFormats.FileDrop);
-                foreach (string file in fileList)
-                {
-                    if (logFiles.Contains(file)) { continue; }
-                    logFiles.Add(file);
+            SortDgvFiles();
+        }
 
-                    var gridRow = new GridRow(file, "Ready to Parse")
+        btnParse.Enabled = !_anyRunning && any;
+        btnCancel.Enabled = false;
+    }
+
+    private void SortDgvFiles()
+    {
+        if (_fileNameSorting == 0)
+        {
+            _fileNameSorting = 1;
+        }
+        var auxList = new List<FormOperationController>();
+        foreach (FormOperationController val in gridBindingSource)
+        {
+            auxList.Add(val);
+        }
+        auxList.Sort((form1, form2) =>
+        {
+            string right = new FileInfo(form2.InputFile).Name;
+            string left = new FileInfo(form1.InputFile).Name;
+            return _fileNameSorting * string.Compare(left, right, StringComparison.Ordinal);
+        });
+        gridBindingSource.Clear();
+        var i = 0;
+        foreach (FormOperationController val in auxList)
+        {
+            val.Index = ++i;
+            gridBindingSource.Add(val);
+        }
+    }
+
+    private void _RunOperation(FormOperationController operation)
+    {
+        _programHelper.ExecuteMemoryCheckTask();
+        _runningCount++;
+        // _settingsForm.ConditionalSettingDisable(_anyRunning);
+        operation.ToQueuedState();
+        AddTraceMessage("Operation: Queued " + operation.InputFile);
+        var cancelTokenSource = new CancellationTokenSource();// Prepare task
+        Task task = Task.Run(() =>
+        {
+            operation.ToRunState();
+            AddTraceMessage("Operation: Parsing " + operation.InputFile);
+            _programHelper.DoWork(operation);
+        }, cancelTokenSource.Token).ContinueWith(t =>
+        {
+            GC.Collect();
+            cancelTokenSource.Dispose();
+            _runningCount--;
+            AddTraceMessage("Operation: Parsed " + operation.InputFile);
+            // Exception management
+            if (t.IsFaulted)
+            {
+                if (t.Exception != null)
+                {
+                    if (t.Exception.InnerExceptions.Count > 1)
                     {
-                        BgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true }
-                    };
-                    gridRow.BgWorker.DoWork += BgWorkerDoWork;
-                    gridRow.BgWorker.ProgressChanged += BgWorkerProgressChanged;
-                    gridRow.BgWorker.RunWorkerCompleted += BgWorkerCompleted;
-
-                    gridBindingSource.Add(gridRow);
-                }
-                if (logFiles.Count > 0)
-                {
-                    btnParse.Enabled = true;
-                    btnCancel.Enabled = false;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Runs the next background worker, if one is available
-        /// </summary>
-        private void RunNextWorker()
-        {
-            if (queue.Count > 0)
-            {
-                GridRow row = queue.Dequeue();
-                isRunning = true;
-                row.Run();
-            }
-            else
-            {
-                if (runningCount == 0)
-                {
-                    finalWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
-                    finalWorker.DoWork += FinalWorkerDoWork;
-                    finalWorker.ProgressChanged += FinalWorkerProgressChanged;
-                    finalWorker.RunWorkerCompleted += FinalWorkerCompleted;
-                    finalWorker.RunWorkerAsync(this);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Invoked when a BackgroundWorker begins working.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
-        {
-            var rowData = e.Argument as GridRow;
-            e.Result = rowData;
-            runningCount++;
-            isRunning = true;
-            ProcessManager.ProcessRow(rowData, dataGridView);
-        }
-
-        /// <summary>
-        /// Invoked when a BackgroundWorker reports a change in progress
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BgWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            //Redraw rows
-            dataGridView.Invalidate();
-        }
-
-        /// <summary>
-        /// Invoked when a BackgroundWorker completes its task
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BgWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            GridRow row;
-            runningCount--;
-            if (e.Cancelled || e.Error != null)
-            {
-                if (e.Error is CancelledException)
-                {
-                    row = ((CancelledException)e.Error).Row;
-                    if (e.Error.InnerException != null)
-                    {
-                        row.Status = e.Error.InnerException.Message;
-                        Console.WriteLine(e.Error);
-                    }
-
-                    if (row.State == RowState.ClearOnComplete)
-                    {
-                        gridBindingSource.Remove(row);
+                        operation.UpdateProgress("Program: something terrible has happened");
                     }
                     else
                     {
-                        row.State = RowState.Ready;
-                        row.ButtonText = "Parse";
+                        Exception ex = t.Exception.InnerExceptions[0];
+                        if (ex is not ProgramException)
+                        {
+                            operation.UpdateProgress("Program: something terrible has happened");
+                        }
+                        if (ex.InnerException is OperationCanceledException)
+                        {
+                            operation.UpdateProgress("Program: operation Aborted");
+                        }
+                        else if (ex.InnerException != null)
+                        {
+                            var finalException = ParserHelper.GetFinalException(ex);
+                            operation.UpdateProgress("Program: " + finalException.Source);
+                            operation.UpdateProgress("Program: " + finalException.StackTrace);
+                            operation.UpdateProgress("Program: " + finalException.TargetSite);
+                            operation.UpdateProgress("Program: " + finalException.Message);
+                        }
                     }
                 }
                 else
                 {
-                    Console.WriteLine("An Error Has occurred completing task", e);
+                    operation.UpdateProgress("Program: something terrible has happened");
                 }
+            }
+            if (operation.State == OperationState.ClearOnCancel)
+            {
+                gridBindingSource.Remove(operation);
             }
             else
             {
-                row = (GridRow)e.Result;
-                if (row.State == RowState.ClearOnComplete)
+                if (t.IsFaulted)
                 {
-                    gridBindingSource.Remove(row);
+                    operation.ToUnCompleteState();
+                }
+                else if (t.IsCanceled)
+                {
+                    operation.UpdateProgress("Program: operation Aborted");
+                    operation.ToUnCompleteState();
+                }
+                else if (t.IsCompleted)
+                {
+                    operation.ToCompleteState();
                 }
                 else
                 {
-                    row.ButtonText = "Open";
-                    row.State = RowState.Complete;
+                    operation.UpdateProgress("Program: something terrible has happened");
+                    operation.ToUnCompleteState();
                 }
             }
-            dataGridView.Invalidate();
-            RunNextWorker();
+            _programHelper.GenerateTraceFile(operation);
+            if (operation.State != OperationState.Complete)
+            {
+                operation.Reset();
+            }
+            _RunNextOperation();
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+        operation.SetContext(cancelTokenSource, task);
+    }
+
+    /// <summary>
+    /// Runs the next operation, if one is available
+    /// </summary>
+    private void _RunNextOperation()
+    {
+        if (_logQueue.Count > 0 && (_programHelper.ParseMultipleLogs() || !_anyRunning))
+        {
+            _RunOperation(_logQueue.Dequeue());
+        }
+        else
+        {
+            if (!_anyRunning)
+            {
+                ProgramHelper.GenerateSummary(_programHelper.ParserVersion);
+                btnParse.Enabled = true;
+                btnClear.Enabled = true;
+                btnCancel.Enabled = false;
+                // _settingsForm.ConditionalSettingDisable(_anyRunning);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Queues an operation. If the 'MultipleLogs' setting is true, operations are run asynchronously
+    /// </summary>
+    /// <param name="operation"></param>
+    private void QueueOrRunOperation(FormOperationController operation)
+    {
+        btnClear.Enabled = false;
+        btnParse.Enabled = false;
+        btnCancel.Enabled = true;
+        if (_programHelper.ParseMultipleLogs() && _runningCount < _programHelper.GetMaxParallelRunning())
+        {
+            _RunOperation(operation);
+        }
+        else
+        {
+            if (_anyRunning)
+            {
+                _logQueue.Enqueue(operation);
+                operation.ToPendingState();
+            }
+            else
+            {
+                _RunOperation(operation);
+            }
         }
 
-        private void FinalWorkerDoWork(object sender, DoWorkEventArgs e)
-        {
-            // Process Logs and Generate Report.
-            ProcessManager.GenerateFile(finalWorker);
-        }
+    }
 
-        private void FinalWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
+    private void BtnParse_Click(object sender, EventArgs e)
+    {
+        AddTraceMessage("UI: Parse all files");
+        //Clear queue before parsing all
+        _logQueue.Clear();
+        ProgramHelper.CompletedLogs.Clear();
+        if (_logFiles.Count > 0)
         {
-            // Report Status.
-        }
-
-        private void FinalWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            isRunning = false;
-            btnParse.Enabled = true;
-            btnClear.Enabled = true;
-            btnCancel.Enabled = false;
-        }
-
-        /// <summary>
-        /// Runs a worker.
-        /// </summary>
-        /// <param name="row"></param>
-        private void RunWorker(GridRow row)
-        {
-            btnClear.Enabled = false;
             btnParse.Enabled = false;
             btnCancel.Enabled = true;
-            
-            row.Status = "Waiting for a thread";
-            row.State = RowState.Pending;
-            row.Run();
-        }
+            ProgramHelper.timestamp = DateTime.Now.ToFileTime();
 
-        private void btnParse_Click(object sender, EventArgs e)
-        {
-            queue.Clear();
-            ProcessManager.CompletedLogs = new System.Collections.Concurrent.ConcurrentBag<ParsedLog>();
-            if (logFiles.Count > 0)
+            foreach (FormOperationController operation in gridBindingSource)
             {
-                btnParse.Enabled = false;
-                btnCancel.Enabled = true;
-
-                foreach (GridRow row in gridBindingSource)
+                if (!operation.IsBusy())
                 {
-                    if (!row.BgWorker.IsBusy)
-                    {
-                        RunWorker(row);
-                    }
+                    QueueOrRunOperation(operation);
                 }
             }
         }
+    }
 
-        private void btnCancel_Click(object sender, EventArgs e)
+    private void BtnCancel_Click(object sender, EventArgs e)
+    {
+        AddTraceMessage("UI: Cancelling all pending and ongoing parsing operations");
+        //Clear queue so queued workers don't get started by any cancellations
+        var operations = new HashSet<FormOperationController>(_logQueue);
+        _logQueue.Clear();
+        ProgramHelper.CompletedLogs.Clear();
+
+        //Cancel all workers
+        foreach (FormOperationController operation in gridBindingSource)
         {
-            var rows = new HashSet<GridRow>(queue);
-            queue.Clear();
-
-            foreach (GridRow row in gridBindingSource)
+            if (operation.IsBusy())
             {
-                if (row.State == RowState.Pending)
-                {
-                    row.State = RowState.Ready;
-                }
-
-                if (row.BgWorker.IsBusy)
-                {
-                    row.Cancel();
-                } else if (rows.Contains(row))
-                {
-                    row.Status = "Ready to parse";
-                }
-                dataGridView.Invalidate();
+                operation.ToCancelState();
+            }
+            else if (operations.Contains(operation))
+            {
+                operation.ToReadyState();
             }
         }
 
-        private void btnClear_Click(object sender, EventArgs e)
+        btnClear.Enabled = true;
+        btnParse.Enabled = true;
+        btnCancel.Enabled = false;
+    }
+
+    private void BtnClear_Click(object sender, EventArgs e)
+    {
+        AddTraceMessage("UI: Clearing all logs");
+        btnCancel.Enabled = false;
+        btnParse.Enabled = false;
+
+        //Clear the queue so that cancelled workers don't invoke queued workers
+        _logQueue.Clear();
+        _logFiles.Clear();
+
+        for (int i = gridBindingSource.Count - 1; i >= 0; i--)
         {
-            btnCancel.Enabled = false;
-            btnParse.Enabled = false;
-
-            //Clear the queue so that cancelled workers don't invoke queued workers
-            queue.Clear();
-            logFiles.Clear();
-
-            for (int i = gridBindingSource.Count - 1; i >= 0; i--)
+            var operation = gridBindingSource[i] as FormOperationController;
+            if (operation.IsBusy())
             {
-                var row = gridBindingSource[i] as GridRow;
-                if (row.BgWorker.IsBusy)
-                {
-                    row.Cancel();
-                    row.State = RowState.ClearOnComplete;
-                }
-                else
-                {
-                    gridBindingSource.RemoveAt(i);
-                }
+                operation.ToCancelAndClearState();
+            }
+            else
+            {
+                gridBindingSource.RemoveAt(i);
             }
         }
+    }
 
-        private void btnRefreshAPI_Click(object sender, EventArgs e)
+    private void BtnRefreshAPI_Click(object sender, EventArgs e)
+    {
+        btnRefreshAPI.Enabled = false;
+        if (!Directory.Exists(ProgramHelper.CacheLocation))
         {
-            btnRefreshAPI.Enabled = false;
-            ProcessManager.apiController.WriteAPISkillsToFile(ProcessManager.SkillAPICacheLocation);
-            ProcessManager.apiController.WriteAPISpecsToFile(ProcessManager.SpecAPICacheLocation);
-            ProcessManager.apiController.WriteAPITraitsToFile(ProcessManager.TraitAPICacheLocation);
-            btnRefreshAPI.Enabled = true;
-            MessageBox.Show("API cache has been refreshed");
+            Directory.CreateDirectory(ProgramHelper.CacheLocation);
+        }
+        ProgramHelper.apiController.WriteAPISkillsToFile(ProgramHelper.SkillAPICacheLocation);
+        ProgramHelper.apiController.WriteAPISpecsToFile(ProgramHelper.SpecAPICacheLocation);
+        ProgramHelper.apiController.WriteAPITraitsToFile(ProgramHelper.TraitAPICacheLocation);
+        btnRefreshAPI.Enabled = true;
+        MessageBox.Show("API cache has been refreshed");
+    }
+
+    private void _AddTraceMessage(string message)
+    {
+        if (!Properties.Settings.Default.ApplicationTraces)
+        {
+            return;
+        }
+        if (!Directory.Exists(ProgramHelper.EILogPath))
+        {
+            Directory.CreateDirectory(ProgramHelper.EILogPath);
+        }
+        if (!File.Exists(_traceFileName))
+        {
+            using (StreamWriter sw = File.CreateText(_traceFileName))
+            {
+                sw.WriteLine(message);
+            }
+        }
+        else
+        {
+            using (StreamWriter sw = File.AppendText(_traceFileName))
+            {
+                sw.WriteLine(message);
+            }
         }
     }
 }

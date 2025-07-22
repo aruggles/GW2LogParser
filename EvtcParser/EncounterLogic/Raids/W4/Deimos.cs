@@ -1,634 +1,673 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Numerics;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using static GW2EIEvtcParser.ParserHelper;
-using static GW2EIEvtcParser.SkillIDs;
-using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
+using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicPhaseUtils;
 using static GW2EIEvtcParser.EncounterLogic.EncounterLogicTimeUtils;
-using static GW2EIEvtcParser.EncounterLogic.EncounterImages;
+using static GW2EIEvtcParser.EncounterLogic.EncounterLogicUtils;
+using static GW2EIEvtcParser.ParserHelper;
+using static GW2EIEvtcParser.ParserHelpers.EncounterImages;
+using static GW2EIEvtcParser.SkillIDs;
+using static GW2EIEvtcParser.SpeciesIDs;
 
-namespace GW2EIEvtcParser.EncounterLogic
+namespace GW2EIEvtcParser.EncounterLogic;
+
+internal class Deimos : BastionOfThePenitent
 {
-    internal class Deimos : BastionOfThePenitent
+
+    private long _deimos10PercentTime = 0;
+
+    private bool _hasPreEvent = false;
+
+    private long _deimos100PercentTime = 0;
+
+    private const long PreEventConsiderationConstant = 5000;
+
+    public Deimos(int triggerID) : base(triggerID)
     {
-
-        private long _deimos10PercentTime = 0;
-
-        private bool _hasPreEvent = false;
-
-        private long _deimos100PercentTime = 0;
-
-        private const long PreEventConsiderationConstant = 5000;
-
-        public Deimos(int triggerID) : base(triggerID)
-        {
-            MechanicList.AddRange(new List<Mechanic>
-            {
-            new PlayerDstHitMechanic(RapidDecay, "Rapid Decay", new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Black), "Oil","Rapid Decay (Black expanding oil)", "Black Oil",0),
-            new PlayerDstFirstHitMechanic(RapidDecay, "Rapid Decay", new MechanicPlotlySetting(Symbols.Circle,Colors.Black), "Oil T.","Rapid Decay Trigger (Black expanding oil)", "Black Oil Trigger",0).UsingChecker((ce, log) => {
-                AbstractSingleActor actor = log.FindActor(ce.To);
-                if (actor == null)
-                {
-                    return false;
-                }
-                (_, IReadOnlyList<Segment> downs , _) = actor.GetStatus(log);
-                bool hitInDown = downs.Any(x => x.ContainsPoint(ce.Time));
-                return !hitInDown;
-            }),
-            new EnemyCastStartMechanic(OffBalance, "Off Balance", new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "TP CC","Off Balance (Saul TP Breakbar)", "Saul TP Start",0),
-            new EnemyCastEndMechanic(OffBalance, "Off Balance", new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "TP CC Fail","Failed Saul TP CC", "Failed CC (TP)",0).UsingChecker((ce,log) => ce.ActualDuration >= 2200),
-            new EnemyCastEndMechanic(OffBalance, "Off Balance", new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "TP CCed","Saul TP CCed", "CCed (TP)",0).UsingChecker((ce, log) => ce.ActualDuration < 2200),
-            new EnemyCastStartMechanic(BoonThief, "Boon Thief", new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkTeal), "Thief CC","Boon Thief (Saul Breakbar)", "Boon Thief Start",0),
-            new EnemyCastEndMechanic(BoonThief, "Boon Thief", new MechanicPlotlySetting(Symbols.DiamondWide,Colors.Red), "Thief CC Fail","Failed Boon Thief CC", "Failed CC (Thief)",0).UsingChecker((ce,log) => ce.ActualDuration >= 4400),
-            new EnemyCastEndMechanic(BoonThief, "Boon Thief", new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkGreen), "Thief CCed","Boon Thief CCed", "CCed (Thief)",0).UsingChecker((ce, log) => ce.ActualDuration < 4400),
-            new PlayerDstHitMechanic(new long[] {Annihilate2, Annihilate1 }, "Annihilate", new MechanicPlotlySetting(Symbols.Hexagon,Colors.Yellow), "Pizza","Annihilate (Cascading Pizza attack)", "Boss Smash",0),
-            new PlayerDstHitMechanic(DemonicShockWaveRight, "Demonic Shock Wave", new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.Red), "10% RSmash","Knockback (right hand) in 10% Phase", "10% Right Smash",0),
-            new PlayerDstHitMechanic(DemonicShockWaveLeft, "Demonic Shock Wave", new MechanicPlotlySetting(Symbols.TriangleLeftOpen,Colors.Red), "10% LSmash","Knockback (left hand) in 10% Phase", "10% Left Smash",0),
-            new PlayerDstHitMechanic(DemonicShockWaveCenter, "Demonic Shock Wave", new MechanicPlotlySetting(Symbols.Bowtie,Colors.Red), "10% DSmash","Knockback (both hands) in 10% Phase", "10% Double Smash",0),
-            new PlayerDstBuffApplyMechanic(TearInstability, "Tear Instability", new MechanicPlotlySetting(Symbols.Diamond,Colors.DarkTeal), "Tear","Collected a Demonic Tear", "Tear",0),
-            new PlayerDstHitMechanic(MindCrush, "Mind Crush", new MechanicPlotlySetting(Symbols.Square,Colors.Blue), "Mind Crush","Hit by Mind Crush without Bubble Protection", "Mind Crush",0).UsingChecker( (de,log) => de.HealthDamage > 0),
-            new PlayerDstBuffApplyMechanic(WeakMinded, "Weak Minded", new MechanicPlotlySetting(Symbols.SquareOpen,Colors.LightPurple), "Weak Mind","Weak Minded (Debuff after Mind Crush)", "Weak Minded",0),
-            new PlayerDstBuffApplyMechanic(DeimosSelectedByGreen, "Chosen by Eye of Janthir", new MechanicPlotlySetting(Symbols.Circle,Colors.Green), "Green","Chosen by the Eye of Janthir", "Chosen (Green)",0),
-            new PlayerDstBuffApplyMechanic(GreenTeleport, "Teleported", new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Green), "TP","Teleport to/from Demonic Realm", "Teleport",0),
-            new EnemyDstBuffApplyMechanic(UnnaturalSignet, "Unnatural Signet", new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Teal), "DMG Debuff","Double Damage Debuff on Deimos", "+100% Dmg Buff",0)
-            });
-            Extension = "dei";
-            GenericFallBackMethod = FallBackMethod.None;
-            Icon = EncounterIconDeimos;
-            EncounterCategoryInformation.InSubCategoryOrder = 3;
-            EncounterID |= 0x000004;
-        }
-
-        protected override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log)
-        {
-            return new CombatReplayMap(CombatReplayDeimos,
-                            (765, 1000),
-                            (-9542, 1932, -7004, 5250)/*,
-                            (-27648, -9216, 27648, 12288),
-                            (11774, 4480, 14078, 5376)*/);
-        }
-        internal override List<InstantCastFinder> GetInstantCastFinders()
-        {
-            return new List<InstantCastFinder>()
-            {
-                new DamageCastFinder(DemonicAura, DemonicAura),
-            };
-        }
-        protected override HashSet<int> GetUniqueNPCIDs()
-        {
-            return new HashSet<int>
-            {
-                (int)ArcDPSEnums.TargetID.Deimos,
-                (int)ArcDPSEnums.TrashID.Saul,
-                (int)ArcDPSEnums.TrashID.Thief,
-                (int)ArcDPSEnums.TrashID.Drunkard,
-                (int)ArcDPSEnums.TrashID.Gambler,
-            };
-        }
-
-        protected override List<int> GetFriendlyNPCIDs()
-        {
-            return new List<int>
-            {
-                (int)ArcDPSEnums.TrashID.Saul,
-                (int)ArcDPSEnums.TrashID.ShackledPrisoner
-            };
-        }
-
-        private static void MergeWithGadgets(AgentItem deimos, HashSet<AgentItem> gadgets, List<CombatItem> combatData, AgentData agentData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
-        {
-            foreach (AgentItem gadget in gadgets)
-            {
-                RedirectAllEvents(combatData, extensions, agentData, gadget, deimos, 
-                    (evt, from, to) => {
-                        // skip events before last aware that are not attack target related
-                        if (evt.Time < deimos.LastAware && evt.IsStateChange != ArcDPSEnums.StateChange.AttackTarget && evt.IsStateChange != ArcDPSEnums.StateChange.Targetable)
+        MechanicList.Add(new MechanicGroup([
+            new MechanicGroup([
+                new PlayerDstHitMechanic(RapidDecay, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Black), "Oil", "Rapid Decay (Black expanding oil)","Black Oil", 0),
+                new PlayerDstFirstHitMechanic(RapidDecay, new MechanicPlotlySetting(Symbols.Circle,Colors.Black), "Oil T.","Rapid Decay Trigger (Black expanding oil)", "Black Oil Trigger",0)
+                    .UsingChecker((ce, log) => {
+                        SingleActor? actor = log.FindActor(ce.To);
+                        if (actor == null)
                         {
                             return false;
                         }
-                        if (evt.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate)
+                        (_, IReadOnlyList<Segment> downs , _, _) = actor.GetStatus(log);
+                        bool hitInDown = downs.Any(x => x.ContainsPoint(ce.Time));
+                        return !hitInDown;
+                    }
+                ),
+            ]),
+            new MechanicGroup([
+                new EnemyCastStartMechanic(OffBalance, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "TP CC", "Off Balance (Saul TP Breakbar)","Saul TP Start", 0),
+                new EnemyCastEndMechanic(OffBalance, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "TP CC Fail", "Failed Saul TP CC","Failed CC (TP)", 0)
+                    .UsingChecker((ce,log) => ce.ActualDuration >= 2200),
+                new EnemyCastEndMechanic(OffBalance, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "TP CCed", "Saul TP CCed","CCed (TP)", 0)
+                    .UsingChecker((ce, log) => ce.ActualDuration < 2200),
+            ]),
+            new MechanicGroup([
+                new EnemyCastStartMechanic(BoonThief, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkTeal), "Thief CC", "Boon Thief (Saul Breakbar)","Boon Thief Start", 0),
+                new EnemyCastEndMechanic(BoonThief, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.Red), "Thief CC Fail", "Failed Boon Thief CC","Failed CC (Thief)", 0)
+                    .UsingChecker((ce,log) => ce.ActualDuration >= 4400),
+                new EnemyCastEndMechanic(BoonThief, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkGreen), "Thief CCed", "Boon Thief CCed","CCed (Thief)", 0)
+                    .UsingChecker((ce, log) => ce.ActualDuration < 4400),
+            ]),
+            new PlayerDstHitMechanic([Annihilate2, Annihilate1], new MechanicPlotlySetting(Symbols.Hexagon,Colors.Yellow), "Pizza", "Annihilate (Cascading Pizza attack)","Boss Smash", 0),
+            new MechanicGroup([
+                new PlayerDstHitMechanic(DemonicShockWaveRight, new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.Red), "10% RSmash", "Knockback (right hand) in 10% Phase","10% Right Smash", 0),
+                new PlayerDstHitMechanic(DemonicShockWaveLeft, new MechanicPlotlySetting(Symbols.TriangleLeftOpen,Colors.Red), "10% LSmash", "Knockback (left hand) in 10% Phase","10% Left Smash", 0),
+                new PlayerDstHitMechanic(DemonicShockWaveCenter, new MechanicPlotlySetting(Symbols.Bowtie,Colors.Red), "10% DSmash", "Knockback (both hands) in 10% Phase","10% Double Smash", 0),
+            ]),
+            new PlayerDstBuffApplyMechanic(TearInstability, new MechanicPlotlySetting(Symbols.Diamond,Colors.DarkTeal), "Tear", "Collected a Demonic Tear","Tear", 0),
+            new MechanicGroup([
+                new PlayerDstHitMechanic(MindCrush, new MechanicPlotlySetting(Symbols.Square,Colors.Blue), "Mind Crush", "Hit by Mind Crush without Bubble Protection","Mind Crush", 0)
+                    .UsingChecker( (de,log) => de.HealthDamage > 0),
+                new PlayerDstBuffApplyMechanic(WeakMinded, new MechanicPlotlySetting(Symbols.SquareOpen,Colors.LightPurple), "Weak Mind", "Weak Minded (Debuff after Mind Crush)","Weak Minded", 0),
+            ]),
+            new MechanicGroup([
+                new PlayerDstBuffApplyMechanic(DeimosSelectedByGreen, new MechanicPlotlySetting(Symbols.Circle,Colors.Green), "Green", "Chosen by the Eye of Janthir","Chosen (Green)", 0),
+                new PlayerDstBuffApplyMechanic(GreenTeleport, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Green), "TP", "Teleport to/from Demonic Realm","Teleport", 0),
+            ]),
+            new EnemyDstBuffApplyMechanic(UnnaturalSignet, new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Teal), "DMG Debuff", "Double Damage Debuff on Deimos","+100% Dmg Buff", 0)
+        ]));
+        Extension = "dei";
+        GenericFallBackMethod = FallBackMethod.None;
+        Icon = EncounterIconDeimos;
+        EncounterCategoryInformation.InSubCategoryOrder = 3;
+        EncounterID |= 0x000004;
+    }
+
+    protected override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log)
+    {
+        return new CombatReplayMap(CombatReplayDeimos,
+                        (765, 1000),
+                        (-9542, 1932, -7004, 5250)/*,
+                        (-27648, -9216, 27648, 12288),
+                        (11774, 4480, 14078, 5376)*/);
+    }
+    internal override List<InstantCastFinder> GetInstantCastFinders()
+    {
+        return
+        [
+            new DamageCastFinder(DemonicAura, DemonicAura),
+        ];
+    }
+    protected override IReadOnlyList<TargetID> GetUniqueNPCIDs()
+    {
+        return
+        [
+            TargetID.Deimos,
+            TargetID.Saul,
+            TargetID.Thief,
+            TargetID.Drunkard,
+            TargetID.Gambler,
+        ];
+    }
+
+    protected override IReadOnlyList<TargetID> GetFriendlyNPCIDs()
+    {
+        return
+        [
+            TargetID.Saul,
+            TargetID.ShackledPrisoner
+        ];
+    }
+
+    private static void MergeWithGadgets(AgentItem deimos, long upperTimeThreshold, HashSet<AgentItem> gadgets, AgentItem mainBody, List<CombatItem> combatData, AgentData agentData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
+    {
+        foreach (AgentItem gadget in gadgets)
+        {
+            RedirectAllEvents(combatData, extensions, agentData, gadget, deimos,
+                (evt, from, to) =>
+                {
+                    // Only keep damage events from arms
+                    if (from != mainBody && !evt.IsDamage())
+                    {
+                        return false;
+                    }
+                    if (evt.Time < upperTimeThreshold)
+                    {
+                        // skip events before targetable that are not attack target or position related
+                        if (evt.IsStateChange != StateChange.AttackTarget && evt.IsStateChange != StateChange.Targetable && !evt.IsGeographical())
                         {
                             return false;
                         }
-                        // Deimos can't go above 10% hp during that phase
-                        if (evt.IsStateChange == ArcDPSEnums.StateChange.HealthUpdate && evt.DstAgent > 1001)
+                    }
+                    if (evt.IsStateChange == StateChange.MaxHealthUpdate)
+                    {
+                        return false;
+                    }
+                    // Deimos can't go above 10% hp during that phase
+                    if (evt.IsStateChange == StateChange.HealthUpdate && HealthUpdateEvent.GetHealthPercent(evt) > 10.01)
+                    {
+                        return false;
+                    }
+                    if (evt.IsGeographical() && evt.Time < upperTimeThreshold)
+                    {
+                        evt.OverrideTime(upperTimeThreshold);
+                    }
+                    if (evt.Time < to.FirstAware)
+                    {
+                        evt.OverrideTime(to.FirstAware);
+                    }
+                    return true;
+                }
+            );
+        }
+    }
+
+    internal override List<BuffEvent> SpecialBuffEventProcess(CombatData combatData, SkillData skillData)
+    {
+        SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Deimos)) ?? throw new MissingKeyActorsException("Deimos not found");
+        var res = new List<BuffEvent>();
+        IReadOnlyList<BuffEvent> signets = combatData.GetBuffData(UnnaturalSignet);
+        foreach (BuffEvent bfe in signets)
+        {
+            if (bfe is BuffApplyEvent ba)
+            {
+                BuffEvent? removal = signets.FirstOrDefault(x => x is BuffRemoveAllEvent && x.Time > bfe.Time && x.Time < bfe.Time + 30000);
+                if (removal == null)
+                {
+                    res.Add(new BuffRemoveAllEvent(_unknownAgent, target.AgentItem, ba.Time + ba.AppliedDuration, 0, skillData.Get(UnnaturalSignet), IFF.Unknown, 1, 0));
+                    res.Add(new BuffRemoveManualEvent(_unknownAgent, target.AgentItem, ba.Time + ba.AppliedDuration, 0, skillData.Get(UnnaturalSignet), IFF.Unknown));
+                }
+            }
+            else if (bfe is BuffRemoveAllEvent)
+            {
+                BuffEvent? apply = signets.FirstOrDefault(x => x is BuffApplyEvent && x.Time < bfe.Time && x.Time > bfe.Time - 30000);
+                if (apply == null)
+                {
+                    res.Add(new BuffApplyEvent(_unknownAgent, target.AgentItem, bfe.Time - 10000, 10000, skillData.Get(UnnaturalSignet), IFF.Unknown, uint.MaxValue, true));
+                }
+            }
+        }
+        return res;
+    }
+
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, FightData fightData, IReadOnlyCollection<AgentItem> playerAgents)
+    {
+        base.CheckSuccess(combatData, agentData, fightData, playerAgents);
+        if (!fightData.Success && _deimos10PercentTime > 0)
+        {
+            SingleActor deimos = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Deimos)) ?? throw new MissingKeyActorsException("Deimos not found");
+            if (!agentData.TryGetFirstAgentItem(TargetID.Saul, out var saul))
+            {
+                throw new MissingKeyActorsException("Saul not found");
+            }
+            if (combatData.GetDeadEvents(saul).Count > 0)
+            {
+                return;
+            }
+            IReadOnlyList<AttackTargetEvent> attackTargets = combatData.GetAttackTargetEvents(deimos.AgentItem);
+            if (attackTargets.Count == 0)
+            {
+                return;
+            }
+            AgentItem attackTarget = attackTargets.Last().AttackTarget;
+            // sanity check
+            TargetableEvent? attackableEvent = combatData.GetTargetableEvents(attackTarget).LastOrDefault(x => x.Targetable && x.Time > _deimos10PercentTime - ServerDelayConstant);
+            if (attackableEvent == null)
+            {
+                return;
+            }
+            TargetableEvent? notAttackableEvent = combatData.GetTargetableEvents(attackTarget).LastOrDefault(x => !x.Targetable && x.Time > attackableEvent.Time);
+            if (notAttackableEvent == null)
+            {
+                return;
+            }
+            // Saul stays around post encounter
+            if (saul.LastAware <= notAttackableEvent.Time || combatData.GetDespawnEvents(saul).Any(x => x.Time <= notAttackableEvent.Time && x.Time >= _deimos10PercentTime))
+            {
+                return;
+            }
+            HealthDamageEvent? lastDamageTaken = combatData.GetDamageTakenData(deimos.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && x.Time > _deimos10PercentTime && playerAgents.Contains(x.From.GetFinalMaster()) && !x.ToFriendly);
+            if (lastDamageTaken != null)
+            {
+                // This means Deimos received damage after becoming non attackable, that means it did not die
+                HealthDamageEvent? friendlyDamageToDeimos = combatData.GetDamageTakenData(deimos.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && x.Time > _deimos10PercentTime && x.Time > lastDamageTaken.Time && x.ToFriendly);
+                if (friendlyDamageToDeimos != null || !AtLeastOnePlayerAlive(combatData, fightData, notAttackableEvent.Time, playerAgents))
+                {
+                    return;
+                }
+                fightData.SetSuccess(true, notAttackableEvent.Time);
+            }
+        }
+    }
+
+    private static AgentItem? GetShackledPrisoner(AgentData agentData, List<CombatItem> combatData)
+    {
+        CombatItem? shackledPrisonerMaxHP = combatData.FirstOrDefault(x => MaxHealthUpdateEvent.GetMaxHealth(x) == 1000980 && x.IsStateChange == StateChange.MaxHealthUpdate);
+        if (shackledPrisonerMaxHP != null)
+        {
+            AgentItem shackledPrisoner = agentData.GetAgent(shackledPrisonerMaxHP.SrcAgent, shackledPrisonerMaxHP.Time);
+            if (shackledPrisoner.ID > 0) // sanity check against unknown
+            {
+                return shackledPrisoner;
+            }
+        }
+        return null;
+    }
+
+    internal override long GetFightOffset(EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+    {
+        IReadOnlyList<AgentItem> deimosAgents = agentData.GetNPCsByID(TargetID.Deimos);
+        long start = long.MinValue;
+        long genericStart = GetGenericFightOffset(fightData);
+        foreach (AgentItem deimos in deimosAgents)
+        {
+            // enter combat
+            CombatItem? spawnProtectionRemove = combatData.FirstOrDefault(x => x.DstMatchesAgent(deimos) && x.IsBuffRemove == BuffRemove.All && x.SkillID == SpawnProtection);
+            if (spawnProtectionRemove != null)
+            {
+                start = Math.Max(start, spawnProtectionRemove.Time);
+                if (start - genericStart > PreEventConsiderationConstant)
+                {
+                    AgentItem? shackledPrisoner = GetShackledPrisoner(agentData, combatData);
+                    if (shackledPrisoner != null)
+                    {
+                        CombatItem? firstGreen = combatData.FirstOrDefault(x => x.IsBuffApply() && x.SkillID == DeimosSelectedByGreen);
+                        CombatItem? firstHPUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.HealthUpdate && x.SrcMatchesAgent(shackledPrisoner));
+                        if (firstGreen != null && firstGreen.Time < start && firstHPUpdate != null && HealthUpdateEvent.GetHealthPercent(firstHPUpdate) == 100) // sanity check
                         {
-                            return false;
+                            _hasPreEvent = true;
+                            _deimos100PercentTime = start - firstHPUpdate.Time;
+                            start = firstHPUpdate.Time;
                         }
-                        if (evt.Time < to.FirstAware)
-                        {
-                            evt.OverrideTime(to.FirstAware);
-                        }
-                        return true;
                     }
-                );
-            }
-        }
-
-        internal override List<AbstractBuffEvent> SpecialBuffEventProcess(CombatData combatData, SkillData skillData)
-        {
-            AbstractSingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Deimos));
-            if (target == null)
-            {
-                throw new MissingKeyActorsException("Deimos not found");
-            }
-            var res = new List<AbstractBuffEvent>();
-            IReadOnlyList<AbstractBuffEvent> signets = combatData.GetBuffData(UnnaturalSignet);
-            foreach (AbstractBuffEvent bfe in signets)
-            {
-                if (bfe is BuffApplyEvent ba)
-                {
-                    AbstractBuffEvent removal = signets.FirstOrDefault(x => x is BuffRemoveAllEvent && x.Time > bfe.Time && x.Time < bfe.Time + 30000);
-                    if (removal == null)
-                    {
-                        res.Add(new BuffRemoveAllEvent(_unknownAgent, target.AgentItem, ba.Time + ba.AppliedDuration, 0, skillData.Get(UnnaturalSignet), ArcDPSEnums.IFF.Unknown, 1, 0));
-                        res.Add(new BuffRemoveManualEvent(_unknownAgent, target.AgentItem, ba.Time + ba.AppliedDuration, 0, skillData.Get(UnnaturalSignet), ArcDPSEnums.IFF.Unknown));
-                    }
-                }
-                else if (bfe is BuffRemoveAllEvent)
-                {
-                    AbstractBuffEvent apply = signets.FirstOrDefault(x => x is BuffApplyEvent && x.Time < bfe.Time && x.Time > bfe.Time - 30000);
-                    if (apply == null)
-                    {
-                        res.Add(new BuffApplyEvent(_unknownAgent, target.AgentItem, bfe.Time - 10000, 10000, skillData.Get(UnnaturalSignet), ArcDPSEnums.IFF.Unknown, uint.MaxValue, true));
-                    }
-                }
-            }
-            return res;
-        }
-
-        internal override void CheckSuccess(CombatData combatData, AgentData agentData, FightData fightData, IReadOnlyCollection<AgentItem> playerAgents)
-        {
-            base.CheckSuccess(combatData, agentData, fightData, playerAgents);
-            if (!fightData.Success && _deimos10PercentTime > 0)
-            {
-                AbstractSingleActor deimos = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Deimos));
-                if (deimos == null)
-                {
-                    throw new MissingKeyActorsException("Deimos not found");
-                }
-                if (!agentData.TryGetFirstAgentItem(ArcDPSEnums.TrashID.Saul, out AgentItem saul))
-                {
-                    throw new MissingKeyActorsException("Saul not found");
-                }
-                if (combatData.GetDeadEvents(saul).Any())
-                {
-                    return;
-                }
-                IReadOnlyList<AttackTargetEvent> attackTargets = combatData.GetAttackTargetEvents(deimos.AgentItem);
-                if (attackTargets.Count == 0)
-                {
-                    return;
-                }
-                AgentItem attackTarget = attackTargets.Last().AttackTarget;
-                // sanity check
-                TargetableEvent attackableEvent = combatData.GetTargetableEvents(attackTarget).LastOrDefault(x => x.Targetable && x.Time > _deimos10PercentTime - ServerDelayConstant);
-                if (attackableEvent == null)
-                {
-                    return;
-                }
-                TargetableEvent notAttackableEvent = combatData.GetTargetableEvents(attackTarget).LastOrDefault(x => !x.Targetable && x.Time > attackableEvent.Time);
-                if (notAttackableEvent == null)
-                {
-                    return;
-                }
-                AbstractHealthDamageEvent lastDamageTaken = combatData.GetDamageTakenData(deimos.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && x.Time > _deimos10PercentTime && playerAgents.Contains(x.From.GetFinalMaster()) && !x.ToFriendly);
-                if (lastDamageTaken != null)
-                {
-                    // This means Deimos received damage after becoming non attackable, that means it did not die
-                    AbstractHealthDamageEvent friendlyDamageToDeimos = combatData.GetDamageTakenData(deimos.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && x.Time > _deimos10PercentTime && x.Time > lastDamageTaken.Time && x.ToFriendly);
-                    if (friendlyDamageToDeimos != null || !AtLeastOnePlayerAlive(combatData, fightData, notAttackableEvent.Time, playerAgents))
-                    {
-                        return;
-                    }
-                    fightData.SetSuccess(true, notAttackableEvent.Time);
                 }
             }
         }
+        return start >= 0 ? start : genericStart;
+    }
 
-        private static long AttackTargetSpecialParse(CombatItem targetable, AgentData agentData, List<CombatItem> combatData, HashSet<AgentItem> gadgetAgents)
+    internal override IEnumerable<ErrorEvent> GetCustomWarningMessages(FightData fightData, EvtcVersionEvent evtcVersion)
+    {
+        var res = base.GetCustomWarningMessages(fightData, evtcVersion);
+        if (!fightData.IsCM)
         {
-            if (targetable == null)
-            {
-                return 0;
-            }
-            long firstAware = targetable.Time;
-            AgentItem targetAgent = agentData.GetAgent(targetable.SrcAgent, targetable.Time);
-            if (targetAgent == _unknownAgent)
-            {
-                return 0;
-            }
-            CombatItem attackTargetEvent = combatData.FirstOrDefault(x => x.IsStateChange == ArcDPSEnums.StateChange.AttackTarget && x.SrcMatchesAgent(targetAgent));
-            if (attackTargetEvent == null)
-            {
-                return 0;
-            }
-            AgentItem deimosStructBody = agentData.GetAgent(attackTargetEvent.DstAgent, attackTargetEvent.Time);
-            if (deimosStructBody == _unknownAgent)
-            {
-                return 0;
-            }
+            return res.Concat(new ErrorEvent("Missing outgoing Saul damage due to % based damage").ToEnumerable());
+        }
+        return res;
+    }
+
+    private static bool HandleDemonicBonds(AgentData agentData, List<CombatItem> combatData)
+    {
+        var maxHPUpdates = combatData.Where(x => MaxHealthUpdateEvent.GetMaxHealth(x) == 239040 && x.IsStateChange == StateChange.MaxHealthUpdate).ToList();
+        var demonicBonds = maxHPUpdates.Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Distinct().Where(x => x.Type == AgentItem.AgentType.Gadget);
+        foreach (AgentItem demonicBond in demonicBonds)
+        {
+            demonicBond.OverrideID(TargetID.DemonicBond, agentData);
+            demonicBond.OverrideType(AgentItem.AgentType.NPC, agentData);
+        }
+        return demonicBonds.Any();
+    }
+
+    internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
+    {
+        bool needsDummy = _hasPreEvent && !HandleDemonicBonds(agentData, combatData);
+        AgentItem? shackledPrisoner = GetShackledPrisoner(agentData, combatData);
+        AgentItem? saul = agentData.GetNPCsByID(TargetID.Saul).FirstOrDefault();
+        if (shackledPrisoner != null && (saul == null || saul.FirstAware > shackledPrisoner.FirstAware + PreEventConsiderationConstant))
+        {
+            shackledPrisoner.OverrideID(TargetID.ShackledPrisoner, agentData);
+            shackledPrisoner.OverrideType(AgentItem.AgentType.NPC, agentData);
+        }
+        if (_hasPreEvent && needsDummy)
+        {
+            agentData.AddCustomNPCAgent(fightData.FightStart, _deimos100PercentTime, "Deimos Pre Event", Spec.NPC, TargetID.DummyTarget, true);
+        }
+        base.EIEvtcParse(gw2Build, evtcVersion, fightData, agentData, combatData, extensions);
+        // Find target
+        SingleActor deimos = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Deimos)) ?? throw new MissingKeyActorsException("Deimos not found");
+        // Deimos gadgets via attack targets
+        var attackTargetEvents = combatData.Where(x => x.IsStateChange == StateChange.AttackTarget).Select(x => new AttackTargetEvent(x, agentData));
+        var targetableEvents = combatData.Where(x => x.IsStateChange == StateChange.Targetable && x.DstAgent > 0 && x.Time >= deimos.FirstAware).Select(x => new TargetableEvent(x, agentData));
+        (TargetableEvent evt, AgentItem attackTargetAgent, AgentItem targetedAgent) targetable = targetableEvents
+            .Select(targetableEvent => (
+                targetableEvent,
+                targetableEvent.Src,
+                attackTargetEvents
+                    .Where(attackTargetEvent => attackTargetEvent.AttackTarget == targetableEvent.Src)
+                    .Select(attackTargetEvent => attackTargetEvent.Src).FirstOrDefault())
+                   )
+            .Where(x => x.Item3 != null && x.Item3.Type == AgentItem.AgentType.Gadget)
+            .FirstOrDefault()!;
+        long deimos10PercentTargetable = long.MaxValue;
+        AgentItem? deimosStructBody = null;
+        var gadgetAgents = new HashSet<AgentItem>();
+        if (targetable != default)
+        {
+            TargetableEvent targetableEvent = targetable.evt;
+            AgentItem attackTargetAgent = targetable.attackTargetAgent;
+            deimosStructBody = targetable.targetedAgent!;
+            deimos10PercentTargetable = targetableEvent.Time;
             gadgetAgents.Add(deimosStructBody);
-            CombatItem armDeimosDamageEvent = combatData.FirstOrDefault(x => x.Time >= firstAware && (x.SkillID == DemonicShockWaveRight || x.SkillID == DemonicShockWaveCenter || x.SkillID == DemonicShockWaveLeft) && x.SrcAgent != 0 && x.SrcInstid != 0 && !x.IsExtension);
+            CombatItem? armDeimosDamageEvent = combatData.FirstOrDefault(x => x.Time >= deimos10PercentTargetable && x.IsDamage() && (x.SkillID == DemonicShockWaveRight || x.SkillID == DemonicShockWaveCenter || x.SkillID == DemonicShockWaveLeft) && x.SrcAgent != 0 && x.SrcInstid != 0);
             if (armDeimosDamageEvent != null)
             {
                 gadgetAgents.Add(agentData.GetAgent(armDeimosDamageEvent.SrcAgent, armDeimosDamageEvent.Time));
             }
-            return firstAware;
+            _deimos10PercentTime = deimos10PercentTargetable;
         }
-
-        private static AgentItem GetShackledPrisoner(AgentData agentData, List<CombatItem> combatData)
+        // Deimos gadgets via legacy, when attack targets fail
+        if (deimosStructBody == null)
         {
-            CombatItem shackledPrisonerMaxHP = combatData.FirstOrDefault(x => x.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate && x.DstAgent == 1000980);
-            if (shackledPrisonerMaxHP != null)
+            CombatItem? armDeimosDamageEvent = combatData.FirstOrDefault(x => x.Time >= deimos.LastAware && (x.SkillID == DemonicShockWaveRight || x.SkillID == DemonicShockWaveCenter || x.SkillID == DemonicShockWaveLeft) && x.IsDamage());
+            if (armDeimosDamageEvent != null)
             {
-                AgentItem shackledPrisoner = agentData.GetAgent(shackledPrisonerMaxHP.SrcAgent, shackledPrisonerMaxHP.Time);
-                if (shackledPrisoner.ID > 0) // sanity check against unknown
+                var deimosGadgets = agentData.GetAgentByType(AgentItem.AgentType.Gadget).Where(x => x.Name.Contains("Deimos") && x.LastAware > armDeimosDamageEvent.Time);
+                if (deimosGadgets.Any())
                 {
-                    return shackledPrisoner;
+                    deimos10PercentTargetable = deimosGadgets.Max(x => x.FirstAware);
+                    gadgetAgents = new HashSet<AgentItem>(deimosGadgets);
+                    deimosStructBody = gadgetAgents.FirstOrDefault(agent => !combatData.Any(evt => (evt.SkillID == DemonicShockWaveRight || evt.SkillID == DemonicShockWaveCenter || evt.SkillID == DemonicShockWaveLeft) && evt.IsDamage() && evt.SrcMatchesAgent(agent)));
+                    _deimos10PercentTime = (deimos10PercentTargetable >= deimos.LastAware ? deimos10PercentTargetable : deimos.LastAware);
                 }
             }
-            return null;
+        }
+        // invul correction
+        CombatItem? invulApp = combatData.FirstOrDefault(x => x.DstMatchesAgent(deimos.AgentItem) && x.IsBuffApply() && x.SkillID == Determined762);
+        if (invulApp != null)
+        {
+            invulApp.OverrideValue((int)(Math.Min(deimos10PercentTargetable, deimos.LastAware) - invulApp.Time));
+        }
+        //
+        if (deimosStructBody != null)
+        {
+            MergeWithGadgets(deimos.AgentItem, _deimos10PercentTime, gadgetAgents, deimosStructBody, combatData, agentData, extensions);
+            // Add custom spawn event
+            combatData.Add(new CombatItem(_deimos10PercentTime, deimos.AgentItem.Agent, 0, 0, 0, 0, 0, deimos.AgentItem.InstID, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0));
+            combatData.SortByTime();
+        }
+        deimos.AgentItem.OverrideAwareTimes(deimos.FirstAware, fightData.FightEnd);
+        deimos.OverrideName("Deimos");
+        foreach (SingleActor target in Targets)
+        {
+            if (target.IsSpecies(TargetID.Thief) || target.IsSpecies(TargetID.Drunkard) || target.IsSpecies(TargetID.Gambler))
+            {
+
+                string name = (target.IsSpecies(TargetID.Thief) ? "Thief" : (target.IsSpecies(TargetID.Drunkard) ? "Drunkard" : (target.IsSpecies(TargetID.Gambler) ? "Gambler" : "")));
+                target.OverrideName(name);
+            }
+        }
+    }
+
+    internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
+    {
+        // We expect pre event with logs with LogStartNPCUpdate events
+        if (!_hasPreEvent && combatData.GetLogNPCUpdateEvents().Any())
+        {
+            return FightData.EncounterStartStatus.NoPreEvent;
+        }
+        else
+        {
+            return FightData.EncounterStartStatus.Normal;
+        }
+    }
+
+    internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
+    {
+        List<PhaseData> phases = GetInitialPhase(log);
+        SingleActor mainTarget = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Deimos)) ?? throw new MissingKeyActorsException("Deimos not found");
+        phases[0].AddTarget(mainTarget, log);
+
+        if (requirePhases)
+        {
+            var fullFight = phases[0];
+            var phase100to0 = fullFight;
+            if (_deimos100PercentTime > 0)
+            {
+                var phasePreEvent = new PhaseData(0, _deimos100PercentTime, "Pre Event");
+                phasePreEvent.AddParentPhase(fullFight);
+                phasePreEvent.AddTargets(Targets.Where(x => x.IsSpecies(TargetID.DemonicBond)), log);
+                phasePreEvent.AddTarget(Targets.FirstOrDefault(x => x.IsSpecies(TargetID.DummyTarget)), log);
+                phases.Add(phasePreEvent);
+
+                phase100to0 = new PhaseData(_deimos100PercentTime, log.FightData.FightEnd, "Main Fight");
+                phase100to0.AddParentPhase(fullFight);
+                phase100to0.AddTarget(mainTarget, log);
+                phases.Add(phase100to0);
+            }
+            var phase100to10 = AddBossPhases(phases, log, mainTarget, phase100to0);
+            AddAddPhases(phases, log, mainTarget, [phase100to10]);
+            AddBurstPhases(phases, log, mainTarget, [phase100to0, phase100to10]);
         }
 
-        internal override long GetFightOffset(int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData)
+        return phases;
+    }
+
+    private PhaseData AddBossPhases(List<PhaseData> phases, ParsedEvtcLog log, SingleActor mainTarget, PhaseData mainFightPhase)
+    {
+        // Determined + additional data on inst change
+        BuffEvent? invulDei = log.CombatData.GetBuffDataByIDByDst(Determined762, mainTarget.AgentItem).FirstOrDefault(x => x is BuffApplyEvent);
+        var phase100to10 = mainFightPhase;
+        if (invulDei != null || _deimos10PercentTime > 0)
         {
-            IReadOnlyList<AgentItem> deimosAgents = agentData.GetNPCsByID(ArcDPSEnums.TargetID.Deimos);
-            long start = long.MinValue;
-            long genericStart = GetGenericFightOffset(fightData);
-            foreach (AgentItem deimos in deimosAgents)
+            long npcDeimosEnd = _deimos10PercentTime;
+            var mainDeimosPhaseName = "100% - 10%";
+            if (invulDei != null)
             {
-                // enter combat
-                CombatItem spawnProtectionRemove = combatData.FirstOrDefault(x => x.DstMatchesAgent(deimos) && x.IsBuffRemove == ArcDPSEnums.BuffRemove.All && x.SkillID == SpawnProtection);
-                if (spawnProtectionRemove != null)
+                npcDeimosEnd = invulDei.Time;
+            }
+            else if (log.CombatData.GetHealthUpdateEvents(mainTarget.AgentItem).Any())
+            {
+                HealthUpdateEvent? prevHPUpdate = log.CombatData.GetHealthUpdateEvents(mainTarget.AgentItem).LastOrDefault(x => x.Time <= _deimos10PercentTime);
+                if (prevHPUpdate != null)
                 {
-                    start = Math.Max(start, spawnProtectionRemove.Time);
-                    if (start - genericStart > PreEventConsiderationConstant)
+                    mainDeimosPhaseName = $"100% - {Math.Round(prevHPUpdate.HealthPercent)}%";
+                    npcDeimosEnd = prevHPUpdate.Time;
+                }
+            }
+            phase100to10 = new PhaseData(_deimos100PercentTime, npcDeimosEnd, mainDeimosPhaseName);
+            phase100to10.AddTarget(mainTarget, log);
+            phase100to10.AddParentPhase(mainFightPhase);
+            phases.Add(phase100to10);
+
+            if (_deimos10PercentTime > 0 && log.FightData.FightEnd - _deimos10PercentTime > PhaseTimeLimit)
+            {
+                var phase10to0 = new PhaseData(_deimos10PercentTime, log.FightData.FightEnd, "10% - 0%");
+                phase10to0.AddTarget(mainTarget, log);
+                phase10to0.AddParentPhase(mainFightPhase);
+                phases.Add(phase10to0);
+            }
+            //mainTarget.AddCustomCastLog(end, -6, (int)(start - end), ParseEnum.Activation.None, (int)(start - end), ParseEnum.Activation.None, log);
+        }
+
+        return phase100to10;
+    }
+
+    private void AddAddPhases(List<PhaseData> phases, ParsedEvtcLog log, SingleActor mainTarget, List<PhaseData> parentPhases)
+    {
+        foreach (SingleActor target in Targets)
+        {
+            if (target.IsSpecies(TargetID.Thief) || target.IsSpecies(TargetID.Drunkard) || target.IsSpecies(TargetID.Gambler))
+            {
+                var addPhase = new PhaseData(target.FirstAware - 1000, Math.Min(target.LastAware + 1000, log.FightData.FightEnd), target.Character);
+                addPhase.AddTarget(target, log);
+                addPhase.OverrideTimes(log);
+                // override first then add Deimos so that it does not disturb the override process
+                addPhase.AddTarget(mainTarget, log);
+                addPhase.AddParentPhases(parentPhases);
+                phases.Add(addPhase);
+            }
+        }
+    }
+
+    private static void AddBurstPhases(List<PhaseData> phases, ParsedEvtcLog log, SingleActor mainTarget, List<PhaseData> parentPhases)
+    {
+        var signets = mainTarget.GetBuffStatus(log, UnnaturalSignet, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0);
+        int burstID = 1;
+        foreach (Segment signet in signets)
+        {
+            long sigStart = Math.Max(signet.Start, log.FightData.FightStart);
+            long sigEnd = Math.Min(signet.End, log.FightData.FightEnd);
+            var burstPhase = new PhaseData(sigStart, sigEnd, "Burst " + burstID++);
+            burstPhase.AddTarget(mainTarget, log);
+            burstPhase.AddParentPhases(parentPhases);
+            phases.Add(burstPhase);
+        }
+    }
+
+    protected override IReadOnlyList<TargetID> GetTargetsIDs()
+    {
+        return
+        [
+            TargetID.Deimos,
+            TargetID.DummyTarget,
+            TargetID.Thief,
+            TargetID.Drunkard,
+            TargetID.Gambler,
+            TargetID.DemonicBond
+        ];
+    }
+
+    protected override IReadOnlyList<TargetID> GetTrashMobsIDs()
+    {
+        return
+        [
+            TargetID.GamblerClones,
+            TargetID.GamblerReal,
+            TargetID.Greed,
+            TargetID.Pride,
+            TargetID.Oil,
+            TargetID.Tear,
+            TargetID.Hands
+        ];
+    }
+
+    internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
+    {
+        long castDuration;
+        (long start, long end) lifespan = (replay.TimeOffsets.start, replay.TimeOffsets.end);
+
+        switch (target.ID)
+        {
+            case (int)TargetID.Deimos:
+                foreach (CastEvent cast in target.GetAnimatedCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd))
+                {
+                    switch (cast.SkillId)
                     {
-                        AgentItem shackledPrisoner = GetShackledPrisoner(agentData, combatData);
-                        if (shackledPrisoner != null)
-                        {
-                            CombatItem firstGreen = combatData.FirstOrDefault(x => x.IsBuffApply() && x.SkillID == DeimosSelectedByGreen);
-                            CombatItem firstHPUpdate = combatData.FirstOrDefault(x => x.IsStateChange == ArcDPSEnums.StateChange.HealthUpdate && x.SrcMatchesAgent(shackledPrisoner));
-                            if (firstGreen != null && firstGreen.Time < start && firstHPUpdate != null && firstHPUpdate.DstAgent == 10000) // sanity check
+                        // Mind Crush
+                        case MindCrush:
+                            castDuration = 5000;
+                            lifespan = (cast.Time, cast.Time + castDuration);
+                            replay.Decorations.Add(new OverheadProgressBarDecoration(CombatReplayOverheadProgressBarMajorSizeInPixel, lifespan, Colors.Red, 0.6, Colors.Black, 0.2, [(lifespan.start, 0), (lifespan.end, 100)], new AgentConnector(target))
+                                .UsingRotationConnector(new AngleConnector(180)));
+                            if (!log.FightData.IsCM)
                             {
-                                _hasPreEvent = true;
-                                _deimos100PercentTime = start - firstHPUpdate.Time;
-                                start = firstHPUpdate.Time;
+                                replay.Decorations.Add(new CircleDecoration(180, lifespan, Colors.Blue, 0.3, new PositionConnector(new Vector3(-8421.818f, 3091.72949f, -9.818082e8f))));
                             }
-                        }
-                    }
-                }
-            }
-            return start >= 0 ? start : genericStart;
-        }
-
-        internal override List<ErrorEvent> GetCustomWarningMessages(FightData fightData, int arcdpsVersion)
-        {
-            List<ErrorEvent> res = base.GetCustomWarningMessages(fightData, arcdpsVersion);
-            if (!fightData.IsCM)
-            {
-                res.Add(new ErrorEvent("Missing outgoing Saul damage due to % based damage"));
-            }
-            return res;
-        }
-
-        private static bool HandleDemonicBonds(AgentData agentData,List<CombatItem> combatData)
-        {
-            var maxHPUpdates = combatData.Where(x => x.DstAgent == 239040 && x.IsStateChange == ArcDPSEnums.StateChange.MaxHealthUpdate).ToList();
-            var demonicBonds = maxHPUpdates.Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Distinct().Where(x => x.Type == AgentItem.AgentType.Gadget).ToList();
-            foreach (AgentItem demonicBond in demonicBonds)
-            {
-                demonicBond.OverrideID(ArcDPSEnums.TrashID.DemonicBond);
-                demonicBond.OverrideType(AgentItem.AgentType.NPC);
-            }
-            return demonicBonds.Any();
-        }
-
-        internal override void EIEvtcParse(ulong gw2Build, int evtcVersion, FightData fightData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, AbstractExtensionHandler> extensions)
-        {
-            bool needsRefresh = _hasPreEvent && HandleDemonicBonds(agentData, combatData);
-            bool needsDummy = !needsRefresh;
-            AgentItem shackledPrisoner = GetShackledPrisoner(agentData, combatData);
-            AgentItem saul = agentData.GetNPCsByID(ArcDPSEnums.TrashID.Saul).FirstOrDefault();
-            if (shackledPrisoner != null && (saul == null || saul.FirstAware > shackledPrisoner.FirstAware + PreEventConsiderationConstant))
-            {
-                shackledPrisoner.OverrideID(ArcDPSEnums.TrashID.ShackledPrisoner);
-                shackledPrisoner.OverrideType(AgentItem.AgentType.NPC);
-                needsRefresh = true;
-            }
-            if (_hasPreEvent && needsDummy)
-            {
-                agentData.AddCustomNPCAgent(fightData.FightStart, _deimos100PercentTime, "Deimos Pre Event", Spec.NPC, ArcDPSEnums.TargetID.DummyTarget, true);
-                needsRefresh = false; // AddCustomNPCAgent already refreshes
-            }
-            if (needsRefresh)
-            {
-                agentData.Refresh();
-            }
-            ComputeFightTargets(agentData, combatData, extensions);
-            // Find target
-            AbstractSingleActor deimos = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Deimos));
-            if (deimos == null)
-            {
-                throw new MissingKeyActorsException("Deimos not found");
-            }
-            // invul correction
-            CombatItem invulApp = combatData.FirstOrDefault(x => x.DstMatchesAgent(deimos.AgentItem) && x.IsBuffApply() && x.SkillID == Determined762);
-            if (invulApp != null)
-            {
-                invulApp.OverrideValue((int)(deimos.LastAware - invulApp.Time));
-            }
-            // Deimos gadgets
-            CombatItem targetable = combatData.LastOrDefault(x => x.IsStateChange == ArcDPSEnums.StateChange.Targetable && x.DstAgent > 0 && x.Time >= deimos.FirstAware);
-            var gadgetAgents = new HashSet<AgentItem>();
-            long firstAware = AttackTargetSpecialParse(targetable, agentData, combatData, gadgetAgents);
-            // legacy method
-            if (firstAware == 0)
-            {
-                CombatItem armDeimosDamageEvent = combatData.FirstOrDefault(x => x.Time >= deimos.LastAware && (x.SkillID == DemonicShockWaveRight || x.SkillID == DemonicShockWaveCenter || x.SkillID == DemonicShockWaveLeft) && x.SrcAgent != 0 && x.SrcInstid != 0 && !x.IsExtension);
-                if (armDeimosDamageEvent != null)
-                {
-                    var deimosGadgets = agentData.GetAgentByType(AgentItem.AgentType.Gadget).Where(x => x.Name.Contains("Deimos") && x.LastAware > armDeimosDamageEvent.Time).ToList();
-                    if (deimosGadgets.Count > 0)
-                    {
-                        firstAware = deimosGadgets.Max(x => x.FirstAware);
-                        gadgetAgents = new HashSet<AgentItem>(deimosGadgets);
-                    }
-                }
-            }
-            if (gadgetAgents.Count > 0)
-            {
-                _deimos10PercentTime = (firstAware >= deimos.LastAware ? firstAware : deimos.LastAware);
-                MergeWithGadgets(deimos.AgentItem, gadgetAgents, combatData, agentData, extensions);
-                // Add custom spawn event
-                combatData.Add(new CombatItem(_deimos10PercentTime, deimos.AgentItem.Agent, 0, 0, 0, 0, 0, deimos.AgentItem.InstID, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0));
-            }
-            deimos.AgentItem.OverrideAwareTimes(deimos.FirstAware, fightData.FightEnd);
-            deimos.OverrideName("Deimos");
-            foreach (AbstractSingleActor target in Targets)
-            {
-                if (target.IsSpecies(ArcDPSEnums.TrashID.Thief) || target.IsSpecies(ArcDPSEnums.TrashID.Drunkard) || target.IsSpecies(ArcDPSEnums.TrashID.Gambler))
-                {
-
-                    string name = (target.IsSpecies(ArcDPSEnums.TrashID.Thief) ? "Thief" : (target.IsSpecies(ArcDPSEnums.TrashID.Drunkard) ? "Drunkard" : (target.IsSpecies(ArcDPSEnums.TrashID.Gambler) ? "Gambler" : "")));
-                    target.OverrideName(name);
-                }
-            }
-        }
-
-        internal override FightData.EncounterStartStatus GetEncounterStartStatus(CombatData combatData, AgentData agentData, FightData fightData)
-        {
-            // We expect pre event with logs with LogStartNPCUpdate events
-            if (!_hasPreEvent && combatData.GetLogStartNPCUpdateEvents().Any())
-            {
-                return FightData.EncounterStartStatus.NoPreEvent;
-            }
-            else
-            {
-                return FightData.EncounterStartStatus.Normal;
-            }
-        }
-
-        internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
-        {
-            List<PhaseData> phases = GetInitialPhase(log);
-            AbstractSingleActor mainTarget = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Deimos));
-            if (mainTarget == null)
-            {
-                throw new MissingKeyActorsException("Deimos not found");
-            }
-            phases[0].AddTarget(mainTarget);
-
-            if (requirePhases)
-            {
-                if (_deimos100PercentTime > 0)
-                {
-                    var phasePreEvent = new PhaseData(0, _deimos100PercentTime, "Pre Event");
-                    phasePreEvent.AddTargets(Targets.Where(x => x.IsSpecies(ArcDPSEnums.TrashID.DemonicBond)));
-                    phasePreEvent.AddTarget(Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.DummyTarget)));
-                    phases.Add(phasePreEvent);
-                    var phase100to0 = new PhaseData(_deimos100PercentTime, log.FightData.FightEnd, "Main Fight");
-                    phase100to0.AddTarget(mainTarget);
-                    phases.Add(phase100to0);
-                }
-                phases = AddBossPhases(phases, log, mainTarget);
-                phases = AddAddPhases(phases, log, mainTarget);
-                phases = AddBurstPhases(phases, log, mainTarget);
-            }
-
-            return phases;
-        }
-
-        private List<PhaseData> AddBossPhases(List<PhaseData> phases, ParsedEvtcLog log, AbstractSingleActor mainTarget)
-        {
-            // Determined + additional data on inst change
-            AbstractBuffEvent invulDei = log.CombatData.GetBuffData(Determined762).FirstOrDefault(x => x is BuffApplyEvent && x.To == mainTarget.AgentItem);
-
-            if (invulDei != null || _deimos10PercentTime > 0)
-            {
-                long npcDeimosEnd = _deimos10PercentTime;
-                var mainDeimosPhaseName = "100% - 10%";
-                if (invulDei != null)
-                {
-                    npcDeimosEnd = invulDei.Time;
-                } 
-                else if (log.CombatData.GetHealthUpdateEvents(mainTarget.AgentItem).Any())
-                {
-                    HealthUpdateEvent prevHPUpdate = log.CombatData.GetHealthUpdateEvents(mainTarget.AgentItem).LastOrDefault(x => x.Time <= _deimos10PercentTime);
-                    if (prevHPUpdate != null)
-                    {
-                        mainDeimosPhaseName = $"100% - {Math.Round(prevHPUpdate.HPPercent)}%";
-                        npcDeimosEnd = prevHPUpdate.Time;
-                    }
-                }
-                var phase100to10 = new PhaseData(_deimos100PercentTime, npcDeimosEnd, mainDeimosPhaseName);
-                phase100to10.AddTarget(mainTarget);
-                phases.Add(phase100to10);
-
-                if (_deimos10PercentTime > 0 && log.FightData.FightEnd - _deimos10PercentTime > PhaseTimeLimit)
-                {
-                    var phase10to0 = new PhaseData(_deimos10PercentTime, log.FightData.FightEnd, "10% - 0%");
-                    phase10to0.AddTarget(mainTarget);
-                    phases.Add(phase10to0);
-                }
-                //mainTarget.AddCustomCastLog(end, -6, (int)(start - end), ParseEnum.Activation.None, (int)(start - end), ParseEnum.Activation.None, log);
-            }
-
-            return phases;
-        }
-
-        private List<PhaseData> AddAddPhases(List<PhaseData> phases, ParsedEvtcLog log, AbstractSingleActor mainTarget)
-        {
-            foreach (AbstractSingleActor target in Targets)
-            {
-                if (target.IsSpecies(ArcDPSEnums.TrashID.Thief) || target.IsSpecies(ArcDPSEnums.TrashID.Drunkard) || target.IsSpecies(ArcDPSEnums.TrashID.Gambler))
-                {
-                    var addPhase = new PhaseData(target.FirstAware - 1000, Math.Min(target.LastAware + 1000, log.FightData.FightEnd), target.Character);
-                    addPhase.AddTarget(target);
-                    addPhase.OverrideTimes(log);
-                    // override first then add Deimos so that it does not disturb the override process
-                    addPhase.AddTarget(mainTarget);
-                    phases.Add(addPhase);
-                }
-            }
-
-            return phases;
-        }     
-
-        private static List<PhaseData> AddBurstPhases(List<PhaseData> phases, ParsedEvtcLog log, AbstractSingleActor mainTarget)
-        {
-            var signets = mainTarget.GetBuffStatus(log, UnnaturalSignet, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
-            int burstID = 1;
-            foreach (Segment signet in signets)
-            {
-                long sigStart = Math.Max(signet.Start, log.FightData.FightStart);
-                long sigEnd = Math.Min(signet.End, log.FightData.FightEnd);
-                var burstPhase = new PhaseData(sigStart, sigEnd, "Burst " + burstID++);
-                burstPhase.AddTarget(mainTarget);
-                phases.Add(burstPhase);
-            }
-            return phases;
-        }
-
-        protected override List<int> GetTargetsIDs()
-        {
-            return new List<int>
-            {
-                (int)ArcDPSEnums.TargetID.Deimos,
-                (int)ArcDPSEnums.TargetID.DummyTarget,
-                (int)ArcDPSEnums.TrashID.Thief,
-                (int)ArcDPSEnums.TrashID.Drunkard,
-                (int)ArcDPSEnums.TrashID.Gambler,
-                (int)ArcDPSEnums.TrashID.DemonicBond
-            };
-        }
-
-        protected override List<ArcDPSEnums.TrashID> GetTrashMobsIDs()
-        {
-            return new List<ArcDPSEnums.TrashID>
-            {
-                ArcDPSEnums.TrashID.GamblerClones,
-                ArcDPSEnums.TrashID.GamblerReal,
-                ArcDPSEnums.TrashID.Greed,
-                ArcDPSEnums.TrashID.Pride,
-                ArcDPSEnums.TrashID.Oil,
-                ArcDPSEnums.TrashID.Tear,
-                ArcDPSEnums.TrashID.Hands
-            };
-        }
-
-        internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
-        {
-            int start = (int)replay.TimeOffsets.start;
-            int end = (int)replay.TimeOffsets.end;
-            IReadOnlyList<AbstractCastEvent> cls = target.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd);
-            switch (target.ID)
-            {
-                case (int)ArcDPSEnums.TargetID.Deimos:
-                    var mindCrush = cls.Where(x => x.SkillId == MindCrush).ToList();
-                    foreach (AbstractCastEvent c in mindCrush)
-                    {
-                        start = (int)c.Time;
-                        end = start + 5000;
-                        var circle = new CircleDecoration(180, (start, end), Colors.Red, 0.5, new AgentConnector(target));
-                        replay.AddDecorationWithFilledWithGrowing(circle.UsingFilled(false), true, end);
-                        if (!log.FightData.IsCM)
-                        {
-                            replay.Decorations.Add(new CircleDecoration(180, (start, end), Colors.Blue, 0.3, new PositionConnector(new Point3D(-8421.818f, 3091.72949f, -9.818082e8f))));
-                        }
-                    }
-                    var annihilate = cls.Where(x => (x.SkillId == Annihilate2) || (x.SkillId == Annihilate1)).ToList();
-                    foreach (AbstractCastEvent c in annihilate)
-                    {
-                        start = (int)c.Time;
-                        int delay = 1000;
-                        end = start + 2400;
-                        int duration = 120;
-                        Point3D facing = target.GetCurrentRotation(log, start);
-                        if (facing == null)
-                        {
-                            continue;
-                        }
-                        float initialAngle = Point3D.GetZRotationFromFacing(facing);
-                        var connector = new AgentConnector(target);
-                        for (int i = 0; i < 6; i++)
-                        {
-                            var rotationConnector1 = new AngleConnector(initialAngle + i * 360 / 10);
-                            replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * duration), Colors.Yellow, 0.5, connector).UsingRotationConnector(rotationConnector1));
-                            replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * 120), Colors.LightOrange, 0.5, connector).UsingFilled(false).UsingRotationConnector(rotationConnector1));
-                            if (i % 5 != 0)
+                            break;
+                        // Annihilate - Slices
+                        case Annihilate1:
+                        case Annihilate2:
+                            long start = cast.Time;
+                            long end = start + 2400;
+                            int delay = 1000;
+                            int duration = 120;
+                            if (target.TryGetCurrentFacingDirection(log, start, out var facing))
                             {
-                                var rotationConnector2 = new AngleConnector(initialAngle - i * 360 / 10);
-                                replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * 120), Colors.Yellow, 0.5, connector).UsingRotationConnector(rotationConnector2));
-                                replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * 120), Colors.LightOrange, 0.5, connector).UsingFilled(false).UsingRotationConnector(rotationConnector2));
+                                float initialAngle = facing.GetRoundedZRotationDeg();
+                                var connector = new AgentConnector(target);
+                                for (int i = 0; i < 6; i++)
+                                {
+                                    var rotationConnector1 = new AngleConnector(initialAngle + i * 360 / 10);
+                                    replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * duration), Colors.Yellow, 0.5, connector).UsingRotationConnector(rotationConnector1));
+                                    replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * 120), Colors.LightOrange, 0.5, connector).UsingFilled(false).UsingRotationConnector(rotationConnector1));
+                                    if (i % 5 != 0)
+                                    {
+                                        var rotationConnector2 = new AngleConnector(initialAngle - i * 360 / 10);
+                                        replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * 120), Colors.Yellow, 0.5, connector).UsingRotationConnector(rotationConnector2));
+                                        replay.Decorations.Add(new PieDecoration(900, 360 / 10, (start + delay + i * duration, end + i * 120), Colors.LightOrange, 0.5, connector).UsingFilled(false).UsingRotationConnector(rotationConnector2));
+                                    }
+                                }
                             }
-                        }
+                            break;
+                        default:
+                            break;
                     }
-                    var signets = target.GetBuffStatus(log, UnnaturalSignet, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
-                    foreach (Segment seg in signets)
-                    {
-                        replay.Decorations.Add(new CircleDecoration(120, seg, Colors.Teal, 0.4, new AgentConnector(target)));
-                    }
-                    break;
-                case (int)ArcDPSEnums.TrashID.Gambler:
-                case (int)ArcDPSEnums.TrashID.Thief:
-                case (int)ArcDPSEnums.TrashID.Drunkard:
-                    break;
-                case (int)ArcDPSEnums.TrashID.GamblerClones:
-                case (int)ArcDPSEnums.TrashID.GamblerReal:
-                case (int)ArcDPSEnums.TrashID.Greed:
-                case (int)ArcDPSEnums.TrashID.Pride:
-                case (int)ArcDPSEnums.TrashID.Tear:
-                    break;
-                case (int)ArcDPSEnums.TrashID.Hands:
-                    replay.Decorations.Add(new CircleDecoration(90, (start, end), Colors.Red, 0.2, new AgentConnector(target)));
-                    break;
-                case (int)ArcDPSEnums.TrashID.Oil:
+                }
+
+                // Unnatural Signet - Overhead
+                var signets = target.GetBuffStatus(log, UnnaturalSignet, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0);
+                replay.Decorations.AddOverheadIcons(signets, target, BuffImages.UnnaturalSignet);
+                break;
+            case (int)TargetID.Gambler:
+            case (int)TargetID.Thief:
+            case (int)TargetID.Drunkard:
+                break;
+            case (int)TargetID.GamblerClones:
+            case (int)TargetID.GamblerReal:
+            case (int)TargetID.Greed:
+            case (int)TargetID.Pride:
+            case (int)TargetID.Tear:
+                break;
+            case (int)TargetID.Hands:
+                replay.Decorations.Add(new CircleDecoration(90, lifespan, Colors.Red, 0.2, new AgentConnector(target)));
+                break;
+            case (int)TargetID.Oil:
+                if (!log.CombatData.HasEffectData)
+                {
                     int delayOil = 3000;
-                    replay.Decorations.Add(new CircleDecoration(200, (start, start + delayOil), Colors.Orange, 0.5, new AgentConnector(target)).UsingGrowingEnd(start + delayOil));
-                    replay.Decorations.Add(new CircleDecoration(200, (start + delayOil, end), Colors.Black, 0.5, new AgentConnector(target)));
-                    break;
-                case (int)ArcDPSEnums.TrashID.ShackledPrisoner:
-                    AbstractSingleActor Saul = NonPlayerFriendlies.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.Saul));
-                    if (Saul != null)
+                    (long start, long end) lifespanWarning = (lifespan.start, lifespan.start + delayOil);
+                    (long start, long end) lifespanOil = (lifespanWarning.start, lifespan.end);
+                    replay.Decorations.AddWithGrowing(new CircleDecoration(200, lifespanWarning, Colors.LightOrange, 0.5, new AgentConnector(target)), lifespanWarning.end);
+                    replay.Decorations.AddWithBorder(new CircleDecoration(200, lifespanOil, Colors.Black, 0.5, new AgentConnector(target)), Colors.Red, 0.2);
+                }
+                break;
+            case (int)TargetID.ShackledPrisoner:
+                SingleActor? Saul = NonPlayerFriendlies.FirstOrDefault(x => x.IsSpecies(TargetID.Saul));
+                if (Saul != null)
+                {
+                    replay.Trim(replay.TimeOffsets.start, Saul.FirstAware);
+                }
+                break;
+            case (int)TargetID.DemonicBond:
+                replay.Trim(replay.TimeOffsets.start, _deimos100PercentTime);
+                var attackTargetEvent = log.CombatData.GetAttackTargetEvents(target.AgentItem).FirstOrDefault();
+                if (attackTargetEvent != null)
+                {
+                    var attackTarget = attackTargetEvent.AttackTarget;
+                    var lastTargetableState = log.CombatData.GetTargetableEvents(attackTarget).LastOrDefault();
+                    if (lastTargetableState != null && !lastTargetableState.Targetable)
                     {
-                        replay.Trim(replay.TimeOffsets.start, Saul.FirstAware);
+                        replay.Trim(replay.TimeOffsets.start, lastTargetableState.Time);
                     }
-                    break;
-                case (int)ArcDPSEnums.TrashID.DemonicBond:
-                    replay.Trim(replay.TimeOffsets.start, _deimos100PercentTime);
-                    var demonicCenter = new Point3D(-8092.57f, 4176.98f);
-                    replay.Decorations.Add(new LineDecoration((replay.TimeOffsets.start, replay.TimeOffsets.end), Colors.Teal, 0.4, new AgentConnector(target), new PositionConnector(demonicCenter)));
-                    AbstractSingleActor shackledPrisoner = NonPlayerFriendlies.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TrashID.ShackledPrisoner));
-                    if (shackledPrisoner != null)
+                }
+                var demonicCenter = new Vector3(-8092.57f, 4176.98f, 0);
+                replay.Decorations.Add(new LineDecoration((replay.TimeOffsets.start, replay.TimeOffsets.end), Colors.Teal, 0.4, new AgentConnector(target), new PositionConnector(demonicCenter)));
+                SingleActor? shackledPrisoner = NonPlayerFriendlies.FirstOrDefault(x => x.IsSpecies(TargetID.ShackledPrisoner));
+                if (shackledPrisoner != null)
+                {
+                    if (shackledPrisoner.TryGetCurrentPosition(log, replay.TimeOffsets.start + ServerDelayConstant, out var shackledPos))
                     {
                         float diffX = 0;
                         float diffY = 0;
-                        if (replay.PolledPositions[0].X - demonicCenter.X > 0)
+                        var pos = replay.PolledPositions[0].XYZ;
+                        if (pos.X > demonicCenter.X)
                         {
-                            if (replay.PolledPositions[0].Y - demonicCenter.Y > 0)
+                            if (pos.Y > demonicCenter.Y)
                             {
                                 // top
                                 diffX = 55;
                                 diffY = 1080;
-                            } 
+                            }
                             else
                             {
                                 // right
                                 diffX = 1115;
                                 diffY = -35;
                             }
-                        } 
+                        }
                         else
                         {
-                            if (replay.PolledPositions[0].Y - demonicCenter.Y > 0)
+                            if (pos.Y > demonicCenter.Y)
                             {
                                 // left 
                                 diffX = -1100;
@@ -641,55 +680,139 @@ namespace GW2EIEvtcParser.EncounterLogic
                                 diffY = -1130;
                             }
                         }
-                        Point3D pos = shackledPrisoner.GetCurrentPosition(log, replay.TimeOffsets.start + ServerDelayConstant) + new Point3D(diffX, diffY);
-                        replay.Decorations.Add(new LineDecoration((replay.TimeOffsets.start, replay.TimeOffsets.end), Colors.Teal, 0.4, new AgentConnector(shackledPrisoner), new PositionConnector(pos)));
+                        var finalPos = shackledPos + new Vector3(diffX, diffY, 0);
+                        replay.Decorations.Add(new LineDecoration((replay.TimeOffsets.start, replay.TimeOffsets.end), Colors.Teal, 0.4, new AgentConnector(shackledPrisoner), new PositionConnector(finalPos)));
                     }
-                    break;
-                default:
-                    break;
-            }
-
+                }
+                break;
+            default:
+                break;
         }
 
-        internal override void ComputePlayerCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
+    }
+
+    internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
+    {
+        base.ComputePlayerCombatReplayActors(p, log, replay);
+        // teleport zone
+        var tpDeimos = p.GetBuffStatus(log, DeimosSelectedByGreen, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0);
+        foreach (Segment seg in tpDeimos)
         {
-            base.ComputePlayerCombatReplayActors(p, log, replay);
-            // teleport zone
-            var tpDeimos = p.GetBuffStatus(log, DeimosSelectedByGreen, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0).ToList();
-            foreach (Segment seg in tpDeimos)
+            var circle = new CircleDecoration(180, seg, "rgba(0, 150, 0, 0.3)", new AgentConnector(p));
+            replay.Decorations.AddWithGrowing(circle, seg.End);
+        }
+        // Tear Instability
+        IEnumerable<Segment> tearInstabs = p.GetBuffStatus(log, TearInstability, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0);
+        replay.Decorations.AddOverheadIcons(tearInstabs, p, ParserIcons.TearInstabilityOverhead);
+    }
+
+    internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log)
+    {
+        base.ComputeEnvironmentCombatReplayDecorations(log);
+
+        // Rapid Decay - Orange Indicator - Oil
+        if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.DeimosRapidDecayIndicator, out var rapidDecayIndicator))
+        {
+            foreach (EffectEvent effect in rapidDecayIndicator)
             {
-                var circle = new CircleDecoration(180, seg, "rgba(0, 150, 0, 0.3)", new AgentConnector(p));
-                replay.AddDecorationWithGrowing(circle, seg.End);
+                // Logged duration is 3500, replacing to 3000 for better visual with the Oil.
+                (long start, long end) lifespan = effect.ComputeLifespan(log, 3000);
+                EnvironmentDecorations.AddWithGrowing(new CircleDecoration(200, lifespan, Colors.LightOrange, 0.2, new PositionConnector(effect.Position)), lifespan.end);
             }
-            // Tear Instability
-            IEnumerable<Segment> tearInstabs = p.GetBuffStatus(log, TearInstability, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0);
-            replay.AddOverheadIcons(tearInstabs, p, ParserIcons.TearInstabilityOverhead);
         }
 
-        internal override FightData.EncounterMode GetEncounterMode(CombatData combatData, AgentData agentData, FightData fightData)
+        // Rapid Decay - Black Indicator - Oil
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay200Radius, 200);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay300Radius, 300);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay400Radius, 400);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay500Radius, 500);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay600Radius, 600);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay700Radius, 700);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay800Radius, 800);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay900Radius, 900);
+        AddRapidDecayDecoration(log, EffectGUIDs.DeimosRapidDecay1000Radius, 1000);
+
+        // This causes a discreet rendering + ghosting effect when Deimos pulls them in
+        // Soul Feast - Hands
+        /*if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.DeimosSoulFeast, out var soulFeasts))
         {
-            AbstractSingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(ArcDPSEnums.TargetID.Deimos));
-            if (target == null)
+            foreach (EffectEvent effect in soulFeasts)
             {
-                throw new MissingKeyActorsException("Deimos not found");
+                (long start, long end) lifespan = effect.ComputeLifespan(log, 2000);
+                EnvironmentDecorations.Add(new CircleDecoration(90, lifespan, Colors.Red, 0.2, new PositionConnector(effect.Position)));
             }
-            FightData.EncounterMode cmStatus = (target.GetHealth(combatData) > 40e6) ? FightData.EncounterMode.CM : FightData.EncounterMode.Normal;
-            
-            if (_deimos10PercentTime > 0)
-            {
-                // Deimos gains additional health during the last 10% so the max-health needs to be corrected
-                // done here because this method will get called during the creation of the ParsedEvtcLog and the ParsedEvtcLog should contain complete and correct values after creation
-                if (cmStatus == FightData.EncounterMode.CM)
+        }
+        */
+    }
+
+    internal override FightData.EncounterMode GetEncounterMode(CombatData combatData, AgentData agentData, FightData fightData)
+    {
+        SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Deimos)) ?? throw new MissingKeyActorsException("Deimos not found");
+        FightData.EncounterMode cmStatus = (target.GetHealth(combatData) > 40e6) ? FightData.EncounterMode.CM : FightData.EncounterMode.Normal;
+
+        // Deimos gains additional health during the last 10% so the max-health needs to be corrected
+        // done here because this method will get called during the creation of the ParsedEvtcLog and the ParsedEvtcLog should contain complete and correct values after creation
+        if (cmStatus == FightData.EncounterMode.CM)
+        {
+            target.SetManualHealth(42804900, new List<(long hpValue, double percent)>()
                 {
-                    target.SetManualHealth(42804900);
+                    (42000000 , 100),
+                    (50049000, 10)
+                });
+        }
+        else
+        {
+            SingleActor? shackledPrisoner = NonPlayerFriendlies.FirstOrDefault(x => x.IsSpecies(TargetID.ShackledPrisoner));
+            if (shackledPrisoner != null)
+            {
+                shackledPrisoner.AgentItem.OverrideAwareTimes(shackledPrisoner.FirstAware, _deimos100PercentTime);
+            }
+            target.SetManualHealth(37388210, new List<(long hpValue, double percent)>()
+                {
+                    (35981456 , 100),
+                    (50049000, 10)
+                });
+        }
+
+        return cmStatus;
+    }
+
+    /// <summary>
+    /// Adds Rapid Decay oils to the combat replay.<br></br>
+    /// Each effect lasts 1500ms, a new effect appears every 1000s, giving a 500ms overlap for a pulsating visual effect.
+    /// Duration overriden to 1000ms to remove the pulse effect, a position based check makes sure the "pulses" remain properly connected.
+    /// </summary>
+    /// <param name="log">The log.</param>
+    /// <param name="guid">Effect GUID of the different oil sizes.</param>
+    /// <param name="radius">Radius of the oil, 200 to 1000.</param>
+    private void AddRapidDecayDecoration(ParsedEvtcLog log, GUID guid, uint radius)
+    {
+        if (log.CombatData.TryGetEffectEventsByGUID(guid, out var rapidDecay))
+        {
+            var positionDict = new Dictionary<float, Dictionary<float, (long start, long end)>>();
+            foreach (EffectEvent effect in rapidDecay)
+            {
+                (long start, long end) lifespan = effect.ComputeLifespan(log, 1000);
+                if (positionDict.TryGetValue(effect.Position.X, out var yDict))
+                {
+                    if (yDict.TryGetValue(effect.Position.Y, out var previousLifeSpan))
+                    {
+                        if (Math.Abs(previousLifeSpan.end - lifespan.start) < 50)
+                        {
+                            lifespan.start = previousLifeSpan.end + 1;
+                        }
+                    }
+                    yDict[effect.Position.Y] = lifespan;
                 }
                 else
                 {
-                    target.SetManualHealth(37388210);
+                    positionDict[effect.Position.X] = new Dictionary<float, (long start, long end)>
+                    {
+                        [effect.Position.Y] = lifespan
+                    };
                 }
+                EnvironmentDecorations.AddWithBorder(new CircleDecoration(radius, lifespan, Colors.Black, 0.2, new PositionConnector(effect.Position)), Colors.Red, 0.2);
             }
-
-            return cmStatus;
         }
     }
 }

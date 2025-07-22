@@ -1,25 +1,25 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.EIData;
-using static Gw2LogParser.GW2EIBuilders.JsonPlayerBuffsGeneration;
+﻿using GW2EIEvtcParser.EIData;
+using static GW2EIJSON.JsonPlayerBuffsGeneration;
 
-namespace Gw2LogParser.GW2EIBuilders
+namespace GW2EIBuilders.JsonModels.JsonActorUtilities.JsonPlayerUtilities;
+
+/// <summary>
+/// Class representing buffs generation by player actors
+/// </summary>
+internal static class JsonPlayerBuffsGenerationBuilder
 {
-    /// <summary>
-    /// Class representing buffs generation by player actors
-    /// </summary>
-    internal static class JsonPlayerBuffsGenerationBuilder
+    public static JsonBuffsGenerationData BuildJsonBuffsGenerationData(BuffStatistics stats)
     {
-        public static JsonBuffsGenerationData BuildJsonBuffsGenerationData(FinalActorBuffs stats)
+        var jsonBuffsGenerationData = new JsonBuffsGenerationData
         {
-            var jsonBuffsGenerationData = new JsonBuffsGenerationData();
-            jsonBuffsGenerationData.Generation = stats.Generation;
-            jsonBuffsGenerationData.Overstack = stats.Overstack;
-            jsonBuffsGenerationData.Wasted = stats.Wasted;
-            jsonBuffsGenerationData.UnknownExtended = stats.UnknownExtended;
-            jsonBuffsGenerationData.Extended = stats.Extended;
-            jsonBuffsGenerationData.ByExtension = stats.ByExtension;
-            return jsonBuffsGenerationData;
-        }
-
+            Generation = stats.Generation,
+            Overstack = stats.Overstack,
+            Wasted = stats.Wasted,
+            UnknownExtended = stats.UnknownExtended,
+            Extended = stats.Extended,
+            ByExtension = stats.ByExtension
+        };
+        return jsonBuffsGenerationData;
     }
+
 }

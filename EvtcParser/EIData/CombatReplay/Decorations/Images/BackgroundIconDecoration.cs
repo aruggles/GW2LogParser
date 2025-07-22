@@ -1,31 +1,54 @@
-﻿using System;
+﻿using GW2EIEvtcParser.ParsedData;
 using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+internal class BackgroundIconDecoration : ImageDecoration
 {
-    internal class BackgroundIconDecoration : GenericIconDecoration
+    public class BackgroundIconDecorationMetadata : ImageDecorationMetadata
     {
-        public IReadOnlyList<ParametricPoint1D> Opacities { get; }
-        public IReadOnlyList<ParametricPoint1D> Heights { get; }
-        public BackgroundIconDecoration(string icon, uint pixelSize, uint worldSize, IReadOnlyList<ParametricPoint1D> opacities, IReadOnlyList<ParametricPoint1D> heights, (long start, long end) lifespan, GeographicalConnector connector) : base(icon, pixelSize, worldSize, lifespan, connector)
-        {
-            Opacities = opacities;
-            Heights = heights;
-        }
 
-        public BackgroundIconDecoration(string icon, uint pixelSize, uint worldSize, IReadOnlyList<ParametricPoint1D> opacities, IReadOnlyList<ParametricPoint1D> heights, Segment lifespan, GeographicalConnector connector) : this(icon, pixelSize, worldSize, opacities, heights, (lifespan.Start, lifespan.End), connector)
+        public BackgroundIconDecorationMetadata(string icon, uint pixelSize, uint worldSize) : base(icon, pixelSize, worldSize)
         {
         }
 
-        public override GenericAttachedDecoration UsingSkillMode(SkillModeDescriptor skill)
+        public override string GetSignature()
         {
-            return this;
+            return "BI" + PixelSize + Image.GetHashCode().ToString() + WorldSize;
+        }
+        public override DecorationMetadataDescription GetCombatReplayMetadataDescription()
+        {
+            return new BackgroundIconDecorationMetadataDescription(this);
+        }
+    }
+    public class BackgroundIconDecorationRenderingData : ImageDecorationRenderingData
+    {
+        public readonly IReadOnlyList<ParametricPoint1D> Opacities;
+        public readonly IReadOnlyList<ParametricPoint1D> Heights;
+        public BackgroundIconDecorationRenderingData((long, long) lifespan, IEnumerable<ParametricPoint1D> opacities, IEnumerable<ParametricPoint1D> heights, GeographicalConnector connector) : base(lifespan, connector)
+        {
+            Opacities = opacities.ToList();
+            Heights = heights.ToList();
+        }
+        public override void UsingSkillMode(SkillModeDescriptor? skill)
+        {
         }
 
-        public override GenericDecorationCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
+        public override DecorationRenderingDescription GetCombatReplayRenderingDescription(CombatReplayMap map, ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs, string metadataSignature)
         {
-            return new BackgroundIconDecorationCombatReplayDescription(log, this, map);
+            return new BackgroundIconDecorationRenderingDescription(log, this, map, usedSkills, usedBuffs, metadataSignature);
         }
+    }
+    private new BackgroundIconDecorationRenderingData DecorationRenderingData => (BackgroundIconDecorationRenderingData)base.DecorationRenderingData;
+
+    public IReadOnlyList<ParametricPoint1D> Opacities => DecorationRenderingData.Opacities;
+    public IReadOnlyList<ParametricPoint1D> Heights => DecorationRenderingData.Heights;
+
+    public BackgroundIconDecoration(string icon, uint pixelSize, uint worldSize, IEnumerable<ParametricPoint1D> opacities, IEnumerable<ParametricPoint1D> heights, (long start, long end) lifespan, GeographicalConnector connector) : base(new BackgroundIconDecorationMetadata(icon, pixelSize, worldSize), new BackgroundIconDecorationRenderingData(lifespan, opacities, heights, connector))
+    {
+    }
+
+    public BackgroundIconDecoration(string icon, uint pixelSize, uint worldSize, IEnumerable<ParametricPoint1D> opacities, IEnumerable<ParametricPoint1D> heights, Segment lifespan, GeographicalConnector connector) : this(icon, pixelSize, worldSize, opacities, heights, (lifespan.Start, lifespan.End), connector)
+    {
     }
 }

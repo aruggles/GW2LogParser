@@ -1,15 +1,10 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
 
-namespace GW2EIEvtcParser
+namespace GW2EIEvtcParser;
+
+public class CachingCollectionWithTarget<T>(ParsedEvtcLog log)
+    : CachingCollectionCustom<SingleActor, T>(log, _nullActor, log.FightData.Logic.Hostiles.Count)
 {
-    public class CachingCollectionWithTarget<T> : CachingCollectionCustom<AbstractSingleActor, T>
-    {
-        private static readonly NPC _nullActor = new NPC(new AgentItem());
-
-        public CachingCollectionWithTarget(ParsedEvtcLog log) : base(log, _nullActor)
-        {
-        }
-
-    }
+    private static readonly NPC _nullActor = new(new AgentItem());
 }

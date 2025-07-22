@@ -1,45 +1,66 @@
-﻿using System.IO;
+﻿namespace GW2EIEvtcParser.EIData;
 
-namespace GW2EIEvtcParser.EIData
+internal abstract class FormDecoration : AttachedDecoration
 {
-    internal abstract class FormDecoration : GenericAttachedDecoration
+    public abstract class FormDecorationMetadata : AttachedDecorationMetadata
     {
+        public readonly string Color;
 
-        public bool Filled { get; private set; } = true;
-        public string Color { get; protected set; }
-        public int GrowingEnd { get; private set; }
-        public bool GrowingReverse { get; private set; }
-
-        protected FormDecoration((long , long) lifespan, string color, GeographicalConnector connector) : base(lifespan, connector)
+        protected FormDecorationMetadata(string color)
         {
             Color = color;
-            GrowingEnd = (int)lifespan.Item1;
         }
-
-        protected FormDecoration((long, long) lifespan, Color color, double opacity, GeographicalConnector connector) : this(lifespan, color.WithAlpha(opacity).ToString(true), connector)
+    }
+    public abstract class FormDecorationRenderingData : AttachedDecorationRenderingData
+    {
+        public bool Filled { get; private set; } = true;
+        public long GrowingEnd { get; private set; }
+        public bool GrowingReverse { get; private set; }
+        protected FormDecorationRenderingData((long, long) lifespan, GeographicalConnector connector) : base(lifespan, connector)
         {
         }
 
-        public virtual FormDecoration UsingFilled(bool filled)
+        public virtual void UsingFilled(bool filled)
         {
             Filled = filled;
-            return this;
         }
 
-        public virtual FormDecoration UsingGrowingEnd(long growingEnd, bool reverse = false)
+        public virtual void UsingGrowingEnd(long growingEnd, bool reverse = false)
         {
-            GrowingEnd = growingEnd <= Lifespan.start ? Lifespan.start : (int)growingEnd;
+            GrowingEnd = growingEnd <= Lifespan.start ? Lifespan.start : growingEnd;
             GrowingReverse = reverse;
-            return this;
         }
-
-        public abstract FormDecoration Copy();
-
-        public abstract FormDecoration GetBorderDecoration(string borderColor = null);
-        public FormDecoration GetBorderDecoration(Color borderColor, double opacity)
-        {
-            return GetBorderDecoration(borderColor.WithAlpha(opacity).ToString(true));
-        }
-
     }
+    private new FormDecorationMetadata DecorationMetadata => (FormDecorationMetadata)base.DecorationMetadata;
+    private new FormDecorationRenderingData DecorationRenderingData => (FormDecorationRenderingData)base.DecorationRenderingData;
+
+    public bool Filled => DecorationRenderingData.Filled;
+    public string Color => DecorationMetadata.Color;
+    public long GrowingEnd => DecorationRenderingData.GrowingEnd;
+    public bool GrowingReverse => DecorationRenderingData.GrowingReverse;
+
+    protected FormDecoration(FormDecorationMetadata metadata, FormDecorationRenderingData renderingData) : base(metadata, renderingData)
+    {
+    }
+
+    public virtual FormDecoration UsingFilled(bool filled)
+    {
+        DecorationRenderingData.UsingFilled(filled);
+        return this;
+    }
+
+    public virtual FormDecoration UsingGrowingEnd(long growingEnd, bool reverse = false)
+    {
+        DecorationRenderingData.UsingGrowingEnd(growingEnd, reverse);
+        return this;
+    }
+
+    public abstract FormDecoration Copy(string? color = null);
+
+    public abstract FormDecoration GetBorderDecoration(string? borderColor = null);
+    public FormDecoration GetBorderDecoration(Color borderColor, double opacity)
+    {
+        return GetBorderDecoration(borderColor.WithAlpha(opacity).ToString(true));
+    }
+
 }

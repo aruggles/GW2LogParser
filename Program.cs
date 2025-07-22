@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Gw2LogParser.Properties;
+using System;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace Gw2LogParser
@@ -13,7 +15,10 @@ namespace Gw2LogParser
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            var thisAssembly = Assembly.GetExecutingAssembly();
+            using var programHelper = new ProgramHelper(thisAssembly.GetName().Version);
+            using var form = new MainForm(programHelper);
+            Application.Run(form);
         }
     }
 }

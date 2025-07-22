@@ -1,25 +1,24 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
+using System.Collections.Generic;
 
-namespace GW2EIEvtcParser.EIData
+namespace GW2EIEvtcParser.EIData;
+
+
+internal class PlayerStatusMechanic<T> : StatusMechanic<T> where T : StatusEvent
 {
-
-    internal class PlayerStatusMechanic<T> : StatusMechanic<T> where T : AbstractStatusEvent
+    public PlayerStatusMechanic(MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(plotlySetting, shortName, description, fullName, internalCoolDown, getter)
     {
-        public PlayerStatusMechanic(string inGameName, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(inGameName, plotlySetting, shortName, description, fullName, internalCoolDown, getter)
-        {
-        }
+    }
 
-        internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, AbstractSingleActor> regroupedMobs)
+    internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs)
+    {
+        foreach (Player p in log.PlayerList)
         {
-            foreach (Player p in log.PlayerList)
+            foreach (T c in GetEvents(log, p.AgentItem))
             {
-                foreach (T c in GetEvents(log, p.AgentItem))
+                if (Keep(c, log))
                 {
-                    if (Keep(c, log))
-                    {
-                        mechanicLogs[this].Add(new MechanicEvent(c.Time, this, p));
-                    }
+                    InsertMechanic(log, mechanicLogs, c.Time, p);
                 }
             }
         }

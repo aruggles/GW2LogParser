@@ -1,17 +1,13 @@
-﻿using System;
-using static GW2EIEvtcParser.ArcDPSEnums;
+﻿namespace GW2EIEvtcParser.ParsedData;
 
-namespace GW2EIEvtcParser.ParsedData
+public class TickRateEvent : MetaDataEvent
 {
-    public class TickRateEvent : AbstractMetaDataEvent
+    public readonly long Time;
+    public readonly ulong TickRate;
+    internal TickRateEvent(CombatItem evtcItem) : base(evtcItem)
     {
-        public long Time { get; }
-        public ulong TickRate { get; }
-        internal TickRateEvent(CombatItem evtcItem) : base(evtcItem)
-        {
-            Time = evtcItem.Time;
-            TickRate = evtcItem.SrcAgent;
-        }
-
+        Time = evtcItem.Time;
+        TickRate = evtcItem.SrcAgent;
     }
+
 }
