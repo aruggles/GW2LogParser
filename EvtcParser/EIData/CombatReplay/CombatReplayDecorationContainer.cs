@@ -1,12 +1,9 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Numerics;
+using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.EIData.Decoration;
-using static GW2EIEvtcParser.EIData.Trigonometry;
 using static GW2EIEvtcParser.ParserHelper;
+using static GW2EIEvtcParser.EIData.Trigonometry;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -18,7 +15,7 @@ internal class CombatReplayDecorationContainer
     private readonly Dictionary<string, _DecorationMetadata> DecorationCache;
     private readonly List<(_DecorationMetadata metadata, _DecorationRenderingData renderingData)> Decorations;
 
-    internal CombatReplayDecorationContainer(Dictionary<string, _DecorationMetadata> cache, int capacity = 0)
+    internal CombatReplayDecorationContainer(Dictionary<string, _DecorationMetadata> cache, int capacity = 100)
     {
         DecorationCache = cache;
         Decorations = new(capacity);
@@ -38,6 +35,7 @@ internal class CombatReplayDecorationContainer
             cachedMetadata = constantPart;
             DecorationCache[id] = constantPart;
         }
+        ReserveAdditionalCapacity(1);
         Decorations.Add((cachedMetadata, decoration.DecorationRenderingData));
     }
 
@@ -98,6 +96,23 @@ internal class CombatReplayDecorationContainer
     }
 
     /// <summary>
+    /// Add an overhead icon decoration
+    /// </summary>
+    /// <param name="segment">Lifespan interval</param>
+    /// <param name="actor">actor to which the decoration will be attached to</param>
+    /// <param name="icon">URL of the icon</param>
+    /// <param name="rotation">rotation of the icon</param>
+    /// <param name="pixelSize">Size in pixel of the icon</param>
+    /// <param name="opacity">Opacity of the icon</param>
+    internal void AddRotatedOverheadIconWithValueAsText(Segment segment, SingleActor actor, string icon, float rotation, uint pixelSize = CombatReplayOverheadDefaultSizeInPixel, float opacity = CombatReplayOverheadDefaultOpacity)
+    {
+        var text = ((int)segment.Value).ToString();
+        Add(new IconOverheadDecoration(icon, pixelSize, opacity, segment, new AgentConnector(actor))
+                .WithText(text)
+                .UsingRotationConnector(new AngleConnector(rotation)));
+    }
+
+    /// <summary>
     /// Add an overhead squad marker
     /// </summary>
     /// <param name="segment">Lifespan interval</param>
@@ -124,6 +139,40 @@ internal class CombatReplayDecorationContainer
         foreach (Segment segment in segments)
         {
             AddOverheadIcon(segment, actor, icon, pixelSize, opacity);
+        }
+    }
+
+    /// <summary>
+    /// Add overhead icon decorations
+    /// </summary>
+    /// <param name="segments">Lifespan intervals</param>
+    /// <param name="actor">actor to which the decoration will be attached to</param>
+    /// <param name="icon">URL of the icon</param>
+    /// <param name="rotation">rotation of the icon</param>
+    /// <param name="pixelSize">Size in pixel of the icon</param>
+    /// <param name="opacity">Opacity of the icon</param>
+    internal void AddRotatedOverheadIcons(IEnumerable<Segment> segments, SingleActor actor, string icon, float rotation, uint pixelSize = CombatReplayOverheadDefaultSizeInPixel, float opacity = CombatReplayOverheadDefaultOpacity)
+    {
+        foreach (Segment segment in segments)
+        {
+            AddRotatedOverheadIcon(segment, actor, icon, rotation, pixelSize, opacity);
+        }
+    }
+
+    /// <summary>
+    /// Add overhead icon decorations
+    /// </summary>
+    /// <param name="segments">Lifespan intervals</param>
+    /// <param name="actor">actor to which the decoration will be attached to</param>
+    /// <param name="icon">URL of the icon</param>
+    /// <param name="rotation">rotation of the icon</param>
+    /// <param name="pixelSize">Size in pixel of the icon</param>
+    /// <param name="opacity">Opacity of the icon</param>
+    internal void AddRotatedOverheadIconsWithValueAsText(IEnumerable<Segment> segments, SingleActor actor, string icon, float rotation, uint pixelSize = CombatReplayOverheadDefaultSizeInPixel, float opacity = CombatReplayOverheadDefaultOpacity)
+    {
+        foreach (Segment segment in segments)
+        {
+            AddRotatedOverheadIconWithValueAsText(segment, actor, icon, rotation, pixelSize, opacity);
         }
     }
 
@@ -299,26 +348,26 @@ internal class CombatReplayDecorationContainer
 
     /// <summary>
     /// Add tether decoration connecting a player to an agent.<br></br>
-    /// The <paramref name="buffId"/> is sourced by an agent that isn't the one to tether to.
+    /// The <paramref name="buffID"/> is sourced by an agent that isn't the one to tether to.
     /// </summary>
     /// <param name="log">The log.</param>
-    /// <param name="player">The player to tether to <paramref name="toTetherAgentId"/>.</param>
-    /// <param name="buffId">ID of the buff sourced by <paramref name="buffSrcAgentId"/>.</param>
-    /// <param name="buffSrcAgentId">ID of the agent sourcing the <paramref name="buffId"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
-    /// <param name="toTetherAgentId">ID of the agent to tether to the <paramref name="player"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
+    /// <param name="player">The player to tether to <paramref name="toTetherAgentID"/>.</param>
+    /// <param name="buffID">ID of the buff sourced by <paramref name="buffSrcAgentID"/>.</param>
+    /// <param name="buffSrcAgentID">ID of the agent sourcing the <paramref name="buffID"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
+    /// <param name="toTetherAgentID">ID of the agent to tether to the <paramref name="player"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
     /// <param name="color">Color of the tether.</param>
     /// <param name="firstAwareThreshold">Time threshold in case the agent spawns before the buff application.</param>
-    internal void AddTetherByThirdPartySrcBuff(ParsedEvtcLog log, PlayerActor player, long buffId, int buffSrcAgentId, int toTetherAgentId, string color, int firstAwareThreshold = 2000)
+    internal void AddTetherByThirdPartySrcBuff(ParsedEvtcLog log, PlayerActor player, long buffID, int buffSrcAgentID, int toTetherAgentID, string color, int firstAwareThreshold = 2000)
     {
-        var buffEvents = log.CombatData.GetBuffDataByIDByDst(buffId, player.AgentItem).Where(x => x.CreditedBy.IsSpecies(buffSrcAgentId));
+        var buffEvents = log.CombatData.GetBuffDataByIDByDst(buffID, player.AgentItem).Where(x => x.CreditedBy.IsSpecies(buffSrcAgentID));
         var buffApplies = buffEvents.OfType<BuffApplyEvent>();
         var buffRemoves = buffEvents.OfType<BuffRemoveAllEvent>();
-        var agentsToTether = log.AgentData.GetNPCsByID(toTetherAgentId);
+        var agentsToTether = log.AgentData.GetNPCsByID(toTetherAgentID);
 
         foreach (BuffApplyEvent buffApply in buffApplies)
         {
             BuffRemoveAllEvent? remove = buffRemoves.FirstOrDefault(x => x.Time > buffApply.Time);
-            long removalTime = remove != null ? remove.Time : log.FightData.LogEnd;
+            long removalTime = remove != null ? remove.Time : log.LogData.EvtcLogEnd;
             (long, long) lifespan = (buffApply.Time, removalTime);
 
             foreach (AgentItem agent in agentsToTether)
@@ -332,19 +381,19 @@ internal class CombatReplayDecorationContainer
     }
     /// <summary>
     /// Add tether decoration connecting a player to an agent.<br></br>
-    /// The <paramref name="buffId"/> is sourced by an agent that isn't the one to tether to.
+    /// The <paramref name="buffID"/> is sourced by an agent that isn't the one to tether to.
     /// </summary>
     /// <param name="log">The log.</param>
-    /// <param name="player">The player to tether to <paramref name="toTetherAgentId"/>.</param>
-    /// <param name="buffId">ID of the buff sourced by <paramref name="buffSrcAgentId"/>.</param>
-    /// <param name="buffSrcAgentId">ID of the agent sourcing the <paramref name="buffId"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
-    /// <param name="toTetherAgentId">ID of the agent to tether to the <paramref name="player"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
+    /// <param name="player">The player to tether to <paramref name="toTetherAgentID"/>.</param>
+    /// <param name="buffID">ID of the buff sourced by <paramref name="buffSrcAgentID"/>.</param>
+    /// <param name="buffSrcAgentID">ID of the agent sourcing the <paramref name="buffID"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
+    /// <param name="toTetherAgentID">ID of the agent to tether to the <paramref name="player"/>. Either <see cref="TargetID"/> or <see cref="TrashID"/>.</param>
     /// <param name="color">Color of the tether.</param>
     /// <param name="opacity">Opacity of the tether.</param>
     /// <param name="firstAwareThreshold">Time threshold in case the agent spawns before the buff application.</param>
-    internal void AddTetherByThirdPartySrcBuff(ParsedEvtcLog log, PlayerActor player, long buffId, int buffSrcAgentId, int toTetherAgentId, Color color, double opacity, int firstAwareThreshold = 2000)
+    internal void AddTetherByThirdPartySrcBuff(ParsedEvtcLog log, PlayerActor player, long buffID, int buffSrcAgentID, int toTetherAgentID, Color color, double opacity, int firstAwareThreshold = 2000)
     {
-        AddTetherByThirdPartySrcBuff(log, player, buffId, buffSrcAgentId, toTetherAgentId, color.WithAlpha(opacity).ToString(true), firstAwareThreshold);
+        AddTetherByThirdPartySrcBuff(log, player, buffID, buffSrcAgentID, toTetherAgentID, color.WithAlpha(opacity).ToString(true), firstAwareThreshold);
     }
 
     /// <summary>
@@ -535,7 +584,7 @@ internal class CombatReplayDecorationContainer
     /// <param name="radius"></param>
     internal void AddNonHomingMissile(ParsedEvtcLog log, MissileEvent missileEvent, Color color, double opacity, uint radius)
     {
-        long end = missileEvent.RemoveEvent?.Time ?? log.FightData.FightEnd;
+        long end = missileEvent.RemoveEvent?.Time ?? log.LogData.LogEnd;
         for (int i = 0; i < missileEvent.LaunchEvents.Count; i++)
         {
             var launch = missileEvent.LaunchEvents[i];
@@ -563,7 +612,7 @@ internal class CombatReplayDecorationContainer
     /// <param name="useTargetOrientation"></param>
     internal void AddRotatingAroundTargetMissile(ParsedEvtcLog log, MissileEvent missileEvent, Color color, double opacity, uint radius, float angleOffset, bool useTargetOrientation = false)
     {
-        long end = missileEvent.RemoveEvent?.Time ?? log.FightData.FightEnd;
+        long end = missileEvent.RemoveEvent?.Time ?? log.LogData.LogEnd;
         for (int i = 0; i < missileEvent.LaunchEvents.Count; i++)
         {
             var launch = missileEvent.LaunchEvents[i];
@@ -605,7 +654,7 @@ internal class CombatReplayDecorationContainer
     /// <param name="radius"></param>
     internal void AddHomingMissile(ParsedEvtcLog log, MissileEvent missileEvent, Color color, double opacity, uint radius)
     {
-        long end = missileEvent.RemoveEvent?.Time ?? log.FightData.FightEnd;
+        long end = missileEvent.RemoveEvent?.Time ?? log.LogData.LogEnd;
         for (int i = 0; i < missileEvent.LaunchEvents.Count; i++)
         {
             var launch = missileEvent.LaunchEvents[i];

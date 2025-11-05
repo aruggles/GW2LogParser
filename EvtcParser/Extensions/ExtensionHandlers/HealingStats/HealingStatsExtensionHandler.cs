@@ -1,7 +1,5 @@
 ﻿using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using System;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.SkillIDs;
 
 namespace GW2EIEvtcParser.Extensions;
@@ -58,8 +56,8 @@ public class HealingStatsExtensionHandler : ExtensionHandler
         WellOfRecall_Senility,
         GravityWell,
         VampiricAura,
-        VampiricStrikes,
-        VampiricStrikes2,
+        VampiricStrikesMinion,
+        VampiricStrikesPlayer,
         YourSoulIsMine,
         WellOfCalamity,
         WellOfAction,
@@ -255,9 +253,9 @@ public class HealingStatsExtensionHandler : ExtensionHandler
         }
         // Prefer instid fetch for healing events
         AgentItem src = agentData.GetAgentByInstID(combatItem.SrcInstid, combatItem.Time);
-        combatItem.OverrideSrcAgent(src.Agent);
+        combatItem.OverrideSrcAgent(src);
         AgentItem dst = agentData.GetAgentByInstID(combatItem.DstInstid, combatItem.Time);
-        combatItem.OverrideDstAgent(dst.Agent);
+        combatItem.OverrideDstAgent(dst);
     }
 
     internal override void AttachToCombatData(CombatData combatData, ParserController operation, ulong gw2Build)
@@ -281,8 +279,8 @@ public class HealingStatsExtensionHandler : ExtensionHandler
                     RunningExtensionInternal.Add(agent);
                 }
             }
-            var healDataById = _healingEvents.GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList());
-            combatData.EXTHealingCombatData = new EXTHealingCombatData(healData, healReceivedData, healDataById, HybridHealIDs);
+            var healDataByID = _healingEvents.GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList());
+            combatData.EXTHealingCombatData = new EXTHealingCombatData(healData, healReceivedData, healDataByID, HybridHealIDs);
             operation.UpdateProgressWithCancellationCheck("Parsing: Attached " + _healingEvents.Count + " heal events to CombatData");
         }
         //
@@ -304,8 +302,8 @@ public class HealingStatsExtensionHandler : ExtensionHandler
                     RunningExtensionInternal.Add(pair.Key);
                 }
             }
-            var barrierDataById = _barrierEvents.GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList());
-            combatData.EXTBarrierCombatData = new EXTBarrierCombatData(barrierData, barrierReceivedData, barrierDataById);
+            var barrierDataByID = _barrierEvents.GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList());
+            combatData.EXTBarrierCombatData = new EXTBarrierCombatData(barrierData, barrierReceivedData, barrierDataByID);
             operation.UpdateProgressWithCancellationCheck("Parsing: Attached " + _barrierEvents.Count + " barrier events to CombatData");
         }
         int running = Math.Max(RunningExtensionInternal.Count, 1);

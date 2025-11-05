@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.Interfaces;
-using System;
 
 namespace GW2EIEvtcParser.ParsedData;
 
@@ -24,5 +23,9 @@ public class HealthUpdateEvent : StatusEvent, IStateable
     public (long start, double value) ToState()
     {
         return (Time, HealthPercent);
+    }
+    public (long start, double value) ToState(long overridenStart)
+    {
+        return (overridenStart, HealthPercent);
     }
 }

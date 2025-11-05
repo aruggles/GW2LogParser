@@ -10,7 +10,7 @@ internal static class EXTJsonMinionsBarrierStatsBuilder
 
     public static EXTJsonMinionsBarrierStats BuildMinionsBarrierStats(Minions minions, ParsedEvtcLog log, Dictionary<long, SkillItem> skillMap, Dictionary<long, Buff> buffMap)
     {
-        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        IReadOnlyList<PhaseData> phases = log.LogData.GetPhases(log);
         var totalAlliedBarrier = new List<List<int>>(log.Friendlies.Count);
         var alliedBarrierDist = new List<List<List<EXTJsonBarrierDist>>>(log.Friendlies.Count);
         foreach (SingleActor friendly in log.Friendlies)
@@ -21,7 +21,7 @@ internal static class EXTJsonMinionsBarrierStatsBuilder
             {
                 var list = minions.EXTBarrier.GetOutgoingBarrierEvents(friendly, log, phase.Start, phase.End);
                 totalAllyBarrier.Add(list.Sum(x => x.BarrierGiven));
-                allyBarrierDist.Add(EXTJsonBarrierStatsBuilderCommons.BuildBarrierDistList(list.GroupBy(x => x.SkillId), log, skillMap, buffMap).ToList());
+                allyBarrierDist.Add(EXTJsonBarrierStatsBuilderCommons.BuildBarrierDistList(list.GroupBy(x => x.SkillID), log, skillMap, buffMap).ToList());
             }
             totalAlliedBarrier.Add(totalAllyBarrier);
             alliedBarrierDist.Add(allyBarrierDist);
@@ -35,10 +35,10 @@ internal static class EXTJsonMinionsBarrierStatsBuilder
         {
             var list = minions.EXTBarrier.GetOutgoingBarrierEvents(null, log, phase.Start, phase.End);
             totalBarrier.Add(list.Sum(x => x.BarrierGiven));
-            totalBarrierDist.Add(EXTJsonBarrierStatsBuilderCommons.BuildBarrierDistList(list.GroupBy(x => x.SkillId), log, skillMap, buffMap).ToList());
+            totalBarrierDist.Add(EXTJsonBarrierStatsBuilderCommons.BuildBarrierDistList(list.GroupBy(x => x.SkillID), log, skillMap, buffMap).ToList());
             var listInc = minions.EXTBarrier.GetIncomingBarrierEvents(null, log, phase.Start, phase.End);
             totalIncomingBarrier.Add(listInc.Sum(x => x.BarrierGiven));
-            totalIncomingBarrierDist.Add(EXTJsonBarrierStatsBuilderCommons.BuildBarrierDistList(listInc.GroupBy(x => x.SkillId), log, skillMap, buffMap).ToList());
+            totalIncomingBarrierDist.Add(EXTJsonBarrierStatsBuilderCommons.BuildBarrierDistList(listInc.GroupBy(x => x.SkillID), log, skillMap, buffMap).ToList());
         }
 
         return new()

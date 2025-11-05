@@ -18,7 +18,7 @@ public static class ProcessManager
     public static Version ParserVersion { get; } = new Version(Application.ProductVersion);
 
     //public static readonly GW2APIController apiController = new(SkillAPICacheLocation, SpecAPICacheLocation, TraitAPICacheLocation);
-    public static ConcurrentBag<ParsedLog> CompletedLogs { get; set; } = [];
+    public static ConcurrentBag<LogContainer> CompletedLogs { get; set; } = [];
     /// <summary>
     /// Reports a status update for a log, updating the background worker and the related row with the new status
     /// </summary>
@@ -98,8 +98,12 @@ public static class ProcessManager
             {
                 failureReason.Throw();
             }
-            ParsedLog log = new ParsedLog(parsedLog!);
-            log.evctFile = fInfo;
+            if (parsedLog == null)
+            {
+                throw new InvalidDataException("Failed to parse log");
+            }
+            LogContainer log = new LogContainer(parsedLog, fInfo);
+
             /*
             string fName = fInfo.Name.Split('.')[0];
             string result = log.FightData.Success ? "kill" : "fail";
@@ -142,47 +146,7 @@ public static class ProcessManager
         }
     }
 
-    private static DirectoryInfo GetSaveDirectory(FileInfo fInfo)
-    {
-        //save location
-        DirectoryInfo saveDirectory;
-        if (Properties.Settings.Default.SaveAtOut || Properties.Settings.Default.OutLocation == null)
-        {
-            //Default save directory
-            saveDirectory = fInfo.Directory;
-            if (!saveDirectory.Exists)
-            {
-                throw new InvalidOperationException("Save directory does not exist");
-            }
-        }
-        else
-        {
-            if (!Directory.Exists(Properties.Settings.Default.OutLocation))
-            {
-                throw new InvalidOperationException("Save directory does not exist");
-            }
-            saveDirectory = new DirectoryInfo(Properties.Settings.Default.OutLocation);
-        }
-        return saveDirectory;
-    }
-
-    /// <summary>
-    /// Throws a <see cref="CancellationException"/> if the background worker has been cancelled
-    /// </summary>
-    /// <param name="bg"></param>
-    /// <param name="row"></param>
-    /// <param name="cancelStatus"></param>
-    public static void ThrowIfCanceled(this BackgroundWorker bg, GridRow row, string cancelStatus = "Canceled")
-    {
-        if (bg.CancellationPending)
-        {
-            row.Status = cancelStatus;
-            throw new CancelledException(row);
-
-        }
-    }
-
-    private static void WriteFightHTML(DirectoryInfo saveFolder, int count, ParsedLog log, LogDataDto logData)
+    private static void WriteFightHTML(DirectoryInfo saveFolder, int count, ParsedEvtcLog log, LogDataDto logData)
     {
         if (saveFolder == null)
         {
@@ -215,36 +179,41 @@ public static class ProcessManager
         var uploadResults = new UploadResults("", "");
         var count = 0;
         var total = CompletedLogs.Count;
-        FileInfo fileInfo = null;
-        DirectoryInfo saveFolder = null;
-        var sorted = CompletedLogs.OrderBy(c => c.LogData.LogEndRaw);
-        var _firstLog = sorted.First<ParsedLog>();
-        var _lastLog = sorted.Last<ParsedLog>();
+        FileInfo? fileInfo = null;
+        DirectoryInfo? saveFolder = null;
+        var sorted = CompletedLogs.OrderBy(c => c.Log.LogData.LogEnd);
+        var _firstLog = sorted.First<LogContainer>();
+        var _lastLog = sorted.Last<LogContainer>();
         if (_firstLog != null)
         {
             fileInfo = _firstLog.evctFile;
+            if (fileInfo.Directory == null)
+            {
+                throw new InvalidOperationException("Cannot determine save directory");
+            }
             string savePath = Path.Combine(
                 fileInfo.Directory.FullName,
                 $"combat_report{DateTime.Now.ToFileTime()}"
             );
             saveFolder = Directory.CreateDirectory(savePath);
-            report.LogsStart = _firstLog.LogData.LogStart;
+            report.LogsStart = _firstLog.Log.LogMetadata.DateStart;
         }
         if (_lastLog != null)
         {
-            report.LogsEnd = _lastLog.LogData.LogEnd;
+            report.LogsEnd = _lastLog.Log.LogMetadata.DateEnd;
         }
         
-        foreach (ParsedLog parsedLog in sorted)
+        foreach (LogContainer parsedLog in sorted)
         {
             var logReport = new LogReport();
             var exporter = new LogBuilder(parsedLog);
             var data = exporter.BuildLogData(ParserVersion, uploadResults);
             logReport.Name = parsedLog.evctFile.Name;
             fileInfo = parsedLog.evctFile;
-            logReport.LogsStart = parsedLog.LogData.LogStart;
-            logReport.lengthInSeconds = parsedLog.LogData.LogEndRaw - parsedLog.LogData.LogStartRaw;
-            logReport.LogsEnd = parsedLog.LogData.LogEnd;
+            logReport.LogsStart = parsedLog.Log.LogData.LogStart;
+            logReport.Duration = parsedLog.Log.LogData.LogDuration;
+            logReport.DurationString = parsedLog.Log.LogData.DurationString;
+            logReport.LogsEnd = parsedLog.Log.LogData.LogEnd;
             logReport.PointOfView = data.RecordedBy;
             exporter.UpdateLogReport(logReport, data);
             
@@ -252,18 +221,22 @@ public static class ProcessManager
             report.PointOfView = data.RecordedBy;
             foreach (PlayerReport player in logReport.players.Values)
             {
-                PlayerReport playerValue = null;
-                report.players.TryGetValue(player.Name, out playerValue);
-                if (playerValue == null)
+                PlayerReport? playerValue = null;
+                if (player != null && player.Name != null)
                 {
-                    report.players[player.Name] = player;
-                }
-                else
-                {
-                    exporter.SumPlayerStats(playerValue, player);
+                    report.players.TryGetValue(player.Name, out playerValue);
+                    if (playerValue == null)
+                    {
+                        report.players[player.Name] = player;
+                    }
+                    else
+                    {
+                        exporter.SumPlayerStats(playerValue, player);
+                    }
                 }
             }
-            WriteFightHTML(saveFolder, count, parsedLog, data);
+            if (saveFolder != null)
+                WriteFightHTML(saveFolder, count, parsedLog.Log, data);
             // Update Progress.
             if (count > 0)
             {

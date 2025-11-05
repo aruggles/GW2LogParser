@@ -12,110 +12,16 @@
     Vue.component("hps-graph-component", {
         props: ["activetargets", 'mode', 'phaseindex', 'playerindex', 'light'],
         template: `${template}`,       
-        mixins: [graphComponent, healingGraphComponent],
+        mixins: [graphComponent, healingGraphComponent, encounterPhaseComponent],
         created: function () {
-            // layout - constant during whole lifetime
-            const textColor = this.light ? '#495057' : '#cccccc';
-            this.layout = {
-                yaxis: {
-                    title: 'HPS',
-                    fixedrange: true,
-                    rangemode: 'tozero',
-                    gridcolor: textColor,
-                    tickformat: ",d",
-                    color: textColor,
-                },
-                yaxis2: {
-                    title: 'DPS',
-                    fixedrange: true,
-                    rangemode: 'tozero',
-                    gridcolor: textColor,
-                    tickformat: ",d",
-                    color: textColor,
-                    side: 'right',
-                    tickmode: 'auto',
-                    overlaying: 'y',
-                    nticks: 1
-                },
-                xaxis: {
-                    title: 'Time(sec)',
-                    color: textColor,
-                    gridcolor: textColor,
-                    rangemode: 'nonnegative',
-                    tickmode: 'auto',
-                    nticks: 8,
-                    xrangeslider: {}
-                },
-                hovermode: 'x',
-                hoverdistance: 150,
-                font: {
-                    color: textColor
-                },
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                displayModeBar: false,
-                shapes: [],
-                annotations: [],
-                autosize: true,
-                height: 850,
-                datarevision: new Date().getTime(),
-            };
-            computePhaseMarkups(this.layout.shapes, this.layout.annotations, this.phase, textColor);
-            // constant part of data
-            // hps
-            this.data = [];
-            const data = this.data;
-            for (let i = 0; i < logData.players.length; i++) {
-                const pText = [];
-                const player = logData.players[i];
-                for (let j = 0; j < this.phase.times.length; j++) {
-                    pText.push(player.name);
-                }
-                data.push({
-                    x: this.phase.times,
-                    y: [],
-                    mode: 'lines',
-                    line: {
-                        shape: 'spline',
-                        color: player.colTarget,
-                        width: i === this.playerindex ? 5 : 2
-                    },
-                    text: pText,
-                    hoverinfo: 'y+text+x',
-                    name: player.name,
-                });
-            }
-            data.push({
-                x: this.phase.times,
-                mode: 'lines',
-                line: {
-                    shape: 'spline'
-                },
-                hoverinfo: 'name+y+x',
-                visible: 'legendonly',
-                name: 'All Players'
-            });
-            data.push({
-                x: this.phase.times,
-                mode: 'lines',
-                line: {
-                    shape: 'spline'
-                },
-                hoverinfo: 'name+y+x',
-                visible: true,
-                name: 'Incoming DPS',
-                yaxis: 'y2',
-            });
-            // targets health
-            computePlayersHealingGraphData(this.graph, this.data, null); 
-            // mechanics          
-            addMechanicsToGraph(data, this.phase, this.phaseindex);
+            this.computeLayout();
         },
         watch: {
             playerindex: {
                 handler: function () {
-                    for (let i = 0; i < logData.players.length; i++) {
-                        this.data[i].line.width = i === this.playerindex ? 5 : 2;
+                    const players = getActivePlayersForPhase(this.encounterPhase).filter(x => !!x);
+                    for (let i = 0; i < players.length; i++) {
+                        this.data[i].line.width = players[i].id === this.playerindex ? 5 : 2;
                     }
                     this.layout.datarevision = new Date().getTime();
                 },
@@ -134,7 +40,13 @@
                     }
                     this.layout.datarevision = new Date().getTime();
                 }
-            }
+            },
+            encounters: {
+                deep: true,
+                handler: function () {
+                    this.computeLayout();
+                }
+            },
         },
         computed: {
             graphid: function () {
@@ -175,6 +87,107 @@
             }
         },
         methods: {
+            computeLayout() {
+                const textColor = this.light ? '#495057' : '#cccccc';
+                this.layout = {
+                    yaxis: {
+                        title: 'HPS',
+                        fixedrange: true,
+                        rangemode: 'tozero',
+                        gridcolor: textColor,
+                        tickformat: ",d",
+                        color: textColor,
+                    },
+                    yaxis2: {
+                        title: 'DPS',
+                        fixedrange: true,
+                        rangemode: 'tozero',
+                        gridcolor: textColor,
+                        tickformat: ",d",
+                        color: textColor,
+                        side: 'right',
+                        tickmode: 'auto',
+                        overlaying: 'y',
+                        nticks: 1
+                    },
+                    xaxis: {
+                        title: 'Time(sec)',
+                        color: textColor,
+                        gridcolor: textColor,
+                        rangemode: 'nonnegative',
+                        tickmode: 'auto',
+                        nticks: 8,
+                        xrangeslider: {}
+                    },
+                    hovermode: 'x',
+                    hoverdistance: 150,
+                    font: {
+                        color: textColor
+                    },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    displayModeBar: false,
+                    shapes: [],
+                    annotations: [],
+                    autosize: true,
+                    height: 850,
+                    datarevision: new Date().getTime(),
+                };
+                computePhaseMarkups(this.layout.shapes, this.layout.annotations, this.phase, textColor);
+                // constant part of data
+                // hps
+                this.data = [];
+                const data = this.data;
+                const players = getActivePlayersForPhase(this.encounterPhase);
+                for (let i = 0; i < players.length; i++) {
+                    const pText = [];
+                    const player = players[i];
+                    if (!player) {
+                        continue;
+                    }
+                    for (let j = 0; j < this.phase.times.length; j++) {
+                        pText.push(player.name);
+                    }
+                    data.push({
+                        x: this.phase.times,
+                        y: [],
+                        mode: 'lines',
+                        line: {
+                            shape: 'spline',
+                            color: player.colTarget,
+                            width: i === this.playerindex ? 5 : 2
+                        },
+                        text: pText,
+                        hoverinfo: 'y+text+x',
+                        name: player.name,
+                    });
+                }
+                data.push({
+                    x: this.phase.times,
+                    mode: 'lines',
+                    line: {
+                        shape: 'spline'
+                    },
+                    hoverinfo: 'name+y+x',
+                    visible: 'legendonly',
+                    name: 'All Players'
+                });
+                data.push({
+                    x: this.phase.times,
+                    mode: 'lines',
+                    line: {
+                        shape: 'spline'
+                    },
+                    hoverinfo: 'name+y+x',
+                    visible: true,
+                    name: 'Incoming DPS',
+                    yaxis: 'y2',
+                });
+                // targets health
+                computePlayersHealingGraphData(this.graph, this.data, null); 
+                // mechanics          
+                addMechanicsToGraph(data, this.phase, this.phaseindex);
+            },
             graphToUse: function (i) {
                 switch (this.graphhealingdata.healingmode) {
                     case HealingType.All:
@@ -213,8 +226,13 @@
                 };
                 incDPS.taken = incDPS.total;
                 const playerHPS = [];
-                for (let i = 0; i < logData.players.length; i++) {
-                    const healData = computePlayerDPS(logData.players[i], this.graphToUse(i), lim, phasebreaks,
+                const players = getActivePlayersForPhase(this.encounterPhase);
+                for (let i = 0; i < players.length; i++) {
+                    const player = players[i];
+                    if (!player) {
+                        continue;
+                    }
+                    const healData = computePlayerDPS(player, this.graphToUse(i), lim, phasebreaks,
                         this.activetargets, cacheID, this.phase.times, this.graphhealingdata.graphmode, this.graphhealingdata.healingmode);
                     playerHPS.push(healData.dps);
                     maxHPS.total = Math.max(maxHPS.total, healData.maxDPS.total);
@@ -227,7 +245,7 @@
                         allHPS.target[j] = (allHPS.target[j] || 0) + healData.dps.target[j];
                         allHPS.taken[j] = (allHPS.taken[j] || 0) + healData.dps.taken[j];
                     }
-                    const damageData = computePlayerDPS(logData.players[i], this.graph.players[i].damage, lim, phasebreaks,
+                    const damageData = computePlayerDPS(player, this.graph.players[i].damage, lim, phasebreaks,
                         [], cacheID + "incdamage-for-heal", this.phase.times, this.graphhealingdata.graphmode, DamageType.All);
                     for (let j = 0; j < damageData.dps.total.length; j++) {
                         incDPS.total[j] = (incDPS.taken[j] || 0) + damageData.dps.taken[j];
@@ -248,9 +266,10 @@
                 };
             },
             computeHPSData: function () {
-                const cacheID = getHPSGraphCacheID(this.graphhealingdata.hpsmode, this.graphhealingdata.healingmode, this.graphhealingdata.graphmode, this.activetargets, this.phaseindex, null);
-                if (this.dpsCache.has(cacheID)) {
-                    return this.dpsCache.get(cacheID);
+                const cacheID = getHPSGraphCacheID(this.graphhealingdata.hpsmode, this.graphhealingdata.healingmode, this.graphhealingdata.graphmode, this.activetargets, this.phaseindex, this.mode);
+                const internalCacheID = this.encounterPhase.id + '-' + cacheID;
+                if (this.dpsCache.has(internalCacheID)) {
+                    return this.dpsCache.get(internalCacheID);
                 }
                 let res;
                 if (this.graphhealingdata.hpsmode >= 0) {
@@ -258,11 +277,11 @@
                 } else {
                     res = this.computeHPS(0, this.computePhaseBreaks, cacheID);
                 }
-                this.dpsCache.set(cacheID, res);
+                this.dpsCache.set(internalCacheID, res);
                 return res;
             },
             computeHPSRelatedData: function () {
-                const cacheID = getHPSGraphCacheID(this.graphhealingdata.hpsmode, this.graphhealingdata.healingmode, this.graphhealingdata.graphmode, this.activetargets, this.phaseindex, this.mode);
+                const cacheID = this.encounterPhase.id + '-' + getHPSGraphCacheID(this.graphhealingdata.hpsmode, this.graphhealingdata.healingmode, this.graphhealingdata.graphmode, this.activetargets, this.phaseindex, this.mode);
                 if (this.dataCache.has(cacheID)) {
                     return this.dataCache.get(cacheID);
                 }
@@ -283,15 +302,16 @@
                         attributeToUse = "taken";
                         break;
                 }
-                for (let i = 0; i < logData.players.length; i++) {
+                for (let i = 0; i < hpsData.playerHPS.length; i++) {
                     const pHPS = hpsData.playerHPS[i];
                     res.push(pHPS[attributeToUse]);
                 }
                 res.push(hpsData.allHPS[attributeToUse]);
                 res.push(hpsData.incDPS[attributeToUse]);
                 const maxHPS = hpsData.maxHPS[attributeToUse];
+                const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
                 for (let i = 0; i < this.graph.players.length; i++) {
-                    if (logData.players[i].isFake) {
+                    if (!players[i]) {
                         continue;
                     }
                     const health = this.graph.players[i].healthStates;
@@ -299,7 +319,7 @@
                     addPointsToGraph(res, health, maxHPS);
                     addPointsToGraph(res, barrier, maxHPS);
                 }
-                updateMechanicsYValues(res, this.phase, this.phaseindex, this.graph, maxHPS);
+                updateMechanicsYValues(res, this.phase, this.phaseindex, this.graph, getActivePlayersForPhase(this.encounterPhase), maxHPS);
                 this.dataCache.set(cacheID, res);
                 return res;
             },

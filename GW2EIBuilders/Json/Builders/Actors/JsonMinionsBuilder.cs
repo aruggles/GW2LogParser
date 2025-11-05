@@ -20,7 +20,7 @@ internal static class JsonMinionsBuilder
         {
             Id = minions.ID
         };
-        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        IReadOnlyList<PhaseData> phases = log.LogData.GetPhases(log);
         bool isEnemyMinion = !log.FriendlyAgents.Contains(minions.Master.AgentItem);
         //
         jsonMinions.Name = minions.Character;
@@ -63,12 +63,12 @@ internal static class JsonMinionsBuilder
         jsonMinions.TotalBreakbarDamageTaken = totalBreakbarDamageTaken;
         if (!isEnemyMinion)
         {
-            var totalTargetDamage = new IReadOnlyList<int>[log.FightData.Logic.Targets.Count];
-            var totalTargetShieldDamage = new IReadOnlyList<int>[log.FightData.Logic.Targets.Count];
-            var totalTargetBreakbarDamage = new IReadOnlyList<double>[log.FightData.Logic.Targets.Count];
-            for (int i = 0; i < log.FightData.Logic.Targets.Count; i++)
+            var totalTargetDamage = new IReadOnlyList<int>[log.LogData.Logic.Targets.Count];
+            var totalTargetShieldDamage = new IReadOnlyList<int>[log.LogData.Logic.Targets.Count];
+            var totalTargetBreakbarDamage = new IReadOnlyList<double>[log.LogData.Logic.Targets.Count];
+            for (int i = 0; i < log.LogData.Logic.Targets.Count; i++)
             {
-                SingleActor tar = log.FightData.Logic.Targets[i];
+                SingleActor tar = log.LogData.Logic.Targets[i];
                 var totalTarDamage = new List<int>(phases.Count);
                 var totalTarShieldDamage = new List<int>(phases.Count);
                 var totalTarBreakbarDamage = new List<double>(phases.Count);
@@ -94,11 +94,11 @@ internal static class JsonMinionsBuilder
             jsonMinions.TotalTargetBreakbarDamage = totalTargetBreakbarDamage;
         }
         //
-        var minionCastEvents = minions.GetIntersectingCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd);
+        var minionCastEvents = minions.GetIntersectingCastEvents(log);
         //TODO(Rennorb) @perf
         if (minionCastEvents.Any())
         {
-            jsonMinions.Rotation = JsonRotationBuilder.BuildJsonRotationList(log, minionCastEvents.GroupBy(x => x.SkillId), skillMap).ToList();
+            jsonMinions.Rotation = JsonRotationBuilder.BuildJsonRotationList(log, minionCastEvents.GroupBy(x => x.SkillID), skillMap).ToList();
         }
         //
         var totalDamageDist = new IReadOnlyList<JsonDamageDist>[phases.Count];
@@ -107,15 +107,15 @@ internal static class JsonMinionsBuilder
         {
             PhaseData phase = phases[i];
             totalDamageDist[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(
-                minions.GetDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
-                minions.GetBreakbarDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                minions.GetDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList()),
+                minions.GetBreakbarDamageEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList()),
                 log,
                 skillMap,
                 buffMap
             );
             totalDamageTakenDist[i] = JsonDamageDistBuilder.BuildJsonDamageDistList(
-                minions.GetDamageTakenEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
-                minions.GetBreakbarDamageTakenEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                minions.GetDamageTakenEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList()),
+                minions.GetBreakbarDamageTakenEvents(null, log, phase.Start, phase.End).GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList()),
                 log,
                 skillMap,
                 buffMap
@@ -125,17 +125,17 @@ internal static class JsonMinionsBuilder
         jsonMinions.TotalDamageTakenDist = totalDamageTakenDist;
         if (!isEnemyMinion)
         {
-            var targetDamageDist = new IReadOnlyList<JsonDamageDist>[log.FightData.Logic.Targets.Count][];
-            for (int i = 0; i < log.FightData.Logic.Targets.Count; i++)
+            var targetDamageDist = new IReadOnlyList<JsonDamageDist>[log.LogData.Logic.Targets.Count][];
+            for (int i = 0; i < log.LogData.Logic.Targets.Count; i++)
             {
-                SingleActor target = log.FightData.Logic.Targets[i];
+                SingleActor target = log.LogData.Logic.Targets[i];
                 targetDamageDist[i] = new IReadOnlyList<JsonDamageDist>[phases.Count];
                 for (int j = 0; j < phases.Count; j++)
                 {
                     PhaseData phase = phases[j];
                     targetDamageDist[i][j] = JsonDamageDistBuilder.BuildJsonDamageDistList(
-                        minions.GetDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
-                        minions.GetBreakbarDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillId).ToDictionary(x => x.Key, x => x.ToList()),
+                        minions.GetDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList()),
+                        minions.GetBreakbarDamageEvents(target, log, phase.Start, phase.End).GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList()),
                         log,
                         skillMap,
                         buffMap

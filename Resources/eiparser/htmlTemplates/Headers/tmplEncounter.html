@@ -1,21 +1,38 @@
 <template>
     <div class="card fight-summary" style="min-width: 350px;">
-        <h3 class="card-header text-center">{{ encounter.name }}</h3>
-        <h7 class="card-header-fightMode text-center" :class="fightModeColorClass">{{ encounter.mode }}</h7>
+        <h3 v-if="isMultiEncounterLog" class="card-header text-center" >
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Select Encounter">
+                <div :style="getMinWidth()">{{ encounterData.nameNoMode }}</div>
+                <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu p-2 font-weight-normal scrollabledropdown" :style="getMinWidth()" style="max-height: 500px;">
+                <li v-for="(encounterData, index) in encountersData" :key="index" :style="index === 0 ? {'border-bottom': '2px solid #bbb;'} : ''">
+                   <a @click="select(index)" @click.stop="stopClickEvent" href="#" class="dropdown-item"
+                        style="font-size: 1.0em; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">         
+                        <img class="icon-ll" :src="encounterData.icon">
+                        {{encounterData.name}}
+                    </a>
+                </li>
+            </ul>
+        </h3>
+        <h3 v-if="!isMultiEncounterLog" class="card-header text-center">
+            {{ encounterData.nameNoMode }}
+        </h3>
+        <h7 class="card-header-fightMode text-center" v-if="!!encounterData.mode" :class="fightModeColorClass(encounterData.mode)">{{ encounterData.mode }}</h7>
         <div class="card-body card-body-encounter container">
             <div class="d-flex flex-row justify-content-center align-items-center">
                 <div class="d-flex flex-column mr-3 justify-content-center">
-                    <div v-if="instanceBuffs" class="d-flex flex-row justify-content-around mb-1">
-                        <span v-for="instanceBuff in instanceBuffs">
+                    <div v-if="encounterData.instanceBuffs" class="d-flex flex-row justify-content-around mb-1">
+                        <span v-for="instanceBuff in encounterData.instanceBuffs">
                             {{instanceBuff.stack > 1 ? instanceBuff.stack + ' x' : ''}}
                             <img :data-original-title="instanceBuff.buff.name + (instanceBuff.buff.description ? '<br> ' + instanceBuff.buff.description : '')"
                                  :src="instanceBuff.buff.icon" class="icon icon-hover" />
                         </span>
                     </div>
-                    <img class="encounter-icon" :src="encounter.icon" :alt="encounter.name">
+                    <img class="encounter-icon" :src="encounterData.icon" :alt="encounterData.nameNoMode">
                 </div>
                 <div class="ml-1 d-flex flex-column justify-content-center">
-                    <div v-if="!wvw" class="mb-1" v-for="target in encounter.targets">
+                    <div v-if="!encounterData.hideTargets" class="mb-1" v-for="target in encounterData.targets">
                         <div class="small" style="text-align:center;">
                             {{target.name}}
                         </div>
@@ -27,10 +44,16 @@
                             </div>
                         </div>
                     </div>
-                    <div class="mb-2 mt-2">Duration: {{ encounter.duration }}</div>
+                    <div v-if="encounterData.hideTargets" class="mb-1">
+                        <div>Players: {{ encounterData.playerCount }}</div>
+                        <div>Friendlies: {{ encounterData.nonSquadFriendlyCount }}</div>
+                        <div>Enemies: {{ encounterData.targetCount }}</div>
+                    </div>
+                    <div class="mb-2 mt-2">Duration: {{ encounterData.duration }}</div>
                     <div class="mb-2" v-if="fractalScale > 0">Fractal Scale: {{ fractalScale }}</div>
-                    <div class="mb-2 text-warning" v-if="encounter.start"> {{ encounter.start }}</div>
-                    <div v-if="!wvw" class="text" :class="resultStatus.class">
+                    <div class="mb-2" v-if="!!instancePrivacy">{{ instancePrivacy }}</div>
+                    <div class="mb-2 text-warning" v-if="encounterData.start"> {{ encounterData.start }}</div>
+                    <div v-if="!encounterData.hideResult" class="text" :class="resultStatus.class">
                         Result: {{resultStatus.text}}
                     </div>
                 </div>
@@ -41,14 +64,74 @@
 
 <script>
     Vue.component("encounter-component", {
-        props: ["light"],
+        props: ["light", "encounters"],
         template: `${template}`,
         data: function () {
             return {
-                wvw: logData.wvw
+                isMultiEncounterLog: IsMultiEncounterLog,
             };
         },
         methods: {
+            getMinWidth: function() {
+                let width = 0;
+                for (let i = 0; i < this.encountersData.length; i++) {
+                    width = Math.max(this.encountersData[i].nameNoMode.length * 13, width);
+                }
+                width += 40;
+                return {
+                    'min-width': width + "px"
+                };
+            },
+            stopClickEvent: function (event) {
+                event.stopPropagation();
+            },
+            select: function(encounterIndex) {
+                for (let i = 0; i < this.encounters.length; i++) {
+                    this.encounters[i].active = false;
+                }
+                this.encounters[encounterIndex].active = true;
+                const index = reactiveLogdata.activeEncounterPhaseData[encounterIndex].phase;
+                // Select phase
+                for (var i = 0; i < reactiveLogdata.phases.length; i++) {
+                    reactiveLogdata.phases[i].active = false;
+                }
+                reactiveLogdata.phases[index].active = true;   
+                // Select an appropriate player
+                const encounterPhase = logData.phases[this.encounters[encounterIndex].index];
+                const players = getActiveNonFakePlayersForPhase(encounterPhase);      
+                let selectedPlayerIndex = reactiveLogdata.activeEncounterPhaseData[encounterIndex].player; 
+                for (let i = 0; i < reactiveLogdata.players.length; i++) {
+                    reactiveLogdata.players[i].active = false;
+                }
+                if (players[selectedPlayerIndex]) {
+                    reactiveLogdata.players[selectedPlayerIndex].active = true;   
+                } else {
+                    const originalPlayer = logData.players[selectedPlayerIndex];
+                    selectedPlayerIndex = -1;
+                    // Look for the same player that is active in that encounter
+                    for (let i = 0; i < logData.players.length; i++) {
+                        const curPlayer = logData.players[i];
+                        if (curPlayer.acc === originalPlayer.acc && players[i]) {
+                            selectedPlayerIndex = i;
+                            break;
+                        }
+                    }
+                    if (selectedPlayerIndex >= 0) {           
+                        reactiveLogdata.players[selectedPlayerIndex].active = true;   
+                    } else {
+                        // Default to pov player active in that encounter
+                        for (let i = 0; i < logData.players.length; i++) {
+                            const curPlayer = logData.players[i];
+                            if (curPlayer.isPoV && players[i]) {
+                                selectedPlayerIndex = i;
+                                break;
+                            }
+                        }
+                        reactiveLogdata.players[selectedPlayerIndex].active = true;   
+                    }
+                    reactiveLogdata.activeEncounterPhaseData[encounterIndex].player = selectedPlayerIndex;
+                }
+            },
             getGradient: function (target) {
                 var hpLeftPercent = target.hpLeftPercent;
                 var healthAndBarrier = hpLeftPercent + target.barrierLeftPercent;
@@ -89,55 +172,16 @@
                 }
                 return health + " HP";
             },
-        },
-        computed: {
-            encounter: function () {
-                var targets = [];
-                var mainPhase = logData.phases[0];
-                if (!logData.targetless) {
-                    for (var i = 0; i < mainPhase.targets.length; i++) {
-                        if (mainPhase.targetPriorities[i] > 0) {
-                            continue;
-                        }
-                        if (targets.length >= 10) {
-                            break;
-                        }
-                        var targetIndex = mainPhase.targets[i];
-                        var targetData = logData.targets[targetIndex];
-                        targets.push(targetData);
-                    }
-                }
-
-                var encounter = {
-                    name: logData.fightNameNoMode,
-                    icon: logData.fightIcon,
-                    duration: logData.encounterDuration,
-                    targets: targets,
-                    mode: logData.fightMode,
-                    start: logData.fightStartStatus,
-                };
-                return encounter;
-            },
-            fractalScale: function () {
-                return logData.fractalScale;
-            },
-            resultStatus: function () {
-                return logData.success ? { text: 'Success', class: ["text-success"] } : { text: 'Failure', class: ["text-danger"] };
-            },
-            instanceBuffs: function () {
-                if (logData.instanceBuffs.length == 0) {
-                    return null;
-                }
-                var res = [];
-                for (var i = 0; i < logData.instanceBuffs.length; i++) {
-                    res.push({buff: findSkill(true, logData.instanceBuffs[i][0]), stack: logData.instanceBuffs[i][1]});
-                }
-                return res;
-            },
-            fightModeColorClass: function () {
-                switch (logData.fightMode) {
+            fightModeColorClass: function (mode) {
+                switch (mode) {
+                    case "Unknown":
+                        return { 'fightModeUnknown-light': this.light, 'fightModeUnknown-dark': !this.light };
+                        break;
                     case "Story Mode":
                         return { 'fightModeStory-light': this.light, 'fightModeStory-dark': !this.light };
+                        break;
+                    case "Quickplay Normal Mode":
+                        return { 'fightModeQuickplay-light': this.light, 'fightModeQuickplay-dark': !this.light };
                         break;
                     case "Emboldened Normal Mode":
                         return { 'fightModeEmboldened-light': this.light, 'fightModeEmboldened-dark': !this.light };
@@ -155,6 +199,90 @@
                         break;
                 }
                 return;
+            },
+        },
+        computed: {
+            encountersData: function () {
+                let res = [];
+                for (let j = 0; j < logData.phases.length; j++) {
+                    const phase = logData.phases[j];
+                    if (phase.type === PhaseTypes.SUBPHASE || phase.type === PhaseTypes.TIMEFRAME) {
+                        continue;
+                    }
+                    const targets = [];
+                    const noTargets = logData.targetless;
+                    let targetCount = 0;
+                    let presentAccounts = new Set();
+                    for (let i = 0; i < phase.targets.length; i++) {
+                        if (phase.targetPriorities[i] > 0) {
+                            continue;
+                        }
+                        targetCount++;
+                        if (!noTargets && targets.length < 10) {
+                            const targetIndex = phase.targets[i];
+                            const targetData = logData.targets[targetIndex];
+                            targets.push(targetData);
+                        }
+                    }
+                    const hideTargets = logData.wvw || (phase.type === PhaseTypes.INSTANCE && this.isMultiEncounterLog);
+                    const players = getActiveNonFakePlayersForPhase(phase);
+                    const squadPlayers = players.filter(x => x && !x.notInSquad);
+                    const nonSquadFriendlies = players.filter(x => x && x.notInSquad);
+                    const encounter = {
+                        nameNoMode: phase == logData.phases[0] ? logData.logName : phase.nameNoMode,
+                        name: phase == logData.phases[0] ? logData.logName : phase.name,
+                        success: phase.success,
+                        icon: phase.icon,
+                        duration: phase.encounterDuration,
+                        targets: targets,
+                        targetCount: targetCount,
+                        playerCount: squadPlayers.filter(x => {
+                            if (presentAccounts.has(x.acc)) {
+                                return false;
+                            }
+                            presentAccounts.add(x.acc);
+                            return true;
+                        }).length,
+                        nonSquadFriendlyCount: nonSquadFriendlies.length,
+                        mode: phase.mode,
+                        start: phase.startStatus,
+                        hideTargets: hideTargets,
+                        hideResult: hideTargets,
+                        instanceBuffs: null,
+                    };
+                    if (logData.instanceBuffs.length > 0) {
+                        const res = [];
+                        for (let i = 0; i < logData.instanceBuffs.length; i++) {
+                            const cur = logData.instanceBuffs[i];
+                            if (cur[2] <= phase.start && cur[3] >= phase.end) {
+                                res.push({buff: findSkill(true, cur[0]), stack: cur[1]});
+                            }
+                        }
+                        if (res.length > 0) {
+                            encounter.instanceBuffs = res;
+                        }
+                    }
+                    res.push(encounter);
+                }
+                return res;
+            },
+            encounterData: function() {
+                for (let i = 0; i < this.encounters.length; i++) {
+                    const encounter = this.encounters[i];
+                    if (encounter.active) {
+                        return this.encountersData[i];
+                    }
+                }
+                return this.encountersData[0];
+            },
+            fractalScale: function () {
+                return logData.fractalScale;
+            },
+            instancePrivacy: function () {
+                return logData.instancePrivacy;
+            },
+            resultStatus: function () {
+                return this.encounterData.success ? { text: 'Success', class: ["text-success"] } : { text: 'Failure', class: ["text-danger"] };
             },
         }
     });

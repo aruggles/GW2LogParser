@@ -2,6 +2,7 @@
 using GW2EIEvtcParser;
 using GW2EIEvtcParser.ParserHelpers;
 using GW2EIGW2API;
+using GW2EIParserCommons;
 using GW2EIParserCommons.Exceptions;
 using Gw2LogParser.EvtcParserExtensions;
 using Gw2LogParser.ExportModels;
@@ -25,7 +26,7 @@ public sealed class ProgramHelper : IDisposable
     internal readonly static HTMLAssets htmlAssets = new();
     public static bool MemoryCheck { get; set; } = false;
     public static bool EnableTracing { get; set; } = false;
-    public static ConcurrentBag<ParsedLog> CompletedLogs { get; set; } = [];
+    public static ConcurrentBag<LogContainer> CompletedLogs { get; set; } = [];
     public static long timestamp = DateTime.Now.ToFileTime();
 
     public ProgramHelper(Version parserVersion)
@@ -69,13 +70,16 @@ public sealed class ProgramHelper : IDisposable
             {
                 failureReason.Throw();
             }
-            operation.BasicMetaData = new OperationController.OperationBasicMetaData(log!);
+            if (log == null)
+            {
+                throw new ProgramException("Parsed log is null");
+            }
+            operation.BasicMetaData = new OperationController.OperationBasicMetaData(log);
             
             //Creating File
-            GenerateFiles(log!, operation, fInfo);
-            ParsedLog parsedLog = new ParsedLog(log!);
-            parsedLog.evctFile = fInfo;
-            CompletedLogs.Add(parsedLog);
+            GenerateFiles(log, operation, fInfo);
+            LogContainer logContainer = new LogContainer(log, fInfo);
+            CompletedLogs.Add(logContainer);
         }
         catch (Exception ex)
         {
@@ -96,7 +100,7 @@ public sealed class ProgramHelper : IDisposable
         DirectoryInfo saveDirectory = GetSaveDirectory(fInfo);
         var formOperation = operation as FormOperationController;
         var index = formOperation == null ? DateTime.Now.ToFileTime() : formOperation.Index;
-        string result = log.FightData.Success ? "kill" : "fail";
+        string result = log.LogData.Success ? "kill" : "fail";
         var uploadResults = new UploadResults("", "");
         operation.OutLocation = saveDirectory.FullName;
 
@@ -118,15 +122,19 @@ public sealed class ProgramHelper : IDisposable
             builder.CreateHTML(sw, saveDirectory.FullName);
         }
         operation.UpdateProgressWithCancellationCheck("Program: HTML created");
-        operation.UpdateProgressWithCancellationCheck($"Completed for {result}ed {log.FightData.Logic.Extension}");
+        operation.UpdateProgressWithCancellationCheck($"Completed for {result}ed {log.LogData.Logic.Extension}");
     }
 
     public static DirectoryInfo GetSaveDirectory(FileInfo fInfo)
     {
         //save location
         DirectoryInfo? saveDirectory = fInfo.Directory;
+        if (saveDirectory == null)
+        {
+            throw new InvalidOperationException("FileInfo.Directory is null");
+        }
         string savePath = Path.Combine(
-                fInfo.Directory.FullName,
+                saveDirectory.FullName,
                 $"combat_report_{ProgramHelper.timestamp}"
             );
         saveDirectory = Directory.CreateDirectory(savePath);
@@ -147,34 +155,35 @@ public sealed class ProgramHelper : IDisposable
         var report = new Report();
         var uploadResults = new UploadResults("", "");
         
-        FileInfo fileInfo = null;
-        DirectoryInfo saveDirectory = null;
+        FileInfo? fileInfo = null;
+        DirectoryInfo? saveDirectory = null;
 
-        var sorted = CompletedLogs.OrderBy(c => c.LogData.LogEndRaw);
-        var _firstLog = sorted.First<ParsedLog>();
-        var _lastLog = sorted.Last<ParsedLog>();
+        var sorted = CompletedLogs.OrderBy(c => c.Log.LogMetadata.DateEnd);
+        var _firstLog = sorted.First<LogContainer>();
+        var _lastLog = sorted.Last<LogContainer>();
 
         if (_firstLog != null)
         {
-            report.LogsStart = _firstLog.LogData.LogStart;
+            report.LogsStart = _firstLog.Log.LogMetadata.DateStart;
             fileInfo = _firstLog.evctFile;
             saveDirectory = GetSaveDirectory(fileInfo);
         }
         if (_lastLog != null)
         {
-            report.LogsEnd = _lastLog.LogData.LogEnd;
+            report.LogsEnd = _lastLog.Log.LogMetadata.DateEnd;
         }
 
-        foreach (ParsedLog parsedLog in sorted)
+        foreach (LogContainer parsedLog in sorted)
         {
             var logReport = new LogReport();
             var exporter = new LogBuilder(parsedLog);
             var data = exporter.BuildLogData(parserVersion, uploadResults);
             logReport.Name = parsedLog.evctFile.Name;
             fileInfo = parsedLog.evctFile;
-            logReport.LogsStart = parsedLog.LogData.LogStart;
-            logReport.lengthInSeconds = parsedLog.LogData.LogEndRaw - parsedLog.LogData.LogStartRaw;
-            logReport.LogsEnd = parsedLog.LogData.LogEnd;
+            logReport.LogsStart = parsedLog.Log.LogData.LogStart;
+            logReport.Duration = parsedLog.Log.LogData.EvtcLogEnd;
+            logReport.DurationString = parsedLog.Log.LogData.DurationString;
+            logReport.LogsEnd = parsedLog.Log.LogData.LogEnd;
             logReport.PointOfView = data.RecordedBy;
             exporter.UpdateLogReport(logReport, data);
 
@@ -182,15 +191,18 @@ public sealed class ProgramHelper : IDisposable
             report.PointOfView = data.RecordedBy;
             foreach (PlayerReport player in logReport.players.Values)
             {
-                PlayerReport playerValue = null;
-                report.players.TryGetValue(player.Name, out playerValue);
-                if (playerValue == null)
+                PlayerReport? playerValue = null;
+                if (player.Name != null)
                 {
-                    report.players[player.Name] = player;
-                }
-                else
-                {
-                    exporter.SumPlayerStats(playerValue, player);
+                    _ = report.players.TryGetValue(player.Name, out playerValue);
+                    if (playerValue == null)
+                    {
+                        report.players[player.Name] = player;
+                    }
+                    else
+                    {
+                        exporter.SumPlayerStats(playerValue, player);
+                    }
                 }
             }
         }

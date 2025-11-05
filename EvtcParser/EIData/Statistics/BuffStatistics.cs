@@ -1,6 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.Buff;
 
 namespace GW2EIEvtcParser.EIData;
@@ -30,7 +28,7 @@ public class BuffStatistics
             playerCount++;
         }
 
-        var buffsToTrack = new HashSet<Buff>(buffDistributionPerPlayer.SelectMany(x => x.Value.BuffIDs).Select(x => log.Buffs.BuffsByIds[x]));
+        var buffsToTrack = new HashSet<Buff>(buffDistributionPerPlayer.SelectMany(x => x.Value.BuffIDs).Select(x => log.Buffs.BuffsByIDs[x]));
 
         var buffs = new Dictionary<long, BuffStatistics>();
         var activeBuffs = new Dictionary<long, BuffStatistics>();

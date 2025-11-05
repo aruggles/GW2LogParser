@@ -1,6 +1,5 @@
-﻿using GW2EIEvtcParser.EncounterLogic;
+﻿using GW2EIEvtcParser.LogLogic;
 using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -12,7 +11,7 @@ public class DamageModifiersContainer
     public readonly IReadOnlyDictionary<ParserHelper.Source, IReadOnlyList<IncomingDamageModifier>> IncomingDamageModifiersPerSource;
     public readonly IReadOnlyDictionary<int, IncomingDamageModifier> IncomingDamageModifiersByID;
 
-    internal DamageModifiersContainer(CombatData combatData, FightLogic.ParseModeEnum parseMode, FightLogic.SkillModeEnum skillMode, EvtcParserSettings parserSettings)
+    internal DamageModifiersContainer(CombatData combatData, LogLogic.LogLogic.ParseModeEnum parseMode, LogLogic.LogLogic.SkillModeEnum skillMode, EvtcParserSettings parserSettings)
     {
         IEnumerable<IReadOnlyList<DamageModifierDescriptor>> allOutgoingDamageModifiers =
         [
@@ -25,46 +24,55 @@ public class DamageModifiersContainer
             HeraldHelper.OutgoingDamageModifiers,
             RenegadeHelper.OutgoingDamageModifiers,
             VindicatorHelper.OutgoingDamageModifiers,
+            ConduitHelper.OutgoingDamageModifiers,
             //
             WarriorHelper.OutgoingDamageModifiers,
             BerserkerHelper.OutgoingDamageModifiers,
             SpellbreakerHelper.OutgoingDamageModifiers,
             BladeswornHelper.OutgoingDamageModifiers,
+            ParagonHelper.OutgoingDamageModifiers,
             //
             GuardianHelper.OutgoingDamageModifiers,
             DragonhunterHelper.OutgoingDamageModifiers,
             FirebrandHelper.OutgoingDamageModifiers,
             WillbenderHelper.OutgoingDamageModifiers,
+            LuminaryHelper.OutgoingDamageModifiers,
             //
             EngineerHelper.OutgoingDamageModifiers,
             ScrapperHelper.OutgoingDamageModifiers,
             HolosmithHelper.OutgoingDamageModifiers,
             MechanistHelper.OutgoingDamageModifiers,
+            AmalgamHelper.OutgoingDamageModifiers,
             //
             ThiefHelper.OutgoingDamageModifiers,
             DaredevilHelper.OutgoingDamageModifiers,
             DeadeyeHelper.OutgoingDamageModifiers,
             SpecterHelper.OutgoingDamageModifiers,
+            AntiquaryHelper.OutgoingDamageModifiers,
             //
             RangerHelper.OutgoingDamageModifiers,
             DruidHelper.OutgoingDamageModifiers,
             SoulbeastHelper.OutgoingDamageModifiers,
             UntamedHelper.OutgoingDamageModifiers,
+            GaleshotHelper.OutgoingDamageModifiers,
             //
             MesmerHelper.OutgoingDamageModifiers,
             ChronomancerHelper.OutgoingDamageModifiers,
             MirageHelper.OutgoingDamageModifiers,
             VirtuosoHelper.OutgoingDamageModifiers,
+            TroubadourHelper.OutgoingDamageModifiers,
             //
             NecromancerHelper.OutgoingDamageModifiers,
             ReaperHelper.OutgoingDamageModifiers,
             ScourgeHelper.OutgoingDamageModifiers,
             HarbingerHelper.OutgoingDamageModifiers,
+            RitualistHelper.OutgoingDamageModifiers,
             //
             ElementalistHelper.OutgoingDamageModifiers,
             TempestHelper.OutgoingDamageModifiers,
             WeaverHelper.OutgoingDamageModifiers,
             CatalystHelper.OutgoingDamageModifiers,
+            EvokerHelper.OutgoingDamageModifiers,
         ];
         var currentOutgoingDamageMods = new List<OutgoingDamageModifier>(10);
         foreach (var modifierDescriptor in allOutgoingDamageModifiers)
@@ -91,46 +99,55 @@ public class DamageModifiersContainer
             HeraldHelper.IncomingDamageModifiers,
             RenegadeHelper.IncomingDamageModifiers,
             VindicatorHelper.IncomingDamageModifiers,
+            ConduitHelper.IncomingDamageModifiers,
             //
             WarriorHelper.IncomingDamageModifiers,
             BerserkerHelper.IncomingDamageModifiers,
             SpellbreakerHelper.IncomingDamageModifiers,
             BladeswornHelper.IncomingDamageModifiers,
+            ParagonHelper.IncomingDamageModifiers,
             //
             GuardianHelper.IncomingDamageModifiers,
             DragonhunterHelper.IncomingDamageModifiers,
             FirebrandHelper.IncomingDamageModifiers,
             WillbenderHelper.IncomingDamageModifiers,
+            LuminaryHelper.IncomingDamageModifiers,
             //
             EngineerHelper.IncomingDamageModifiers,
             ScrapperHelper.IncomingDamageModifiers,
             HolosmithHelper.IncomingDamageModifiers,
             MechanistHelper.IncomingDamageModifiers,
+            AmalgamHelper.IncomingDamageModifiers,
             //
             ThiefHelper.IncomingDamageModifiers,
             DaredevilHelper.IncomingDamageModifiers,
             DeadeyeHelper.IncomingDamageModifiers,
             SpecterHelper.IncomingDamageModifiers,
+            AntiquaryHelper.IncomingDamageModifiers,
             //
             RangerHelper.IncomingDamageModifiers,
             DruidHelper.IncomingDamageModifiers,
             SoulbeastHelper.IncomingDamageModifiers,
             UntamedHelper.IncomingDamageModifiers,
+            GaleshotHelper.IncomingDamageModifiers,
             //
             MesmerHelper.IncomingDamageModifiers,
             ChronomancerHelper.IncomingDamageModifiers,
             MirageHelper.IncomingDamageModifiers,
             VirtuosoHelper.IncomingDamageModifiers,
+            TroubadourHelper.IncomingDamageModifiers,
             //
             NecromancerHelper.IncomingDamageModifiers,
             ReaperHelper.IncomingDamageModifiers,
             ScourgeHelper.IncomingDamageModifiers,
             HarbingerHelper.IncomingDamageModifiers,
+            RitualistHelper.IncomingDamageModifiers,
             //
             ElementalistHelper.IncomingDamageModifiers,
             TempestHelper.IncomingDamageModifiers,
             WeaverHelper.IncomingDamageModifiers,
             CatalystHelper.IncomingDamageModifiers,
+            EvokerHelper.IncomingDamageModifiers,
         ];
         var currentIncomingDamageMods = new List<IncomingDamageModifier>(20);
         foreach (var boons in allIncomingDamageModifiers)

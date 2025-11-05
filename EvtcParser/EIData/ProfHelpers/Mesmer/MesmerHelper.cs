@@ -100,9 +100,19 @@ internal static class MesmerHelper
             .UsingSrcBaseSpecChecker(Spec.Mesmer),
     ];
 
-    private static bool WithIllusionsChecker(DamageEvent x, ParsedEvtcLog log)
+    internal static bool IllusionsWithMesmerChecker(DamageEvent x, ParsedEvtcLog log)
     {
-        return x.From == x.CreditedFrom || x.From.IsAnySpecies(_clones) || x.From.IsAnySpecies(_phantasms);
+        return x.From.Is(x.CreditedFrom) || IsIllusion(x.From);
+    }
+
+    internal static bool IllusionsChecker(DamageEvent x, ParsedEvtcLog log)
+    {
+        return IsIllusion(x.From);
+    }
+
+    internal static bool PhantasmsChecker(DamageEvent x, ParsedEvtcLog log)
+    {
+        return IsPhantasm(x.From);
     }
 
     private static bool SuperiorityComplexBonusChecker(HealthDamageEvent x, ParsedEvtcLog log)
@@ -137,13 +147,14 @@ internal static class MesmerHelper
     [
         // Domination
         // - Empowered Illusions
-        new DamageLogDamageModifier(Mod_EmpoweredIllusions, "Empowered Illusions", "Illusions deal 15% increased strike damage", DamageSource.PetsOnly, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.EmpoweredIllusions, WithIllusionsChecker, DamageModifierMode.All),
+        new DamageLogDamageModifier(Mod_EmpoweredIllusions, "Empowered Illusions", "Illusions deal 15% increased strike damage", DamageSource.PetsOnly, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.EmpoweredIllusions, IllusionsChecker, DamageModifierMode.All)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => IsIllusion(x.ReferenceAgentItem))),
         // - Vicious Expression
         new BuffOnFoeDamageModifier(Mod_ViciousExpressionWithIllusions, NumberOfBoons, "Vicious Expression", "25% on boonless target", DamageSource.All, 25.0, DamageType.Strike, DamageType.All, Source.Mesmer, ByAbsence, TraitImages.ConfoundingSuggestions, DamageModifierMode.PvE)
-            .UsingChecker(WithIllusionsChecker)
+            .UsingChecker(IllusionsWithMesmerChecker)
             .WithBuilds(GW2Builds.February2020Balance, GW2Builds.February2020Balance2),
         new BuffOnFoeDamageModifier(Mod_ViciousExpressionWithIllusions, NumberOfBoons, "Vicious Expression", "15% on boonless target", DamageSource.All, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, ByAbsence, TraitImages.ConfoundingSuggestions, DamageModifierMode.All)
-            .UsingChecker(WithIllusionsChecker)
+            .UsingChecker(IllusionsWithMesmerChecker)
             .WithBuilds(GW2Builds.February2020Balance2),
         // - Egotism
         new DamageLogDamageModifier(Mod_Egotism, "Egotism", "10% if target hp% lower than self hp%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.TemporalEnchanter, SelfHigherHPChecker, DamageModifierMode.PvE)
@@ -157,13 +168,15 @@ internal static class MesmerHelper
             .UsingApproximate(),
         // - Fragility
         new BuffOnFoeDamageModifier(Mod_Fragility, Vulnerability, "Fragility", "0.5% per stack vuln on target", DamageSource.NoPets, 0.5, DamageType.Strike, DamageType.All, Source.Mesmer, ByStack, TraitImages.Fragility, DamageModifierMode.All),
-        
+        // - Power block
+        new BuffOnActorDamageModifier(Mod_PowerBlock, PowerBlockBuff, "Power Block", "25%", DamageSource.NoPets, 25.0, DamageType.StrikeAndCondition, DamageType.All, Source.Mesmer, ByPresence, TraitImages.PowerBlock, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.June2025Balance),
         // Dueling
         // - Superiority Complex
-        new DamageLogDamageModifier(Mod_SuperiorityComplex, "Superiority Complex", "15% always", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.SuperiorityComplex, (x, log) => x.HasCrit && !SuperiorityComplexBonusChecker(x, log), DamageModifierMode.PvEInstanceOnly)
+        new DamageLogDamageModifier(Mod_SuperiorityComplex, "Superiority Complex", "15% on crit", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.SuperiorityComplex, (x, log) => x.HasCrit && !SuperiorityComplexBonusChecker(x, log), DamageModifierMode.PvEInstanceOnly)
             .WithEvtcBuilds(ArcDPSBuilds.StartOfLife, ArcDPSBuilds.WeaponSwapValueIsPrevious_CrowdControlEvents_GliderEvents)
             .UsingApproximate(),
-        new DamageLogDamageModifier(Mod_SuperiorityComplex, "Superiority Complex", "15% always", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.SuperiorityComplex, (x, log) => x.HasCrit && !SuperiorityComplexBonusChecker(x, log), DamageModifierMode.PvEInstanceOnly)
+        new DamageLogDamageModifier(Mod_SuperiorityComplex, "Superiority Complex", "15% on crit", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.SuperiorityComplex, (x, log) => x.HasCrit && !SuperiorityComplexBonusChecker(x, log), DamageModifierMode.PvEInstanceOnly)
             .WithEvtcBuilds(ArcDPSBuilds.WeaponSwapValueIsPrevious_CrowdControlEvents_GliderEvents),
         new DamageLogDamageModifier(Mod_SuperiorityComplexBonus, "Superiority Complex", "25% against disabled foes or below 50% hp", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Mesmer, TraitImages.SuperiorityComplex, SuperiorityComplexBonusChecker, DamageModifierMode.PvEInstanceOnly)
             .WithEvtcBuilds(ArcDPSBuilds.StartOfLife, ArcDPSBuilds.WeaponSwapValueIsPrevious_CrowdControlEvents_GliderEvents)
@@ -179,7 +192,8 @@ internal static class MesmerHelper
             .WithBuilds(GW2Builds.November2023Balance),
         // - Phantasmal Force
         new BuffOnActorDamageModifier(Mod_PhantasmalForce, PhantasmalForce, "Phantasmal Force", "1% per stack of might when creating an illusion", DamageSource.PetsOnly, 1.0, DamageType.Strike, DamageType.All, Source.Mesmer, ByStack, TraitImages.PhantasmalForce_Mistrust, DamageModifierMode.PvE)
-            .UsingChecker(WithIllusionsChecker),
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(PhantasmsChecker),
         
         // Chaos
         // - Illusionary Membrane
@@ -188,13 +202,13 @@ internal static class MesmerHelper
         new BuffOnActorDamageModifier(Mod_IllusionaryMembrane, ChaosAura, "Illusionary Membrane", "10% under chaos aura", DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, Source.Mesmer, ByPresence, TraitImages.IllusionaryMembrane, DamageModifierMode.All)
             .WithBuilds(GW2Builds.November2023Balance, GW2Builds.January2024Balance),
         new BuffOnActorDamageModifier(Mod_IllusionaryMembrane, ChaosAura, "Illusionary Membrane", "10% under chaos aura", DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, Source.Mesmer, ByPresence, TraitImages.IllusionaryMembrane, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.January2024Balance, GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.January2024Balance, GW2Builds.April2025Balance),
         new BuffOnActorDamageModifier(Mod_IllusionaryMembrane, ChaosAura, "Illusionary Membrane", "7% under chaos aura", DamageSource.NoPets, 7.0, DamageType.Condition, DamageType.All, Source.Mesmer, ByPresence, TraitImages.IllusionaryMembrane, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.January2024Balance, GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.January2024Balance, GW2Builds.April2025Balance),
         new BuffOnActorDamageModifier(Mod_IllusionaryMembrane, IllusionaryMembrane, "Illusionary Membrane", "10%", DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, Source.Mesmer, ByPresence, TraitImages.IllusionaryMembrane, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.April2025Balance),
         new BuffOnActorDamageModifier(Mod_IllusionaryMembrane, IllusionaryMembrane, "Illusionary Membrane", "7%", DamageSource.NoPets, 7.0, DamageType.Condition, DamageType.All, Source.Mesmer, ByPresence, TraitImages.IllusionaryMembrane, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.April2025Balance),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -235,6 +249,7 @@ internal static class MesmerHelper
         new Buff("Reflection", Reflection, Source.Mesmer, BuffStackType.Queue, 9, BuffClassification.Other, SkillImages.ArcaneShield),
         new Buff("Reflection 2", Reflection2, Source.Mesmer, BuffStackType.Queue, 9, BuffClassification.Other, SkillImages.ArcaneShield),
         new Buff("Illusionary Membrane", IllusionaryMembrane, Source.Mesmer, BuffStackType.Queue, 9, BuffClassification.Other, TraitImages.IllusionaryMembrane),
+        new Buff("Power Block", PowerBlockBuff, Source.Mesmer, BuffClassification.Other, TraitImages.PowerBlock),
         // Transformations
         new Buff("Morphed (Polymorph Moa)", MorphedPolymorphMoa, Source.Mesmer, BuffClassification.Debuff, SkillImages.MorphedPolymorphMoa),
         new Buff("Morphed (Polymorph Tuna)", MorphedPolymorphTuna, Source.Mesmer, BuffClassification.Debuff, SkillImages.MorphedPolymorphTuna),
@@ -375,6 +390,24 @@ internal static class MesmerHelper
         (int)MinionID.IllusionaryLancer,
     ];
 
+    internal static bool IsPhantasm(AgentItem agentItem)
+    {
+        if (agentItem.Type == AgentItem.AgentType.Gadget)
+        {
+            return false;
+        }
+        return _phantasms.Contains(agentItem.ID);
+    }
+
+    internal static bool IsIllusion(AgentItem agentItem)
+    {
+        if (agentItem.Type == AgentItem.AgentType.Gadget)
+        {
+            return false;
+        }
+        return _clones.Contains(agentItem.ID) || _phantasms.Contains(agentItem.ID);
+    }
+
     internal static bool IsKnownMinionID(int id)
     {
         return _phantasms.Contains(id) || _clones.Contains(id);
@@ -471,7 +504,7 @@ internal static class MesmerHelper
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.MesmerDimensionalAperturePortal, out var dimensionalApertures))
         {
             var skill = new SkillModeDescriptor(player, Spec.Mesmer, DimensionalApertureSkill, SkillModeCategory.Portal);
-            var applies = log.CombatData.GetBuffData(DimensionalAperturePortalBuff).Where(x => x.CreditedBy == player.AgentItem);
+            var applies = log.CombatData.GetBuffData(DimensionalAperturePortalBuff).Where(x => x.CreditedBy.Is(player.AgentItem));
             foreach (EffectEvent effect in dimensionalApertures)
             {
                 // The buff can be quite delayed
@@ -531,7 +564,7 @@ internal static class MesmerHelper
                 { EffectGUIDs.MesmerMentalCollapse240Radius, (280, 240) },
                 { EffectGUIDs.MesmerMentalCollapse360Radius, (1280, 360) }
             };
-            var skill = new SkillModeDescriptor(player, Spec.Mesmer, MentalCollapse, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Mesmer, MentalCollapse);
             foreach (EffectEvent effect in mentalCollapses)
             {
                 long duration = 0; // Overriding logged duration of 0
@@ -545,6 +578,21 @@ internal static class MesmerHelper
 
                 (long, long) lifespan = (effect.Time, effect.Time + duration);
                 AddCircleSkillDecoration(replay, effect, color, skill, lifespan, radius, EffectImages.EffectMentalCollapse);
+            }
+        }
+
+        // Chaos Storm
+        if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.MesmerChaosStorm1, out var chaosStorms))
+        {
+            var skillCC = new SkillModeDescriptor(player, Spec.Mesmer, ChaosStorm, SkillModeCategory.CC);
+            var skillDamage = new SkillModeDescriptor(player, Spec.Mesmer, ChaosStorm);
+            foreach (EffectEvent effect in chaosStorms)
+            {
+                (long start, long end) lifespan = effect.ComputeLifespan(log, 5000);
+                (long start, long end) lifespanCC = (lifespan.start, lifespan.start + 1000);
+                (long start, long end) lifespanDamage = (lifespanCC.end, lifespan.end);
+                AddCircleSkillDecoration(replay, effect, color, skillCC, lifespanCC, 240, EffectImages.EffectChaosStorm);
+                AddCircleSkillDecoration(replay, effect, color, skillDamage, lifespanDamage, 240, EffectImages.EffectChaosStorm);
             }
         }
     }

@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using static GW2EIEvtcParser.EIData.Buff;
 
 namespace GW2EIEvtcParser.EIData;
@@ -48,25 +45,23 @@ public class DefensePerTargetStatistics
     public readonly int ReceivedCrowdControl;
     public readonly double ReceivedCrowdControlDuration;
 
-    private static (int, double) GetStripData(IReadOnlyList<Buff> buffs, ParsedEvtcLog log, long start, long end, SingleActor actor, SingleActor? from, bool excludeSelf)
+    private static (int, double) GetStripData(IReadOnlyList<Buff> buffs, ParsedEvtcLog log, long start, long end, SingleActor actor, SingleActor? by, bool excludeSelf)
     {
         double stripTime = 0;
         int strip = 0;
         foreach (Buff buff in buffs)
         {
             double currentBoonStripTime = 0;
-            IReadOnlyList<BuffRemoveAllEvent> removeAllArray = log.CombatData.GetBuffRemoveAllData(buff.ID);
+            IReadOnlyList<BuffRemoveAllEvent> removeAllArray = actor.GetBuffRemoveAllEventsFromByID(log, start, end, buff.ID, by);
             foreach (BuffRemoveAllEvent brae in removeAllArray)
             {
-                if (brae.Time >= start && brae.Time <= end && brae.To == actor.AgentItem)
+                if (brae.CreditedBy.IsUnknown ||
+                    (excludeSelf && brae.CreditedBy.Is(actor.AgentItem)))
                 {
-                    if (from != null && brae.CreditedBy != from.AgentItem || brae.CreditedBy.IsUnknown || (excludeSelf && brae.CreditedBy == actor.AgentItem))
-                    {
-                        continue;
-                    }
-                    currentBoonStripTime = Math.Max(currentBoonStripTime + brae.RemovedDuration, log.FightData.FightDuration);
-                    strip++;
+                    continue;
                 }
+                currentBoonStripTime = Math.Max(currentBoonStripTime + brae.RemovedDuration, log.LogData.LogDuration);
+                strip++;
             }
             stripTime += currentBoonStripTime;
         }

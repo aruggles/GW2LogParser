@@ -15,8 +15,8 @@
 
 <script>
     Vue.component("buff-stats-target-component", {
-        props: ['phaseindex', 'playerindex', 'targetindex'],
-        mixins: [buffComponent],
+        props: ['playerindex', 'targetindex'],
+        mixins: [buffComponent, encounterPhaseComponent],
         template: `${template}`,
         data: function () {
             return {
@@ -26,9 +26,6 @@
             };
         },
         computed: {
-            phase: function() {
-                return logData.phases[this.phaseindex];
-            },
             target: function() {
                 return logData.targets[this.targetindex];
             },
@@ -39,14 +36,19 @@
                 return this.buffsStatContainer.targetsBoonUptimes[this.targetPhaseIndex].avg > 0;
             },
             condiData: function () {
-                if (this.cacheCondi.has(this.phaseindex)) {
-                    return this.cacheCondi.get(this.phaseindex);
+                const cacheID = this.encounterPhase.id + '-' + this.phaseindex;
+                if (this.cacheCondi.has(cacheID)) {
+                    return this.cacheCondi.get(cacheID);
                 }
+                const players = getActivePlayersForPhase(this.encounterPhase);
                 const res = [];
                 if (this.targetPhaseIndex === -1) {
-                    for (let i = 0; i < logData.players.length; i++) {
+                    for (let i = 0; i < players.length; i++) {
+                        if (!players[i]) {
+                            continue;
+                        }
                         res.push({
-                            player: logData.players[i],
+                            player: players[i],
                             data: {
                                 avg: 0.0,
                                 data: []
@@ -54,19 +56,23 @@
                         });
                     }
                 } else {
-                    for (let i = 0; i < logData.players.length; i++) {
+                    for (let i = 0; i < players.length; i++) {
+                        if (!players[i]) {
+                            continue;
+                        }
                         res.push({
-                            player: logData.players[i],
+                            player: players[i],
                             data: this.buffsStatContainer.targetsCondiStats[this.targetPhaseIndex][i]
                         });
                     }
                 }
-                this.cacheCondi.set(this.phaseindex, res);
+                this.cacheCondi.set(cacheID, res);
                 return res;
             },
             condiSums: function () {
-                if (this.cacheCondiSums.has(this.phaseindex)) {
-                    return this.cacheCondiSums.get(this.phaseindex);
+                const cacheID = this.phaseindex;
+                if (this.cacheCondiSums.has(cacheID)) {
+                    return this.cacheCondiSums.get(cacheID);
                 }
                 const res = [];
                 if (this.targetPhaseIndex === -1) {
@@ -85,12 +91,13 @@
                         data: targetData.data
                     });
                 }
-                this.cacheCondiSums.set(this.phaseindex, res);
+                this.cacheCondiSums.set(cacheID, res);
                 return res;
             },
             boonData: function () {
-                if (this.cacheBoon.has(this.phaseindex)) {
-                    return this.cacheBoon.get(this.phaseindex);
+                const cacheID = this.phaseindex;
+                if (this.cacheBoon.has(cacheID)) {
+                    return this.cacheBoon.get(cacheID);
                 }
                 const res = [];
                 if (this.targetPhaseIndex === -1 || !this.hasBoons) {
@@ -108,7 +115,7 @@
                         data: targetData
                     });
                 }
-                this.cacheBoon.set(this.phaseindex, res);
+                this.cacheBoon.set(cacheID, res);
                 return res;
             }
         }

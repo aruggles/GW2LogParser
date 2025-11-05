@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -14,7 +13,7 @@ internal class EnemyStatusMechanic<T> : StatusMechanic<T> where T : StatusEvent
 
     internal override void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs)
     {
-        foreach (SingleActor actor in log.FightData.Logic.Hostiles)
+        foreach (SingleActor actor in log.LogData.Logic.Hostiles)
         {
             foreach (T c in GetEvents(log, actor.AgentItem))
             {

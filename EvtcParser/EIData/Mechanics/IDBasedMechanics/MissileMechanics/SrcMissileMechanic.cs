@@ -1,6 +1,5 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -10,12 +9,13 @@ internal abstract class SrcMissileMechanic : IDBasedMechanic<MissileEvent>
 
     private bool _withMinions { get; set; } = false;
 
-    public SrcMissileMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, internalCoolDown)
+    public SrcMissileMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([mechanicID], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
     }
 
     public SrcMissileMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+        UsingEnable(log => log.CombatData.HasMissileData);
     }
 
     public SrcMissileMechanic WithMinions()

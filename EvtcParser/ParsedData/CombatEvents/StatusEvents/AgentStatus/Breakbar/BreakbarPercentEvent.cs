@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.Interfaces;
-using System;
 
 namespace GW2EIEvtcParser.ParsedData;
 
@@ -20,5 +19,10 @@ public class BreakbarPercentEvent : StatusEvent, IStateable
     public (long start, double value) ToState()
     {
         return (Time, BreakbarPercent);
+    }
+
+    public (long start, double value) ToState(long overridenStart)
+    {
+        return (overridenStart, BreakbarPercent);
     }
 }

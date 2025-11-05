@@ -1,8 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.EIData;
@@ -19,6 +15,7 @@ internal abstract class EffectMechanic : StringBasedMechanic<EffectEvent>
 
     public EffectMechanic(ReadOnlySpan<GUID> effects, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(effects, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+        UsingEnable(log => log.CombatData.HasEffectData);
     }
 
     protected void PlayerChecker(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs)

@@ -1,16 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace GW2EIEvtcParser.EIData;
+﻿namespace GW2EIEvtcParser.EIData;
 
 public abstract class IDBasedMechanic<Checkable> : CheckedMechanic<Checkable>
 {
 
     protected readonly HashSet<long> MechanicIDs = [];
-
-    protected IDBasedMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(plotlySetting, shortName, description, fullName, internalCoolDown)
-    {
-        MechanicIDs.Add(mechanicID);
-    }
 
     //TODO(Rennorb) @perf
     protected IDBasedMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(plotlySetting, shortName, description, fullName, internalCoolDown)

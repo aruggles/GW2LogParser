@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.EIData;
@@ -63,9 +62,9 @@ public class OffensiveStatistics
         var dls = actor.GetDamageEvents(target, log, start, end);
         foreach (HealthDamageEvent dl in dls)
         {
-            if (dl.From == actor.AgentItem)
+            if (dl.From.Is(actor.AgentItem))
             {
-                if (!dl.DoubleProcHit)
+                if (!dl.IsNotADamageEvent)
                 {
                     TotalDamageEventCount++;
                     TotalDamageEventDamage += dl.HealthDamage;
@@ -81,7 +80,7 @@ public class OffensiveStatistics
                     DamageCount++;
                     Damage += dl.HealthDamage;
                     // Derive down contribution from health updates as they are available after this build
-                    if (log.LogData.EvtcBuild < ArcDPSBuilds.Last90BeforeDownRetired)
+                    if (log.LogMetadata.EvtcBuild < ArcDPSBuilds.Last90BeforeDownRetired)
                     {
                         IReadOnlyList<Last90BeforeDownEvent> last90BeforeDownEvents = log.CombatData.GetLast90BeforeDownEvents(dl.To);
                         if (last90BeforeDownEvents.Any(x => dl.Time <= x.Time && dl.Time >= x.Time - x.TimeSinceLast90))
@@ -118,7 +117,7 @@ public class OffensiveStatistics
                         }
                         else
                         {
-                            if (SkillItem.CanCrit(dl.SkillId, log.LogData.GW2Build))
+                            if (SkillItem.CanCrit(dl.SkillID, log.LogMetadata.GW2Build))
                             {
                                 if (dl.HasCrit)
                                 {

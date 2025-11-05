@@ -1,7 +1,5 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
+using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.EIData.Buff;
 
 namespace GW2EIEvtcParser.EIData;
@@ -103,13 +101,13 @@ public class StatisticsHelper
         }
 
         // All class specific boons
-        var remainingBuffsByIds = buffs.BuffsByClassification[BuffClassification.Other].GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.FirstOrDefault()!);
+        var remainingBuffsByIDs = buffs.BuffsByClassification[BuffClassification.Other].GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.FirstOrDefault()!);
         foreach (Player player in players)
         {
             _presentRemainingBuffsPerPlayer[player] = [];
             foreach (BuffEvent item in combatData.GetBuffDataByDst(player.AgentItem))
             {
-                if (item is BuffApplyEvent && item.To == player.AgentItem && remainingBuffsByIds.TryGetValue(item.BuffID, out var boon))
+                if (item is BuffApplyEvent && item.To.Is(player.AgentItem) && remainingBuffsByIDs.TryGetValue(item.BuffID, out var boon))
                 {
                     _presentRemainingBuffsPerPlayer[player].Add(boon);
                 }
@@ -180,42 +178,52 @@ public class StatisticsHelper
             return [];
         }
 
-        var positionsPerPlayer = new List<List<ParametricPoint3D?>>(log.PlayerList.Count);
+        var positionsPerPlayer = new List<IReadOnlyList<ParametricPoint3D?>>(log.PlayerList.Count);
         foreach (Player player in log.PlayerList)
         {
-            positionsPerPlayer.Add(player.GetCombatReplayActivePositions(log));
+            positionsPerPlayer.Add(player.GetCombatReplayActivePolledPositions(log));
         }
 
-        var sampleCount = positionsPerPlayer[0].Count;
+        var sampleCount = (int)(log.LogData.LogEnd / ParserHelper.CombatReplayPollingRate);
 
         var centerPositions = new List<ParametricPoint3D?>(sampleCount);
+        var centerVector3Positions = new List<Vector3?>(sampleCount);
+        var activePlayersPerPositions = new List<int>(sampleCount);
+        foreach (var positions in positionsPerPlayer)
+        {
+            foreach (var position in positions)
+            {
+                if (position == null)
+                {
+                    continue;
+                }
+                int index = (int)(position.Value.Time / ParserHelper.CombatReplayPollingRate);
+                while (centerVector3Positions.Count <= index)
+                {
+                    centerVector3Positions.Add(null);
+                    activePlayersPerPositions.Add(0);
+                }
+                var current = centerVector3Positions[index];
+                centerVector3Positions[index] = current != null ? current.Value + position.Value.XYZ : position.Value.XYZ;
+                activePlayersPerPositions[index] += 1;
+            }
+        }
+        while (centerVector3Positions.Count < sampleCount)
+        {
+            centerVector3Positions.Add(null);
+            activePlayersPerPositions.Add(0);
+        }
         for (int t = 0; t < sampleCount; t++)
         {
-            int activePlayersThisSample = log.PlayerList.Count;
-
-            var position = Vector3.Zero;
-            foreach (var positions in positionsPerPlayer)
-            {
-                var pos = positions[t];
-                if (pos != null)
-                {
-                    position += pos.Value.XYZ;
-                }
-                else
-                {
-                    activePlayersThisSample--;
-                }
-
-            }
-
-            if (activePlayersThisSample == 0)
+            var curVector3 = centerVector3Positions[t];
+            if (curVector3 == null)
             {
                 centerPositions.Add(null);
             }
             else
             {
-                position /= activePlayersThisSample;
-                centerPositions.Add(new ParametricPoint3D(position, ParserHelper.CombatReplayPollingRate * t));
+                curVector3 /= activePlayersPerPositions[t];
+                centerPositions.Add(new ParametricPoint3D(curVector3.Value, ParserHelper.CombatReplayPollingRate * t));
             }
         }
 
@@ -242,7 +250,7 @@ public class StatisticsHelper
         }
         commanders.Sort((a, b) => a.Start.CompareTo(b.Start));
 
-        var commanderPositions = new List<ParametricPoint3D?>((int)(log.FightData.FightDuration / ParserHelper.CombatReplayPollingRate));
+        var commanderPositions = new List<ParametricPoint3D?>((int)(log.LogData.LogDuration / ParserHelper.CombatReplayPollingRate));
         long start = long.MinValue;
         foreach (var commanderSegment in commanders) // don't deconstruct, guids are large
         {

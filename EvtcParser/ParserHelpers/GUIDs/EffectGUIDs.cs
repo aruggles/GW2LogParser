@@ -81,6 +81,8 @@ public static class EffectGUIDs
     public static readonly GUID MesmerMentalCollapse120Radius = new("15C98898B2E33A49A7BAE3DFE99A2584");
     public static readonly GUID MesmerMentalCollapse240Radius = new("4590C8949239AE419CEC0F9053548A6F");
     public static readonly GUID MesmerMentalCollapse360Radius = new("674B586AEBEACC419A1EA44FE112F027");
+    public static readonly GUID MesmerChaosStorm1 = new("921F3521FB79F240B1A8F7EC855F8DF9"); // 5000ms duration
+    public static readonly GUID MesmerChaosStorm2 = new("EFB9CDA30AEBC744B9D377A99BEBC0B2"); // Collides with Necromancer marks, Engineer Spear Devastator
     public static readonly GUID ChronomancerSeizeTheMomentShatter = new("4C7A5E148F7FD642B34EE4996DDCBBAB"); // This seems to happen everytime split second, rewinder, time sink or continuum split are cast under SeizeTheMoment
     public static readonly GUID ChronomancerSplitSecond = new("C035166E3E4C414ABE640F47797D9B4A"); // this is also triggered by the clones while being sourced to the chrono
     public static readonly GUID ChronomancerRewinder = new("DC1C8A043ADCD24B9458688A792B04BA"); // this is also triggered by the clones while being sourced to the chrono
@@ -105,7 +107,7 @@ public static class EffectGUIDs
     public static readonly GUID ChronomancerGravityWellPulse = new("60A74BCA1ECF974FB31CE28ABDF6D8AE"); // 1 pulse every second, 3 total
     public static readonly GUID ChronomancerGravityWellExplosion = new("E0D03976A4BC034E8ABFBBECCC828932"); // 1 second after final pulse
     public static readonly GUID MirageCloak = new("4C7A5E148F7FD642B34EE4996DDCBBAB");
-    public static readonly GUID MirageMirror = new("1370CDF5F2061445A656A1D77C37A55C");
+    public static readonly GUID MirageMirror = new("1370CDF5F2061445A656A1D77C37A55C"); // Has dynamic end time
     public static readonly GUID MirageJaunt = new("3A5A38C26A1FFB438EAD734F3ED42E5E"); // Src Mirage, Dst Mirage
     public static readonly GUID MirageJauntConflict1 = new("B6557C336041B24FA7CC198B6EBDAD9A"); // Src Mirage, Dst Mirage - used with e.g. jaunt & axes of symmetry
     public static readonly GUID MirageJauntConflict2 = new("D7A05478BA0E164396EB90C037DCCF42"); // Src Mirage, Dst Mirage - used with e.g. jaunt, axes of symmetry, illusionary ambush
@@ -119,7 +121,16 @@ public static class EffectGUIDs
     public static readonly GUID MesmerRifleInspiringImagery3 = new("116644F736CDFE4F8FF3E1EB5C5C57A2"); // 2000 Duration - Src Mesmer - Ground AoE
     public static readonly GUID MesmerRifleAbstraction = new("6E2B9CF3E5C95846B15BBD1EAA9B3E98"); // 3300 Default Duration - Src Mesmer - Ground Effect
     public static readonly GUID MesmerRifleAbstraction2 = new("593E668A006AB24D84999AED68F2E4C4"); // 2000 Default Duration - Src Mesmer - Ground Effect
-                                                                                                   // public static readonly GUID MesmerTrail = new("73414BA39AFCF540A90CF91DE961CCEF"); // used with e.g. mirror images, phase retreat, illusionary ambush - likely the trail left behind
+    // public static readonly GUID MesmerTrail = new("73414BA39AFCF540A90CF91DE961CCEF"); // used with e.g. mirror images, phase retreat, illusionary ambush - likely the trail left behind
+    public static readonly GUID TroubadourTaleOfTheSoulkeeper = new("FF116F5E112DA042B238469590A1FCD8"); // 3833 duration
+    public static readonly GUID TroubadourTaleOfTheValiantMarshal = new("EBC45B862D299143B4D63CB6CAEC26ED"); // 3833 duration
+    public static readonly GUID TroubadourTaleOfTheHonorableRogue = new("DBECB5867D11264FA19FFCDC487A410E"); // 3833 duration
+    public static readonly GUID TroubadourDeafeningDrumCast = new("7BE5ABD87A4B3A4AACE4CC54C394B683");  // 0 duration, around Dst
+    public static readonly GUID TroubadourDeafeningDrumWave1 = new("294F0B29212D3C4C9EEAF0A8CB99FB77"); // 0 duration, around Dst
+    public static readonly GUID TroubadourDeafeningDrumWave2 = new("12710FBBA5681A4EA117FD39A7A207FB"); // 2000 duration, around Dst
+    public static readonly GUID TroubadourDeafeningDrumWave3 = new("C7B5AD810BB6534AB324A25FBD0BED4D"); // 0 duration, around Dst
+    public static readonly GUID TroubadourSyncopateDelayedWave1 = new("24498E18DEC97B4094376849EF7A3746"); // 2000 duration, around Dst
+    public static readonly GUID TroubadourSyncopateDelayedWave2 = new("8ECB35B63BA6C045BE9F0B864972B983"); // 0 duration, around Dst
     #endregion
 
     #region Necromancer
@@ -142,7 +153,7 @@ public static class EffectGUIDs
     public static readonly GUID NecromancerMarkOfBloodActivated2 = new("5FA6527231BB8041AC783396142C6200");
     public static readonly GUID NecromancerChillblainsActivated = new("831159227814DF4FA354CAD7E0755FEE");
     public static readonly GUID NecromancerPutridMarkActivated1 = new("E52F2D6DBABA934882BBBB8F0832C777");
-    public static readonly GUID NecromancerPutridMarkActivated2 = new("EFB9CDA30AEBC744B9D377A99BEBC0B2");
+    public static readonly GUID NecromancerPutridMarkActivated2 = new("EFB9CDA30AEBC744B9D377A99BEBC0B2"); // Collides with Mesmer Chaos Storm, Engineer Spear Devastator
     public static readonly GUID NecromancerPutridMarkActivated3 = new("CAF4E62C2C5CC04499657C2A6A78087B"); // No src or dst
     public static readonly GUID NecromancerReapersMarkActivated = new("255FBE1C15D0C6488BD018748184624F");
     public static readonly GUID NecromancerSignetOfUndeathOverhead = new("1FEB5ECC28F92245A04646869B4A8169");
@@ -215,13 +226,15 @@ public static class EffectGUIDs
     public static readonly GUID TempestOverloadAir2 = new("E8EB2CDF97F34C42A8AAC0D3BA6551D0");
     public static readonly GUID TempestFeelTheBurn = new("C668B5DB6220D9448817B3E5F7DE6E46");
     public static readonly GUID TempestEyeOfTheStorm1 = new("52FEF389CF7D014BAA375EACF1826BB6");
-    public static readonly GUID TempestEyeOfTheStorm2 = new("31FE88E9CCF82047895FD0EF19C9BBA0"); // happens at the same time as the other, could be relevant to check should collisions appear 
+    public static readonly GUID TempestEyeOfTheStorm2 = new("31FE88E9CCF82047895FD0EF19C9BBA0"); // happens at the same time as the other, could be relevant to check should collisions appear
     public static readonly GUID TempestLightningOrb1 = new("DE4C727C58DA0A4EB87D5433B2B64EAB");
     public static readonly GUID TempestLightningOrb2 = new("AF5462A3F3500A4B8C91D6BEAFA62B62");
     public static readonly GUID CatalystDeployFireJadeSphere = new("AFC5D5C7DA63D64BAAD55F787205B64F");
     public static readonly GUID CatalystDeployWaterJadeSphere = new("6D7EB5747873484DAF29C01FA51FE175");
     public static readonly GUID CatalystDeployAirJadeSphere = new("A3C8A55C3E530140A7F99AAA1CBB4E09");
     public static readonly GUID CatalystDeployEarthJadeSphere = new("A674D3E7BC0C4342BC7A4EF0EE8FF8F0");
+    public static readonly GUID EvokerOttersCompassion1 = new("A30DE35C04E1454EB3B0DCC0BCF9BD9A");
+    public static readonly GUID EvokerOttersCompassion2 = new("6507424A0B7C384A9C6DB125E4724854");
     #endregion
 
     #region Warrior
@@ -231,6 +244,8 @@ public static class EffectGUIDs
     public static readonly GUID SpellbreakerWindsOfDisenchantment = new("926917599B6B6E498AD62B812001B823");
     public static readonly GUID BladeswornDragonspikeMine = new("B5BE541DBF290E4AA381E1E52A2A3525");
     public static readonly GUID BerserkerOutrage = new("AC32B7F7BB281B4D94713F180C44F322");
+    public static readonly GUID ParagonNeverSurrenderInitial = new("CB237E7C35B61E47A67663B95CB6E094");
+    public static readonly GUID ParagonNeverSurrenderEcho = new("82EF409FBC174B409BD21ACB509031DB");
     #endregion
 
     #region Revenant
@@ -347,7 +362,7 @@ public static class EffectGUIDs
     public static readonly GUID EngineerMineField = new("997750CA2636154E9FFBFEE4AA51A970"); // 0 duration and infinite duration, both logged at the same time
     public static readonly GUID EngineerMineExplosion1 = new("885B7AAA68F09E48A926BFFE488DB5AD"); // 0 duration - Throw Mine and Mine Field use this effect
     public static readonly GUID EngineerMineExplosion2 = new("1B3ACEE36F61DE42AB1C24BD33B5B5AD"); // 0 duration - Throw Mine and Mine Field use this effect
-    public static readonly GUID EngineerSpearDevastator1 = new("EFB9CDA30AEBC744B9D377A99BEBC0B2"); // Happens at the end of the cast
+    public static readonly GUID EngineerSpearDevastator1 = new("EFB9CDA30AEBC744B9D377A99BEBC0B2"); // Collides with Necromancer Marks, Mesmer Chaos Storm - Happens at the end of the cast
     public static readonly GUID EngineerSpearDevastator2 = new("AA5B8BF4646103469C1846D51AA9E010"); // Happens at the end of the cast
     public static readonly GUID ScrapperThunderclap = new("8C8E0AB8328CC1418F9A815E022E20B6"); // has owner, 5s duration
     public static readonly GUID ScrapperThunderclapSpawn = new("039F8B46E5595C4E9C2D52AA58FDD8B0"); // has owner, 1s duration
@@ -404,6 +419,8 @@ public static class EffectGUIDs
     public static readonly GUID UntamedVenomousOutburst = new("60BE4692A455B140A05AD794BF4753F6");
     public static readonly GUID UntamedRendingVines = new("2C40B0741111444F98895A658A7F978F");
     public static readonly GUID UntamedEnvelopingHaze = new("F2B1B61970FC59418AC049BF3A07FFD4");
+    public static readonly GUID GaleshotSummonCycloneBow = new("C1F1E386CC1E0B448435269DBBFB34D7"); // Duration 2333 - IsAroundDst
+    public static readonly GUID GaleshotDismissCycloneBow = new("9242D10B4F04274EB6E9EBCDB2262181"); // Duration 0 - IsAroundDst
     #endregion
 
     #region Thief
@@ -416,7 +433,7 @@ public static class EffectGUIDs
     public static readonly GUID ThiefSignetOfAgility = new("BB5488951B60B546BB1BD5626DAE83E1");
     public static readonly GUID ThiefSignetOfShadows = new("14A5982DB277744CB928A4935555F563");
     public static readonly GUID ThiefPitfallAoE = new("7325E9B0DD2E914F9837E5FCFC740A95");
-    // public static readonly GUID ThiefThousandNeedlesAoECollision   = new("2125A13079C1C5479C150926EB60A15D"); // collision with shadow flare & other
+    public static readonly GUID ThiefThousandNeedlesAoECollision = new("2125A13079C1C5479C150926EB60A15D"); // collision with shadow flare & other
     public static readonly GUID ThiefThousandNeedlesAoE1 = new("9AF103E33FC235498190448A9496C98A"); // ~280ms delayed
     public static readonly GUID ThiefThousandNeedlesAoE2 = new("B8DC8C6736C8E0439295A9DBBADC6296"); // ~280ms delayed
     public static readonly GUID ThiefSealAreaAoE = new("92A7634C2C7F2746AFDA88E1AD9AE886");
@@ -496,6 +513,7 @@ public static class EffectGUIDs
     public static readonly GUID ArtsariivObliterateIndicator = new("8938C846962EA045B5726F53C3ECF6AF"); // no owner
     public static readonly GUID ArtsariivObliterateExplosion = new("F2D51BED8214F1419A5D1684D2087093"); // no owner
     public static readonly GUID ArtsariivBlackSmoke = new("172355593E35D6479A742472E29CA150");
+    public static readonly GUID ArtsariivDeadExplosion = new("4482BB2AB2EF804E8F802C13FE43C2E3");
     public static readonly GUID CorporealReassignmentDome = new("1607FB8A58554A4E96E5AD04AF8E247A"); // owned by unknown agent
     public static readonly GUID CorporealReassignmentExplosionDome = new("5B8F0DCE941DF544AD0966F6158A5127");
     public static readonly GUID CorporealReassignmentExplosion1 = new("C93D2CA54BC7F84BBFA31B40DE056D21"); // owned by exploding player
@@ -563,6 +581,24 @@ public static class EffectGUIDs
     public static readonly GUID EparchJudgmentUnliddedEyeWarning = new("78D6E7A7FD3C1B4DACF3DE09258ED533"); // Src Judgment - 2000 Duration
     public static readonly GUID EparchJudgmentUnliddedEyeWave = new("28FF802C476BF545AB9A4FF6D33FC6F7"); // Src Judgment - Dst Judgment - 2400 Duration
     public static readonly GUID EparchEyeOfJudgmentArrowHits = new("564C69F260387449A354A7B37C8FEB2C"); // Src Judgment - 0 Duration - 0 Default Duration
+    // Kinfall Fractal
+    public static readonly GUID WhisperingShadowFallingIce = new("A54366270621E24BB4F763B93429E84C"); // no owner, 3s duration
+    public static readonly GUID WhisperingShadowVitreousSpike = new("423C89C869E13A40A338A183CBDF7920"); // owned by shadow, 1.5s duration
+    public static readonly GUID WhisperingShadowVitreousSpikeDanger = new("A44E4FEB1F90024B8E489ED312DF8536"); // owned by shadow, 2s duration
+    public static readonly GUID WhisperingShadowFrozenTeethArrows = new("1A262BDD265422439BE245BB67D374F5"); // owned by shadow, 10s duration, arrow indicator
+    public static readonly GUID WhisperingShadowFrozenTeethFissure = new("FC1C589E9E8C624E8159C1BDAAA966E7"); // owned by shadow, default duration 6333ms
+    public static readonly GUID WhisperingShadowFrozenTeethExplosion = new("3B3763966DE4F448A029CF9E5EC1B263"); // owned by shadow, default duration 333ms, explosion around fissures as cryoflash detonates
+    public static readonly GUID WhisperingShadowCryoflashShockwave = new("B329CFB6B354C148A537E114DC14CED6"); // owned by shadow, default duration 3033ms, used by both
+    public static readonly GUID WhisperingShadowLoftedCryoflash = new("CB6863BE0D1270458E9593393A5A1B4D"); // owned by shadow, default duration 3033ms
+    public static readonly GUID WhisperingShadowTerrestrialCryoflash = new("35678BCDC29F4F42BB66AE744DE79A58"); // owned by shadow, default duration 4333ms
+    public static readonly GUID WhisperingShadowGorefrost1 = new("4B5E508C2C272B44B20F7C0AAB9EB77F"); // owned by shadow, 1.5s duration
+    public static readonly GUID WhisperingShadowGorefrost2 = new("C94E3EB279F7EE4D957CBB5FC29427B9"); // owned by shadow, 1s duration
+    public static readonly GUID WhisperingShadowGorefrostLaunch = new("0D3866B45C47A34D8C6767BD023A60CC"); // owned by shadow, default duration 3366ms, small shockwave from launched gorefrost
+    public static readonly GUID WhisperingShadowFreezingFan = new("B1EBFFDA5D58FD40AF96FF7689C43175"); // owned by shadow, 1.5s duration
+    public static readonly GUID WhisperingShadowWintryOrb1 = new("A4F200408147504E901F4FFD821F4393"); // no owner, default duration 7667ms
+    public static readonly GUID WhisperingShadowWintryOrb2 = new("795EC8C08BDB514794900B1107C07EC5"); // no owner, default duration 1167ms
+    public static readonly GUID WhisperingShadowHailstorm1 = new("C127DECDC53F13428FF21CF0C236C25D"); // no owner, default duration 6667ms
+    public static readonly GUID WhisperingShadowHailstorm2 = new("66046924ADCA9E4F831A44E2B4ACA40C"); // no owner, default duration 1167ms
     #endregion
 
     #region Raids
@@ -571,6 +607,11 @@ public static class EffectGUIDs
     public static readonly GUID ValeGuardianMagicSpike = new("55364633145D264A934935C3F026B19F"); // 2000 duration
     // Gorseval
     public static readonly GUID GorsevalGhastlyPrison = new("16BBFDBEC55958419CC5564CB1FEED04"); // 2000 duration
+    public static readonly GUID GorsevalGhastlyRampageLayer0 = new("029CD34593C0FE4D81E0FBAADE0E3928"); // 3000 duration, Src Gorseval
+    public static readonly GUID GorsevalGhastlyRampageLayer1 = new("D9F8F612801E4D41A18F5E99F3B17596"); // 3000 duration, Src Gorseval
+    public static readonly GUID GorsevalGhastlyRampageLayer2 = new("7D9FC82789C2DD4FB8466CD63F34205F"); // 3000 duration, Src Gorseval
+    public static readonly GUID GorsevalGhastlyRampageLayer3 = new("947769986596634AB09B2AB382EC29E0");// 3000 duration, Src Gorseval
+    public static readonly GUID GorsevalGhastlyRampageLayer4 = new("A0CB3F87B91D304D894235E136BA2C0E"); // 3000 duration, Src Gorseval
     // Sabetha
     public static readonly GUID SabethaCannonBarrier = new("3C4BADFCD8987D449715C9A72FDC2149"); // 600.000 duration - Src Cannon Dst Cannon
     public static readonly GUID SabethaCannonBarrage = new("3ED61C8A1C2E594A8AD2E2E69AF16322"); // 3500 duration - Src Cannon
@@ -586,12 +627,22 @@ public static class EffectGUIDs
     public static readonly GUID MatthiasWellOfTheProfane = new("9BEF037F1B8C2346B5F71A88128DF1A4"); // 90000 duration - Matthias Src
     // Escort Glenna
     public static readonly GUID EscortOverHere = new("64CD79C1A121EC42B1278DEF9280ED35");
+    // KC
+    public static readonly GUID KeepConstructHailOfFuryWarning = new("692D6ECAF104DA48B8167EE1AA35B97E"); // 3000ms, no src
+    public static readonly GUID KeepConstructHailOfFuryFall = new("C8209E81C9E1F94E9754545E7D5C315A"); // 1000ms, no src
+    public static readonly GUID KeepConstructStatueDeathEmbraceRemoveTrigger = new("5DEE99D37A13F943A8BBC47A28DF605A"); // 1000ms, statue src
     // Xera
     public static readonly GUID XeraIntervention1 = new("63C34770B4EFF64B8EAA21BB835BB560"); // 4294967295 duration - Src Player - Usable with ComputeDynamicEffectLifespan
     public static readonly GUID XeraIntervention2 = new("79EA3F01274B4F418B2C571BAE1B9E17"); // 0 duration - Src Player
     public static readonly GUID XeraIntervention3 = new("5FA6527231BB8041AC783396142C6200"); // 0 duration - No Src No Dst
     public static readonly GUID XeraHalfArenaGravityWell = new("66E848A88B572940852764912BFC5DF3"); // 0 duration - No Src, Dst is a plateform related gadget
     public static readonly GUID XeraTemporalShredAoE = new("606802DCC10523488AF3AE65333D5C84"); // 1500 duration
+    public static readonly GUID XeraSomething = new("73414BA39AFCF540A90CF91DE961CCEF"); // 500ms, no src, xera dst sometimes, unknown often
+    public static readonly GUID XeraShardAoEs = new("482F04E7037CF74A93D2A42AC5704A68"); // 3000ms, no src, no dst
+    public static readonly GUID XeraBloodstoneFragmentSomething = new("2400B83D37A4D642893994C7AB24C9BD"); // 833ms, src unknown, dst blood stone fragment
+    public static readonly GUID XeraSplitShardAoEsIndicator = new("A819914E35A47444AB1CDDE789D7C69F"); // 2000ms duration, src and dst unknown
+    public static readonly GUID XeraSplitShardAoEsHit = new("05562003A595F94DA649F7F3CFFB94D1"); // 1000ms duration, src and dst unknown
+    public static readonly GUID XeraUnstableLeyRiftClosed = new("092F17E341342F4192085FF2851611DE"); // 4666ms duration, dst unstable ley rift, src unknown
     // Cairn
     public static readonly GUID CairnDisplacement = new("7798B97ED6B6EB489F7E33DF9FE6BD99");
     public static readonly GUID CairnDashGreen = new("D2E6D55CC94F79418BB907F063CBDD81");
@@ -646,6 +697,7 @@ public static class EffectGUIDs
     public static readonly GUID DhuumDeathMarkDeathZone = new("B8F90FE6AF4F2A4C84D349861A098392"); // 120000 duration
     public static readonly GUID DhuumSuperspeedOrb = new("8F89945581099142B598977188BAC8E1"); // max duration - has end effect
     public static readonly GUID DhuumConeSlash = new("21BA95CC014CC944A71E2A6FB28D9A86");
+    public static readonly GUID DhuumReaperGreen = new("3901D25DC071A444AFDFF06787C13A3F");
     // CA
     public static readonly GUID CAArmSmash = new("B1AAD873DB07E04E9D69627156CA8918");
     // Qadim
@@ -654,6 +706,24 @@ public static class EffectGUIDs
     public static readonly GUID QadimInfernoAoEs = new("37DF91103EC45240AA7910575F1FC55F"); // On non static platform - 3000 duration - 150 radius
     public static readonly GUID QadimJumpingBlueOrbs = new("9FE9CEE3B3B1A743B769D16B196AD45D");
     public static readonly GUID QadimPlatformStartsOrEndsMoving = new("98891680AFB80A4E9CAFCCBD1662DF88");
+    // Adina
+    public static readonly GUID AdinaPillarOrGroundSomething = new("C5E3060F62C0FE4AA0F502CCC4E23C81"); // 2000ms duration, src Adina
+    public static readonly GUID AdinaPillarDestroyedByProjectiles = new("96D31AA183A34E4E9864C8232102C781"); // 1000ms duration, no src
+    public static readonly GUID AdinaPillarDestroyedByProjectiles0ms = new("0DCF064D110DD244ADAD462EC663030C"); // 0ms duration, no src
+    public static readonly GUID AdinaPillarDestroyedByAdina = new("777B28E1A1ED6B4BA53A7870AAC66028"); // 1000ms duration, no src
+    public static readonly GUID AdinaPillarDestroyedByAdina2 = new("C31EE285EC2E8844AE828115EAFA138A"); // 1000ms duration, src Adina, not sure what is the difference from the other
+    public static readonly GUID AdinaGroundRetracted = new("4C9901D5FEBA28429B13FC54EF7538A8"); // 0ms duration, no src
+    public static readonly GUID AdinaGroundRetracted0ms = new("85CE384F78083A49BA01BC2327FDA4DE"); // 0ms duration, no src
+    public static readonly GUID AdinaGroundRetractedWarning = new("C1A523D71A841048897211B1020B8D95"); // 4271ms duration, no src
+    public static readonly GUID AdinaMineWarning = new("A1A0DBCBE03394468E760B14A819B5F8"); // 4000ms, src Adina
+    public static readonly GUID AdinaMineWarning2 = new("F8E6EAED5F8A73449B8823E9CC1C5F7B"); // 3000ms, src gadget
+    public static readonly GUID AdinaMine = new("F4099C57AD1C184BB750422AF3D62BAC"); // dynamic, src Adina
+    public static readonly GUID AdinaMineExplosionAnimation = new("AB0AB6290B2DEA4DB3AEE3BCC2ED99DA"); // 333ms, no src
+    public static readonly GUID AdinaMineExplosion = new("5F65774FF73E39408C92387DDA163BA7"); // 0ms, no src
+    public static readonly GUID AdinaSweep = new("5456C6A09E09B944B501ACAD66F653AC"); // 450 ms duration, src Adina
+    public static readonly GUID AdinaSelectedForPillar = new("591BDFC7F39F7949B1BE60267D3CF437"); // 6000 ms duration
+    public static readonly GUID AdinaPillarDropLocationWarning = new("160CBAE34F4A2941885EB3F3CD6BB0C3"); // 6000ms duration but drops happen after 2000ms
+    public static readonly GUID AdinaPillarShockwave = new("758F59A7C564EE499F0536D73EC9C9A0"); // 1333 duration
     // Sabir
     public static readonly GUID SabirFlashDischarge = new("40818C8E9CC6EF4388C2821FCC26A9EC");
     // Qadim the Peerless
@@ -725,8 +795,12 @@ public static class EffectGUIDs
     public static readonly GUID DecimaForeshockRightCM = new("81329C36EA5536489ECBA5EDBB7D9C31"); // 3000 duration - Src Godsquall Decima
     public static readonly GUID DecimaForeshockFrontalCM = new("086C0135CC2B7C45ADBE2C947B178986"); // 5100 duration - Src Godsquall Decima
     public static readonly GUID DecimaEarthrendDoughnutSlice = new("88A721E87033E34C88143D116DBA9120"); // 2800 duration - Src Decima
-    public static readonly GUID DecimaJumpAoEUnderneath = new("D8F954A4C2D5DB48A4E2951958C33FAE"); // 3000 duration - Src Decima
+    public static readonly GUID DecimaEarthrendHit1 = new("C9D6405FC6A68245B8A27A514349FB7A"); // 0 duration - Src Decima
+    public static readonly GUID DecimaEarthrendHit2 = new("66ABD756CD618A4F84F4028D2D2851F5"); // 0 duration - Src Decima
+    public static readonly GUID DecimaEarthrendHit3 = new("A318FA9A8D582E4ABFB023FBF78B8580"); // 0 duration - Src Decima
+    public static readonly GUID DecimaJumpAoEUnderneath = new("D8F954A4C2D5DB48A4E2951958C33FAE"); // 2500 Earthrend / 3000 Seismic Crash duration - Src Decima
     public static readonly GUID DecimaSeismicCrashRings = new("E10DD1D759499749B880B99945C823B5"); // 3000 duration - Src Decima
+    public static readonly GUID DecimaSeismicCrashHit = new("081A650BFDEE7147ADD301C334D8C66A"); // 4333 duration - Src Decima - Seismic Crash landing hit effect
     public static readonly GUID DecimaAftershockAoE = new("FBABC6679768DC439AD844BFB94D9C74"); // 1500 duration - Src Decima
     public static readonly GUID DecimaAftershockAoECM = new("B438122328E462488F5B1BD417653C42"); // 1500 duration - Src Godsquall Decima
     public static readonly GUID DecimaSparkingReverberation = new("9CF7F3E43A32774E82F650A2EE9BF756"); // 30000 duration - Has end event - Src Transcendent Boulder
@@ -953,7 +1027,7 @@ public static class EffectGUIDs
     public static readonly GUID TempleOfFebeEnviousGaze1 = new("246ECEBC28173B498B9A6886D7937D59"); // Duration 12500
     public static readonly GUID TempleOfFebeEnviousGaze2 = new("DA42718917F2304FBA10AF6898217788"); // Duration 12500
     public static readonly GUID TempleOfFebeEnviousGaze3 = new("B77A06C842511949889877EDC1448D49"); // Duration 11000
-    public static readonly GUID TempleOfFebeEnviousGaze4 = new("0D2192849D53B4469F56B1C74542DBE9"); // Duration 11000
+    public static readonly GUID TempleOfFebeEnviousGaze4 = new("0D2192849D53B4469F56B1C74542DBE9"); // Duration 11000 - Red circle AoE underneath Cerus - Conflics with other encounters
     public static readonly GUID TempleOfFebeMaliciousIntentTether = new("518369328A12B74EAC49702A785FBA19"); // Duration 0
     #endregion
 }

@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -10,8 +9,12 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
     protected List<Checker> Checkers { get; private set; }
 
 
-    public delegate long TimeClamper(long time, ParsedEvtcLog log);
+    internal delegate long TimeClamper(long time, ParsedEvtcLog log);
     private TimeClamper _timeClamper;
+
+
+    internal delegate bool SingleActorChecker(long time, SingleActor actor, ParsedEvtcLog log);
+    private readonly List<(CheckedMechanic<Checkable> Mechanic, SingleActorChecker Checker)> _subMechanics = [];
 
     protected CheckedMechanic(MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(plotlySetting, shortName, description, fullName, internalCoolDown)
     {
@@ -30,6 +33,59 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
         return this;
     }
 
+    internal CheckedMechanic<Checkable> WithSubMechanic(CheckedMechanic<Checkable> mechanic, SingleActorChecker actorChecker)
+    {
+        mechanic.IsASubMechanic = true;
+        _subMechanics.Add((
+            mechanic,
+            actorChecker
+        ));
+        return this;
+    }
+
+    internal CheckedMechanic<Checkable> WithStabilitySubMechanic(CheckedMechanic<Checkable> stabMechanic, bool stabPresent)
+    {
+        if (stabPresent)
+        {
+            return WithSubMechanic(stabMechanic, (time, actor, log) =>
+            {
+                return actor.HasBuff(log, SkillIDs.Stability, time - ParserHelper.ServerDelayConstant);
+            });
+        }
+        return WithSubMechanic(stabMechanic, (time, actor, log) =>
+        {
+            return !actor.HasBuff(log, SkillIDs.Stability, time - ParserHelper.ServerDelayConstant);
+        });
+    }
+
+    public override IReadOnlyList<Mechanic> GetMechanics()
+    {
+        var res = new List<Mechanic>(1 + _subMechanics.Count)
+        {
+            this
+        };
+        foreach (var subMechanic in _subMechanics)
+        {
+            res.AddRange(subMechanic.Mechanic.GetMechanics());
+        }
+        return res;
+    }
+
+    protected void InsertMechanicWithSubMechanics(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, long time, long timeToUse, SingleActor actor)
+    {
+        if (!Ignored)
+        {
+            mechanicLogs[this].Add(new MechanicEvent(timeToUse, this, actor));
+        }
+        foreach (var subMechanic in _subMechanics)
+        {
+            if (subMechanic.Checker(time, actor, log))
+            {
+                subMechanic.Mechanic.InsertMechanicWithSubMechanics(log, mechanicLogs, time, timeToUse, actor);
+            }
+        }
+    }
+
     protected void InsertMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, long time, SingleActor actor)
     {
         if (actor != null)
@@ -39,7 +95,11 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
             {
                 timeToUse = _timeClamper(time, log);
             }
-            mechanicLogs[this].Add(new MechanicEvent(timeToUse, this, actor));
+            if (actor.AgentItem.IsEnglobingAgent)
+            {
+                actor = log.FindActor(actor.AgentItem.FindEnglobedAgentItem(time));
+            }
+            InsertMechanicWithSubMechanics(log, mechanicLogs, time, timeToUse, actor);
         }
     }
 

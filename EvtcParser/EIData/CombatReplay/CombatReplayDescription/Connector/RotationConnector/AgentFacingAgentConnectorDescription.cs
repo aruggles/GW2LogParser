@@ -1,12 +1,10 @@
-﻿using static GW2EIEvtcParser.EIData.AgentFacingConnector;
-
-namespace GW2EIEvtcParser.EIData;
+﻿namespace GW2EIEvtcParser.EIData;
 
 public class AgentFacingAgentConnectorDescription : AgentFacingConnectorDescription
 {
-    public readonly int DstMasterId;
+    public readonly int DstMasterID;
     internal AgentFacingAgentConnectorDescription(AgentFacingAgentConnector connector, CombatReplayMap map, ParsedEvtcLog log) : base(connector, map, log)
     {
-        DstMasterId = connector.DstAgent.UniqueID;
+        DstMasterID = connector.DstAgent.EnglobingAgentItem.UniqueID;
     }
 }

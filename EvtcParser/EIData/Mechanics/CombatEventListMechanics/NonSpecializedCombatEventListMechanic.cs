@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -28,7 +27,7 @@ internal class NonSpecializedCombatEventListMechanic<T> : CombatEventListMechani
         }
         else
         {
-            foreach (SingleActor actor in log.FightData.Logic.Hostiles)
+            foreach (SingleActor actor in log.LogData.Logic.Hostiles)
             {
                 foreach (T c in GetEvents(log, actor.AgentItem))
                 {

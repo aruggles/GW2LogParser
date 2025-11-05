@@ -27,14 +27,14 @@ internal static class ThiefHelper
         new BuffGiveCastFinder(SkaleVenomSkill, SkaleVenomBuff),
         new BuffGiveCastFinder(SoulStoneVenomSkill,SoulStoneVenomBuff),
         new BuffGiveCastFinder(SpiderVenomSkill,SpiderVenomBuff).
-            UsingChecker((evt, combatData, agentData, skillData) => evt.To != evt.By || Math.Abs(evt.AppliedDuration - 24000) < ServerDelayConstant)
+            UsingChecker((evt, combatData, agentData, skillData) => !evt.To.Is(evt.By) || Math.Abs(evt.AppliedDuration - 24000) < ServerDelayConstant)
             .UsingNotAccurate(), // same id as leeching venom trait?
         new EffectCastFinder(Pitfall, EffectGUIDs.ThiefPitfallAoE)
             .UsingSrcBaseSpecChecker(Spec.Thief),
-        new BuffLossCastFinder(ThousandNeedles, ThousandNeedlesArmedBuff)
-            .UsingChecker((evt, combatData, agentData, skillData) => combatData.HasRelatedEffect(EffectGUIDs.ThiefThousandNeedlesAoE1, evt.To, evt.Time + 280))
-            .UsingChecker((evt, combatData, agentData, skillData) => combatData.HasRelatedEffect(EffectGUIDs.ThiefThousandNeedlesAoE2, evt.To, evt.Time + 280))
-            .UsingNotAccurate(),
+        new EffectCastFinder(ThousandNeedles, EffectGUIDs.ThiefThousandNeedlesAoECollision)
+            .UsingSecondaryEffectChecker(EffectGUIDs.ThiefThousandNeedlesAoE1, 280)
+            .UsingSecondaryEffectChecker(EffectGUIDs.ThiefThousandNeedlesAoE2, 280)
+            .UsingSrcBaseSpecChecker(Spec.Thief),
         new EffectCastFinder(SealArea, EffectGUIDs.ThiefSealAreaAoE)
             .UsingSrcBaseSpecChecker(Spec.Thief),
         new BuffGainCastFinder(ShadowPortal, ShadowPortalOpenedBuff),
@@ -54,7 +54,11 @@ internal static class ThiefHelper
         new BuffOnFoeDamageModifier(Mod_ExposedWeakness, NumberOfConditions, "Exposed Weakness", "10% if condition on target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Thief, ByPresence, TraitImages.ExposedWeakness, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2018Balance),
         new BuffOnFoeDamageModifier(Mod_ExposedWeakness, NumberOfConditions, "Exposed Weakness", "2% per condition on target", DamageSource.NoPets, 2.0, DamageType.Strike, DamageType.All, Source.Thief, ByStack, TraitImages.ExposedWeakness, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.July2018Balance),
+            .WithBuilds(GW2Builds.July2018Balance, GW2Builds.June2025Balance),
+        new BuffOnFoeDamageModifier(Mod_ExposedWeakness, NumberOfConditions, "Exposed Weakness", "2% per condition on target", DamageSource.NoPets, 2.0, DamageType.Strike, DamageType.All, Source.Thief, ByStack, TraitImages.ExposedWeakness, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.June2025Balance),
+        new BuffOnFoeDamageModifier(Mod_ExposedWeakness, NumberOfConditions, "Exposed Weakness", "3% per condition on target", DamageSource.NoPets, 3.0, DamageType.Strike, DamageType.All, Source.Thief, ByStack, TraitImages.ExposedWeakness, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.June2025Balance),
         // - Executioner
         new DamageLogDamageModifier(Mod_Executioner, "Executioner", "20% if target <50% HP", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.Executioner, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All),
         

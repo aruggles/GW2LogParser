@@ -1,6 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.IO;
 
 namespace GW2EIEvtcParser.EIData.BuffSimulators;
 

@@ -1,6 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -38,7 +36,7 @@ internal class SkillDamageModifier : DamageModifierDescriptor
             return [];
         }
         var res = new List<DamageModifierEvent>();
-        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null, log.FightData.FightStart, log.FightData.FightEnd);
+        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
         foreach (HealthDamageEvent evt in typeHits)
         {
             if (ComputeGain(null, evt, log, out _) && CheckCondition(evt, log))
@@ -52,7 +50,7 @@ internal class SkillDamageModifier : DamageModifierDescriptor
     protected override bool ComputeGain(IReadOnlyDictionary<long, BuffGraph>? bgms, HealthDamageEvent dl, ParsedEvtcLog log, out double gain)
     {
         gain = 0;
-        if (dl.SkillId != _skillID)
+        if (dl.SkillID != _skillID)
         {
             return false;
         }

@@ -106,8 +106,7 @@ public class BuffFormula
         // 0.5
         formulaBytes.PushNative(evtcItem.DstMasterInstid);
 
-        fixed (byte* ptr = formulaBytes.Span)
-        {
+        fixed(byte* ptr = formulaBytes.Span) {
             var formulaFloats = (float*)ptr;
 
             Type = (int)formulaFloats[0];
@@ -140,7 +139,7 @@ public class BuffFormula
         }
     }
 
-    public string GetDescription(bool authorizeUnknowns, IReadOnlyDictionary<long, Buff> buffsByIds, Buff buff)
+    public string GetDescription(bool authorizeUnknowns, IReadOnlyDictionary<long, Buff> buffsByIDs, Buff buff)
     {
         if (!authorizeUnknowns && (Attr1 == Unknown || Attr2 == Unknown))
         {
@@ -162,7 +161,7 @@ public class BuffFormula
         }
         if (IsExtraNumberBuffID)
         {
-            if (buffsByIds.TryGetValue(ExtraNumber, out var otherBuff))
+            if (buffsByIDs.TryGetValue(ExtraNumber, out var otherBuff))
             {
                 stat1 += " (" + otherBuff.Name + ")";
             }

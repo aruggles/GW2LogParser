@@ -45,6 +45,7 @@ internal class SkillDto : IDItemDto
     public bool NotAccurate;
     public bool TraitProc;
     public bool GearProc;
+    public bool UnconditionalProc;
 
     public SkillDto(SkillItem skill, ParsedEvtcLog log) : base(skill, log)
     {
@@ -53,6 +54,7 @@ internal class SkillDto : IDItemDto
         NotAccurate = log.SkillData.IsNotAccurate(skill.ID);
         GearProc = log.SkillData.IsGearProc(skill.ID);
         TraitProc = log.SkillData.IsTraitProc(skill.ID);
+        UnconditionalProc = log.SkillData.IsUnconditionalProc(skill.ID);
     }
 
     public static void AssembleSkills(ICollection<SkillItem> skills, Dictionary<string, SkillDto> dict, ParsedEvtcLog log)
@@ -70,7 +72,7 @@ internal class SkillDto : IDItemDto
         return new SkillCastDto()
         {
             Start = (cl.Time - phaseStart) / 1000.0,
-            SkillId = cl.SkillId,
+            SkillId = cl.SkillID,
             ActualDuration = cl.ActualDuration,
             Status = (int)cl.Status,
             Acceleration = cl.Acceleration,
@@ -83,9 +85,9 @@ internal class SkillDto : IDItemDto
         var list = new List<SkillCastDto>(casting.Count);
         foreach (CastEvent cl in casting)
         {
-            if (!usedSkills.ContainsKey(cl.SkillId))
+            if (!usedSkills.ContainsKey(cl.SkillID))
             {
-                usedSkills.Add(cl.SkillId, cl.Skill);
+                usedSkills.Add(cl.SkillID, cl.Skill);
             }
 
             list.Add(GetSkillData(cl, phase.Start));

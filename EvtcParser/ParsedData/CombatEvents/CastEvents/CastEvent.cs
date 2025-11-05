@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace GW2EIEvtcParser.ParsedData;
 
@@ -11,7 +9,7 @@ public abstract class CastEvent : TimeCombatEvent
 
     // start item
     public SkillItem Skill { get; protected set; }
-    public long SkillId => Skill.ID;
+    public long SkillID => Skill.ID;
     public readonly AgentItem Caster;
 
     public AnimationStatus Status { get; protected set; } = AnimationStatus.Unknown;
@@ -41,24 +39,27 @@ public abstract class CastEvent : TimeCombatEvent
     protected CastEvent(long time, SkillItem skill, AgentItem caster) : base(time)
     {
         Skill = skill;
-        Caster = caster;
+        Caster = caster.EnglobingAgentItem;
     }
-
-    public virtual long GetInterruptedByStunTime(ParsedEvtcLog log)
+    public virtual long GetInterruptedByBuffTime(ParsedEvtcLog log, long buffID)
     {
         return EndTime;
+    }
+    public long GetInterruptedByStunTime(ParsedEvtcLog log)
+    {
+        return GetInterruptedByBuffTime(log, SkillIDs.Stun);
     }
 }
 
 public static partial class ListExt
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SortByTimeThenNegatedSwap<T>(this List<T> list) where T : CastEvent
+    public static void SortByTimeThenNegatedSwap<T>(this List<T> list)  where T : CastEvent
     {
         list.AsSpan().SortStable((a, b) => a.Time.CompareTo(b.Time) * 2 + (Convert.ToInt32(b.Skill.IsSwap) - Convert.ToInt32(a.Skill.IsSwap)));
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SortByTimeThenSwap<T>(this List<T> list) where T : CastEvent
+    public static void SortByTimeThenSwap<T>(this List<T> list)  where T : CastEvent
     {
         list.AsSpan().SortStable((a, b) => a.Time.CompareTo(b.Time) * 2 + (Convert.ToInt32(a.Skill.IsSwap) - Convert.ToInt32(b.Skill.IsSwap)));
     }

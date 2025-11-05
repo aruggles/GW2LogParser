@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -29,7 +28,7 @@ internal class DamageLogDamageModifier : DamageModifierDescriptor
         if (ComputeGain(null, null, log, out double gain))
         {
 
-            var typeHits = damageModifier.GetHitDamageEvents(actor, log, null, log.FightData.FightStart, log.FightData.FightEnd);
+            var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
             foreach (HealthDamageEvent evt in typeHits)
             {
                 if (CheckCondition(evt, log))

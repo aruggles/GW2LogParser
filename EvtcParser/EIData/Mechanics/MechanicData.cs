@@ -1,7 +1,5 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
+﻿using System.Diagnostics.CodeAnalysis;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -14,16 +12,31 @@ public class MechanicData
     private CachingCollection<HashSet<Mechanic>>? _presentMechanics;
     private CachingCollection<List<SingleActor>>? _enemyList;
 
-    internal MechanicData(List<Mechanic> fightMechanics)
+    internal MechanicData(List<Mechanic> logMechanics, bool isIntanceLog)
     {
-        _mechanicLogs = new(fightMechanics.Count);
-
-        Tracing.Trace.TrackAverageStat("fightMechanics", fightMechanics.Count);
-        //TODO(Rennorb) @perf: find average complexity
-        var errorMechanicConfig = new Dictionary<string, Dictionary<string, Dictionary<int, List<Mechanic>>>>(fightMechanics.Count / 2);
-        var errorMechanicNaming = new Dictionary<string, Dictionary<string, Dictionary<string, List<Mechanic>>>>(fightMechanics.Count);
-        foreach (Mechanic m in fightMechanics.OrderBy(x => !x.IsAchievementEligibility))
+        _mechanicLogs = new(logMechanics.Count);
+        Tracing.Trace.TrackAverageStat("logMechanics", logMechanics.Count);
+        foreach (Mechanic m in logMechanics.OrderBy(x => !x.IsAchievementEligibility))
         {
+            // Ignore achievement eligibility mechanics in instances for now
+            if (isIntanceLog && m.IsAchievementEligibility)
+            {
+                continue;
+            }
+            _mechanicLogs.Add(m, []);
+        }
+
+    }
+
+    private void CheckConfiguration(ParsedEvtcLog log)
+    {
+        var logMechanics = _mechanicLogs;
+        //TODO(Rennorb) @perf: find average complexity
+        var errorMechanicConfig = new Dictionary<string, Dictionary<string, Dictionary<int, List<Mechanic>>>>(logMechanics.Count / 2);
+        var errorMechanicNaming = new Dictionary<string, Dictionary<string, Dictionary<string, List<Mechanic>>>>(logMechanics.Count);
+        foreach (Mechanic m in logMechanics.Keys)
+        {
+            if (!log.LogData.IsInstance)
             {
                 if (!errorMechanicConfig.TryGetValue(m.PlotlySetting.Symbol, out var colorDict))
                 {
@@ -74,22 +87,27 @@ public class MechanicData
                     throw new InvalidDataException(mList[0].FullName + " and " + mList[1].FullName + " share the same naming configuration");
                 }
             }
-            //TODO(Rennorb) @perf
-            _mechanicLogs.Add(m, []);
         }
 
         Tracing.Trace.TrackAverageStat("errorMechanicConfig", errorMechanicConfig.Count);
         Tracing.Trace.TrackAverageStat("errorMechanicNaming", errorMechanicNaming.Count);
-
     }
 
     private void ComputeMechanics(ParsedEvtcLog log)
     {
         //TODO(Rennorb) @perf <regroupedMobs> = 0
         var regroupedMobs = new Dictionary<int, SingleActor>();
-        foreach (var x in _mechanicLogs.Keys.Where(x => !x.Available(log))) { _mechanicLogs.Remove(x); }
+        foreach (var x in _mechanicLogs.Keys.Where(x => !x.Available(log)))
+        {
+            _mechanicLogs.Remove(x);
+        }
+        CheckConfiguration(log);
         foreach (Mechanic mech in _mechanicLogs.Keys)
         {
+            if (mech.IsASubMechanic)
+            {
+                continue;
+            }
             mech.CheckMechanic(log, _mechanicLogs, regroupedMobs);
         }
         Tracing.Trace.TrackAverageStat("_mechanicLogs", _mechanicLogs.Count);

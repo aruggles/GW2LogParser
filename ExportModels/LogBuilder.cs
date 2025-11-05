@@ -1,5 +1,6 @@
 ﻿using GW2EIBuilders;
 using GW2EIBuilders.HtmlModels;
+using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
 using Gw2LogParser.EvtcParserExtensions;
@@ -9,7 +10,7 @@ namespace Gw2LogParser.ExportModels
 {
     internal class LogBuilder
     {
-        private readonly ParsedLog log;
+        private readonly ParsedEvtcLog log;
         private readonly Dictionary<long, SkillItem> usedSkills = new Dictionary<long, SkillItem>();
         private readonly Dictionary<long, Buff> usedBuffs = new Dictionary<long, Buff>();
         private readonly HashSet<DamageModifier> usedDamageMods = new HashSet<DamageModifier>();
@@ -17,9 +18,9 @@ namespace Gw2LogParser.ExportModels
         public bool light = false;
         public string[] uploadLinks = new string[] {};
 
-        public LogBuilder(ParsedLog parsedLog)
+        public LogBuilder(LogContainer parsedLog)
         {
-            log = parsedLog;
+            log = parsedLog.Log;
         }
 
         internal LogDataDto BuildLogData(Version parserVersion, UploadResults uploadResults)

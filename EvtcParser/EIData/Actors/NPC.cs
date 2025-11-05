@@ -65,7 +65,7 @@ public class NPC : SingleActor
     }
     public override int GetCurrentBarrier(ParsedEvtcLog log, double currentBarrierPercent, long time)
     {
-        MaxHealthUpdateEvent? currentMaxHealth = log.CombatData.GetMaxHealthUpdateEvents(AgentItem).LastOrDefault(x => x.Time <= time);
+        MaxHealthUpdateEvent? currentMaxHealth = log.CombatData.GetMaxHealthUpdateEvents(EnglobingAgentItem).LastOrDefault(x => x.Time <= time);
         if (currentMaxHealth == null || currentBarrierPercent < 0)
         {
             return -1;
@@ -81,14 +81,14 @@ public class NPC : SingleActor
     protected override void InitAdditionalCombatReplayData(ParsedEvtcLog log, CombatReplay replay)
     {
         base.InitAdditionalCombatReplayData(log, replay);
-        log.FightData.Logic.ComputeNPCCombatReplayActors(this, log, replay);
-        if (replay.Rotations.Count != 0 && (log.FightData.Logic.TargetAgents.Contains(AgentItem) || log.FriendlyAgents.Contains(AgentItem)))
+        log.LogData.Logic.ComputeNPCCombatReplayActors(this, log, replay);
+        if (replay.Rotations.Count != 0 && (log.LogData.Logic.TargetAgents.Contains(AgentItem) || log.FriendlyAgents.Contains(AgentItem)))
         {
             replay.Decorations.Add(new ActorOrientationDecoration(((int)replay.TimeOffsets.start, (int)replay.TimeOffsets.end), AgentItem));
         }
         // Don't put minions of NPC into the minion display system
         AgentItem master = AgentItem.GetFinalMaster();
-        if (master != AgentItem && master.IsPlayer)
+        if (!master.Is(AgentItem) && master.IsPlayer)
         {
             SingleActor masterActor = log.FindActor(master)!;
             // Basic linkage
@@ -104,38 +104,5 @@ public class NPC : SingleActor
     public override SingleActorCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
     {
         return new NPCCombatReplayDescription(this, log, map, InitCombatReplay(log));
-    }
-    protected override void TrimCombatReplay(ParsedEvtcLog log, CombatReplay replay)
-    {
-        var (_, _, _, actives) = GetStatus(log);
-        long trimStart = FirstAware;
-        long trimEnd = LastAware;
-        long previousActiveEnd = FirstAware;
-        for (int i = 0; i < actives.Count - 1; i++)
-        {
-            if (i == 0)
-            {
-                trimStart = actives[i].Start;
-            }
-            else if (previousActiveEnd != actives[i].Start)
-            {
-                replay.Hidden.Add(new Segment(previousActiveEnd, actives[i].Start));
-            }
-            previousActiveEnd = actives[i].End;
-        }
-        if (actives.Count > 0)
-        {
-            var last = actives[actives.Count - 1];
-            if (actives.Count == 1)
-            {
-                trimStart = actives[0].Start;
-            }
-            else if (previousActiveEnd != last.Start)
-            {
-                replay.Hidden.Add(new Segment(previousActiveEnd, last.Start));
-            }
-            trimEnd = last.End;
-        }
-        replay.Trim(trimStart, trimEnd);
     }
 }

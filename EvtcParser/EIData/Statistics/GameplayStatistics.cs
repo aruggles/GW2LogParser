@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using static GW2EIEvtcParser.EIData.Buff;
 
 namespace GW2EIEvtcParser.EIData;
@@ -25,27 +22,44 @@ public class GameplayStatistics
     // Counts
     public readonly int WeaponSwapCount;
 
+    public readonly long SkillCastTime;
     public readonly double SkillCastUptime;
     public readonly double SkillCastUptimeNoAutoAttack;
 
-    private static double GetDistanceToTarget(SingleActor actor, ParsedEvtcLog log, long start, long end, IReadOnlyList<ParametricPoint3D?> reference)
+    private static double GetDistanceToTarget(SingleActor actor, ParsedEvtcLog log, long start, long end, IReadOnlyList<ParametricPoint3D?> references)
     {
 
-        var positions = actor.GetCombatReplayPolledPositions(log).Where(x => x.Time >= start && x.Time <= end).ToList();
-        int offset = actor.GetCombatReplayPolledPositions(log).Count(x => x.Time < start);
-        if (positions.Count > 1 && reference.Count > 0)
+        var positions = actor.GetCombatReplayActivePolledPositions(log);
+        if (positions.Count > 0 && references.Count > 0)
         {
-            var distances = new List<float>();
-            //TODO(Rennorb) @cleanup: Dual indexing requires us to generate sparse lists with the same amount of entries and null values. 
-            // These are already parametric points and they are sorted, we don't need to fill up the list to equal lengths. Investigate perf. 
-            for (int time = 0; time < positions.Count; time++)
+            var distances = new List<float>(positions.Count);
+            int curReferenceIndex = 0;
+            for (int i = 0; i < positions.Count; i++)
             {
-                if (time + offset >= reference.Count || reference[time + offset] == null)
+                var curPosition = positions[i];
+                if (curPosition == null || curPosition.Value.Time < start || curPosition.Value.Time > end)
                 {
                     continue;
                 }
-
-                distances.Add((positions[time].XYZ - reference[time + offset]!.Value.XYZ).XY().Length());
+                for (int j = curReferenceIndex; j < references.Count; j++)
+                {
+                    curReferenceIndex = j;
+                    var curReferencePosition = references[j];
+                    if (curReferencePosition != null)
+                    {
+                        var curReferencePoint = curReferencePosition.Value;
+                        if (curReferencePoint.Time < curPosition.Value.Time)
+                        {
+                            continue;
+                        }
+                        else if (curReferencePoint.Time == curPosition.Value.Time)
+                        {
+                            distances.Add((curPosition.Value.XYZ - curReferencePoint.XYZ).XY().Length());
+                            break;
+                        }
+                        break;
+                    }
+                }
             }
             return distances.Count == 0 ? -1 : distances.Sum() / distances.Count;
         }
@@ -86,11 +100,12 @@ public class GameplayStatistics
         //
         foreach (CastEvent cl in actor.GetIntersectingCastEvents(log, start, end))
         {
+            long value = Math.Min(cl.EndTime, end) - Math.Max(cl.Time, start);
+            SkillCastTime += value;
             if (cl.IsInterrupted || cl.IsUnknown)
             {
                 continue;
             }
-            long value = Math.Min(cl.EndTime, end) - Math.Max(cl.Time, start);
             SkillCastUptime += value;
             if (!cl.Skill.IsAutoAttack(log))
             {
@@ -104,7 +119,7 @@ public class GameplayStatistics
         SkillCastUptimeNoAutoAttack = Math.Round(100.0 * SkillCastUptimeNoAutoAttack, ParserHelper.TimeDigit);
         //
         double avgBoons = 0;
-        foreach (long boonDuration in actor.GetBuffPresence(log, start, end).Where(x => log.Buffs.BuffsByIds[x.Key].Classification == BuffClassification.Boon).Select(x => x.Value))
+        foreach (long boonDuration in actor.GetBuffPresence(log, start, end).Where(x => log.Buffs.BuffsByIDs[x.Key].Classification == BuffClassification.Boon).Select(x => x.Value))
         {
             avgBoons += boonDuration;
         }
@@ -113,7 +128,7 @@ public class GameplayStatistics
         AverageActiveBoons = activeDuration > 0 ? Math.Round(avgBoons / activeDuration, ParserHelper.BuffDigit) : 0.0;
         //
         double avgCondis = 0;
-        foreach (long conditionDuration in actor.GetBuffPresence(log, start, end).Where(x => log.Buffs.BuffsByIds[x.Key].Classification == BuffClassification.Condition).Select(x => x.Value))
+        foreach (long conditionDuration in actor.GetBuffPresence(log, start, end).Where(x => log.Buffs.BuffsByIDs[x.Key].Classification == BuffClassification.Condition).Select(x => x.Value))
         {
             avgCondis += conditionDuration;
         }

@@ -109,24 +109,33 @@ internal static class BuffInfoSolver
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.AttackSpeed).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), Quickness },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Power).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), Might },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.PowerSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), BowlOfColdWurmStew },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Condition).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), Might },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ConditionSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), VeggieBurger },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Precision).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), SignetOfFuryBuff },
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Precision).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), SignetOfAgilityBuff },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.PrecisionSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), BowlOfIceWurmBisque },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Toughness).WithBuilds(GW2Builds.StartOfLife, GW2Builds.October2024Balance).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), DolyakSignetBuff },
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Toughness).WithBuilds(GW2Builds.October2024Balance).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), ConjureEarthShield },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ToughnessSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), MeatballDinner },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Vitality).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), ConjureEarthShield },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.VitalitySidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), BowlOfDolyakStew },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Healing).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), ConjureFrostBow },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.HealingSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), StrawberryCookie },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Concentration).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), SignetOfMercyBuff },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ConcentrationSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), SoulPastry },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Expertise).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), SignetOfMidnightBuff },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExpertiseSidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), VeggiePizza },
         //
         {new BuffFormulaDescriptor(AnyPositive, AnyPositive, 0, 0, 0, 0, 0, BuffAttribute.Ferocity).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), SignetOfTheWild },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.FerocitySidekick).WithEvtcBuilds(ArcDPSBuilds.BuffFormulaOriginalAttribute), BowlOfSimpleVegetableSoup },
         //
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.AllStatsPercent).WithEvtcBuilds(ArcDPSBuilds.EICanDoManualBuffAttributes), ElementalEmpowerment },
         //
@@ -189,30 +198,33 @@ internal static class BuffInfoSolver
         { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.HealingEffectivenessIncomingMultiplicative), Infirmity },
         // SiphonIncomingAdditive
         { new BuffFormulaDescriptor(AnyNegative, 0, 0, 0, 0, 0, 0, BuffAttribute.SiphonIncomingAdditive2), Infirmity },
-        // Damage to HP
-        { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.StrikeDamageToHP), BloodReckoning },
-        { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.StrikeDamageToHP), LitanyOfWrath },
         // Condition to HP
         { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ConditionDamageToHP), BloodReckoning },
         { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ConditionDamageToHP), LitanyOfWrath },
+        // Damage to HP
+        { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.StrikeDamageToHP), BloodReckoning },
+        { new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.StrikeDamageToHP), LitanyOfWrath },
         // BoonDurationIncrease
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.BoonDurationOutgoing), WovenWater },
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.BoonDurationOutgoing), PerfectWeave },
         // Experience from kills
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), RareVeggiePizza },
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), PlateOfBeefRendang },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), StrawberryCookie },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), MeatballDinner },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), BowlOfIceWurmBisque },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), VeggiePizza },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), VeggieBurger },
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), SoulPastry },
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), BowlOfFireMeatChili },
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), SuperiorSharpeningStone },
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), ToxicTuningCrystal },
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), BowlOfSweetAndSpicyButternutSquashSoup },
-        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), MasterMaintenanceOil },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), BowlOfSimpleVegetableSoup },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromKills), PlateOfIslandPudding },
         // Experience from all
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.ExperienceFromAll), RedLentilSaobosa },
         // HealingEffectivenessRec2
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.HealingEffectivenessIncomingAdditive), EternalOasis },
+        // Karma Bonus
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.KarmaBonus), PlateOfIslandPudding },
         // MagicFind
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.MagicFind), GuildItemResearch },
+        {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.MagicFind), PlateOfIslandPudding },
         // Stacking Movement Speed
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.MovementSpeedStacking), RisingMomentum },
         {new BuffFormulaDescriptor(AnyPositive, 0, 0, 0, 0, 0, 0, BuffAttribute.MovementSpeedStacking2), FormUpAndAdvance },
@@ -264,7 +276,7 @@ internal static class BuffInfoSolver
             var buffInfoEvent = combatData.GetBuffInfoEvent(pair.Key);
             if (buffInfoEvent != null)
             {
-                pair.Value.VerifyBuffInfoEvent(buffInfoEvent, operation);
+                pair.Value.VerifyBuffInfoEvent(buffInfoEvent, combatData.GetEvtcVersionEvent(), operation);
                 buffInfoEvent.AdjustBuffInfo(solved);
             }
         }

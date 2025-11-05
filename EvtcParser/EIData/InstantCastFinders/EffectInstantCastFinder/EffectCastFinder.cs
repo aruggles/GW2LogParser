@@ -1,6 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Linq;
 using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.EIData;
@@ -9,7 +7,7 @@ internal class EffectCastFinder : CheckedCastFinder<EffectEvent>
 {
     protected bool Minions = false;
     private readonly GUID _effectGUID;
-    private int _speciesId = 0;
+    private int _speciesID = 0;
 
     public EffectCastFinder WithMinions()
     {
@@ -120,7 +118,7 @@ internal class EffectCastFinder : CheckedCastFinder<EffectEvent>
         {
             if (combatData.TryGetEffectEventsByGUID(effect, out var effectEvents))
             {
-                return effectEvents.Any(other => other != evt && GetAgent(other) == GetAgent(evt) && Math.Abs(other.Time - timeOffset - evt.Time) < epsilon);
+                return effectEvents.Any(other => other != evt && GetAgent(other).Is(GetAgent(evt)) && Math.Abs(other.Time - timeOffset - evt.Time) < epsilon);
             }
             return false;
         });
@@ -132,7 +130,7 @@ internal class EffectCastFinder : CheckedCastFinder<EffectEvent>
         {
             if (combatData.TryGetEffectEventsByGUID(effect, out var effectEvents))
             {
-                return effectEvents.Any(other => other != evt && GetOtherAgent(other) == GetAgent(evt) && Math.Abs(other.Time - timeOffset - evt.Time) < epsilon);
+                return effectEvents.Any(other => other != evt && GetOtherAgent(other).Is(GetAgent(evt)) && Math.Abs(other.Time - timeOffset - evt.Time) < epsilon);
             }
             return false;
         });
@@ -156,7 +154,7 @@ internal class EffectCastFinder : CheckedCastFinder<EffectEvent>
 
     internal EffectCastFinder UsingAgentRedirectionIfUnknown(int speciesID)
     {
-        _speciesId = speciesID;
+        _speciesID = speciesID;
         return this;
     }
 
@@ -183,9 +181,9 @@ internal class EffectCastFinder : CheckedCastFinder<EffectEvent>
                     }
                     lastTime = effectEvent.Time;
                     var caster = group.Key;
-                    if (_speciesId > 0 && caster.IsUnamedSpecies())
+                    if (_speciesID > 0 && caster.IsUnamedSpecies())
                     {
-                        AgentItem? agent = agentData.GetNPCsByID(_speciesId).FirstOrDefault(x => x.LastAware >= effectEvent.Time && x.FirstAware <= effectEvent.Time);
+                        AgentItem? agent = agentData.GetNPCsByID(_speciesID).FirstOrDefault(x => x.LastAware >= effectEvent.Time && x.FirstAware <= effectEvent.Time);
                         if (agent != null)
                         {
                             caster = agent;

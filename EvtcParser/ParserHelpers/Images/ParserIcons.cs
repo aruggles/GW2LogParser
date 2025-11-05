@@ -39,76 +39,112 @@ internal static class ParserIcons
     public const string UnknownProfessionIcon = "https://i.imgur.com/UbvyFSt.png";
     public const string GenericGadgetIcon = "https://render.guildwars2.com/file/09AF0498D757B191E229C862F4AA360DA65C4FE1/1012386.png";
     // High Resolution Icons 200px
+    // Ranger
+    private const string HighResGaleshot = "https://i.imgur.com/wTst1RK.png";
     private const string HighResUntamed = "https://i.imgur.com/XpS1uAD.png";
     private const string HighResSoulbeast = "https://i.imgur.com/JbnYkEQ.png";
     private const string HighResDruid = "https://i.imgur.com/5wFMWn4.png";
     private const string HighResRanger = "https://i.imgur.com/RXcEJD8.png";
+    // Engineer
+    private const string HighResAmalgam = "https://i.imgur.com/jmTU0Ir.png";
     private const string HighResMechanist = "https://i.imgur.com/HlzLb2v.png";
     private const string HighResHolosmith = "https://i.imgur.com/rjspDs0.png";
     private const string HighResScrapper = "https://i.imgur.com/z5kr00B.png";
     private const string HighResEngineer = "https://i.imgur.com/lV62W3O.png";
+    // Thief
+    private const string HighResAntiquary = "https://i.imgur.com/ithzoW0.png";
     private const string HighResSpecter = "https://i.imgur.com/3el5P6G.png";
     private const string HighResDeadeye = "https://i.imgur.com/UOMFo4a.png";
     private const string HighResDaredevil = "https://i.imgur.com/8DzmCRv.png";
     private const string HighResThief = "https://i.imgur.com/ElrzmpL.png";
+    // Elementalist
+    private const string HighResEvoker = "https://i.imgur.com/P1a4oqd.png";
     private const string HighResCatalyst = "https://i.imgur.com/uFK7Jun.png";
     private const string HighResWeaver = "https://i.imgur.com/Jf9nxTO.png";
     private const string HighResTempest = "https://i.imgur.com/9nq8itX.png";
     private const string HighResElementalist = "https://i.imgur.com/53NMPGH.png";
+    // Mesmer
+    private const string HighResTroubadour = "https://i.imgur.com/vkpnTJD.png";
     private const string HighResVirtuoso = "https://i.imgur.com/0sJrcUI.png";
     private const string HighResMirage = "https://i.imgur.com/Nio5XPX.png";
     private const string HighResChronomancer = "https://i.imgur.com/mNOkkOE.png";
     private const string HighResMesmer = "https://i.imgur.com/Kz9OqpW.png";
+    // Necromancer
+    private const string HighResRitualist = "https://i.imgur.com/gi5JSey.png";
     private const string HighResHarbinger = "https://i.imgur.com/Pwk9rh7.png";
     private const string HighResScourge = "https://i.imgur.com/8aQcxo9.png";
     private const string HighResReaper = "https://i.imgur.com/y0Y5ECT.png";
     private const string HighResNecromancer = "https://i.imgur.com/jvwYgmA.png";
+    // Warrior
+    private const string HighResParagon = "https://i.imgur.com/kyKiBdI.png";
     private const string HighResBladesworn = "https://i.imgur.com/90j009t.png";
     private const string HighResSpellbreaker = "https://i.imgur.com/FTh03SH.png";
     private const string HighResBerserker = "https://i.imgur.com/0ijFUUG.png";
     private const string HighResWarrior = "https://i.imgur.com/j82eNjR.png";
+    // Guardian
+    private const string HighResLuminary = "https://i.imgur.com/JTFpGOh.png";
     private const string HighResWillbender = "https://i.imgur.com/WhIEbGZ.png";
     private const string HighResFirebrand = "https://i.imgur.com/J5EFywD.png";
     private const string HighResDragonhunter = "https://i.imgur.com/pSVMnVu.png";
     private const string HighResGuardian = "https://i.imgur.com/LN1WJ6x.png";
+    // Revenant
+    private const string HighResConduit = "https://i.imgur.com/Qeep1YF.png";
     private const string HighResVindicator = "https://i.imgur.com/5RDwglO.png";
     private const string HighResRenegade = "https://i.imgur.com/CtJvKM0.png";
     private const string HighResHerald = "https://i.imgur.com/wWQn0uI.png";
     private const string HighResRevenant = "https://i.imgur.com/giJtxPu.png";
 
     // Base Resolution Icons 20px
+    // Ranger
+    private const string BaseResGaleshot = "https://i.imgur.com/4wTs28o.png";
     private const string BaseResUntamed = "https://i.imgur.com/u8l36Pw.png";
     private const string BaseResSoulbeast = "https://i.imgur.com/1uDdNtU.png";
     private const string BaseResDruid = "https://i.imgur.com/Glb39dj.png";
     private const string BaseResRanger = "https://i.imgur.com/r7TAcjS.png";
+    // Engineer
+    private const string BaseResAmalgam = "https://i.imgur.com/SjSb5yJ.png";
     private const string BaseResMechanist = "https://i.imgur.com/1jUOMlX.png";
     private const string BaseResHolosmith = "https://i.imgur.com/Q96yagv.png";
     private const string BaseResScrapper = "https://i.imgur.com/Cd9yD43.png";
     private const string BaseResEngineer = "https://i.imgur.com/hckhnZy.png";
+    // Thief
+    private const string BaseResAntiquary = "https://i.imgur.com/wJBMKe2.png";
     private const string BaseResSpecter = "https://i.imgur.com/nVAyYVQ.png";
     private const string BaseResDeadeye = "https://i.imgur.com/kryyJRy.png";
     private const string BaseResDaredevil = "https://i.imgur.com/RiCJalE.png";
     private const string BaseResThief = "https://i.imgur.com/dS8un97.png";
+    // Elementalist
+    private const string BaseResEvoker = "https://i.imgur.com/Ie4y9Qf.png";
     private const string BaseResCatalyst = "https://i.imgur.com/2B73rSk.png";
     private const string BaseResWeaver = "https://i.imgur.com/03RLBaX.png";
     private const string BaseResTempest = "https://i.imgur.com/FnLyZvk.png";
     private const string BaseResElementalist = "https://i.imgur.com/2ybEpCV.png";
+    // Mesmer
+    private const string BaseResTroubadour = "https://i.imgur.com/xRdE1iN.png";
     private const string BaseResVirtuoso = "https://i.imgur.com/sncfljQ.png";
     private const string BaseResMirage = "https://i.imgur.com/fL88z7p.png";
     private const string BaseResChronomancer = "https://i.imgur.com/rI1tW64.png";
     private const string BaseResMesmer = "https://i.imgur.com/FXgZQ46.png";
+    // Necromancer
+    private const string BaseResRitualist = "https://i.imgur.com/S8msdHU.png";
     private const string BaseResHarbinger = "https://i.imgur.com/PwhIT4u.png";
     private const string BaseResScourge = "https://i.imgur.com/uVdgw3H.png";
     private const string BaseResReaper = "https://i.imgur.com/X463V90.png";
     private const string BaseResNecromancer = "https://i.imgur.com/kK3l1C1.png";
+    // Warrior
+    private const string BaseResParagon = "https://i.imgur.com/Wp4lhTM.png";
     private const string BaseResBladesworn = "https://i.imgur.com/mFzTJXv.png";
     private const string BaseResSpellbreaker = "https://i.imgur.com/A6JTWBV.png";
     private const string BaseResBerserker = "https://i.imgur.com/dNY6e8n.png";
     private const string BaseResWarrior = "https://i.imgur.com/ejI5STj.png";
+    // Guardian
+    private const string BaseResLuminary = "https://i.imgur.com/H9upKPo.png";
     private const string BaseResWillbender = "https://i.imgur.com/pIFrNLa.png";
     private const string BaseResFirebrand = "https://i.imgur.com/TOsmJOl.png";
     private const string BaseResDragonhunter = "https://i.imgur.com/GqKocpf.png";
     private const string BaseResGuardian = "https://i.imgur.com/l329bR4.png";
+    // Revenant
+    private const string BaseResConduit = "https://i.imgur.com/qaXHsQU.png";
     private const string BaseResVindicator = "https://i.imgur.com/hKBqtWE.png";
     private const string BaseResRenegade = "https://i.imgur.com/whOAxsp.png";
     private const string BaseResHerald = "https://i.imgur.com/O7kekkb.png";
@@ -191,6 +227,13 @@ internal static class ParserIcons
     private const string TargetDecima = "https://i.imgur.com/MPcVY47.png";
     private const string TargetGreer = "https://i.imgur.com/iuhDVaM.png";
     private const string TargetUra = "https://i.imgur.com/LxO1u5r.png";
+    private const string DemonKnight = "https://i.imgur.com/BhoyT2P.png";
+    private const string SorrowConvergence = "https://i.imgur.com/pIDNTAQ.png";
+    private const string Dreadwing = "https://i.imgur.com/27tktFX.png";
+    private const string HellSister = "https://i.imgur.com/5d9i7Eq.png";
+    private const string Umbriel = "https://i.imgur.com/lE2Dg5a.png";
+    private const string Zojja = "https://i.imgur.com/9iSzaTe.png";
+    private const string WhisperingShadow = "https://i.imgur.com/ncmbsdG.png";
     #endregion
 
     #region Trash
@@ -247,6 +290,9 @@ internal static class ParserIcons
     private const string TrashConjuredGreatsword = "https://i.imgur.com/vHka0QN.png";
     private const string TrashConjuredPlayerSword = "https://wiki.guildwars2.com/images/0/07/Crimson_Antique_Blade.png";
     private const string TrashConjuredShield = "https://i.imgur.com/wUiI19S.png";
+    private const string TrashConjuredAmalgamateAttackTarget = "https://i.imgur.com/Dr3grlm.png";
+    private const string TrashCALeftArmAttackTarget = "https://i.imgur.com/QUe8eQf.png";
+    private const string TrashCARightArmAttackTarget = "https://i.imgur.com/M4Ljmhp.png";
     private const string TrashGreaterMagmaElemental = "https://i.imgur.com/sr146T6.png";
     private const string TrashLavaElemental = "https://i.imgur.com/mydwiYy.png";
     private const string TrashPyreGuardianKillerTornado = "https://i.imgur.com/6zNPTUw.png";
@@ -445,6 +491,7 @@ internal static class ParserIcons
     private const string MinionIllusionaryAvenger = "https://i.imgur.com/SmEAtBo.png";
     private const string MinionIllusionaryWhaler = "https://i.imgur.com/vVqpOvR.png";
     private const string MinionIllusionaryMariner = "https://i.imgur.com/2oSj7rI.png";
+    private const string MinionIllusionarySharpShooter = "https://i.imgur.com/6HX5zTh.png";
     private const string MinionJadeMech = "https://i.imgur.com/54evTaq.png";
     private const string MinionEraBreakrazor = "https://i.imgur.com/2X3G3Fl.png";
     private const string MinionKusDarkrazor = "https://i.imgur.com/rJq4Ngh.png";
@@ -553,6 +600,16 @@ internal static class ParserIcons
     private const string MinionSousChef = "https://i.imgur.com/dcBeQep.png";
     private const string MinionSunspreadParagon = "https://i.imgur.com/QXbFenF.png";
     private const string MinionRavenSpiritShadow = "https://i.imgur.com/dbLzIiY.png";
+    private const string MinionEvokerFox = "https://i.imgur.com/BsdPEue.png";
+    private const string MinionEvokerOtter = "https://i.imgur.com/dK8Qj4x.png";
+    private const string MinionEvokerHare = "https://i.imgur.com/sbwSA6W.png";
+    private const string MinionEvokerToad = "https://i.imgur.com/fyKMR3z.png";
+    private const string MinionSkrittThievesGuild = "https://i.imgur.com/CcCyjhp.png";
+    private const string MinionHoloDancerDecoy = "https://i.imgur.com/epivZyd.png";
+    private const string MinionKriptisTurret = "https://i.imgur.com/CZ4ALkg.png";
+    private const string MinionSpiritOfAnguish = "https://i.imgur.com/DjpbK1o.png";
+    private const string MinionSpiritOfWanderlust = "https://i.imgur.com/UKgogUa.png";
+    private const string MinionSpiritOfPreservation = "https://i.imgur.com/9nyIxmd.png";
     #endregion
 
     #region Marker
@@ -664,6 +721,10 @@ internal static class ParserIcons
 
     // - Other
     internal const string QadimPlatform = "https://i.imgur.com/DbXr5Fo.png";
+    internal const string SabirMainPlatform = "https://i.imgur.com/xrf4FPh.png";
+    internal const string SabirSquarePlateform = "https://i.imgur.com/KUedrXN.png";
+    internal const string SabirRectanglePlateform = "https://i.imgur.com/SN7eJaq.png";
+    internal const string SabirBigRectanglePlateform = "https://i.imgur.com/cwwmCc0.png";
 
     internal const string NoImage = "";
 
@@ -672,38 +733,56 @@ internal static class ParserIcons
     /// </summary>
     internal readonly static IReadOnlyDictionary<Spec, string> HighResProfIcons = new Dictionary<Spec, string>()
     {
+        // Ranger
+        { Spec.Galeshot, HighResGaleshot },
         { Spec.Untamed, HighResUntamed },
         { Spec.Soulbeast, HighResSoulbeast },
         { Spec.Druid, HighResDruid },
         { Spec.Ranger, HighResRanger },
+        // Engineer
+        { Spec.Amalgam, HighResAmalgam },
         { Spec.Mechanist, HighResMechanist },
         { Spec.Holosmith, HighResHolosmith },
         { Spec.Scrapper, HighResScrapper },
         { Spec.Engineer, HighResEngineer },
+        // Thief
+        { Spec.Antiquary, HighResAntiquary },
         { Spec.Specter, HighResSpecter },
         { Spec.Deadeye, HighResDeadeye },
         { Spec.Daredevil, HighResDaredevil },
         { Spec.Thief, HighResThief },
+        // Elementalist
+        { Spec.Evoker, HighResEvoker },
         { Spec.Catalyst, HighResCatalyst },
         { Spec.Weaver, HighResWeaver },
         { Spec.Tempest, HighResTempest },
         { Spec.Elementalist, HighResElementalist },
+        // Mesmer
+        { Spec.Troubadour, HighResTroubadour },
         { Spec.Virtuoso, HighResVirtuoso },
         { Spec.Mirage, HighResMirage },
         { Spec.Chronomancer, HighResChronomancer },
         { Spec.Mesmer, HighResMesmer },
+        // Necromancer
+        { Spec.Ritualist, HighResRitualist },
         { Spec.Harbinger, HighResHarbinger },
         { Spec.Scourge, HighResScourge },
         { Spec.Reaper, HighResReaper },
         { Spec.Necromancer, HighResNecromancer },
+        // Warrior
+        { Spec.Paragon, HighResParagon },
         { Spec.Bladesworn, HighResBladesworn },
         { Spec.Spellbreaker, HighResSpellbreaker },
         { Spec.Berserker, HighResBerserker },
         { Spec.Warrior, HighResWarrior },
+        // Luminary
+        { Spec.Luminary, HighResLuminary },
         { Spec.Willbender, HighResWillbender },
         { Spec.Firebrand, HighResFirebrand },
         { Spec.Dragonhunter, HighResDragonhunter },
         { Spec.Guardian, HighResGuardian },
+        // Revenant
+        { Spec.Conduit, HighResConduit },
         { Spec.Vindicator, HighResVindicator },
         { Spec.Renegade, HighResRenegade },
         { Spec.Herald, HighResHerald },
@@ -715,38 +794,56 @@ internal static class ParserIcons
     /// </summary>
     internal readonly static IReadOnlyDictionary<Spec, string> BaseResProfIcons = new Dictionary<Spec, string>()
     {
+        // Ranger
+        { Spec.Galeshot, BaseResGaleshot },
         { Spec.Untamed, BaseResUntamed },
         { Spec.Soulbeast, BaseResSoulbeast },
         { Spec.Druid, BaseResDruid },
         { Spec.Ranger, BaseResRanger },
+        // Engineer
+        { Spec.Amalgam, BaseResAmalgam },
         { Spec.Mechanist, BaseResMechanist },
         { Spec.Holosmith, BaseResHolosmith },
         { Spec.Scrapper, BaseResScrapper },
         { Spec.Engineer, BaseResEngineer },
+        // Thief
+        { Spec.Antiquary, BaseResAntiquary },
         { Spec.Specter, BaseResSpecter },
         { Spec.Deadeye, BaseResDeadeye },
         { Spec.Daredevil, BaseResDaredevil },
         { Spec.Thief, BaseResThief },
+        // Elementalist
+        { Spec.Evoker, BaseResEvoker },
         { Spec.Catalyst, BaseResCatalyst },
         { Spec.Weaver, BaseResWeaver },
         { Spec.Tempest, BaseResTempest },
         { Spec.Elementalist, BaseResElementalist },
+        // Mesmer
+        { Spec.Troubadour, BaseResTroubadour },
         { Spec.Virtuoso, BaseResVirtuoso },
         { Spec.Mirage, BaseResMirage },
         { Spec.Chronomancer, BaseResChronomancer },
         { Spec.Mesmer, BaseResMesmer },
+        // Necromancer
+        { Spec.Ritualist, BaseResRitualist },
         { Spec.Harbinger, BaseResHarbinger },
         { Spec.Scourge, BaseResScourge },
         { Spec.Reaper, BaseResReaper },
         { Spec.Necromancer, BaseResNecromancer },
+        // Warrior
+        { Spec.Paragon, BaseResParagon },
         { Spec.Bladesworn, BaseResBladesworn },
         { Spec.Spellbreaker, BaseResSpellbreaker },
         { Spec.Berserker, BaseResBerserker },
         { Spec.Warrior, BaseResWarrior },
+        // Guardian
+        { Spec.Luminary, BaseResLuminary },
         { Spec.Willbender, BaseResWillbender },
         { Spec.Firebrand, BaseResFirebrand },
         { Spec.Dragonhunter, BaseResDragonhunter },
         { Spec.Guardian, BaseResGuardian },
+        // Revenant
+        { Spec.Conduit, BaseResConduit },
         { Spec.Vindicator, BaseResVindicator },
         { Spec.Renegade, BaseResRenegade },
         { Spec.Herald, BaseResHerald },
@@ -809,7 +906,7 @@ internal static class ParserIcons
         { TargetID.Artsariiv, TargetArtsariiv },
         { TargetID.Arkk, TargetArkk },
         { TargetID.AiKeeperOfThePeak, TargetAiKeeperOfThePeak },
-        { TargetID.AiKeeperOfThePeak2, TargetAiKeeperOfThePeak2 },
+        { TargetID.DarkAiKeeperOfThePeak, TargetAiKeeperOfThePeak2 },
         { TargetID.LGolem, TargetVitalGolem },
         { TargetID.VitalGolem, TargetVitalGolem },
         { TargetID.PowerGolem, TargetPowerGolem },
@@ -821,7 +918,7 @@ internal static class ParserIcons
         { TargetID.MassiveGolem4M, TargetMassiveGolem },
         { TargetID.MassiveGolem1M, TargetMassiveGolem },
         { TargetID.MaiTrinFract, TargetMaiTrin },
-        { TargetID.MaiTrinStrike, TargetMaiTrin },
+        { TargetID.MaiTrinRaid, TargetMaiTrin },
         { TargetID.EchoOfScarletBriarNM, TargetEchoOfScarletBriar },
         { TargetID.EchoOfScarletBriarCM, TargetEchoOfScarletBriar },
         { TargetID.Ankka, TargetAnkka },
@@ -924,6 +1021,9 @@ internal static class ParserIcons
         { TargetID.ConjuredGreatsword, TrashConjuredGreatsword },
         { TargetID.ConjuredPlayerSword, TrashConjuredPlayerSword },
         { TargetID.ConjuredShield, TrashConjuredShield },
+        { TargetID.CABodyAttackTarget, TrashConjuredAmalgamateAttackTarget },
+        { TargetID.CALeftArmAttackTarget, TrashCALeftArmAttackTarget },
+        { TargetID.CARightArmAttackTarget, TrashCARightArmAttackTarget },
         { TargetID.GreaterMagmaElemental1, TrashGreaterMagmaElemental },
         { TargetID.GreaterMagmaElemental2, TrashGreaterMagmaElemental },
         { TargetID.LavaElemental1, TrashLavaElemental },
@@ -932,6 +1032,10 @@ internal static class ParserIcons
         { TargetID.PyreGuardian, TrashPyreGuardianKillerTornado },
         { TargetID.SmallKillerTornado, TrashPyreGuardianKillerTornado},
         { TargetID.BigKillerTornado, TrashPyreGuardianKillerTornado },
+        { TargetID.SabirBigRectanglePlateform, NoImage},
+        { TargetID.SabirMainPlateform, NoImage},
+        { TargetID.SabirRectanglePlateform, NoImage},
+        { TargetID.SabirSquarePlateform, NoImage},
         { TargetID.PoisonMushroom, TrashPoisonMushroom },
         { TargetID.SpearAggressionRevulsion, TrashSpearAggressionRevulsion },
         { TargetID.QadimLamp, TrashQadimLamp },
@@ -1120,7 +1224,7 @@ internal static class ParserIcons
         { TargetID.RedKnight, TrashRGBKnight },
         { TargetID.BlueKnight, TrashRGBKnight },
         { TargetID.CloneArtsariiv, TrashCloneArtsariiv },
-        { TargetID.MaiTrinStrikeDuringEcho, TrashMaiTrinStrikeDuringEcho },
+        { TargetID.MaiTrinRaidDuringEcho, TrashMaiTrinStrikeDuringEcho },
         { TargetID.SooWonTail, TrashSooWonTail },
         { TargetID.TheEnforcer, TrashTheEnforcer },
         { TargetID.TheEnforcerCM, TrashTheEnforcer },
@@ -1199,6 +1303,7 @@ internal static class ParserIcons
         { TargetID.ToxicGeyser, TrashToxicGeyser },
         { TargetID.SulfuricGeyser, TrashSulfuricGeyser },
         { TargetID.TitanspawnGeyser, TrashTitanspawnGeyser },
+        { TargetID.TitanspawnGeyserGadget, TrashTitanspawnGeyser },
         { TargetID.UraGadget_BloodstoneShard, TrashBloodstoneShard },
         { TargetID.DecimaBeamStart, NoImage },
         { TargetID.DecimaBeamEnd, NoImage },
@@ -1218,6 +1323,18 @@ internal static class ParserIcons
         { TargetID.Cannon, TrashCannon },
         { TargetID.HeavyBomb, TrashFerrousBomb }, // Using Aetherblade Hideout image for better visual
         { TargetID.ProtoGreerling, TrashProtoGreerling },
+        { TargetID.DecimaTheStormsingerConv, TargetDecima },
+        { TargetID.GreerTheBlightbringerConv, TargetGreer },
+        { TargetID.GreeTheBingerConv, TrashGree },
+        { TargetID.ReegTheBlighterConv, TrashReeg },
+        { TargetID.UraTheSteamshriekerConv, TargetUra },
+        { TargetID.DemonKnight, DemonKnight },
+        { TargetID.Sorrow, SorrowConvergence },
+        { TargetID.Dreadwing, Dreadwing },
+        { TargetID.HellSister, HellSister },
+        { TargetID.UmbrielHalberdOfHouseAurkus, Umbriel },
+        { TargetID.ZojjaNayos, Zojja },
+        { TargetID.WhisperingShadow, WhisperingShadow },
     };
 
     /// <summary>
@@ -1283,6 +1400,7 @@ internal static class ParserIcons
         { MinionID.CloneDaggerTorch, MinionMesmerClone },
         { MinionID.CloneDownstate, MinionMesmerClone },
         { MinionID.CloneUnknown, MinionMesmerClone },
+        { MinionID.CloneRifle, MinionMesmerClone },
         { MinionID.IllusionarySwordsman, MinionIllusionarySwordsman },
         { MinionID.IllusionaryBerserker, MinionIllusionaryBerserker },
         { MinionID.IllusionaryDisenchanter, MinionIllusionaryDisenchanter },
@@ -1295,6 +1413,7 @@ internal static class ParserIcons
         { MinionID.IllusionaryAvenger, MinionIllusionaryAvenger },
         { MinionID.IllusionaryWhaler, MinionIllusionaryWhaler },
         { MinionID.IllusionaryMariner, MinionIllusionaryMariner },
+        { MinionID.IllusionarySharpShooter, MinionIllusionarySharpShooter },
         { MinionID.JadeMech, MinionJadeMech },
         { MinionID.EraBreakrazor, MinionEraBreakrazor },
         { MinionID.KusDarkrazor, MinionKusDarkrazor },
@@ -1450,9 +1569,21 @@ internal static class ParserIcons
         { MinionID.PurgeGyro, MinionPurgeGyro },
         { MinionID.ShredderGyro, MinionShredderGyro },
         { MinionID.SneakGyro, MinionSneakGyro },
+        { MinionID.FireFox, MinionEvokerFox },
+        { MinionID.ElementalProcessionFireFox, MinionEvokerFox },
+        { MinionID.WaterOtter, MinionEvokerOtter },
+        { MinionID.ElementalProcessionWaterOtter, MinionEvokerOtter },
+        { MinionID.AirHare, MinionEvokerHare },
+        { MinionID.ElementalProcessionAirHare, MinionEvokerHare },
+        { MinionID.EarthToad, MinionEvokerToad },
+        { MinionID.ElementalProcessionEarthToad, MinionEvokerToad },
+        { MinionID.SkrittThievesGuild, MinionSkrittThievesGuild },
+        { MinionID.HoloDancer, MinionHoloDancerDecoy },
+        { MinionID.KryptisTurret, MinionKriptisTurret },
+        { MinionID.SpiritOfAnguish, MinionSpiritOfAnguish },
+        { MinionID.SpiritOfPreservation, MinionSpiritOfPreservation },
+        { MinionID.SpiritOfWanderlust, MinionSpiritOfWanderlust },
     };
-
-
 
     /// <summary>
     /// Translates a Squad Marker GUID to the corresponding icon.

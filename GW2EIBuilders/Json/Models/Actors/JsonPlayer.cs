@@ -48,6 +48,12 @@ public class JsonPlayer : JsonActor
     public string? GuildID;
 
     /// <summary>
+    /// Only relevant for instance logs. \n
+    /// If true, indicates that the player has changed subgroups or specs during the log. A JsonPlayer representing each time frame will be present in the Json. Each instance will also have the same <see cref="JsonActor.InstanceID"/>
+    /// </summary>
+    public bool IsEnglobed;
+
+    /// <summary>
     /// Weapons of the player \n
     /// 0-1 are the first land set, 1-2 are the second land set \n
     /// 3-4 are the first aquatic set, 5-6 are the second aquatic set \n
@@ -59,7 +65,7 @@ public class JsonPlayer : JsonActor
     /// <summary>
     /// Array of int[2] that represents the number of active clones \n
     /// Array[i][0] will be the time, Array[i][1] will be the number of clones present from Array[i][0] to Array[i+1][0] \n
-    /// If i corresponds to the last element that means the status did not change for the remainder of the fight \n
+    /// If i corresponds to the last element that means the status did not change for the remainder of the log \n
     /// Only relevant for clone summoning capable specs.
     /// </summary>
     public IReadOnlyList<IReadOnlyList<long>>? ActiveClones;
@@ -67,7 +73,7 @@ public class JsonPlayer : JsonActor
     /// <summary>
     /// Array of int[2] that represents the number of active ranger pets \n
     /// Array[i][0] will be the time, Array[i][1] will be the number of ranger pets present from Array[i][0] to Array[i+1][0] \n
-    /// If i corresponds to the last element that means the status did not change for the remainder of the fight \n
+    /// If i corresponds to the last element that means the status did not change for the remainder of the log \n
     /// Only relevant for rangers.
     /// </summary>
     public IReadOnlyList<IReadOnlyList<long>>? ActiveRangerPets;

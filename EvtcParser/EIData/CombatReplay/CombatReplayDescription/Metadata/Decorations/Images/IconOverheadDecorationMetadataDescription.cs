@@ -1,6 +1,4 @@
-﻿using System;
-using static GW2EIEvtcParser.EIData.CombatReplayDescription;
-using static GW2EIEvtcParser.EIData.IconOverheadDecoration;
+﻿using static GW2EIEvtcParser.EIData.IconOverheadDecoration;
 
 namespace GW2EIEvtcParser.EIData;
 

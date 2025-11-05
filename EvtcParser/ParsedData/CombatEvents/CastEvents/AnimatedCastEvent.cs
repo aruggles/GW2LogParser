@@ -19,18 +19,15 @@ public class AnimatedCastEvent : CastEvent
         {
             Acceleration = 1;
         }
-        if (startItem.DstAgent != 0 || startItem.OverstackValue != 0)
+        if (startItem.DstAgent != 0 || startItem.OverstackValue != 0) { unsafe 
         {
-            unsafe
-            {
-                //NOTE(Rennorb): Cannot directly take the address of the field, because its a property.
-                var xyBits = startItem.DstAgent;
-                var x = *(float*)&xyBits;
-                var y = *((float*)&xyBits + 1);
-                var z = BitConverter.Int32BitsToSingle(unchecked((int)startItem.OverstackValue));
-                EffectPosition = new(x, y, z);
-            }
-        }
+            //NOTE(Rennorb): Cannot directly take the address of the field, because its a property.
+            var xyBits = startItem.DstAgent;
+            var x = *(float*)&xyBits;
+            var y = *((float*)&xyBits + 1);
+            var z = BitConverter.Int32BitsToSingle(unchecked((int)startItem.OverstackValue));
+            EffectPosition = new(x, y, z);
+        }}
         //_effectHappenedDuration = startItem.Value;
     }
 
@@ -51,7 +48,7 @@ public class AnimatedCastEvent : CastEvent
             }
             Acceleration = Math.Max(Math.Min(Acceleration, 1.0), -1.0);
         }
-        if (SkillId != SkillIDs.Resurrect)
+        if (SkillID != SkillIDs.Resurrect)
         {
             switch (endItem.IsActivation)
             {
@@ -112,7 +109,7 @@ public class AnimatedCastEvent : CastEvent
     // End missing
     internal AnimatedCastEvent(CombatItem startItem, AgentData agentData, SkillData skillData, long maxEnd) : this(startItem, agentData, skillData)
     {
-        if (Skill.ID == skillData.DodgeId)
+        if (Skill.ID == skillData.DodgeID)
         {
             // TODO: vindicator dodge duration
             ExpectedDuration = 750;
@@ -139,12 +136,12 @@ public class AnimatedCastEvent : CastEvent
         SavedDuration = 0;
     }
 
-    public override long GetInterruptedByStunTime(ParsedEvtcLog log)
+    public override long GetInterruptedByBuffTime(ParsedEvtcLog log, long buffID)
     {
-        var stunStatus = log.FindActor(Caster).GetBuffStatus(log, SkillIDs.Stun, Time, ExpectedEndTime).FirstOrNull((in Segment x) => x.Value > 0);
-        if (stunStatus != null)
+        var buffStatus = log.FindActor(Caster).GetBuffStatus(log, buffID, Time, ExpectedEndTime).FirstOrNull((in Segment x) => x.Value > 0);
+        if (buffStatus != null)
         {
-            return stunStatus.Value.Start;
+            return Math.Max(buffStatus.Value.Start, Time);
         }
         return EndTime;
     }

@@ -4,7 +4,13 @@ using GW2EIEvtcParser.ParsedData;
 namespace GW2EIEvtcParser;
 
 public class CachingCollectionWithTarget<T>(ParsedEvtcLog log)
-    : CachingCollectionCustom<SingleActor, T>(log, _nullActor, log.FightData.Logic.Hostiles.Count)
+    : CachingCollectionCustom<SingleActor, T>(log, _nullActor, log.LogData.Logic.Hostiles.Count)
 {
-    private static readonly NPC _nullActor = new(new AgentItem());
+    private static readonly NPC _nullActor = new(ParserHelper._nullAgent);
+}
+
+
+public class CachingCollectionWithAgentTarget<T>(ParsedEvtcLog log)
+    : CachingCollectionCustom<AgentItem, T>(log, ParserHelper._nullAgent, log.LogData.Logic.Hostiles.Count)
+{
 }

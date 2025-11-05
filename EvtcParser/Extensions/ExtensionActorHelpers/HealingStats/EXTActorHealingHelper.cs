@@ -1,17 +1,13 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System.Diagnostics.CodeAnalysis;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using static GW2EIEvtcParser.Extensions.HealingStatsExtensionHandler;
 
 namespace GW2EIEvtcParser.Extensions;
 
 public abstract class EXTActorHealingHelper
 {
-    protected List<EXTHealingEvent>? HealEvents;
     protected Dictionary<AgentItem, List<EXTHealingEvent>>? HealEventsByDst;
-    protected List<EXTHealingEvent>? HealReceivedEvents;
     protected Dictionary<AgentItem, List<EXTHealingEvent>>? HealReceivedEventsBySrc;
 
     //TODO(Rennorb) @perf
@@ -22,17 +18,79 @@ public abstract class EXTActorHealingHelper
     {
     }
 
-    [MemberNotNull(nameof(HealEvents))]
+    #region INITIALIZERS
     [MemberNotNull(nameof(HealEventsByDst))]
     protected abstract void InitHealEvents(ParsedEvtcLog log);
 
-    [MemberNotNull(nameof(HealReceivedEvents))]
     [MemberNotNull(nameof(HealReceivedEventsBySrc))]
     protected abstract void InitIncomingHealEvents(ParsedEvtcLog log);
+    #endregion INITIALIZERS
 
-    public abstract IEnumerable<EXTHealingEvent> GetOutgoingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end);
+    private CachingCollectionWithTarget<List<EXTHealingEvent>>? HealEventByDstCache;
+    public IReadOnlyList<EXTHealingEvent> GetOutgoingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
+    {
+        InitHealEvents(log);
+        HealEventByDstCache ??= new(log);
+        if (!HealEventByDstCache.TryGetValue(start, end, target, out var list))
+        {
+            if (target != null)
+            {
+                if (HealEventsByDst.TryGetValue(target.EnglobingAgentItem, out var damageEvents))
+                {
+                    long targetStart = target.FirstAware;
+                    long targetEnd = target.LastAware;
+                    list = damageEvents.Where(x => x.Time >= start && x.Time >= targetStart && x.Time <= end && x.Time <= targetEnd).ToList();
+                }
+                else
+                {
+                    list = [];
+                }
+            }
+            else
+            {
+                list = HealEventsByDst[ParserHelper._nullAgent].Where(x => x.Time >= start && x.Time <= end).ToList();
+            }
+            HealEventByDstCache.Set(start, end, target, list);
+        }
+        return list;
+    }
+    public IReadOnlyList<EXTHealingEvent> GetOutgoingHealEvents(SingleActor? target, ParsedEvtcLog log)
+    {
+        return GetOutgoingHealEvents(target, log, log.LogData.LogStart, log.LogData.LogEnd);
+    }
 
-    public abstract IEnumerable<EXTHealingEvent> GetIncomingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end);
+    private CachingCollectionWithTarget<List<EXTHealingEvent>>? HealReceivedEventBySrcCache;
+    public IReadOnlyList<EXTHealingEvent> GetIncomingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
+    {
+        InitIncomingHealEvents(log);
+        HealReceivedEventBySrcCache ??= new(log);
+        if (!HealReceivedEventBySrcCache.TryGetValue(start, end, target, out var list))
+        {
+            if (target != null)
+            {
+                if (HealReceivedEventsBySrc.TryGetValue(target.EnglobingAgentItem, out var damageEvents))
+                {
+                    long targetStart = target.FirstAware;
+                    long targetEnd = target.LastAware;
+                    list = damageEvents.Where(x => x.Time >= start && x.Time >= targetStart && x.Time <= end && x.Time <= targetEnd).ToList();
+                }
+                else
+                {
+                    list = [];
+                }
+            }
+            else
+            {
+                list = HealReceivedEventsBySrc[ParserHelper._nullAgent].Where(x => x.Time >= start && x.Time <= end).ToList();
+            }
+            HealReceivedEventBySrcCache.Set(start, end, target, list);
+        }
+        return list;
+    }
+    public IReadOnlyList<EXTHealingEvent> GetIncomingHealEvents(SingleActor? target, ParsedEvtcLog log)
+    {
+        return GetIncomingHealEvents(target, log, log.LogData.LogStart, log.LogData.LogEnd);
+    }
 
     private static void FilterHealEvents(ParsedEvtcLog log, List<EXTHealingEvent> dls, EXTHealingType healingType)
     {

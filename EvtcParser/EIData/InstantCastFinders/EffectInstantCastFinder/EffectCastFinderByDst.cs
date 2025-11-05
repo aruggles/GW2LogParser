@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Linq;
 
 namespace GW2EIEvtcParser.EIData;
 

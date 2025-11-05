@@ -1,6 +1,5 @@
 ﻿using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.EIData;
@@ -49,6 +48,7 @@ public abstract class Mechanic : MechanicContainer
     public readonly string FullName;
     public bool IsEnemyMechanic { get; protected set; }
     public bool ShowOnTable { get; private set; }
+    public bool Ignored { get; private set; }
 
     public bool IsAchievementEligibility { get; private set; }
 
@@ -58,6 +58,8 @@ public abstract class Mechanic : MechanicContainer
     private ulong _minBuild = GW2Builds.StartOfLife;
     private int _maxEvtcBuild = ArcDPSBuilds.EndOfLife;
     private int _minEvtcBuild = ArcDPSBuilds.StartOfLife;
+
+    public bool IsASubMechanic { get; protected set; } = false;
 
     /// <summary>
     /// Full constructor without special checks
@@ -81,15 +83,21 @@ public abstract class Mechanic : MechanicContainer
 
     internal abstract void CheckMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, Dictionary<int, SingleActor> regroupedMobs);
 
-    internal Mechanic UsingShowOnTable(bool showOnTable)
+    internal Mechanic UsingNoShowOnTable()
     {
-        ShowOnTable = showOnTable;
+        ShowOnTable = false;
+        return this;
+    }
+
+    internal Mechanic UsingIgnored()
+    {
+        Ignored = true;
         return this;
     }
 
     private static bool EligibilityKeeper(ParsedEvtcLog log)
     {
-        return log.FightData.Success;
+        return log.LogData.Success;
     }
 
     /// <summary>
@@ -116,6 +124,16 @@ public abstract class Mechanic : MechanicContainer
     internal Mechanic UsingDisableWithEffectData()
     {
         return UsingEnable(log => !log.CombatData.HasEffectData);
+    }
+
+    internal Mechanic UsingDisableWithMissileData()
+    {
+        return UsingEnable(log => !log.CombatData.HasMissileData);
+    }
+
+    internal Mechanic UsingDisableWithCrowControlData()
+    {
+        return UsingEnable(log => !log.CombatData.HasCrowdControlData);
     }
 
     internal Mechanic WithBuilds(ulong minBuild, ulong maxBuild = GW2Builds.EndOfLife)
@@ -151,7 +169,7 @@ public abstract class Mechanic : MechanicContainer
 
     internal bool KeepIfEmpty(ParsedEvtcLog log)
     {
-        return IsAchievementEligibility && log.FightData.Success;
+        return IsAchievementEligibility && log.LogData.Success;
     }
     public override IReadOnlyList<Mechanic> GetMechanics()
     {

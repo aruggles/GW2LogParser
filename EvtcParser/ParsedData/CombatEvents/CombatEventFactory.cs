@@ -7,7 +7,7 @@ namespace GW2EIEvtcParser.ParsedData;
 internal static class CombatEventFactory
 {
 
-    public static void AddStateChangeEvent(CombatItem stateChangeEvent, AgentData agentData, SkillData skillData, MetaEventsContainer metaDataEvents, StatusEventsContainer statusEvents, List<RewardEvent> rewardEvents, List<WeaponSwapEvent> wepSwaps, List<BuffEvent> buffEvents, EvtcVersionEvent evtcVersion)
+    public static void AddStateChangeEvent(long logStart, CombatItem stateChangeEvent, AgentData agentData, SkillData skillData, MetaEventsContainer metaDataEvents, StatusEventsContainer statusEvents, List<RewardEvent> rewardEvents, List<WeaponSwapEvent> wepSwaps, List<BuffEvent> buffEvents, EvtcVersionEvent evtcVersion, EvtcParserSettings settings)
     {
         switch (stateChangeEvent.IsStateChange)
         {
@@ -48,12 +48,12 @@ internal static class CombatEventFactory
                 Add(statusEvents.BarrierUpdateEvents, barrierEvt.Src, barrierEvt);
                 break;
             case StateChange.InstanceStart:
-                metaDataEvents.InstanceStartEvent = new InstanceStartEvent(stateChangeEvent);
+                metaDataEvents.InstanceStartEvent = new InstanceStartEvent(stateChangeEvent, logStart);
                 break;
             case StateChange.SquadCombatStart:
                 if (stateChangeEvent.Value == 0 || stateChangeEvent.BuffDmg == 0)
                 {
-                    return;
+                    break;
                 }
                 var squadCombatStart = new SquadCombatStartEvent(stateChangeEvent);
                 metaDataEvents.SquadCombatStartEvents.Add(squadCombatStart);
@@ -69,7 +69,7 @@ internal static class CombatEventFactory
             case StateChange.SquadCombatEnd:
                 if (stateChangeEvent.Value == 0 || stateChangeEvent.BuffDmg == 0)
                 {
-                    return;
+                    break;
                 }
                 var squadCombatEndEvent = new SquadCombatEndEvent(stateChangeEvent);
                 metaDataEvents.LogEndEvent = squadCombatEndEvent;
@@ -80,9 +80,9 @@ internal static class CombatEventFactory
                 Add(statusEvents.MaxHealthUpdateEvents, maxHealthEvt.Src, maxHealthEvt);
                 break;
             case StateChange.PointOfView:
-                if (stateChangeEvent.SrcAgent == 0)
+                if (settings.AnonymousPlayers || stateChangeEvent.SrcAgent == 0)
                 {
-                    return;
+                    break;
                 }
                 metaDataEvents.PointOfViewEvent = new PointOfViewEvent(stateChangeEvent, agentData);
                 break;
@@ -92,11 +92,11 @@ internal static class CombatEventFactory
             case StateChange.GWBuild:
                 if (stateChangeEvent.SrcAgent == 0)
                 {
-                    return;
+                    break;
                 }
                 metaDataEvents.GW2BuildEvent = new GW2BuildEvent(stateChangeEvent);
                 break;
-            case StateChange.ShardId:
+            case StateChange.ShardID:
                 metaDataEvents.ShardEvents.Add(new ShardEvent(stateChangeEvent));
                 break;
             case StateChange.Reward:
@@ -110,17 +110,25 @@ internal static class CombatEventFactory
                 break;
             case StateChange.AttackTarget:
                 var aTEvt = new AttackTargetEvent(stateChangeEvent, agentData);
-                Add(statusEvents.AttackTargetEvents, aTEvt.Src, aTEvt);
-                Add(statusEvents.AttackTargetEventsByAttackTarget, aTEvt.AttackTarget, aTEvt);
+                metaDataEvents.AttackTargetEvents.Add(aTEvt);
+                Add(metaDataEvents.AttackTargetEventsBySrc, aTEvt.Src, aTEvt);
+                metaDataEvents.AttackTargetEventByAttackTarget[aTEvt.AttackTarget] = aTEvt;
                 break;
             case StateChange.Targetable:
                 var tarEvt = new TargetableEvent(stateChangeEvent, agentData);
-                Add(statusEvents.TargetableEvents, tarEvt.Src, tarEvt);
+                Add(statusEvents.TargetableEventsBySrc, tarEvt.Src, tarEvt);
                 break;
             case StateChange.MapID:
                 metaDataEvents.MapIDEvents.Add(new MapIDEvent(stateChangeEvent));
                 break;
+            case StateChange.MapChange:
+                metaDataEvents.MapChangeEvents.Add(new MapChangeEvent(stateChangeEvent));
+                break;
             case StateChange.Guild:
+                if (settings.AnonymousPlayers)
+                {
+                    break;
+                }
                 var gEvt = new GuildEvent(stateChangeEvent, agentData);
                 Add(metaDataEvents.GuildEvents, gEvt.Src, gEvt);
                 break;
@@ -347,7 +355,7 @@ internal static class CombatEventFactory
                 // Sanity check
                 if (stateChangeEvent.SrcAgent == 0)
                 {
-                    return;
+                    break;
                 }
                 metaDataEvents.FractalScaleEvent = new FractalScaleEvent(stateChangeEvent);
                 break;
@@ -470,7 +478,11 @@ internal static class CombatEventFactory
     {
         if (buffEvent.IsOffcycle > 0)
         {
-            buffEvents.Add(new BuffExtensionEvent(buffEvent, agentData, skillData));
+            var extensionEvent = new BuffExtensionEvent(buffEvent, agentData, skillData);
+            if (evtcVersion.Build > ArcDPSBuilds.BuffExtensionBroken || extensionEvent.ExtendedDuration > 0)
+            {
+                buffEvents.Add(extensionEvent);
+            }
         }
         else
         {
@@ -494,7 +506,7 @@ internal static class CombatEventFactory
         }
     }
 
-    public static List<AnimatedCastEvent> CreateCastEvents(Dictionary<ulong, List<CombatItem>> castEventsBySrcAgent, AgentData agentData, SkillData skillData, FightData fightData)
+    public static List<AnimatedCastEvent> CreateCastEvents(Dictionary<ulong, List<CombatItem>> castEventsBySrcAgent, AgentData agentData, SkillData skillData, LogData logData)
     {
         using var _t = new AutoTrace("CreateCastEvents");
         //TODO(Rennorb) @perf
@@ -502,18 +514,18 @@ internal static class CombatEventFactory
         foreach (var castEvents in castEventsBySrcAgent.Values)
         {
             var resBySrcAgent = new List<AnimatedCastEvent>();
-            foreach (var castEventsBySkillId in castEvents.GroupBy(x => x.SkillID))
+            foreach (var castEventsBySkillID in castEvents.GroupBy(x => x.SkillID))
             {
                 var resBySrcAgentBySkillID = new List<AnimatedCastEvent>();
                 CombatItem? startItem = null;
-                foreach (CombatItem c in castEventsBySkillId)
+                foreach (CombatItem c in castEventsBySkillID)
                 {
                     if (c.StartCasting())
                     {
                         // missing end
                         if (startItem != null)
                         {
-                            resBySrcAgentBySkillID.Add(new AnimatedCastEvent(startItem, agentData, skillData, fightData.LogEnd));
+                            resBySrcAgentBySkillID.Add(new AnimatedCastEvent(startItem, agentData, skillData, logData.EvtcLogEnd));
                         }
                         startItem = c;
                     }
@@ -529,7 +541,7 @@ internal static class CombatEventFactory
                         {
                             var toCheck = new AnimatedCastEvent(agentData, skillData, c);
                             // we are only interested in animations started before log starts
-                            if (toCheck.Time < fightData.LogStart)
+                            if (toCheck.Time < logData.EvtcLogStart)
                             {
                                 resBySrcAgentBySkillID.Add(toCheck);
                             }
@@ -540,7 +552,7 @@ internal static class CombatEventFactory
                 // missing end
                 if (startItem != null)
                 {
-                    resBySrcAgentBySkillID.Add(new AnimatedCastEvent(startItem, agentData, skillData, fightData.LogEnd));
+                    resBySrcAgentBySkillID.Add(new AnimatedCastEvent(startItem, agentData, skillData, logData.EvtcLogEnd));
                 }
                 resBySrcAgentBySkillID.RemoveAll(x => x.Caster.IsPlayer && x.ActualDuration <= 1);
                 resBySrcAgent.AddRange(resBySrcAgentBySkillID);
@@ -558,16 +570,30 @@ internal static class CombatEventFactory
         return res;
     }
 
-    public static void AddDirectDamageEvent(CombatItem damageEvent, List<HealthDamageEvent> hpDamage, List<BreakbarDamageEvent> brkBarDamage, List<CrowdControlEvent> crowdControlEvents, AgentData agentData, SkillData skillData)
+    public static void AddDirectDamageEvent(CombatItem damageEvent, List<HealthDamageEvent> hpDamage, List<BreakbarDamageEvent> brkBarDamage, List<BreakbarRecoveryEvent> brkBarRecovered, List<CrowdControlEvent> crowdControlEvents, AgentData agentData, SkillData skillData)
     {
         PhysicalResult result = GetPhysicalResult(damageEvent.Result);
         switch (result)
         {
             case PhysicalResult.BreakbarDamage:
-                brkBarDamage.Add(new BreakbarDamageEvent(damageEvent, agentData, skillData));
+                var brkChange = new BreakbarChangeEvent(damageEvent, agentData, skillData);
+                // Change from unknown with generic id is recovery when positive, soft cc will cause negative values to appear
+                if (brkChange.SkillID == skillData.GenericBreakbarID && brkChange.From.IsUnknown)
+                {
+                    brkBarRecovered.Add(new BreakbarRecoveryEvent(damageEvent, agentData, skillData));
+                } 
+                else
+                {
+                    brkBarDamage.Add(new BreakbarDamageEvent(damageEvent, agentData, skillData));
+                }
                 break;
             case PhysicalResult.CrowdControl:
                 crowdControlEvents.Add(new CrowdControlEvent(damageEvent, agentData, skillData));
+                break;
+            case PhysicalResult.Interrupt:
+            case PhysicalResult.KillingBlow:
+            case PhysicalResult.Downed:
+                hpDamage.Add(new NoDamageHealthDamageEvent(damageEvent, agentData, skillData, result));
                 break;
             case PhysicalResult.Activation:
             case PhysicalResult.Unknown:

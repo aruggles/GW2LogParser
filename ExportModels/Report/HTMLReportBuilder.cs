@@ -169,7 +169,7 @@ internal class HTMLReportBuilder
         //var numberOfFights = (double) player.numberOfFights;
         double numberOfFights = player.numberOfFights;
         var html = tableStart;
-        for (var i = 0; i < 12; i++)
+        for (var i = 0; i < 11; i++)
         {
             if (boons.Count > i)
             {
@@ -223,7 +223,7 @@ internal class HTMLReportBuilder
         string fightData = "";
         for (var i = 0; i < Report.Logs.Count; i++)
         {
-            fightData += $"<button type=\"button\" class=\"btn btn-primary\" onclick=\"window.open('fight_{i+1}.html', '_blank')\" >{i+1} {Report.Logs[i].lengthInSeconds}s</button>";
+            fightData += $"<button type=\"button\" class=\"btn btn-primary\" onclick=\"window.open('fight_{i+1}.html', '_blank')\" >Fght {i+1} ({Report.Logs[i].DurationString})</button>";
         }
         html = html.Replace("<!-- Fight Links -->", fightData);
         return html;

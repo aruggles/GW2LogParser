@@ -1,11 +1,9 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData.BuffSimulators;
 
-internal abstract class BuffSimulationItem : AbstractSimulationItem
+internal abstract class BuffSimulationItem : SimulationItem
 {
     //NOTE(Rennorb): I changed the element to have start + end instead of start + duration to fix a bug. 
     // Apparently the original arc events have start + duration, so there might be value in returning it to the previous state.
@@ -17,14 +15,16 @@ internal abstract class BuffSimulationItem : AbstractSimulationItem
 
     public BuffSimulationItem(long start, long end)
     {
-        Debug.Assert(start <= end);
         Start = start;
         End = end;
     }
 
     public long GetClampedDuration(long start, long end)
     {
-        Debug.Assert(Start <= End);
+        if (start >= end || start >= End || Start >= end)
+        {
+            return 0;
+        }
         return Math.Max(0, Math.Clamp(End, start, end) - Math.Clamp(Start, start, end));
     }
 

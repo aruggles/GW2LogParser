@@ -63,20 +63,20 @@ internal static class MechanistHelper
 
     private static bool WithMechChecker(DamageEvent x, ParsedEvtcLog log)
     {
-        return x.From == x.CreditedFrom || x.From.IsSpecies(MinionID.JadeMech);
+        return x.From.Is(x.CreditedFrom) || x.From.IsSpecies(MinionID.JadeMech);
     }
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers =
     [
         // Force Signet
         new BuffOnActorDamageModifier(Mod_ForceSignet, ForceSignet, "Force Signet", "10%, including Mech", DamageSource.All, 10.0, DamageType.Strike, DamageType.All, Source.Mechanist, ByPresence, SkillImages.ForceSignet, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.EODBeta4, GW2Builds.April2025BalancePatch)
+            .WithBuilds(GW2Builds.EODBeta4, GW2Builds.April2025Balance)
             .UsingChecker(WithMechChecker),
         new BuffOnActorDamageModifier(Mod_ForceSignet, ForceSignet, "Force Signet", "10%, including Mech", DamageSource.All, 10.0, DamageType.Strike, DamageType.All, Source.Mechanist, ByPresence, SkillImages.ForceSignet, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.April2025BalancePatch)
+            .WithBuilds(GW2Builds.April2025Balance)
             .UsingChecker(WithMechChecker),
         new BuffOnActorDamageModifier(Mod_ForceSignet, ForceSignet, "Force Signet", "15%, including Mech", DamageSource.All, 15.0, DamageType.Strike, DamageType.All, Source.Mechanist, ByPresence, SkillImages.ForceSignet, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.April2025BalancePatch)
+            .WithBuilds(GW2Builds.April2025Balance)
             .UsingChecker(WithMechChecker),
         // Superconducting Signet
         new BuffOnActorDamageModifier(Mod_SuperconductingSignet, SuperconductingSignet, "Superconducting Signet", "10%, including Mech", DamageSource.All, 10.0, DamageType.Condition, DamageType.All, Source.Mechanist, ByPresence, SkillImages.SuperconductingSignet, DamageModifierMode.All)

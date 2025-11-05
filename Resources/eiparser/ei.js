@@ -14,7 +14,7 @@ function compileTemplates() {
         methods: {
             isNumber: function (evt) {
                 evt = (evt) ? evt : window.event;
-                var charCode = (evt.which) ? evt.which : evt.keyCode;
+                const charCode = (evt.which) ? evt.which : evt.keyCode;
                 if ((charCode > 31 && charCode < 48) || charCode > 57) {
                     return false;
                 }
@@ -23,8 +23,8 @@ function compileTemplates() {
         },
         mounted() {
             $("#" + this.id).on("input ", function () {
-                var max = parseInt($(this).attr('max')) || 1e12;
-                var min = parseInt($(this).attr('min'));
+                const max = parseInt($(this).attr('max')) || 1e12;
+                const min = parseInt($(this).attr('min'));
                 if ($(this).val() > max) {
                     $(this).val(max);
                 } else if ($(this).val() < min) {
@@ -46,7 +46,7 @@ function compileTemplates() {
                 this.pagestructure.offset = parseInt(value);
             },
             getStyle: function() {
-                var res = {
+                const res = {
                     width: this.width,
                     height: this.height,
                     transform: this.transform
@@ -57,6 +57,7 @@ function compileTemplates() {
     });
     Vue.component("targetperplayer-graphs-tab-component", {
         props: ["targetindex", "phaseindex", 'light', 'playerindex'],
+        mixins: [encounterPhaseComponent],
         template : `      
         <div>            
             <keep-alive>  
@@ -68,8 +69,8 @@ function compileTemplates() {
         </div>
         `,
         computed: {
-            players: function() {
-                return logData.players;
+            players: function() {          
+                return getActivePlayersForPhase(this.encounterPhase);
             }
         }
     });
@@ -103,6 +104,14 @@ function getDefaultPhase() {
     return parseInt(setting);
 }
 
+function getDefaultEncounter() {
+    const setting = EIUrlParams.get("encounter");
+    if (!setting || !IsMultiEncounterLog) {
+        return 0;
+    }
+    return parseInt(setting);
+}
+
 function mainLoad() {
     if (!apiRenderServiceOkay) {
         for (let key in WeaponIcons) {
@@ -113,49 +122,87 @@ function mainLoad() {
         }
     }
     // make some additional variables reactive
-    var activePhaseIndex = getDefaultPhase();
-    var firstActive = logData.phases[activePhaseIndex] ? logData.phases[activePhaseIndex] : logData.phases[0];
-    for (var i = 0; i < logData.phases.length; i++) {
-        var phase = logData.phases[i];
+    for (let i = 0; i < logData.phases.length; i++) {
+        const phase = logData.phases[i];
         phase.durationS = phase.duration / 1000.0
-        var times = [];
-        var dur = phase.end - phase.start;
-        var floorDur = Math.floor(dur);
+        const times = [];
+        const dur = phase.end - phase.start;
+        const floorDur = Math.floor(dur);
         phase.needsLastPoint = dur > floorDur + 1e-3;
-        for (var j = 0; j <= floorDur; j++) {
+        for (let j = 0; j <= floorDur; j++) {
             times.push(j);
         }
         if (phase.needsLastPoint) {
             times.push(phase.end - phase.start);
         }
+        phase.id = i;
+        phase.encounterID = -1;
         phase.times = times;
-        simpleLogData.phases.push({
-            active: firstActive === phase,
+        reactiveLogdata.phases.push({
+            active: false,
+            index: i,
             focus: -1
         });
+        if (phase.type === PhaseTypes.INSTANCE || phase.type === PhaseTypes.ENCOUNTER) {
+            phase.encounterID = reactiveLogdata.encounters.length;
+            reactiveLogdata.encounters.push({
+                active: false,
+                index: i
+            });
+            reactiveLogdata.activeEncounterPhaseData.push({
+                phase: i,
+                player: -1,
+            });
+        }
     }
-    for (var i = 0; i < logData.targets.length; i++) {
-        var target = logData.targets[i];
-        var activeArray = [];
-        simpleLogData.targets.push(activeArray);
-        for (var j = 0; j < logData.phases.length; j++) {
-            var phase = logData.phases[j];
-            var phaseTarget = phase.targets.indexOf(i);
-            var priority = phase.targetPriorities[phaseTarget];
+    IsMultiEncounterLog = reactiveLogdata.encounters.length > 1;
+    const activeEncounterIndex = getDefaultEncounter();
+    for (let i = 0; i < reactiveLogdata.encounters.length; i++) {
+        reactiveLogdata.encounters[i].active = i === activeEncounterIndex;
+    }
+    let encounterPhases = getPhasesForSelectedEncounter(reactiveLogdata.phases, reactiveLogdata.encounters).filter(x => {
+        const logPhase = logData.phases[x.index];
+        return !logPhase.breakbarPhase;
+    });
+    const activePhaseIndex = getDefaultPhase();
+    for (let i = 0; i < encounterPhases.length; i++) {
+        encounterPhases[i].active = i === activePhaseIndex;
+        if (encounterPhases[i].active) {
+            reactiveLogdata.activeEncounterPhaseData[activeEncounterIndex].phase = encounterPhases[i].index;
+        }
+    }
+    for (let i = 0; i < logData.targets.length; i++) {
+        const target = logData.targets[i];
+        const activeArray = [];
+        reactiveLogdata.targets.push(activeArray);
+        for (let j = 0; j < logData.phases.length; j++) {
+            const phase = logData.phases[j];
+            const phaseTarget = phase.targets.indexOf(i);
+            const priority = phase.targetPriorities[phaseTarget];
             activeArray.push({
                 active: typeof priority !== "undefined" && priority < 2,
-                secondary: typeof priority === "undefined" || priority > 0
+                secondary: typeof priority === "undefined" || priority > 0,
+                index: i,
             });
         }
         target.id = i;
         target.dpsGraphCache = new Map();
     }
-    for (var i = 0; i < logData.players.length; i++) {
-        var playerData = logData.players[i];
-        simpleLogData.players.push({
-            active: !!playerData.isPoV,
+    let activeFound = false;
+    for (let i = 0; i < logData.players.length; i++) {
+        const playerData = logData.players[i];
+        const active = !activeFound && !!playerData.isPoV;
+        reactiveLogdata.players.push({
+            active: active,
+            index: i,
             targetActive: !playerData.isFake
         });
+        if (active) {
+            activeFound = true;
+            for (let j = 0; j < reactiveLogdata.encounters.length; j++) {
+                reactiveLogdata.activeEncounterPhaseData[j].player = i;
+            }
+        }
         playerData.dpsGraphCache = new Map();
         playerData.id = i;
     }
@@ -173,20 +220,21 @@ function mainLoad() {
             mode: getDefaultMainComponent(),
             cr: !!crData,
             healingExtShow: !!healingStatsExtension || logData.evtcBuild >= 20210701,
-            healingExt: !!healingStatsExtension
+            healingExt: !!healingStatsExtension,
+            reactiveLogdata: reactiveLogdata
         },
         methods: {
             switchTheme: function (state) {
                 if (state === this.light) {
                     return;
                 }
-                var style = this.light ? 'yeti' : 'slate';
+                const style = this.light ? 'yeti' : 'slate';
                 this.light = state;
-                var newStyle = this.light ? 'yeti' : 'slate';
+                const newStyle = this.light ? 'yeti' : 'slate';
                 document.body.classList.remove("theme-" + style);
                 document.body.classList.add("theme-" + newStyle);
                 if (storeTheme) storeTheme(newStyle);
-                var theme = document.getElementById('theme');
+                const theme = document.getElementById('theme');
                 theme.href = themes[newStyle];
             },
             getLogData: function () {
@@ -198,7 +246,7 @@ function mainLoad() {
                 return logData.logErrors;
             },
             uploadLinks: function () {
-                var res = [
+                const res = [
                     { 
                         key: "DPS Reports Link (EI)", 
                         url: "" 
@@ -208,9 +256,9 @@ function mainLoad() {
                         url: "" 
                     }
                 ];
-                var hasAny = false;
-                for (var i = 0; i < logData.uploadLinks.length; i++) {
-                    var link = logData.uploadLinks[i];
+                let hasAny = false;
+                for (let i = 0; i < logData.uploadLinks.length; i++) {
+                    const link = logData.uploadLinks[i];
                     if (link.length > 0) {
                         hasAny = true;
                         res[i].url = link;
@@ -229,7 +277,7 @@ function mainLoad() {
             }
         },
         mounted() {
-            var element = document.getElementById("loading");
+            const element = document.getElementById("loading");
             element.parentNode.removeChild(element);
         }
     });
@@ -243,7 +291,7 @@ function mainLoad() {
 window.onload = function () {
     Vue.config.devtools = true;
     // trick from
-    var imgOfficialAPI = document.createElement("img");
+    const imgOfficialAPI = document.createElement("img");
     imgOfficialAPI.style.display = "none";
     document.body.appendChild(imgOfficialAPI);
     imgOfficialAPI.onload = function () {
@@ -254,7 +302,7 @@ window.onload = function () {
     imgOfficialAPI.onerror = function () {
         apiRenderServiceOkay = false;      
         document.body.removeChild(imgOfficialAPI);
-        var imgDarthmaim = document.createElement("img");
+        const imgDarthmaim = document.createElement("img");
         imgDarthmaim.style.display = "none";
         imgDarthmaim.onload = function () {
             console.warn("Warning: GW2 Render service unavailable, switching to https://icons-gw2.darthmaim-cdn.com");

@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.EIData;
@@ -35,7 +32,7 @@ public class IncomingDamageModifier : DamageModifier
         };
     }
 
-    public override IEnumerable<HealthDamageEvent> GetHitDamageEvents(SingleActor actor, ParsedEvtcLog log, SingleActor? t, long start, long end)
+    public override IReadOnlyList<HealthDamageEvent> GetHitDamageEvents(SingleActor actor, ParsedEvtcLog log, SingleActor? t, long start, long end)
     {
         return actor.GetHitDamageTakenEvents(t, log, start, end, SrcType);
     }

@@ -11,6 +11,7 @@ internal class MetaEventsContainer
     public List<SquadCombatStartEvent> SquadCombatStartEvents { get; } = [];
     public readonly List<LogNPCUpdateEvent> LogNPCUpdateEvents = [];
     public readonly List<MapIDEvent> MapIDEvents = [];
+    public readonly List<MapChangeEvent> MapChangeEvents = [];
     public readonly List<ShardEvent> ShardEvents = [];
     public readonly List<TickRateEvent> TickRateEvents = [];
     public PointOfViewEvent? PointOfViewEvent { get; set; }
@@ -37,4 +38,8 @@ internal class MetaEventsContainer
 
     public readonly Dictionary<long, SkillGUIDEvent> SkillGUIDEventsBySkillID = [];
     public readonly Dictionary<GUID, SkillGUIDEvent> SkillGUIDEventsByGUID = [];
+
+    public readonly List<AttackTargetEvent> AttackTargetEvents = [];
+    public readonly Dictionary<AgentItem, List<AttackTargetEvent>> AttackTargetEventsBySrc = [];
+    public readonly Dictionary<AgentItem, AttackTargetEvent> AttackTargetEventByAttackTarget = [];
 }

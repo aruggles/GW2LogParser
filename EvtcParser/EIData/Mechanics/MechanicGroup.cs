@@ -1,6 +1,5 @@
 ﻿using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.EIData;

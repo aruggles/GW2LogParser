@@ -34,12 +34,14 @@ internal static class ElementalistHelper
         new BuffGainCastFinder(MistForm, MistForm),
         new DamageCastFinder(SignetOfAirSkill, SignetOfAirSkill)
             .UsingDisableWithEffectData(),
+        new DamageCastFinder(Sunspot, Sunspot)
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
+        new DamageCastFinder(FlameExpulsion, FlameExpulsion)
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
+        new DamageCastFinder(EarthenBlast, EarthenBlast)
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new EffectCastFinderByDst(SignetOfAirSkill, EffectGUIDs.ElementalistSignetOfAir)
             .UsingDstBaseSpecChecker(Spec.Elementalist),
-        new DamageCastFinder(Sunspot, Sunspot)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
-        new DamageCastFinder(EarthenBlast, EarthenBlast)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
         new DamageCastFinder(LightningRod, LightningRod)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
         new DamageCastFinder(LightningFlash, LightningFlash),
@@ -47,9 +49,9 @@ internal static class ElementalistHelper
             .UsingDstBaseSpecChecker(Spec.Elementalist),
         //new EffectCastFinderByDst(CleansingFire, EffectGUIDs.ElementalistCleansingFire).UsingChecker((evt, combatData, agentData, skillData) => evt.Dst.BaseSpec == Spec.Elementalist && evt.Src == evt.Dst),
         new EXTHealingCastFinder(HealingRipple, HealingRipple)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new EXTHealingCastFinder(HealingRippleWvW, HealingRippleWvW)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new EXTHealingCastFinder(FlowLikeWaterHealing, FlowLikeWaterHealing)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
         // Elementals
@@ -87,9 +89,9 @@ internal static class ElementalistHelper
         // Fire
         // - Persisting Flames
         new BuffOnActorDamageModifier(Mod_PersistingFlames, PersistingFlames, "Persisting Flames", "2% per stack", DamageSource.NoPets, 2.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByStack, TraitImages.PersistingFlames, DamageModifierMode.All)
-            .WithBuilds( GW2Builds.February2025BalancePatch),
+            .WithBuilds( GW2Builds.February2025Balance),
         new BuffOnActorDamageModifier(Mod_PersistingFlames, PersistingFlames, "Persisting Flames", "1% per stack", DamageSource.NoPets, 1.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByStack, TraitImages.PersistingFlames, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.July2020Balance, GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.July2020Balance, GW2Builds.February2025Balance),
         // - Pyromancer's Training
         new BuffOnActorDamageModifier(Mod_PyromancersTraining, [FireAttunementBuff, FireWaterAttunement, FireAirAttunement, FireEarthAttunement, DualFireAttunement], "Pyromancer's Training", "10% while fire attuned", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PyromancersTraining, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2019Balance),
@@ -156,7 +158,9 @@ internal static class ElementalistHelper
         new BuffOnActorDamageModifier(Mod_FlameWheel, FlameWheelBuff, "Flame Wheel", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Elementalist, ByPresence, SkillImages.FlameWheel, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.November2023Balance),
         new BuffOnActorDamageModifier(Mod_FlameWheel, FlameWheelBuff, "Flame Wheel", "15%", DamageSource.NoPets, 15.0, DamageType.StrikeAndCondition, DamageType.All, Source.Elementalist, ByPresence, SkillImages.FlameWheel, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.November2023Balance),
+            .WithBuilds(GW2Builds.November2023Balance, GW2Builds.June2025Balance),
+        new BuffOnActorDamageModifier(Mod_FlameWheel, FlameWheelBuff, "Flame Wheel", "5%", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Elementalist, ByPresence, SkillImages.FlameWheel, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.June2025Balance),
 
         // Pistol
         new BuffOnActorDamageModifier(Mod_RagingRicochet, RagingRichochetBuff, "Raging Ricochet", "5%", DamageSource.NoPets, 5.0, DamageType.Condition, DamageType.All, Source.Elementalist, ByPresence, SkillImages.RagingRicochet, DamageModifierMode.PvE)
@@ -390,7 +394,7 @@ internal static class ElementalistHelper
         // Firestorm
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.ElementalistFirestorm, out var firestorms))
         {
-            var firestormCasts = player.GetAnimatedCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.SkillId == FirestormGlyphOfStorms || x.SkillId == FirestormFieryGreatsword).ToList();
+            var firestormCasts = player.GetAnimatedCastEvents(log).Where(x => x.SkillID == FirestormGlyphOfStorms || x.SkillID == FirestormFieryGreatsword).ToList();
             foreach (EffectEvent effect in firestorms)
             {
                 SkillModeDescriptor skill;
@@ -398,7 +402,7 @@ internal static class ElementalistHelper
                 var firestormCastsOnEffect = firestormCasts.Where(x => effect.Time - ServerDelayConstant > x.Time && x.EndTime > effect.Time + ServerDelayConstant);
                 if (firestormCastsOnEffect.Count() == 1)
                 {
-                    skill = new SkillModeDescriptor(player, Spec.Necromancer, firestormCastsOnEffect.First().SkillId);
+                    skill = new SkillModeDescriptor(player, Spec.Necromancer, firestormCastsOnEffect.First().SkillID);
                     icon = skill.SkillID == FirestormGlyphOfStorms ? EffectImages.EffectFirestormGlyph : EffectImages.EffectFirestormFieryGreatsword;
                 }
                 else
@@ -432,7 +436,7 @@ internal static class ElementalistHelper
         // Meteor
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.ElementalistMeteor, out var meteors))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Elementalist, Meteor, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Elementalist, Meteor);
             foreach (EffectEvent effect in meteors)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 1000);
@@ -457,7 +461,7 @@ internal static class ElementalistHelper
         // Lesser Volcano
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.ElementalistLesserVolcano, out var lesserVolcano))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Elementalist, LesserVolcano, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Elementalist, LesserVolcano);
             foreach (EffectEvent effect in lesserVolcano)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 4400);
@@ -470,7 +474,7 @@ internal static class ElementalistHelper
         // Volcano
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.ElementalistVolcano, out var volcano))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Elementalist, Volcano, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Elementalist, Volcano);
             foreach (EffectEvent effect in volcano)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 4500);
@@ -508,7 +512,7 @@ internal static class ElementalistHelper
         // Fulgor
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.ElementalistFulgor, out var fulgors))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Elementalist, FulgorSkill, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Elementalist, FulgorSkill);
             foreach (EffectEvent effect in fulgors)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 4000);
@@ -544,7 +548,7 @@ internal static class ElementalistHelper
         // Fissure
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.ElementalistFissure, out var fissures))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Elementalist, Fissure, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Elementalist, Fissure);
             foreach (EffectEvent effect in fissures)
             {
                 (long, long) lifespan = effect.ComputeDynamicLifespan(log, 1000); // logged duration of 0 - overriding it to 1000 like the others
@@ -598,11 +602,11 @@ internal static class ElementalistHelper
     /// <param name="replay">The Combat Replay.</param>
     /// <param name="color">The specialization color.</param>
     /// <param name="effects">The etching effects.</param>
-    /// <param name="skillId">The etching skill ID.</param>
+    /// <param name="skillID">The etching skill ID.</param>
     /// <param name="icon">The etching icon.</param>
-    private static void AddEtchingDecorations(ParsedEvtcLog log, PlayerActor player, CombatReplay replay, Color color, IReadOnlyList<EffectEvent> effects, long skillId, string icon)
+    private static void AddEtchingDecorations(ParsedEvtcLog log, PlayerActor player, CombatReplay replay, Color color, IReadOnlyList<EffectEvent> effects, long skillID, string icon)
     {
-        var skill = new SkillModeDescriptor(player, Spec.Elementalist, skillId, SkillModeCategory.ShowOnSelect);
+        var skill = new SkillModeDescriptor(player, Spec.Elementalist, skillID);
         foreach (EffectEvent effect in effects)
         {
             (long, long) lifespan = effect.ComputeDynamicLifespan(log, 7000);

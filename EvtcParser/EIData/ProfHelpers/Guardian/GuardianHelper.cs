@@ -1,4 +1,4 @@
-﻿using GW2EIEvtcParser.EncounterLogic;
+﻿using GW2EIEvtcParser.LogLogic;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
@@ -49,16 +49,16 @@ internal static class GuardianHelper
             .UsingDstBaseSpecChecker(Spec.Guardian)
             .UsingChecker((evt, combatData, agentData, skillData) =>
             {
-                return CombatData.FindRelatedEvents(combatData.GetBuffData(Aegis).OfType<BuffApplyEvent>(), evt.Time)
-                    .Any(apply => apply.By == evt.Dst && apply.To == evt.Dst && apply.AppliedDuration + ServerDelayConstant >= 20000 && apply.AppliedDuration - ServerDelayConstant <= 40000);
+                return CombatData.FindRelatedEvents(combatData.GetBuffApplyDataByIDBySrc(Aegis, evt.Dst), evt.Time)
+                    .Any(apply => apply.To.Is(evt.Dst) && apply.AppliedDuration + ServerDelayConstant >= 20000 && apply.AppliedDuration - ServerDelayConstant <= 40000);
             }) // identify advance by self-applied 20s to 40s aegis
             .UsingNotAccurate(),
         new EffectCastFinderByDst(StandYourGround, EffectGUIDs.GuardianShout)
             .UsingDstBaseSpecChecker(Spec.Guardian)
             .UsingChecker((evt, combatData, agentData, skillData) =>
             {
-                return 5 <= CombatData.FindRelatedEvents(combatData.GetBuffData(Stability).OfType<BuffApplyEvent>(), evt.Time)
-                    .Count(apply => apply.By == evt.Dst && apply.To == evt.Dst);
+                return 5 <= CombatData.FindRelatedEvents(combatData.GetBuffApplyDataByIDBySrc(Stability, evt.Dst), evt.Time)
+                    .Count(apply => apply.To.Is(evt.Dst));
             }) // identify stand your ground by self-applied 5+ stacks of stability
             .UsingNotAccurate(),
         // hold the line boons may overlap with save yourselves/pure of voice
@@ -79,7 +79,7 @@ internal static class GuardianHelper
         new DamageCastFinder(ShatteredAegis, ShatteredAegis)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
         new EXTHealingCastFinder(SelflessDaring, SelflessDaring)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         // Pistol    
         new EffectCastFinder(DetonateJurisdiction, EffectGUIDs.GuardianDetonateJurisdictionLevel1)
             .UsingSrcBaseSpecChecker(Spec.Guardian),
@@ -146,7 +146,10 @@ internal static class GuardianHelper
         new Buff("Renewed Focus", RenewedFocus, Source.Guardian, BuffClassification.Other, SkillImages.RenewedFocus),
         new Buff("Shield of Wrath", ShieldOfWrathBuff, Source.Guardian, BuffStackType.Stacking, 3, BuffClassification.Other, SkillImages.ShieldOfWrath),
         new Buff("Binding Blade (Self)", BindingBladeSelf, Source.Guardian, BuffStackType.Stacking, 25, BuffClassification.Other, SkillImages.BindingBlade),
-        new Buff("Binding Blade", BindingBlade, Source.Guardian, BuffClassification.Other, SkillImages.BindingBlade),
+        new Buff("Binding Blade", BindingBlade, Source.Guardian, BuffClassification.Other, SkillImages.BindingBlade)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.June2025Balance),
+        new Buff("Binding Blade", BindingBlade, Source.Guardian, BuffStackType.StackingUniquePerSrc, 999, BuffClassification.Other, SkillImages.BindingBlade)
+            .WithBuilds(GW2Builds.June2025Balance),
         new Buff("Banished", Banished, Source.Guardian, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Other, SkillImages.Banish),
         new Buff("Merciful Intervention (Self)", MercifulAndJudgesInterventionSelfBuff, Source.Guardian, BuffClassification.Support, SkillImages.MercifulIntervention),
         new Buff("Merciful Intervention (Target)", MercifulInterventionTargetBuff, Source.Guardian, BuffClassification.Support, SkillImages.MercifulIntervention),
@@ -295,7 +298,7 @@ internal static class GuardianHelper
             var skill = new SkillModeDescriptor(player, Spec.Guardian, HuntersWard, SkillModeCategory.CC);
             foreach (EffectEvent effect in huntersWards)
             {
-                long duration = log.FightData.Logic.SkillMode == FightLogic.SkillModeEnum.WvW ? 3000 : 5000;
+                long duration = log.LogData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.WvW ? 3000 : 5000;
                 (long start, long end) lifespan = effect.ComputeDynamicLifespan(log, duration);
                 AddCircleSkillDecoration(replay, effect, color, skill, lifespan, 140, EffectImages.EffectHuntersWard); // radius approximation
             }
@@ -304,7 +307,7 @@ internal static class GuardianHelper
         // Symbol of Energy
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.DragonhunterSymbolOfEnergy, out var symbolsOfEnergy))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfEnergy, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfEnergy);
             foreach (EffectEvent effect in symbolsOfEnergy)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 4000);
@@ -315,18 +318,23 @@ internal static class GuardianHelper
         // Symbol of Vengeance
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.FirebrandSymbolOfVengeance1, out var symbolsOfVengeance))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfVengeance, SkillModeCategory.ShowOnSelect | SkillModeCategory.CC); // CC when traited
+            var skillCC = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfVengeance, SkillModeCategory.CC); // CC when traited
+            var skillDamage = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfVengeance);
             foreach (EffectEvent effect in symbolsOfVengeance)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 4000);
-                AddCircleSkillDecoration(replay, effect, color, skill, lifespan, 180, EffectImages.EffectSymbolOfVengeance);
+                (long start, long end) lifespanCC = (lifespan.start, lifespan.start + 1000);
+                (long start, long end) lifespanDamage = (lifespanCC.end, lifespan.end);
+                // CC on initial strike
+                AddCircleSkillDecoration(replay, effect, color, skillCC, lifespanCC, 180, EffectImages.EffectSymbolOfVengeance);
+                AddCircleSkillDecoration(replay, effect, color, skillDamage, lifespanDamage, 180, EffectImages.EffectSymbolOfVengeance);
             }
         }
 
         // Symbol of Punishment
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.GuardianSymbolOfPunishment1, out var symbolsOfPunishment))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfPunishment, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfPunishment);
             foreach (EffectEvent effect in symbolsOfPunishment)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 4000);
@@ -337,7 +345,7 @@ internal static class GuardianHelper
         // Symbol of Blades
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.GuardianSymbolOfBlades, out var symbolsOfBlades))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfBlades, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfBlades);
             foreach (EffectEvent effect in symbolsOfBlades)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 5000);
@@ -348,7 +356,7 @@ internal static class GuardianHelper
         // Symbol of Resolution
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.GuardianSymbolOfResolution, out var symbolsOfResolution))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfWrath_SymbolOfResolution, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfWrath_SymbolOfResolution);
             foreach (EffectEvent effect in symbolsOfResolution)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 4000);
@@ -360,7 +368,7 @@ internal static class GuardianHelper
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.GuardianSolarStormAerealEffect, out var solarStorms))
         {
             // Skill definition has radius of 360, each hit has a radius of 180.
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SolarStorm, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Guardian, SolarStorm);
             foreach (EffectEvent effect in solarStorms)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 2000); // 2000 apromixated duration
@@ -381,11 +389,16 @@ internal static class GuardianHelper
         // Symbol of Luminance
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.GuardianSymbolOfLuminance3, out var symbolsOfLuminance))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfLuminanceSkill, SkillModeCategory.CC);
+            var skillCC = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfLuminanceSkill, SkillModeCategory.CC);
+            var skillDamage = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfLuminanceSkill);
             foreach (EffectEvent effect in symbolsOfLuminance)
             {
                 (long start, long end) lifespan = effect.ComputeLifespan(log, 4000);
-                AddCircleSkillDecoration(replay, effect, color, skill, lifespan, 180, EffectImages.EffectSymbolOfLuminance);
+                (long start, long end) lifespanCC = (lifespan.start, lifespan.start + 1000);
+                (long start, long end) lifespanDamage = (lifespanCC.end, lifespan.end);
+                // CC on initial strike
+                AddCircleSkillDecoration(replay, effect, color, skillCC, lifespanCC, 180, EffectImages.EffectSymbolOfLuminance);
+                AddCircleSkillDecoration(replay, effect, color, skillDamage, lifespanDamage, 180, EffectImages.EffectSymbolOfLuminance);
             }
         }
     }

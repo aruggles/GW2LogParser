@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using static GW2EIEvtcParser.EIData.CombatReplayDescription;
 using static GW2EIEvtcParser.EIData.DoughnutDecoration;
 
 namespace GW2EIEvtcParser.EIData;

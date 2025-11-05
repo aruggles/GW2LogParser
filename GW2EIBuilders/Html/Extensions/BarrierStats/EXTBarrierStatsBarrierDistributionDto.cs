@@ -38,7 +38,7 @@ internal class EXTBarrierStatsBarrierDistributionDto
         {
             if (!usedBoons.ContainsKey(skill.ID))
             {
-                if (boons.BuffsByIds.TryGetValue(skill.ID, out var buff))
+                if (boons.BuffsByIDs.TryGetValue(skill.ID, out var buff))
                 {
                     usedBoons.Add(buff.ID, buff);
                 }
@@ -119,7 +119,7 @@ internal class EXTBarrierStatsBarrierDistributionDto
         {
             ContributedBarrier = outgoingBarrierStats.ActorBarrier,
             TotalBarrier = outgoingBarrierStats.Barrier,
-            TotalCasting = casting.Sum(cl => Math.Min(cl.EndTime, phase.End) - Math.Max(cl.Time, phase.Start)),
+            TotalCasting = p.GetGameplayStats(log, phase.Start, phase.End).SkillCastTime,
             Distribution = BuildBarrierDistBodyData(log, casting, barrierLogs, usedSkills, usedBuffs, phase)
         };
         return dto;
@@ -140,7 +140,7 @@ internal class EXTBarrierStatsBarrierDistributionDto
         dto.ContributedBarrier = barrierLogs.Sum(x => x.BarrierGiven);
         dto.TotalBarrier = outgoingBarrierStats.Barrier;
         //TODO(Rennorb) @perf
-        dto.TotalCasting = casting.Sum(cl => Math.Min(cl.EndTime, phase.End) - Math.Max(cl.Time, phase.Start));
+        dto.TotalCasting = minions.GetIntersectingCastTime(log, phase.Start, phase.End);
         dto.Distribution = BuildBarrierDistBodyData(log, casting, barrierLogs, usedSkills, usedBuffs, phase);
         return dto;
     }

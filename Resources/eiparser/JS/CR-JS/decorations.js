@@ -18,6 +18,12 @@ class TextMetadata extends GenericMetadata{
     }
 }
 
+class TextOverheadMetadata extends TextMetadata {
+    constructor(params) {
+        super(params);
+    }
+}
+
 class GenericAttachedMetadata extends GenericMetadata{
     constructor(params) {
         super(params);
@@ -42,6 +48,14 @@ class CircleMetadata extends FormMetadata {
         super(params);
         this.radius = InchToPixel * params.radius;
         this.minRadius = InchToPixel * params.minRadius;
+    }
+}
+
+class PolygonMetadata extends FormMetadata {
+    constructor(params) {
+        super(params);
+        this.radius = InchToPixel * params.radius;
+        this.nbPolygon = params.nbPolygon;
     }
 }
 
@@ -93,6 +107,21 @@ class OverheadProgressBarMetadata extends ProgressBarMetadata {
         super(params);
         this.pixelWidth = params.pixelWidth;
         this.pixelHeight = params.pixelHeight;
+    }
+}
+
+class ArenaMetadata extends GenericAttachedMetadata {
+    constructor(params) {
+        super(params);
+        this.imageUrl = params.image;
+        this.image = new Image();
+        this.image.src = this.imageUrl;
+        this.image.onload = () => {
+            animator.needBGUpdate = true;
+            animateCanvas(noUpdateTime);
+        };
+        this.width = InchToPixel * params.width;
+        this.height = InchToPixel * params.height;
     }
 }
 
@@ -393,7 +422,7 @@ class MechanicDrawable {
             this.positionFetcher = interpolatedPositionFetcher;
         } else if (this.connectedTo.position) {
             this.positionFetcher = staticPositionFetcher;
-        } else if (this.connectedTo.masterId >= 0) {         
+        } else if (this.connectedTo.masterID >= 0) {         
             this.positionFetcher = masterPositionFetcher;
         }
         this.offsetFetcher = noOffsetFetcher;
@@ -411,9 +440,9 @@ class MechanicDrawable {
                 this.rotationFetcher = spinningAngleFetcher;
             } else if (this.rotationConnectedTo.angle !== undefined) {
                 this.rotationFetcher = staticAngleFetcher;
-            } else if (this.rotationConnectedTo.dstMasterId) {
+            } else if (this.rotationConnectedTo.dstMasterID) {
                 this.rotationFetcher = masterToMasterRotationFetcher;
-            } else if (this.rotationConnectedTo.masterId) {
+            } else if (this.rotationConnectedTo.masterID) {
                 this.rotationFetcher = masterRotationFetcher;
                 this.rotationOffset = this.rotationConnectedTo.rotationOffset;
                 this.rotationOffsetMode = this.rotationConnectedTo.rotationOffsetMode;
@@ -493,26 +522,35 @@ class MechanicDrawable {
             return false;
         }
         if (this.positionFetcher === masterPositionFetcher || this.positionFetcher === positionToMasterPositionFetcher) {
-            if (this.master === null) {
-                let masterId = this.connectedTo.masterId;
-                this.master = animator.getActorData(masterId);
+            const masterID = this.connectedTo.masterID;
+            const perParentArray = animator.agentDataPerParentID.get(masterID);
+            if (perParentArray) {
+                this.master = perParentArray.filter(x => x.getPosition() != null)[0];
+            } else if (this.master === null) {
+                this.master = animator.getActorData(masterID);
             }
             if (!this.master || (!this.master.canDraw() && !this.ownerID )) {
                 return false;
             }
         }
         if (this.rotationFetcher === masterRotationFetcher || this.rotationFetcher === masterToMasterRotationFetcher) {
-            if (this.rotationMaster === null) {
-                let masterId = this.rotationConnectedTo.masterId;
-                this.rotationMaster = animator.getActorData(masterId);
+            const masterID = this.rotationConnectedTo.masterID;
+            const perParentArray = animator.agentDataPerParentID.get(masterID);
+            if (perParentArray) {
+                this.rotationMaster = perParentArray.filter(x => x.getPosition() != null)[0];
+            } else if (this.rotationMaster === null) {
+                this.rotationMaster = animator.getActorData(masterID);
             }
             if (!this.rotationMaster || (!this.rotationMaster.canDraw() && !this.ownerID)) {
                 return false;
             }
             if (this.rotationFetcher === masterToMasterRotationFetcher) {
-                if (this.dstRotationMaster === null) {
-                    let dstMasterId = this.rotationConnectedTo.dstMasterId;
-                    this.dstRotationMaster = animator.getActorData(dstMasterId);
+                const dstMasterID = this.rotationConnectedTo.dstMasterID;
+                const perDstParentArray = animator.agentDataPerParentID.get(dstMasterID);
+                if (perDstParentArray) {       
+                    this.dstRotationMaster = perDstParentArray.filter(x => x.getPosition() != null)[0];
+                } else if (this.dstRotationMaster === null) {
+                    this.dstRotationMaster = animator.getActorData(dstMasterID);
                 }
                 if (!this.dstRotationMaster || (!this.dstRotationMaster.canDraw() && !this.ownerID)) {
                     return false;
@@ -520,8 +558,12 @@ class MechanicDrawable {
             }
         }
         if (this.ownerID !== null) {
-            if (this.owner === null) {
-                this.owner = animator.getActorData(this.ownerID);
+            const ownerID = this.ownerID;
+            const perParentArray = animator.agentDataPerParentID.get(ownerID);
+            if (perParentArray) {       
+                this.owner = perParentArray.filter(x => x.getPosition() != null)[0];
+            } else if (this.owner === null) {
+                this.owner = animator.getActorData(ownerID);
             }
             if (!this.owner) {
                 return false;
@@ -541,7 +583,7 @@ class MechanicDrawable {
 
 }
 //// FACING
-class FacingMechanicDrawable extends MechanicDrawable {
+class ActorOrientationDrawable extends MechanicDrawable {
     constructor(params) {
         super(params);
     }
@@ -631,6 +673,51 @@ class CircleMechanicDrawable extends FormMechanicDrawable {
         ctx.beginPath();
         ctx.arc(0, 0, this.getPercent() * (this.radius - this.minRadius) + this.minRadius, 0, 2 * Math.PI);
         ctx.closePath();
+        if (this.fill) {
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        } else {
+            ctx.lineWidth = (2 / animator.scale).toString();
+            ctx.strokeStyle = this.color;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+class PolygonMechanicDrawable extends FormMechanicDrawable {
+    constructor(params) {
+        super(params);
+    }
+
+    get radius() {
+        return this.metadata.radius;
+    }
+
+    get nbPolygon() {
+        return this.metadata.nbPolygon;
+    }
+
+    draw() {
+        if (!this.canDraw()) {
+            return;
+        }
+        const pos = this.getPosition();
+        const rot = this.getRotation();
+        if (pos === null || rot === null) {
+            return;
+        }
+        const ctx = animator.mainContext;
+        ctx.save();
+        this.moveContext(ctx, pos, rot);
+        ctx.beginPath();
+        const radius = this.getPercent() * this.radius;
+        const nbPolygon = this.nbPolygon;
+        ctx.moveTo(radius * Math.cos(0), radius * Math.sin(0));
+        for (let i = 1; i <= nbPolygon; i += 1) {
+            ctx.lineTo(radius * Math.cos(i * 2 * Math.PI / nbPolygon), radius * Math.sin(i * 2 * Math.PI / nbPolygon));
+        }
+
         if (this.fill) {
             ctx.fillStyle = this.color;
             ctx.fill();
@@ -996,10 +1083,13 @@ class LineMechanicDrawable extends FormMechanicDrawable {
         if (this.connectedFrom === null) {
             return false;
         }
-        if (this.targetPositionFetcher === masterPositionFetcher) {
-            if (this.endMaster === null) {
-                let masterId = this.connectedFrom.masterId;
-                this.endMaster = animator.getActorData(masterId);
+        if (this.targetPositionFetcher === masterPositionFetcher) {      
+            const masterID = this.connectedFrom.masterID;
+            const perParentArray = animator.agentDataPerParentID.get(masterID);
+            if (perParentArray) {       
+                this.endMaster = perParentArray.filter(x => x.getPosition() != null)[0];
+            } else if (this.endMaster === null) {
+                this.endMaster = animator.getActorData(masterID);
             }
             if (!this.endMaster || !this.endMaster.canDraw()) {
                 return false;
@@ -1192,10 +1282,66 @@ class MovingPlatformDrawable extends BackgroundDrawable {
     }
 }
 ///
+
+class ArenaDrawable extends MechanicDrawable {
+    constructor(params) {
+        super(params);
+        this.previouslyRendered = false;
+    }
+
+    get image() {
+        return this.metadata.image;
+    }
+
+    get imageUrl() {
+        return this.metadata.imageUrl;
+    }
+
+    get width() {
+        return this.metadata.width;
+    }
+
+    get height() {
+        return this.metadata.height;
+    }
+
+    needsUpdate() {
+        if (!this.canDraw()) {
+            return this.previouslyRendered;
+        }
+        const pos = this.getPosition();
+        if (pos === null) {
+            return this.previouslyRendered;
+        }  
+        return !this.previouslyRendered;
+    }
+
+    draw() {
+        this.previouslyRendered = false;
+        if (!this.canDraw()) {
+            return;
+        }
+        const pos = this.getPosition();
+        if (pos === null) {
+            return;
+        }    
+        this.previouslyRendered = true; 
+        const ctx = animator.bgContext;
+        ctx.save();
+        this.moveContext(ctx, pos, null);
+        const height = this.height;   
+        const width = this.width;    
+        ctx.clearRect(0, 0, width, height);  
+        ctx.drawImage(this.image, 0, 0, width, height);
+        ctx.restore();
+    }
+}
+
 class IconMechanicDrawable extends MechanicDrawable {
     constructor(params) {
         super(params);
         this.canRotate = false;
+        this.text = params.text;
     }
 
     get image() {
@@ -1250,12 +1396,21 @@ class IconMechanicDrawable extends MechanicDrawable {
         if (secondaryOffset) {        
             ctx.translate(secondaryOffset.x, secondaryOffset.y);
         }
-        if(!this.canRotate) {
+        if (!this.canRotate) {
             // Don't rotate the icon
             ctx.rotate(-ToRadians(rot + this.rotationOffset));
         }
         const size = this.getSize();   
-        ctx.drawImage(this.image, - size / 2, - size / 2, size, size);
+        const aspectRatio = this.image.width/this.image.height;
+        const sizeW = size * aspectRatio;
+        ctx.drawImage(this.image, - sizeW / 2, - size / 2, sizeW, size);
+        if (this.text) {        
+            const font = "bold " + sizeW/1.5 + "px Comic Sans MS";
+            ctx.font = font;
+            ctx.fillStyle = "rgb(0,0,0)";
+            ctx.textAlign = "center";
+            ctx.fillText(this.text, 0, sizeW / 2.5);
+        }
         ctx.restore();
     }
 }
@@ -1339,7 +1494,7 @@ class IconOverheadMechanicDrawable extends IconMechanicDrawable {
             x: 0,
             y: 0,
         };
-        offset.y -= masterSize/4 + this.getSize()/2 + 3 * overheadAnimationFrame/ maxOverheadAnimationFrame / scale;
+        offset.y -= masterSize / 3.0 + this.getSize() / 2.0 + 3.0 * overheadAnimationFrame / maxOverheadAnimationFrame / scale;
         return offset;
     }
 }
@@ -1350,16 +1505,26 @@ class TextDrawable extends MechanicDrawable {
     constructor(params) {
         super(params);
         this.text = params.text;
-        const bold = !!params.bold;
-        const fontSize = params.fontSize * resolutionMultiplier + "px";
-        const fontType = params.fontType || "Comic Sans MS";
-        this.font  = (bold ? "bold " : "") + fontSize + " " + fontType;
+        this.bold = !!params.bold;
+        this.fontSize = params.fontSize;
+        this.fontType = params.fontType || "Comic Sans MS";
     }
     get color() {
         return this.metadata.color;
     }
     get backgroundColor() {
         return this.metadata.backgroundColor;
+    }
+
+    getFontSize() {
+        if (this.connectedTo.isScreenSpace) {
+            return this.fontSize * resolutionMultiplier;
+        }
+        return this.fontSize / animator.scale;
+    }
+
+    getSecondaryOffset() {
+        return null;
     }
     
     draw() {
@@ -1371,19 +1536,51 @@ class TextDrawable extends MechanicDrawable {
         if (pos === null || rot === null) {
             return;
         }
-        
+        const fontSize = this.getFontSize();
+        pos.y += fontSize / 2;
         const ctx = animator.mainContext;
         ctx.save();
-        this.moveContext(ctx, pos, rot);
-        const normalizedRot = Math.abs((ToRadians(rot + this.rotationOffset) / Math.PI) % 2);
-        if (0.5 < normalizedRot && normalizedRot < 1.5) {
-            // make sure the text remains upright
-            ctx.rotate(-ToRadians(180));
-        }
-        ctx.font = this.font;
+        this.moveContext(ctx, pos, rot);     
+        const secondaryOffset = this.getSecondaryOffset();
+        if (secondaryOffset) {        
+            ctx.translate(secondaryOffset.x, secondaryOffset.y);
+        }  
+        // Don't rotate the text
+        ctx.rotate(-ToRadians(rot + this.rotationOffset));
+        const font = (this.bold ? "bold " : "") + fontSize + "px " + this.fontType;
+        ctx.font = font;
         ctx.fillStyle = this.color;
         ctx.textAlign = "center";
         ctx.fillText(this.text, 0, 0);
         ctx.restore();
+    }
+}
+
+class TextOverheadDrawable extends TextDrawable {
+    constructor(params) {
+        super(params);
+    }
+
+    getFontSize() {
+        if (animator.displaySettings.useActorHitboxWidth) {
+            return this.fontSize / (resolutionMultiplier * resolutionMultiplier) ;
+        } else {
+            return this.fontSize / animator.scale;
+        }
+    }
+
+    getSecondaryOffset() {
+        if (!this.master) {
+            console.error('Invalid TextOverhead decoration');
+            return null; 
+        }
+        const masterSize = this.master.getSize();
+        const scale = animator.displaySettings.useActorHitboxWidth ? 1 / InchToPixel : animator.scale;
+        let offset = {
+            x: 0,
+            y: 0,
+        };
+        offset.y -= masterSize / 3.0 + this.getFontSize() / 2.0 + 3.0 * overheadAnimationFrame / maxOverheadAnimationFrame / scale;
+        return offset;
     }
 }

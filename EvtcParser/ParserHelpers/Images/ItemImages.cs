@@ -86,6 +86,7 @@ internal static class ItemImages
     public const string SuperiorRuneOfTheOgre = "https://render.guildwars2.com/file/136590B36FFC2053D135743B063405C9A54A9E6A/220716.png";
     public const string SuperiorRuneOfTheGolemancer = "https://render.guildwars2.com/file/EB4F765E36EC9CF57526789A3EAB6702110D0949/220705.png";
     public const string SuperiorRuneOfThePrivateer = "https://render.guildwars2.com/file/1C2095ADECD26F212D0F6C47BCCF5B7848B347CF/220718.png";
+    public const string SuperiorRuneOfTheFirebrand = "https://render.guildwars2.com/file/5BB9C1FF1BFF6A52217F4007C2B1FFCAB9BCC6B3/1766387.png";
     #endregion Rune
     #region Relic
     public const string RelicOfTheDragonhunter = "https://render.guildwars2.com/file/F61EEC535059F1FA027049AB4DEFCD5465405DB7/3122344.png";
@@ -127,7 +128,7 @@ internal static class ItemImages
     public const string RelicOfTheNightmare = "https://render.guildwars2.com/file/74940C36779745CBA9DDD56CDF6CBAC1CEA8179F/3122363.png";
     public const string RelicOfTheSunless = "https://render.guildwars2.com/file/CEF1E6DA2DBF143661DF26E668034A621812B61A/3122370.png";
     public const string RelicOfAkeem = "https://render.guildwars2.com/file/594C437E9606A167F4F372BCEB0C2B7C7828037B/3122330.png";
-    public const string RelicOfTheWizardsTower = "https://render.guildwars2.com/file/0C0EE407B9DAA44438ED6C2DCDA4EEB30953DF1B/3122378.png";
+    public const string RelicOfTheWizardsTower  = "https://render.guildwars2.com/file/0C0EE407B9DAA44438ED6C2DCDA4EEB30953DF1B/3122378.png";
     public const string RelicOfTheMirage = "https://render.guildwars2.com/file/5FCA620E77D3D5022ADC70C1191F0B154AB13827/3122360.png";
     public const string RelicOfKarakosa = "https://render.guildwars2.com/file/DD034A0B53355503350F07CCFFE5CC06A90F41D9/3187629.png";
     public const string RelicOfNayos = "https://render.guildwars2.com/file/EA382BAFD541080F71D5530893CC7E069165EA0C/3187631.png";
@@ -513,6 +514,7 @@ internal static class ItemImages
     public const string BowlOfMangoSalsa = "https://wiki.guildwars2.com/images/0/09/Bowl_of_Mango_Salsa.png";
     public const string CanOfMangoSalsa = "https://wiki.guildwars2.com/images/b/b0/Can_of_Mango_Salsa.png";
     public const string BloodstonePotPie = "https://wiki.guildwars2.com/images/6/68/Meat_Pie.png";
+    public const string BagOfPoppedCandyCorn = "https://wiki.guildwars2.com/images/e/e9/Bag_of_Popped_Candy_Corn.png";
     #endregion Food
     #region AscendedFood
     public const string BowlOfFruitSaladWithCilantroGarnish = "https://wiki.guildwars2.com/images/0/08/Bowl_of_Fruit_Salad_with_Cilantro_Garnish.png";

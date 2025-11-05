@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.FormDecoration;
 
 namespace GW2EIEvtcParser.EIData;

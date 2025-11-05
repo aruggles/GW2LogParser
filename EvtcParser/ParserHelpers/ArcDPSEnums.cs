@@ -32,6 +32,7 @@ public static class ArcDPSEnums
         public const int ExtraDataInGUIDEvents = 20241030;
         public const int LogStartLogEndPerCombatSequenceOnInstanceLogs = 20250315;
         public const int SpeciesSkillGUIDs = 20250428;
+        public const int BuffFormulaOriginalAttribute = 20250913;
         //
         public const int EndOfLife = int.MaxValue;
     }
@@ -71,7 +72,9 @@ public static class ArcDPSEnums
         public const int OldRaidReward1 = 55821; // On each kill
         public const int OldRaidReward2 = 60685; // On each kill
         public const int CurrentRaidReward = 22797; // Once per week
-        public const int PostEoDStrikeReward = 29453;
+        public const int PostEoDRaidEncounterReward = 29453;
+        public const int ConvergenceReward1 = 2071;
+        public const int ConvergenceReward2 = 5091;
     }
 
     /// <summary>
@@ -202,7 +205,7 @@ public static class ArcDPSEnums
         PointOfView = 13,
         Language = 14,
         GWBuild = 15,
-        ShardId = 16,
+        ShardID = 16,
         Reward = 17,
         BuffInitial = 18,
         Position = 19,
@@ -250,12 +253,28 @@ public static class ArcDPSEnums
         EffectGroundRemove = 61,
         EffectAgentCreate = 62,
         EffectAgentRemove = 63,
+        AgentChange = 64,
+        MapChange = 65,
         Unknown
     };
 
     public static StateChange GetStateChange(byte bt)
     {
         return bt < (byte)StateChange.Unknown ? (StateChange)bt : StateChange.Unknown;
+    }
+    // Log type
+
+    public enum LogType : byte
+    {
+        None = 0,
+        Auto = 1,
+        Map = 2,
+        Generic = 3,
+        Unknown
+    };
+    public static LogType GetLogType(int value)
+    {
+        return value < (int)LogType.Unknown ? (LogType)value : LogType.Unknown;
     }
     // Breakbar State
 
@@ -375,6 +394,15 @@ public static class ArcDPSEnums
         SiphonIncomingAdditive2 = -34,
         HealingEffectivenessIncomingMultiplicative = -35,
         AllStatsPercent = -36,
+        PowerSidekick = -37,
+        PrecisionSidekick = -38,
+        ToughnessSidekick = -39,
+        VitalitySidekick = -40,
+        FerocitySidekick = -41,
+        HealingSidekick = -42,
+        ConditionSidekick = -43,
+        ConcentrationSidekick = -44,
+        ExpertiseSidekick = -45,
     }
 
     public static BuffAttribute GetBuffAttribute(short bt, int evtcBuild)

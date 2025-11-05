@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -21,8 +20,7 @@ internal class BuffConsumedOnActorDamageModifier : BuffOnActorDamageModifier
 
     private (IReadOnlyList<AbstractBuffRemoveEvent>, int currentIndex) GetBuffRemovesWithCurrentIndex(Dictionary<AgentItem, (IReadOnlyList<AbstractBuffRemoveEvent> buffRemoves, int currentIndex)> cache, ParsedEvtcLog log, AgentItem agent)
     {
-        (IReadOnlyList<AbstractBuffRemoveEvent>, int currentIndex) buffRemoveAllsWithCurrentIndex;
-        if (!cache.TryGetValue(agent, out buffRemoveAllsWithCurrentIndex))
+        if (!cache.TryGetValue(agent, out var buffRemoveAllsWithCurrentIndex))
         {
             buffRemoveAllsWithCurrentIndex = (log.CombatData.GetBuffDataByIDByDst(BuffID, agent).OfType<AbstractBuffRemoveEvent>().Where(x => x is BuffRemoveSingleEvent || x is BuffRemoveAllEvent).ToList(), 0);
             cache[agent] = buffRemoveAllsWithCurrentIndex;
@@ -60,7 +58,7 @@ internal class BuffConsumedOnActorDamageModifier : BuffOnActorDamageModifier
         {
             return res;
         }
-        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null, log.FightData.FightStart, log.FightData.FightEnd);
+        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
         var buffRemovesByDstWithCurrentIndex = new Dictionary<AgentItem, (IReadOnlyList<AbstractBuffRemoveEvent>, int currentIndex)>();
         if (damageModifier.NeedsMinions)
         {

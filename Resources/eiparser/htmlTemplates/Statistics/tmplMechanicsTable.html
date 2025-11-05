@@ -72,23 +72,65 @@
     Vue.component("mechanics-table-component", {
         props: ["phaseindex", "playerindex"],
         template: `${template}`,
-        mixins: [numberComponent, sortedTableComponent, colSliderComponent(maxMechColumns, ["player", "enemy"])],
+        mixins: [encounterPhaseComponent, numberComponent, sortedTableComponent, colSliderComponent(maxMechColumns, ["player", "enemy"])],
         data: function () {
             return {
                 sortEdata: {
                     order: "asc",
                     index: -1,
                     key: "Name",
+                    mechIndex: -1,
                 },
                 sortPdata: {
                     order: "asc",
                     index: -1,
                     key: "Sub",
+                    mechIndex: -1,
                 }
             };
         },
+        watch: {
+            encounters: {
+                deep: true,
+                handler: function () {
+                    const mechPIndex = this.sortPdata.mechIndex;
+                    if (mechPIndex >= 0) {
+                        const mech = this.playerMechHeader.filter(x => x._index === mechPIndex)[0];
+                        if (!mech) {
+                            // Reset sort if mechanic is gone
+                            this.sortPdata.order = "asc";
+                            this.sortPdata.index = -1;
+                            this.sortPdata.key = "Sub";
+                            this.sortPdata.mechIndex = -1;
+                        } else {
+                            // Otherwise sort by its new position
+                            this.sortPdata.index = this.playerMechHeader.indexOf(mech);
+                        }
+                    }
+                    const mechEIndex = this.sortEdata.mechIndex;
+                    if (mechEIndex >= 0) {
+                        const mech = this.enemyMechHeader.filter(x => x._index === mechEIndex)[0];
+                        if (!mech) {
+                            // Reset sort if mechanic is gone
+                            this.sortEdata.order = "asc";
+                            this.sortEdata.index = -1;
+                            this.sortEdata.key = "Name";
+                            this.sortEdata.mechIndex = -1;
+                        } else {
+                            // Otherwise sort by its new position
+                            this.sortEdata.index = this.enemyMechHeader.indexOf(mech);
+                        }
+                    }
+                }
+            }
+        },
         methods: {
             sortPlayerBy: function(key, index) {
+                if (key === "Data" && index >= 0) {
+                    this.sortPdata.mechIndex = this.playerMechHeader[index]._index;
+                } else {
+                    this.sortPdata.mechIndex = -1;
+                }
                 this.sortByBase(this.sortPdata, key, index);
             },
             getPlayerHeaderClass: function(key, index) {
@@ -120,7 +162,12 @@
                 }
                 return rows;
             },
-            sortEnemyBy: function(key, index) {
+            sortEnemyBy: function(key, index) {      
+                if (key === "Data" && index >= 0) {
+                    this.sortEdata.mechIndex = this.enemyMechHeader[index]._index;
+                } else {
+                    this.sortEdata.mechIndex = -1;
+                }
                 this.sortByBase(this.sortEdata, key, index);
             },
             getEnemyHeaderClass: function(key, index) {
@@ -169,16 +216,16 @@
             },
             playerMechHeader: function () {
                 const allPlayerMechs = playerMechanics();
-                var res = [];
-                var players = logData.players;
+                var res = [];   
+                const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
                 for (let j = 0; j < allPlayerMechs.length; j++) {
                     allPlayerMechs[j]._index = j;
                     for (var i = 0; i < players.length; i++) {
                         var player = players[i];
-                        if (player.isFake) {
+                        if (!player) {
                             continue;
                         }
-                        if (this.phase.mechanicStats[i][j][0] > 0) {
+                        if (this.phase.mechanicStats[i][j][0] > 0 || allPlayerMechs[j].isAchievementEligibility) {
                             res.push(allPlayerMechs[j]);
                             break;
                         }
@@ -187,11 +234,11 @@
                 return res;
             },
             playerMechRows: function () {
-                var players = logData.players;
+                const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
                 var rows = [];
                 for (var i = 0; i < players.length; i++) {
                     var player = players[i];
-                    if (player.isFake) {
+                    if (!player) {
                         continue;
                     }
                     let mechs = [];
@@ -210,11 +257,15 @@
                 const allEnemyMechs = enemyMechanics();
                 var res = [];
                 var enemies = logData.enemies;
+                let encounterPhase = this.encounterPhase;
                 for (let j = 0; j < allEnemyMechs.length; j++) {
                     allEnemyMechs[j]._index = j;
                     for (var i = 0; i < enemies.length; i++) {
                         var enemy = enemies[i];
-                        if (this.phase.enemyMechanicStats[i][j][0] > 0) {
+                        if (enemy.firstAware >= encounterPhase.end || enemy.lastAware <=  encounterPhase.start) {
+                            continue;
+                        }
+                        if (this.phase.enemyMechanicStats[i][j][0] > 0 || allEnemyMechs[j].isAchievementEligibility) {
                             res.push(allEnemyMechs[j]);
                             break;
                         }
@@ -225,8 +276,12 @@
             enemyMechRows: function () {
                 var enemies = logData.enemies;
                 var rows = [];
+                let encounterPhase = this.encounterPhase;
                 for (var i = 0; i < enemies.length; i++) {
                     var enemy = enemies[i];
+                    if (enemy.firstAware >= encounterPhase.end || enemy.lastAware <= encounterPhase.start) {
+                        continue;
+                    }
                     let mechs = [];
                     for (let j = 0; j < this.enemyMechHeader.length; j++) {
                         let mechIndex = this.enemyMechHeader[j]._index;

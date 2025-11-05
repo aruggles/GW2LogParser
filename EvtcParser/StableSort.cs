@@ -1,6 +1,6 @@
-﻿using GW2EIEvtcParser.ParserHelpers;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Runtime.CompilerServices;
+using GW2EIEvtcParser.ParserHelpers;
 
 namespace GW2EIEvtcParser;
 

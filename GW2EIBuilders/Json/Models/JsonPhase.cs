@@ -1,4 +1,6 @@
-﻿namespace GW2EIJSON;
+﻿using System.Text.Json.Serialization;
+
+namespace GW2EIJSON;
 
 /// <summary>
 /// Class corresponding to a phase
@@ -19,6 +21,60 @@ public class JsonPhase
     /// Name of the phase
     /// </summary>
     public string? Name;
+
+    /// <summary>
+    /// Indicates that this phase has no meaningful targets, only relevant in Instance logs and for Encounter type phases \n
+    /// </summary>
+    //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    //public bool? Targetless;
+
+    /// <summary>
+    /// The success status of the phase, only relevant in Instance logs and for Encounter type phases
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Success;
+
+    /// <summary>
+    /// If the phase is in challenge mode, only relevant in Instance logs and for Encounter type phases.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? IsCM;
+    /// <summary>
+    /// If the phase is in legendary challenge mode. Only relevant in Instance logs and for Encounter type phases. \n
+    /// If this is true, <see cref="IsCM"/> will also be true
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? IsLegendaryCM;
+
+    /// <summary>
+    /// Encounter ID of the phase, only relevant in Instance logs and for Encounter type phases.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? EIEncounterID;
+    /// <summary>
+    /// Index of the encounter phase this phase is attached to. Only relevant for Time Frame and Sub Phase type phases. \n
+    /// Will be -1 if the phase is not a part of an encounter.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? EncounterPhase;
+    /// <summary>
+    /// The icon of the encounter, only relevant in Instance logs and for Encounter type phases.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? EncounterIcon;
+    /// <summary>
+    /// True if EI detected that the encounter started later than expected. \n
+    /// This value being false does not mean the encounter could not have started later than expected. \n
+    /// Only relevant in Instance logs and for Encounter type phases.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? EncounterIsLateStart;
+    /// <summary>
+    /// True if an encounter that is supposed to have a pre-event does not have it. \n
+    /// Only relevant in Instance logs and for Encounter type phases.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? EncounterMissingPreEvent;
 
     /// <summary>
     /// DEPRECATED please use <seealso cref="JsonPhase.TargetPriorities"/> instead. \n
@@ -50,6 +106,14 @@ public class JsonPhase
     /// </summary>
     /// <seealso cref="JsonLog.Phases"/>
     public IReadOnlyList<int>? SubPhases;
+    /// <summary>
+    /// Type of the phase in: \n
+    /// - "SubPhase" for phases that are a part of an encounter \n
+    /// - "TimeFrame" for phases that are a part of a log, focusing on a specific time frame of no mechanical bearing \n
+    /// - "Encounter" for phases representing a complete encounter \n
+    /// - "Instance" for phases representing a complete instance \n
+    /// </summary>
+    public string? PhaseType;
 
     /// <summary>
     /// Indicates that the phase is a breakbar phase \n

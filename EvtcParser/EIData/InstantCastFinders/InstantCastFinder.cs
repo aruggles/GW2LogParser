@@ -1,9 +1,6 @@
 ﻿using GW2EIEvtcParser.Interfaces;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -16,7 +13,8 @@ internal abstract class InstantCastFinder : IVersionable
     {
         Skill,
         Trait,
-        Gear
+        Gear,
+        Unconditional
     }
 
     public InstantCastOrigin CastOrigin { get; private set; } = InstantCastOrigin.Skill;

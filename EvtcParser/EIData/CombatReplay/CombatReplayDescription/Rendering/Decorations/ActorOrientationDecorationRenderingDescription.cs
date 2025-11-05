@@ -1,8 +1,5 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.ActorOrientationDecoration;
-using static GW2EIEvtcParser.EIData.CombatReplayDescription;
 
 namespace GW2EIEvtcParser.EIData;
 

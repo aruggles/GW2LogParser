@@ -1,9 +1,8 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Drawing;
 using System.Numerics;
+using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.ArcDPSEnums;
+using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -11,11 +10,18 @@ public class CombatReplay
 {
 
     //TODO(Rennorb) @perf: capacity
-    internal readonly List<ParametricPoint3D> Positions = [];
-    internal readonly List<ParametricPoint3D> PolledPositions = [];
-    internal readonly List<ParametricPoint3D> Velocities = [];
-    internal readonly List<ParametricPoint3D> Rotations = [];
-    internal readonly List<ParametricPoint3D> PolledRotations = [];
+    internal IReadOnlyList<ParametricPoint3D> Positions => _Positions;
+    internal IReadOnlyList<ParametricPoint3D> PolledPositions => _PolledPositions;
+    internal IReadOnlyList<ParametricPoint3D> Velocities => _Velocities;
+    internal IReadOnlyList<ParametricPoint3D> Rotations => _Rotations;
+    internal IReadOnlyList<ParametricPoint3D> PolledRotations => _PolledRotations;
+
+    private List<ParametricPoint3D> _Positions = [];
+    private ParametricPoint3D[] _PolledPositions = [];
+    private List<ParametricPoint3D> _Velocities = [];
+    private List<ParametricPoint3D> _Rotations = [];
+    private ParametricPoint3D[] _PolledRotations = [];
+
     internal readonly List<Segment> Hidden = [];
     private long _start = -1;
     private long _end = -1;
@@ -25,18 +31,48 @@ public class CombatReplay
 
     internal CombatReplay(ParsedEvtcLog log)
     {
-        _start = log.FightData.FightStart;
-        _end = log.FightData.FightEnd;
+        _start = log.LogData.LogStart;
+        _end = log.LogData.LogEnd;
         //TODO(Rennorb) @perf: capacity
-        Decorations = new(log.FightData.Logic.DecorationCache);
+        Decorations = new(log.LogData.Logic.DecorationCache);
+    }
+
+    internal void AddPosition(ParametricPoint3D position)
+    {
+        _Positions.Add(position);
+    }
+
+    internal void AddVelocity(ParametricPoint3D velocity)
+    {
+        _Velocities.Add(velocity);
+    }
+
+    internal void AddRotation(ParametricPoint3D rotation)
+    {
+        _Rotations.Add(rotation);
+    }
+
+    internal void CopyFrom(CombatReplay other)
+    {
+        _Positions = other.Positions.ToList();
+        _PolledPositions = other.PolledPositions.ToArray();
+        _Rotations = other.Rotations.ToList();
+        _PolledRotations = other.PolledRotations.ToArray();
+        _Velocities = other.Velocities.ToList();
     }
 
     internal void Trim(long start, long end)
     {
         _start = Math.Max(start, _start);
         _end = Math.Max(_start, Math.Min(end, _end));
-        PolledPositions.RemoveAll(x => x.Time < _start || x.Time > _end);
-        PolledRotations.RemoveAll(x => x.Time < _start || x.Time > _end);
+        if (_PolledPositions.Length > 0 && (_PolledPositions[0].Time < _start || _PolledPositions[^1].Time > _end))
+        {
+            _PolledPositions = _PolledPositions.Where(x => x.Time >= _start && x.Time <= _end).ToArray();
+        }
+        if (_PolledRotations.Length > 0 && (_PolledRotations[0].Time < _start || _PolledRotations[^1].Time > _end))
+        {
+            _PolledRotations = _PolledRotations.Where(x => x.Time >= _start && x.Time <= _end).ToArray();
+        }
     }
 
     private static int UpdateVelocityIndex(List<ParametricPoint3D> velocities, long time, int currentIndex)
@@ -58,139 +94,146 @@ public class CombatReplay
         return res - 1;
     }
 
-    private void PositionPolling(int rate, long fightDuration, bool forcePolling)
+    private void HandlePosition(long t, ref int polledPositionTableIndex, ref int positionTableIndex, ref int velocityTableIndex, int rate)
     {
-        List<ParametricPoint3D> positions = Positions;
-        if (Positions.Count == 0 && forcePolling)
+        ParametricPoint3D pos = _Positions[positionTableIndex];
+        if (t <= pos.Time)
         {
-            positions = [new(int.MinValue, int.MinValue, 0, 0)];
+            _PolledPositions[polledPositionTableIndex++] = pos.WithChangedTime(t);
         }
-        else if (Positions.Count == 0)
+        else
+        {
+            if (positionTableIndex == _Positions.Count - 1)
+            {
+                _PolledPositions[polledPositionTableIndex++] = pos.WithChangedTime(t);
+            }
+            else
+            {
+                ParametricPoint3D nextPos = _Positions[positionTableIndex + 1];
+                if (nextPos.Time < t)
+                {
+                    positionTableIndex++;
+                    HandlePosition(t, ref polledPositionTableIndex, ref positionTableIndex, ref velocityTableIndex, rate);
+                }
+                else
+                {
+                    ParametricPoint3D last = _PolledPositions.Last().Time > pos.Time ? _PolledPositions.Last() : pos;
+                    velocityTableIndex = UpdateVelocityIndex(_Velocities, t, velocityTableIndex);
+                    ParametricPoint3D velocity = default;
+                    if (velocityTableIndex >= 0 && velocityTableIndex < Velocities.Count)
+                    {
+                        velocity = Velocities[velocityTableIndex];
+                    }
+
+                    if (nextPos.Time - last.Time > ArcDPSPollingRate + rate && velocity.XYZ.Length() < 1e-3)
+                    {
+                        _PolledPositions[polledPositionTableIndex++] = pos.WithChangedTime(t);
+                    }
+                    else
+                    {
+                        float ratio = (float)(t - last.Time) / (nextPos.Time - last.Time);
+                        _PolledPositions[polledPositionTableIndex++] = new(Vector3.Lerp(last.XYZ, nextPos.XYZ, ratio), t);
+                    }
+
+                }
+            }
+        }
+    }
+
+    private void HandleRotation(long t, ref int polledRotationTableIndex, ref int rotationTableIndex, int rate)
+    {
+        var rot = _Rotations[rotationTableIndex];
+        if (t <= rot.Time)
+        {
+            _PolledRotations[polledRotationTableIndex++] = rot.WithChangedTime(t);
+        }
+        else
+        {
+            if (rotationTableIndex == _Rotations.Count - 1)
+            {
+                _PolledRotations[polledRotationTableIndex++] = rot.WithChangedTime(t);
+            }
+            else
+            {
+                ParametricPoint3D nextRot = _Rotations[rotationTableIndex + 1];
+                if (nextRot.Time < t)
+                {
+                    rotationTableIndex++;
+                    HandleRotation(t, ref polledRotationTableIndex, ref rotationTableIndex, rate);
+                }
+                else
+                {
+                    ParametricPoint3D last = _PolledRotations.Last().Time > rot.Time ? _PolledRotations.Last() : rot;
+                    if (nextRot.Time - last.Time > ArcDPSPollingRate + rate)
+                    {
+                        _PolledRotations[polledRotationTableIndex++] = rot.WithChangedTime(t);
+                    }
+                    else
+                    {
+                        float ratio = (float)(t - last.Time) / (nextRot.Time - last.Time);
+                        _PolledRotations[polledRotationTableIndex++] = new(Vector3.Lerp(last.XYZ, nextRot.XYZ, ratio), t);
+                    }
+
+                }
+            }
+        }
+    }
+
+    internal void PollingRate(long logDuration, bool forcePolling)
+    {
+        if (_Positions.Count == 0 && forcePolling)
+        {
+            _Positions = [new(int.MinValue, int.MinValue, 0, 0)];
+        }
+        else if (_Positions.Count == 0)
         {
             return;
         }
+
+        int rate = ParserHelper.CombatReplayPollingRate;
+
+        bool doRotation = _Rotations.Count > 0;
 
         int positionTableIndex = 0;
+        int polledPositionTableIndex = 0;
         int velocityTableIndex = 0;
-
-        //TODO(Rennorb) @perf: reserve PolledPositions
-
-        for (long t = Math.Min(0, rate * ((positions[0].Time / rate) - 1)); t < fightDuration; t += rate)
-        {
-            ParametricPoint3D pos = positions[positionTableIndex];
-            if (t <= pos.Time)
-            {
-                PolledPositions.Add(pos.WithChangedTime(t));
-            }
-            else
-            {
-                if (positionTableIndex == positions.Count - 1)
-                {
-                    PolledPositions.Add(pos.WithChangedTime(t));
-                }
-                else
-                {
-                    ParametricPoint3D nextPos = positions[positionTableIndex + 1];
-                    if (nextPos.Time < t)
-                    {
-                        positionTableIndex++;
-                        t -= rate;
-                    }
-                    else
-                    {
-                        ParametricPoint3D last = PolledPositions.Last().Time > pos.Time ? PolledPositions.Last() : pos;
-                        velocityTableIndex = UpdateVelocityIndex(Velocities, t, velocityTableIndex);
-                        ParametricPoint3D velocity = default;
-                        if (velocityTableIndex >= 0 && velocityTableIndex < Velocities.Count)
-                        {
-                            velocity = Velocities[velocityTableIndex];
-                        }
-
-                        if (nextPos.Time - last.Time > ArcDPSPollingRate + rate && velocity.XYZ.Length() < 1e-3)
-                        {
-                            PolledPositions.Add(last.WithChangedTime(t));
-                        }
-                        else
-                        {
-                            float ratio = (float)(t - last.Time) / (nextPos.Time - last.Time);
-                            PolledPositions.Add(new(Vector3.Lerp(last.XYZ, nextPos.XYZ, ratio), t));
-                        }
-
-                    }
-                }
-            }
-        }
-        PolledPositions.RemoveAll(x => x.Time < 0); //TODO(Rennorb) @perf: inline before inserting
-    }
-
-    /// <summary>
-    /// The method exists only to have the same amount of rotation as positions, it's easier to do it here than
-    /// in javascript
-    /// </summary>
-    private void RotationPolling(int rate, long fightDuration)
-    {
-        if (Rotations.Count == 0)
-        {
-            return;
-        }
-
-        //TODO(Rennorb) @perf: reserve PolledPositions
-
         int rotationTableIndex = 0;
-        for (int t = (int)Math.Min(0, rate * ((Rotations[0].Time / rate) - 1)); t < fightDuration; t += rate)
-        {
-            var rot = Rotations[rotationTableIndex];
-            if (t <= rot.Time)
-            {
-                PolledRotations.Add(rot.WithChangedTime(t));
-            }
-            else
-            {
-                if (rotationTableIndex == Rotations.Count - 1)
-                {
-                    PolledRotations.Add(rot.WithChangedTime(t));
-                }
-                else
-                {
-                    ParametricPoint3D nextRot = Rotations[rotationTableIndex + 1];
-                    if (nextRot.Time < t)
-                    {
-                        rotationTableIndex++;
-                        t -= rate;
-                    }
-                    else
-                    {
-                        ParametricPoint3D last = PolledRotations.Last().Time > rot.Time ? PolledRotations.Last() : rot;
-                        if (nextRot.Time - last.Time > ArcDPSPollingRate + rate)
-                        {
-                            PolledRotations.Add(last.WithChangedTime(t));
-                        }
-                        else
-                        {
-                            float ratio = (float)(t - last.Time) / (nextRot.Time - last.Time);
-                            PolledRotations.Add(new(Vector3.Lerp(last.XYZ, nextRot.XYZ, ratio), t));
-                        }
+        int polledRotationTableIndex = 0;
 
-                    }
-                }
+        long posStartOffset = Math.Min(0, rate * ((_Positions[0].Time / rate) - 1));
+        long rotStartOffset = doRotation ? Math.Min(0, rate * ((_Rotations[0].Time / rate) - 1)) : 0;
+        long startOffset = Math.Min(posStartOffset, rotStartOffset);
+        int capacity = (int)(logDuration - startOffset) / rate + 1;
+        _PolledPositions = new ParametricPoint3D[capacity];
+        _PolledRotations = doRotation ? new ParametricPoint3D[capacity] : [];
+
+        if (doRotation)
+        {
+            for (long t = startOffset; t < logDuration; t += rate)
+            {
+                HandlePosition(t, ref polledPositionTableIndex, ref positionTableIndex, ref velocityTableIndex, rate);
+                HandleRotation(t, ref polledRotationTableIndex, ref rotationTableIndex, rate);
             }
         }
-        PolledRotations.RemoveAll(x => x.Time < 0); //TODO(Rennorb) @perf: inline before inserting
+        else
+        {
+            for (long t = startOffset; t < logDuration; t += rate)
+            {
+                HandlePosition(t, ref polledPositionTableIndex, ref positionTableIndex, ref velocityTableIndex, rate);
+            }
+        }
     }
 
-    internal void PollingRate(long fightDuration, bool forcePositionPolling)
-    {
-        PositionPolling(ParserHelper.CombatReplayPollingRate, fightDuration, forcePositionPolling);
-        RotationPolling(ParserHelper.CombatReplayPollingRate, fightDuration);
-    }
-
-
+#if DEBUG
     #region DEBUG EFFECTS
+    private static uint DebugRadius = 100;
+    private static uint DebugOpeningAngle = 120;
     //NOTE(Rennorb): Methods used for debugging purposes. Keep unused variables.
-    internal static void DebugEffects(SingleActor actor, ParsedEvtcLog log, CombatReplay replay, HashSet<long> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
+    internal static void DebugEffects(SingleActor actor, ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var effectEventsOnAgent = log.CombatData.GetEffectEventsByDst(actor.AgentItem)
-            .Where(x => !knownEffectIDs.Contains(x.EffectID) && x.Time >= start && x.Time <= end);
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Time >= start && x.Time <= end)
+            .ToList();
         var effectGUIDsOnAgent = effectEventsOnAgent.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsOnAgentDistinct = effectGUIDsOnAgent.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
         foreach (EffectEvent effectEvt in effectEventsOnAgent)
@@ -200,18 +243,46 @@ public class CombatReplay
             {
                 lifeSpan.end = lifeSpan.start + 100;
             }
+            GeographicalConnector positionConnector;
+            Color color;
             if (effectEvt.IsAroundDst)
             {
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Blue, 0.5, new AgentConnector(log.FindActor(effectEvt.Dst))));
+                var dstActor = log.FindActor(effectEvt.Dst);
+                if (log.FriendlyAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TargetAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TrashMobAgents.Contains(dstActor.AgentItem))
+                {
+                    color = Colors.Teal;
+                    positionConnector = new AgentConnector(dstActor);
+                }
+                else
+                {
+                    if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
+                    {
+                        color = Colors.DarkBlue;
+                        positionConnector = new PositionConnector(position);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
             }
             else
             {
-
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Blue, 0.5, new PositionConnector(effectEvt.Position)));
+                color = Colors.LightBlue;
+                positionConnector = new PositionConnector(effectEvt.Position);
+            }
+            if (effectEvt.Rotation.Z != 0)
+            {
+                decorations.Add(new PieDecoration(DebugRadius, DebugOpeningAngle, lifeSpan, color, 0.5, positionConnector).UsingRotationConnector(new AngleConnector(effectEvt.Rotation.Z)));
+            }
+            else
+            {
+                decorations.Add(new CircleDecoration(DebugRadius, lifeSpan, color, 0.5, positionConnector));
             }
         }
         var effectEventsByAgent = log.CombatData.GetEffectEventsBySrc(actor.AgentItem)
-            .Where(x => !knownEffectIDs.Contains(x.EffectID) && x.Time >= start && x.Time <= end);
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Time >= start && x.Time <= end)
+            .ToList();
         var effectGUIDsByAgent = effectEventsByAgent.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsByAgentDistinct = effectGUIDsByAgent.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
         foreach (EffectEvent effectEvt in effectEventsByAgent)
@@ -221,22 +292,50 @@ public class CombatReplay
             {
                 lifeSpan.end = lifeSpan.start + 100;
             }
+            GeographicalConnector positionConnector;
+            Color color;
             if (effectEvt.IsAroundDst)
             {
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Green, 0.5, new AgentConnector(log.FindActor(effectEvt.Dst))));
+                var dstActor = log.FindActor(effectEvt.Dst);
+                if (log.FriendlyAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TargetAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TrashMobAgents.Contains(dstActor.AgentItem))
+                {
+                    color = Colors.GreenishYellow;
+                    positionConnector = new AgentConnector(dstActor);
+                }
+                else
+                {
+                    if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
+                    {
+                        color = Colors.DarkGreen;
+                        positionConnector = new PositionConnector(position);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
             }
             else
             {
-
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Green, 0.5, new PositionConnector(effectEvt.Position)));
+                color = Colors.Green;
+                positionConnector = new PositionConnector(effectEvt.Position);
+            }
+            if (effectEvt.Rotation.Z != 0)
+            {
+                decorations.Add(new PieDecoration(DebugRadius, DebugOpeningAngle, lifeSpan, color, 0.5, positionConnector).UsingRotationConnector(new AngleConnector(effectEvt.Rotation.Z)));
+            }
+            else
+            {
+                decorations.Add(new CircleDecoration(DebugRadius, lifeSpan, color, 0.5, positionConnector));
             }
         }
     }
 
-    internal static void DebugUnknownEffects(ParsedEvtcLog log, CombatReplay replay, HashSet<long> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
+    internal static void DebugUnknownEffects(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var allEffectEvents = log.CombatData.GetEffectEvents()
-            .Where(x => !knownEffectIDs.Contains(x.EffectID) && x.Src.IsUnamedSpecies() && x.Time >= start && x.Time <= end && x.EffectID > 0);
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Src.IsUnamedSpecies() && x.Time >= start && x.Time <= end && x.EffectID > 0)
+            .ToList();
         var effectGUIDs = allEffectEvents.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsDistinct = effectGUIDs.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
         foreach (EffectEvent effectEvt in allEffectEvents)
@@ -246,23 +345,51 @@ public class CombatReplay
             {
                 lifeSpan.end = lifeSpan.start + 100;
             }
+            GeographicalConnector positionConnector;
+            Color color;
             if (effectEvt.IsAroundDst)
             {
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Teal, 0.5, new AgentConnector(log.FindActor(effectEvt.Dst))));
+                var dstActor = log.FindActor(effectEvt.Dst);
+                if (log.FriendlyAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TargetAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TrashMobAgents.Contains(dstActor.AgentItem))
+                {
+                    color = Colors.Teal;
+                    positionConnector = new AgentConnector(dstActor);
+                }
+                else
+                {
+                    if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
+                    {
+                        color = Colors.DarkBlue;
+                        positionConnector = new PositionConnector(position);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
             }
             else
             {
-
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Teal, 0.5, new PositionConnector(effectEvt.Position)));
+                color = Colors.LightBlue;
+                positionConnector = new PositionConnector(effectEvt.Position);
+            }
+            if (effectEvt.Rotation.Z != 0)
+            {
+                decorations.Add(new PieDecoration(DebugRadius, DebugOpeningAngle, lifeSpan, color, 0.5, positionConnector).UsingRotationConnector(new AngleConnector(effectEvt.Rotation.Z)));
+            }
+            else
+            {
+                decorations.Add(new CircleDecoration(DebugRadius, lifeSpan, color, 0.5, positionConnector));
             }
         }
 
     }
 
-    internal static void DebugAllNPCEffects(ParsedEvtcLog log, CombatReplay replay, HashSet<long> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
+    internal static void DebugAllNPCEffects(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var allEffectEvents = log.CombatData.GetEffectEvents()
-            .Where(x => !knownEffectIDs.Contains(x.EffectID) && !x.Src.GetFinalMaster().IsPlayer && (!x.IsAroundDst || !x.Dst.GetFinalMaster().IsPlayer) && x.Time >= start && x.Time <= end && x.EffectID > 0);
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && !x.Src.GetFinalMaster().IsPlayer && (!x.IsAroundDst || !x.Dst.GetFinalMaster().IsPlayer) && x.Time >= start && x.Time <= end && x.EffectID > 0)
+            .ToList();
         var effectGUIDs = allEffectEvents.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsDistinct = effectGUIDs.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
         foreach (EffectEvent effectEvt in allEffectEvents)
@@ -272,22 +399,50 @@ public class CombatReplay
             {
                 lifeSpan.end = lifeSpan.start + 100;
             }
+            GeographicalConnector positionConnector;
+            Color color;
             if (effectEvt.IsAroundDst)
             {
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Teal, 0.5, new AgentConnector(log.FindActor(effectEvt.Dst))));
+                var dstActor = log.FindActor(effectEvt.Dst);
+                if (log.FriendlyAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TargetAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TrashMobAgents.Contains(dstActor.AgentItem))
+                {
+                    color = Colors.Teal;
+                    positionConnector = new AgentConnector(dstActor);
+                }
+                else
+                {
+                    if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
+                    {
+                        color = Colors.DarkBlue;
+                        positionConnector = new PositionConnector(position);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
             }
             else
             {
-
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Teal, 0.5, new PositionConnector(effectEvt.Position)));
+                color = Colors.LightBlue;
+                positionConnector = new PositionConnector(effectEvt.Position);
+            }
+            if (effectEvt.Rotation.Z != 0)
+            {
+                decorations.Add(new PieDecoration(DebugRadius, DebugOpeningAngle, lifeSpan, color, 0.5, positionConnector).UsingRotationConnector(new AngleConnector(effectEvt.Rotation.Z)));
+            }
+            else
+            {
+                decorations.Add(new CircleDecoration(DebugRadius, lifeSpan, color, 0.5, positionConnector));
             }
         }
     }
 
-    internal static void DebugAllEffects(ParsedEvtcLog log, CombatReplay replay, HashSet<long> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
+    internal static void DebugAllEffects(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var allEffectEvents = log.CombatData.GetEffectEvents()
-            .Where(x => !knownEffectIDs.Contains(x.EffectID) && x.Time >= start && x.Time <= end && x.EffectID > 0);
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Time >= start && x.Time <= end && x.EffectID > 0)
+            .ToList();
         var effectGUIDs = allEffectEvents.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsDistinct = effectGUIDs.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
         foreach (EffectEvent effectEvt in allEffectEvents)
@@ -297,14 +452,41 @@ public class CombatReplay
             {
                 lifeSpan.end = lifeSpan.start + 100;
             }
+            GeographicalConnector positionConnector;
+            Color color;
             if (effectEvt.IsAroundDst)
             {
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Teal, 0.5, new AgentConnector(log.FindActor(effectEvt.Dst))));
+                var dstActor = log.FindActor(effectEvt.Dst);
+                if (log.FriendlyAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TargetAgents.Contains(dstActor.AgentItem) || log.LogData.Logic.TrashMobAgents.Contains(dstActor.AgentItem))
+                {
+                    color = Colors.Teal;
+                    positionConnector = new AgentConnector(dstActor);
+                }
+                else
+                {
+                    if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
+                    {
+                        color = Colors.DarkBlue;
+                        positionConnector = new PositionConnector(position);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
             }
             else
             {
-
-                replay.Decorations.Add(new CircleDecoration(180, lifeSpan, Colors.Teal, 0.5, new PositionConnector(effectEvt.Position)));
+                color = Colors.LightBlue;
+                positionConnector = new PositionConnector(effectEvt.Position);
+            }
+            if (effectEvt.Rotation.Z != 0)
+            {
+                decorations.Add(new PieDecoration(DebugRadius, DebugOpeningAngle, lifeSpan, color, 0.5, positionConnector).UsingRotationConnector(new AngleConnector(effectEvt.Rotation.Z)));
+            }
+            else
+            {
+                decorations.Add(new CircleDecoration(DebugRadius, lifeSpan, color, 0.5, positionConnector));
             }
         }
     }
@@ -312,26 +494,33 @@ public class CombatReplay
     #endregion DEBUG EFFECTS
 
     #region DEBUG MISSILES
-    internal static void DebugAllMissiles(ParsedEvtcLog log, CombatReplay replay, long start = long.MinValue, long end = long.MaxValue)
+    private static uint DebugMissileRadius = 40;
+    internal static void DebugMissiles(SingleActor actor, ParsedEvtcLog log, CombatReplayDecorationContainer decorations, long start = long.MinValue, long end = long.MaxValue)
+    {
+        var allMissileEvents = log.CombatData.GetMissileEventsBySrc(actor.AgentItem)
+            .Where(x => x.Time >= start && x.Time <= end && x.SkillID > 0);
+        decorations.AddNonHomingMissiles(log, allMissileEvents, Colors.Red, 0.5, DebugMissileRadius);
+    }
+    internal static void DebugAllMissiles(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, long start = long.MinValue, long end = long.MaxValue)
     {
         var allMissileEvents = log.CombatData.GetMissileEvents()
             .Where(x => x.Time >= start && x.Time <= end && x.SkillID > 0);
-        replay.Decorations.AddNonHomingMissiles(log, allMissileEvents, Colors.Red, 0.5, 40);
+        decorations.AddNonHomingMissiles(log, allMissileEvents, Colors.Red, 0.5, DebugMissileRadius);
     }
-    internal static void DebugAllNPCMissiles(ParsedEvtcLog log, CombatReplay replay, long start = long.MinValue, long end = long.MaxValue)
+    internal static void DebugAllNPCMissiles(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, long start = long.MinValue, long end = long.MaxValue)
     {
         var allMissileEvents = log.CombatData.GetMissileEvents()
             .Where(x => x.Time >= start && x.Time <= end && x.SkillID > 0 && x.Src.IsNPC);
-        replay.Decorations.AddNonHomingMissiles(log, allMissileEvents, Colors.Red, 0.5, 40);
+        decorations.AddNonHomingMissiles(log, allMissileEvents, Colors.Red, 0.5, DebugMissileRadius);
     }
     #endregion DEBUG MISSILES
-
+#endif
     /// <summary>
     /// Add hide based on buff's presence
     /// </summary>
     internal void AddHideByBuff(SingleActor actor, ParsedEvtcLog log, long buffID)
     {
-        Hidden.AddRange(actor.GetBuffStatus(log, buffID, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.Value > 0));
+        Hidden.AddRange(actor.GetBuffStatus(log, buffID).Where(x => x.Value > 0));
     }
 }
 

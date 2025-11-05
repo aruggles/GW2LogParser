@@ -33,12 +33,14 @@ const GraphType = {
     CenteredDPS: 2
 };
 
-const simpleLogData = {
+const reactiveLogdata = {
     phases: [],
     players: [],
-    targets: []
+    targets: [],
+    encounters: [],
+    activeEncounterPhaseData: [],
 };
-
+let IsMultiEncounterLog = false;
 const mainComponentWidth =  Math.max(Math.min(0.9 * window.screen.width, 1600), 1450);
 const maxMechColumns = Math.floor((mainComponentWidth - 150) / 120);
 const maxBuffColumns = Math.floor((mainComponentWidth - 150) / 80);
@@ -146,46 +148,55 @@ const specs = [
     "Berserker",
     "Spellbreaker",
     "Bladesworn",
+    "Paragon",
     //
     "Revenant",
     "Herald",
     "Renegade",
     "Vindicator",
+    "Conduit",
     //
     "Guardian",
     "Dragonhunter",
     "Firebrand",
     "Willbender",
+    "Luminary",
     //
     "Ranger",
     "Druid",
     "Soulbeast",
     "Untamed",
+    "Galeshot",
     //
     "Engineer",
     "Scrapper",
     "Holosmith",
     "Mechanist",
+    "Amalgam",
     //
     "Thief",
     "Daredevil",
     "Deadeye",
     "Specter",
+    "Antiquary",
     //
     "Mesmer",
     "Chronomancer",
     "Mirage",
     "Virtuoso",
+    "Troubadour",
     //
     "Necromancer",
     "Reaper",
     "Scourge",
     "Harbinger",
+    "Ritualist",
     //
     "Elementalist",
     "Tempest",
     "Weaver",
-    "Catalyst"
+    "Catalyst",
+    "Evoker"
 ];
 
 const SpecToBase = {
@@ -193,46 +204,55 @@ const SpecToBase = {
     Berserker: 'Warrior',
     Spellbreaker: 'Warrior',
     Bladesworn: 'Warrior',
+    Paragon: 'Warrior',
     //
     Revenant: "Revenant",
     Herald: "Revenant",
     Renegade: "Revenant",
     Vindicator: "Revenant",
+    Conduit: "Revenant",
     //
     Guardian: "Guardian",
     Dragonhunter: "Guardian",
     Firebrand: "Guardian",
     Willbender: "Guardian",
+    Luminary: "Guardian",
     //
     Ranger: "Ranger",
     Druid: "Ranger",
     Soulbeast: "Ranger",
     Untamed: "Ranger",
+    Galeshot: "Ranger",
     //
     Engineer: "Engineer",
     Scrapper: "Engineer",
     Holosmith: "Engineer",
     Mechanist: "Engineer",
+    Amalgam: "Engineer",
     //
     Thief: "Thief",
     Daredevil: "Thief",
     Deadeye: "Thief",
     Specter: "Thief",
+    Antiquary: "Thief",
     //
     Mesmer: "Mesmer",
     Chronomancer: "Mesmer",
     Mirage: "Mesmer",
     Virtuoso: "Mesmer",
+    Troubadour: "Mesmer",
     //
     Necromancer: "Necromancer",
     Reaper: "Necromancer",
     Scourge: "Necromancer",
     Harbinger: "Necromancer",
+    Ritualist: "Necromancer",
     //
     Elementalist: "Elementalist",
     Tempest: "Elementalist",
     Weaver: "Elementalist",
-    Catalyst: "Elementalist"
+    Catalyst: "Elementalist",
+    Evoker: "Elementalist"
 };
 
 const SkillDecorationCategory = {
@@ -259,6 +279,13 @@ const RotationStatus = {
     CANCEL: 2,
     FULL: 3,
     INSTANT: 4
+};
+
+const PhaseTypes = {
+    SUBPHASE: 0,
+    ENCOUNTER: 1,
+    INSTANCE: 2,
+    TIMEFRAME: 3,
 };
 
 const EIUrlParams = new URLSearchParams(window.location.search);

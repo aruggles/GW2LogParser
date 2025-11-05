@@ -1,6 +1,5 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -14,6 +13,18 @@ internal abstract class BuffRemoveMechanic<T> : IDBasedMechanic<T> where T : Abs
 
     public BuffRemoveMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+    }
+
+    internal BuffRemoveMechanic<T> UsingBuffChecker(long buffID, bool isPresent)
+    {
+        if (isPresent)
+        {
+            return (BuffRemoveMechanic<T>)UsingChecker((evt, log) => GetAgentItem(evt).HasBuff(log, buffID, evt.Time - ParserHelper.ServerDelayConstant));
+        }
+        else
+        {
+            return (BuffRemoveMechanic<T>)UsingChecker((evt, log) => !GetAgentItem(evt).HasBuff(log, buffID, evt.Time - ParserHelper.ServerDelayConstant));
+        }
     }
 
     protected abstract AgentItem GetAgentItem(T brae);

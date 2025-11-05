@@ -76,6 +76,9 @@ const Types = {
     Target: 18,
     TargetPlayer: 19,
     Text: 20,
+    Polygon: 21,
+    TextOverhead: 22,
+    Arena: 23,
 };
 
 function getDefaultCombatReplayTime() {
@@ -91,7 +94,11 @@ var animator = null;
 const reactiveAnimationData = {
     time: getDefaultCombatReplayTime(),
     selectedActorID: null,
-    animated: false
+    animated: false,
+    range: {
+        min: 0,
+        max: 1e12
+    }
 };
 
 var sliderDelimiter = {
@@ -279,12 +286,12 @@ class Animator {
         this.actorOrientationData = new Map();
         this.backgroundActorData = [];
         this.screenSpaceActorData = new RenderablesRoot(start, end);
+        this.agentDataPerParentID = new Map();
         this.selectedActor = null;
         // maps
-        this.backgroundImages = [];
+        this.backgroundImages = new RenderablesRoot(start, end);
         // animation
         this.needBGUpdate = false;
-        this.prevBGImage = null;
         this.animation = null;
         // manipulation
         this.mouseDown = null;
@@ -298,22 +305,6 @@ class Animator {
             if (options.pollingRate) {
                 PollingRate = options.pollingRate;
             }
-            if (options.maps) {
-                for (var i = 0; i < options.maps.length; i++) {
-                    var mapData = options.maps[i];
-                    var image = new Image();
-                    image.onload = function () {
-                        _this.needBGUpdate = true;
-                        animateCanvas(noUpdateTime);
-                    };
-                    image.src = mapData.link;
-                    this.backgroundImages.push({
-                        image: image,
-                        start: mapData.start,
-                        end: mapData.end
-                    });
-                }
-            }
             if (options.actors) {
                 this._initActors(options.actors, options.decorationRenderings, options.decorationMetadata);
             }
@@ -323,6 +314,14 @@ class Animator {
             deadIcon.src = UIIcons.Dead;
             facingIcon.src = UIIcons.Facing;
         }
+        let cur = start;
+        while (cur < end) {
+            this.times.push(cur);
+            cur += PollingRate;
+        }
+        this.reactiveDataStatus.time = start;
+        this.reactiveDataStatus.range.min = this.times[0];
+        this.reactiveDataStatus.range.max = this.times[this.times.length - 1];
     }
 
     attachDOM(mainCanvasID, bgCanvasID, pickCanvasID, timeRangeID, timeRangeDisplayID) {
@@ -379,6 +378,9 @@ class Animator {
                 case Types.Circle:
                     MetadataClass = CircleMetadata;
                     break;
+                case Types.Polygon:
+                    MetadataClass = PolygonMetadata;
+                    break;
                 case Types.Doughnut:
                     MetadataClass = DoughnutMetadata;
                     break;
@@ -412,6 +414,12 @@ class Animator {
                 case Types.Text:
                     MetadataClass = TextMetadata;
                     break;
+                case Types.TextOverhead:
+                    MetadataClass = TextOverheadMetadata;
+                    break;
+                case Types.Arena:
+                    MetadataClass = ArenaMetadata;
+                    break;
                 default:
                     throw "Unknown decoration type " + metadata.type;
             }
@@ -427,12 +435,6 @@ class Animator {
                     ActorClass = PlayerIconDrawable;
                     actorSize = 22;
                     mapToFill = this.playerData;
-                    if (this.times.length === 0) {
-                        for (let j = 0; j < actor.positions.length / 2; j++) {
-                            this.times.push(j * PollingRate);
-                        }
-                        reactiveAnimationData.time = Math.min(reactiveAnimationData.time, this.times[this.times.length - 1]);
-                    }
                     break;
                 case Types.Target:
                     ActorClass = NPCIconDrawable;
@@ -451,7 +453,7 @@ class Animator {
                     break;
                 case Types.Friendly:
                     ActorClass = NPCIconDrawable;
-                    actorSize = 20;
+                    actorSize = 22;
                     mapToFill = this.friendlyMobData;
                     break;
                 case Types.FriendlyPlayer:
@@ -462,7 +464,13 @@ class Animator {
                 default:
                     throw "Unknown decoration type " + actor.type;
             }
-            mapToFill.add(new ActorClass(actor, actorSize));
+            const renderable = new ActorClass(actor, actorSize);
+            mapToFill.add(renderable);
+            if (renderable.parentID >= 0) {
+                let array = this.agentDataPerParentID.get(renderable.parentID) ?? [];
+                array.push(renderable);
+                this.agentDataPerParentID.set(renderable.parentID, array);
+            }
         }
         for (let i = 0; i < decorationRenderings.length; i++) {
             const decorationRendering = {};
@@ -471,13 +479,30 @@ class Animator {
             if (!decorationRendering.isMechanicOrSkill) {
                 switch (decorationRendering.type) {
                     case Types.ActorOrientation:
-                        this.actorOrientationData.set(decorationRendering.connectedTo.masterId, new FacingMechanicDrawable(decorationRendering));
+                        let orientationID = decorationRendering.connectedTo.masterID;
+                        var orientationDrawable = new ActorOrientationDrawable(decorationRendering);
+                        if (this.agentDataPerParentID.has(orientationID)) {
+                            let halfTime = (orientationDrawable.start + orientationDrawable.end) / 2;
+                            let agents = this.agentDataPerParentID.get(orientationID);
+                            for (let i = 0; i < agents.length; i++) {
+                                let agent = agents[i];
+                                if (agent.start <= halfTime && agent.end >= halfTime) {
+                                    this.actorOrientationData.set(agents[i].id, orientationDrawable);
+                                    break;
+                                }
+                            }
+                        } else {
+                            this.actorOrientationData.set(orientationID, orientationDrawable);
+                        }
                         break;
                     case Types.MovingPlatform:
                         this.backgroundActorData.push(new MovingPlatformDrawable(decorationRendering));
                         break;
                     case Types.BackgroundIcon:
                         this.backgroundActorData.push(new BackgroundIconMechanicDrawable(decorationRendering));
+                        break;
+                    case Types.Arena:
+                        this.backgroundImages.add(new ArenaDrawable(decorationRendering));
                         break;
                     default:
                         throw "Unknown decoration type " + decorationRendering.type;
@@ -492,8 +517,14 @@ class Animator {
                         }
                         DecorationClass = TextDrawable;
                         break;
+                    case Types.TextOverhead:
+                        this.overheadActorData.add(new TextOverheadDrawable(decorationRendering));
+                        continue;
                     case Types.Circle:
                         DecorationClass = CircleMechanicDrawable;
+                        break;
+                    case Types.Polygon:
+                        DecorationClass = PolygonMechanicDrawable;
                         break;
                     case Types.Rectangle:
                         DecorationClass = RectangleMechanicDrawable;
@@ -538,6 +569,13 @@ class Animator {
         }
     }
 
+    updateRange(phase) {
+        let min = Math.max(this.times[0], phase.start * 1000);
+        let max = Math.min(this.times[this.times.length - 1], phase.end * 1000);
+        this.reactiveDataStatus.range.min = min;
+        this.reactiveDataStatus.range.max = max;
+    }
+
     updateTime(value) {
         this.reactiveDataStatus.time = parseInt(value);
         if (this.animation === null) {
@@ -546,7 +584,7 @@ class Animator {
     }
 
     updateTextInput() {
-        this.timeSliderDisplay.value = (this.reactiveDataStatus.time / 1000.0).toFixed(3);
+        this.timeSliderDisplay.value = ((this.reactiveDataStatus.time - this.reactiveDataStatus.range.min) / 1000.0).toFixed(3);
     }
 
     updateInputTime(value) {
@@ -557,7 +595,9 @@ class Animator {
                 return;
             }
             const ms = Math.round(parsedTime * 1000.0);
-            this.reactiveDataStatus.time = Math.min(Math.max(ms, 0), this.times[this.times.length - 1]);
+            const min = this.reactiveDataStatus.range.min;
+            const max = this.reactiveDataStatus.range.max;
+            this.reactiveDataStatus.time = Math.min(Math.max(ms, min), max);
             animateCanvas(updateText);
         } catch (error) {
             console.error(error);
@@ -572,8 +612,10 @@ class Animator {
 
     startAnimate(updateReactiveStatus) {
         if (this.animation === null && this.times.length > 0) {
-            if (this.reactiveDataStatus.time >= this.times[this.times.length - 1] && !this.backwards) {
-                this.reactiveDataStatus.time = 0;
+            const max = this.reactiveDataStatus.range.max;
+            const min = this.reactiveDataStatus.range.min;
+            if (this.reactiveDataStatus.time >= max && !this.backwards) {
+                this.reactiveDataStatus.time = min;
             }
             this.prevTime = new Date().getTime();
             this.animation = requestAnimationFrame(animateCanvas);
@@ -598,7 +640,7 @@ class Animator {
     }
 
     restartAnimate() {
-        this.reactiveDataStatus.time = 0;
+        this.reactiveDataStatus.time = this.reactiveDataStatus.range.min;
         if (this.animation === null) {
             animateCanvas(noUpdateTime);
         }
@@ -623,6 +665,37 @@ class Animator {
         }
         if (this.animation === null) {
             animateCanvas(noUpdateTime);
+        }
+    }
+    
+    _reselectIfEnglobed() {     
+        if (this.selectedActor && this.selectedActor.parentID >= 0) {
+            const perParentArray = this.agentDataPerParentID.get(this.selectedActor.parentID);
+            if (perParentArray) {
+                let actor = perParentArray.filter(x => x.getPosition() != null)[0];
+                if (!actor) {
+                    const time = this.reactiveDataStatus.time;
+                    // check for first in interval
+                    let candidates = perParentArray.filter(x => x.start <= time && x.end >= time);
+                    if (candidates.length) {
+                        actor = candidates[0];
+                    } else {
+                        // first
+                        candidates = perParentArray.filter(x => x.start >= time);
+                        if (candidates.length) {
+                            actor = candidates[0];
+                        } else {
+                            // last
+                            candidates = perParentArray.filter(x => x.end <= time);
+                            if (candidates.length) {
+                                actor = candidates[candidates.length - 1];
+                            }
+                        }
+                    }
+                }
+                this.selectedActor = actor || this.selectedActor;
+                this.reactiveDataStatus.selectedActorID = this.selectedActor.id;             
+            }
         }
     }
 
@@ -743,6 +816,7 @@ class Animator {
         var pickCtx = this.pickContext;
 
         canvas.addEventListener('mousedown', function (evt) {
+            evt.preventDefault();
             _this.lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
             _this.lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
             _this.mouseDown = {
@@ -753,6 +827,7 @@ class Animator {
         }, false);
 
         canvas.addEventListener('mousemove', function (evt) {
+            evt.preventDefault();
             _this.lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
             _this.lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
             _this.dragged = true;
@@ -787,6 +862,7 @@ class Animator {
         }, false);
 
         var zoom = function (evt) {
+            evt.preventDefault();
             var delta = evt.wheelDelta ? evt.wheelDelta / 40 : evt.detail ? -evt.detail : 0;
             if (delta) {
                 var pt = ctx.transformedPoint(_this.lastX, _this.lastY);
@@ -794,6 +870,10 @@ class Animator {
                 bgCtx.translate(pt.x, pt.y);
                 var factor = Math.pow(1.1, delta);
                 ctx.scale(factor, factor);
+                if ((50 / (InchToPixel * _this.scale) < 10)) {            
+                    ctx.scale( 1.0 / factor, 1.0 / factor);
+                    factor = 1.0;
+                }
                 ctx.translate(-pt.x, -pt.y);
                 bgCtx.scale(factor, factor);
                 bgCtx.translate(-pt.x, -pt.y);
@@ -802,7 +882,6 @@ class Animator {
                     animateCanvas(noUpdateTime);
                 }
             }
-            return evt.preventDefault() && false;
         };
 
         canvas.addEventListener('DOMMouseScroll', zoom, false);
@@ -872,7 +951,7 @@ class Animator {
         var scale = ctx.scale;
         var _this = this;
         ctx.scale = function (sx, sy) {
-            xform = xform.scaleNonUniform(sx, sy);
+            xform = xform.scale(sx, sy);
             var xAxis = Math.sqrt(xform.a * xform.a + xform.b * xform.b);
             var yAxis = Math.sqrt(xform.c * xform.c + xform.d * xform.d);
             _this.scale = Math.max(xAxis, yAxis) / resolutionMultiplier;
@@ -924,22 +1003,17 @@ class Animator {
         };
     }
     // animation
-    _getBackgroundImage() {
-        var time = this.reactiveDataStatus.time;
-        for (var i = 0; i < this.backgroundImages.length; i++) {
-            var imageData = this.backgroundImages[i];
-            if (imageData.start <= time && imageData.end >= time) {
-                return imageData.image;
-            }
-        }
-        return null;
-    }
-
     _drawBGCanvas() {
-        var imgToDraw = this._getBackgroundImage();
-        if ((imgToDraw !== null && imgToDraw !== this.prevBGImage) || this.needBGUpdate || this._mustMoveToSelected()) {
+        const _this = this;
+        if (!this.needBGUpdate) {
+            this.backgroundImages.forEach(x => {
+                if (x.needsUpdate()) {
+                    _this.needBGUpdate = true;
+                }
+            });
+        }
+        if (this.needBGUpdate || this._mustMoveToSelected()) {
             this.needBGUpdate = false;
-            this.prevBGImage = imgToDraw;
             var ctx = this.bgContext;
             var canvas = this.bgCanvas;
             var p1 = ctx.transformedPoint(0, 0);
@@ -957,8 +1031,7 @@ class Animator {
             {
 
                 this._moveToSelected(ctx);
-                ctx.drawImage(imgToDraw, 0, 0, canvas.width / resolutionMultiplier, canvas.height / resolutionMultiplier);
-
+                this.backgroundImages.draw(standardDraw);
                 //ctx.globalCompositeOperation = "color-burn";
                 ctx.save();
                 {
@@ -1025,10 +1098,10 @@ class Animator {
         {
             ctx.setTransform(mainTransform.a, mainTransform.b, mainTransform.c, mainTransform.d, mainTransform.e, mainTransform.f);
 
-            this.friendlyMobData.draw(selectablePickingDraw);
-            this.friendlyPlayerData.draw(selectablePickingDraw);
 
             if (!this.displaySettings.useActorHitboxWidth) {
+                this.friendlyMobData.draw(selectablePickingDraw);
+                this.friendlyPlayerData.draw(selectablePickingDraw);
                 this.playerData.draw(selectablePickingDraw);
             }
 
@@ -1039,6 +1112,8 @@ class Animator {
             this.targetData.draw(selectablePickingDraw);
             this.targetPlayerData.draw(selectablePickingDraw);
             if (this.displaySettings.useActorHitboxWidth) {
+                this.friendlyMobData.draw(selectablePickingDraw);
+                this.friendlyPlayerData.draw(selectablePickingDraw);
                 this.playerData.draw(selectablePickingDraw);
             }
             if (this.selectedActor !== null) {
@@ -1080,10 +1155,10 @@ class Animator {
                 this.skillMechanicActorData.draw(standardDraw);
             }
 
-            this.friendlyMobData.draw(selectableDraw);
-            this.friendlyPlayerData.draw(selectableDraw);
 
             if (!this.displaySettings.useActorHitboxWidth) {
+                this.friendlyMobData.draw(selectableDraw);
+                this.friendlyPlayerData.draw(selectableDraw);
                 this.playerData.draw(selectableDraw);
             }
 
@@ -1094,6 +1169,8 @@ class Animator {
             this.targetData.draw(selectableDraw);
             this.targetPlayerData.draw(selectableDraw);
             if (this.displaySettings.useActorHitboxWidth) {
+                this.friendlyMobData.draw(selectableDraw);
+                this.friendlyPlayerData.draw(selectableDraw);
                 this.playerData.draw(selectableDraw);
             }
             if (this.selectedActor !== null) {
@@ -1134,11 +1211,11 @@ class Animator {
             }
         }
     }
-
     draw() {
         if (!this.mainCanvas) {
             return;
-        }
+        }    
+        this._reselectIfEnglobed();
         //
         //this._drawPickCanvas();
         this._drawBGCanvas();
@@ -1154,17 +1231,18 @@ function animateCanvas(noRequest) {
     if (animator == null) {
         return;
     }
-    let lastTime = animator.times[animator.times.length - 1];
+    let lastTime = animator.reactiveDataStatus.range.max;
+    let firstTime = animator.reactiveDataStatus.range.min;
     if (noRequest > noUpdateTime && animator.animation !== null) {
         let curTime = new Date().getTime();
         let timeOffset = curTime - animator.prevTime;
         animator.prevTime = curTime;
         animator.reactiveDataStatus.time = Math.round(Math.max(Math.min(animator.reactiveDataStatus.time + animator.getSpeed() * timeOffset, lastTime), 0));
     }
-    if ((animator.reactiveDataStatus.time === lastTime && !animator.backwards) || (animator.reactiveDataStatus.time === 0 && animator.backwards)) {
+    if ((animator.reactiveDataStatus.time === lastTime && !animator.backwards) || (animator.reactiveDataStatus.time === firstTime && animator.backwards)) {
         animator.stopAnimate(true);
     }
-    animator.timeSlider.value = animator.reactiveDataStatus.time.toString();
+    animator.timeSlider.value = (animator.reactiveDataStatus.time - animator.reactiveDataStatus.range.min).toString()
     if (noRequest > updateText) {
         animator.updateTextInput();
     }

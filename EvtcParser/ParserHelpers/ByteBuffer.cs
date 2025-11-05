@@ -25,7 +25,7 @@ internal ref struct ByteBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe void PushNative<T>(T value) where T : unmanaged
     {
-        fixed (byte* ptr = &Span[Offset]) { *(T*)ptr = value; }
+        fixed(byte* ptr = &Span[Offset]) { *(T*)ptr = value; }
         Offset += sizeof(T);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

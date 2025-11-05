@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -137,7 +134,7 @@ public class OutgoingDamageModifier : DamageModifier
         throw new NotImplementedException("Not implemented damage source " + DmgSrc);
     }
 
-    public override IEnumerable<HealthDamageEvent> GetHitDamageEvents(SingleActor actor, ParsedEvtcLog log, SingleActor? t, long start, long end)
+    public override IReadOnlyList<HealthDamageEvent> GetHitDamageEvents(SingleActor actor, ParsedEvtcLog log, SingleActor? t, long start, long end)
     {
         switch (DmgSrc)
         {

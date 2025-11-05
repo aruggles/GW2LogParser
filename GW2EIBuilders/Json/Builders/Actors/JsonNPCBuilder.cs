@@ -18,35 +18,34 @@ internal static class JsonNPCBuilder
     {
         var jsonNPC = new JsonNPC();
         JsonActorBuilder.FillJsonActor(jsonNPC, npc, log, settings, skillMap, buffMap);
-        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        IReadOnlyList<PhaseData> phases = log.LogData.GetPhases(log);
         //
         jsonNPC.Id = npc.ID;
-        IReadOnlyList<HealthUpdateEvent> hpUpdates = log.CombatData.GetHealthUpdateEvents(npc.AgentItem);
-        IReadOnlyList<BarrierUpdateEvent> barrierUpdates = log.CombatData.GetBarrierUpdateEvents(npc.AgentItem);
-        jsonNPC.FirstAware = (int)npc.FirstAware;
-        jsonNPC.LastAware = (int)npc.LastAware;
         jsonNPC.EnemyPlayer = npc is PlayerNonSquad;
         double hpLeft = 100.0;
         double barrierLeft = 0.0;
-        if (log.FightData.Success)
+        var targetEncounterPhase = phases.OfType<EncounterPhaseData>().FirstOrDefault(x => x.Targets.ContainsKey(npc));
+        if (targetEncounterPhase != null && targetEncounterPhase.Success)
         {
             hpLeft = 0;
         }
         else
         {
+            var hpUpdates = npc.GetHealthUpdates(log);
             if (hpUpdates.Count > 0)
             {
-                hpLeft = hpUpdates.Last().HealthPercent;
+                hpLeft = hpUpdates.Last().Value;
             }
+            var barrierUpdates = npc.GetBarrierUpdates(log);
             if (barrierUpdates.Count > 0)
             {
-                barrierLeft = barrierUpdates.Last().BarrierPercent;
+                barrierLeft = barrierUpdates.Last().Value;
             }
         }
         jsonNPC.HealthPercentBurned = 100.0 - hpLeft;
         jsonNPC.BarrierPercent = barrierLeft;
         jsonNPC.FinalHealth = npc.GetCurrentHealth(log, hpLeft);
-        jsonNPC.FinalBarrier = npc.GetCurrentBarrier(log, barrierLeft, log.FightData.FightEnd);
+        jsonNPC.FinalBarrier = npc.GetCurrentBarrier(log, barrierLeft, log.LogData.LogEnd);
         //
         jsonNPC.Buffs = GetNPCJsonBuffsUptime(npc, log, settings, buffMap);
         jsonNPC.BuffVolumes = GetNPCJsonBuffVolumes(npc, log, buffMap);
@@ -60,13 +59,13 @@ internal static class JsonNPCBuilder
 
     private static List<JsonBuffsUptime> GetNPCJsonBuffsUptime(SingleActor npc, ParsedEvtcLog log, RawFormatSettings settings, Dictionary<long, Buff> buffMap)
     {
-        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        IReadOnlyList<PhaseData> phases = log.LogData.GetPhases(log);
         var buffs = phases.Select(x => npc.GetBuffs(ParserHelper.BuffEnum.Self, log, x.Start, x.End)).ToList();
         var res = new List<JsonBuffsUptime>(buffs[0].Count);
         var buffDictionaries = phases.Select(x => npc.GetBuffsDictionary(log, x.Start, x.End)).ToList();
         foreach (KeyValuePair<long, BuffStatistics> pair in buffs[0])
         {
-            Buff buff = log.Buffs.BuffsByIds[pair.Key];
+            Buff buff = log.Buffs.BuffsByIDs[pair.Key];
             if (buff.Classification == Buff.BuffClassification.Hidden)
             {
                 continue;
@@ -91,13 +90,13 @@ internal static class JsonNPCBuilder
     }
     private static List<JsonBuffVolumes> GetNPCJsonBuffVolumes(SingleActor npc, ParsedEvtcLog log, Dictionary<long, Buff> buffMap)
     {
-        IReadOnlyList<PhaseData> phases = log.FightData.GetPhases(log);
+        IReadOnlyList<PhaseData> phases = log.LogData.GetPhases(log);
         var buffVolumes = phases.Select(x => npc.GetBuffVolumes(ParserHelper.BuffEnum.Self, log, x.Start, x.End)).ToList();
         var res = new List<JsonBuffVolumes>(buffVolumes[0].Count);
         var buffVolumeDictionaries = phases.Select(x => npc.GetBuffVolumesDictionary(log, x.Start, x.End)).ToList();
         foreach (KeyValuePair<long, BuffVolumeStatistics> pair in buffVolumes[0])
         {
-            Buff buff = log.Buffs.BuffsByIds[pair.Key];
+            Buff buff = log.Buffs.BuffsByIDs[pair.Key];
             if (buff.Classification == Buff.BuffClassification.Hidden)
             {
                 continue;

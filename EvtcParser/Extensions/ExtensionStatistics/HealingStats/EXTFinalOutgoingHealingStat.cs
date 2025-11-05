@@ -1,6 +1,4 @@
 ﻿using GW2EIEvtcParser.EIData;
-using System;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.Extensions.HealingStatsExtensionHandler;
 
 namespace GW2EIEvtcParser.Extensions;

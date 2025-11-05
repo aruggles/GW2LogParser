@@ -2,7 +2,7 @@
 
 namespace GW2EIEvtcParser;
 
-public class CachingCollectionCustom<Q, T>(ParsedEvtcLog log, Q nullValue, int initialTertiaryCapacity)
+public class CachingCollectionCustom<Q, T>(ParsedEvtcLog log, Q nullValue, int initialTertiaryCapacity) 
     : AbstractCachingCollection<T>(log)
 {
     private readonly int _initialSecondaryCapacity = 20;
@@ -18,6 +18,26 @@ public class CachingCollectionCustom<Q, T>(ParsedEvtcLog log, Q nullValue, int i
         if (_cache.TryGetValue(start, out var subCache))
         {
             if (subCache.TryGetValue(end, out var subSubCache))
+            {
+                if (subSubCache.TryGetValue(q, out value!))
+                {
+                    return true;
+                }
+            }
+        }
+        value = default;
+        return false;
+    }
+
+    public bool TryGetEnglobingValue(long start, long end, Q? q, [NotNullWhen(true)] out T? value)
+    {
+        (start, end) = SanitizeTimes(start, end);
+        q = q == null ? _nullValue : q;
+        var englobingStart = _cache.Keys.Where(x => x <= start && _cache[x].Keys.Any(y => y >= end)).DefaultIfEmpty(0).Max();
+        if (_cache.TryGetValue(englobingStart, out var subCache))
+        {
+            var englobingEnd = subCache.Keys.Where(x => x >= end).DefaultIfEmpty(0).Min();
+            if (subCache.TryGetValue(englobingEnd, out var subSubCache))
             {
                 if (subSubCache.TryGetValue(q, out value!))
                 {
@@ -65,6 +85,10 @@ public class CachingCollectionCustom<Q, T>(ParsedEvtcLog log, Q nullValue, int i
     public override void Clear()
     {
         _cache.Clear();
+    }
+    public override bool IsEmpty()
+    {
+        return _cache.Count == 0;
     }
 
 }

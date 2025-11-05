@@ -1,33 +1,28 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 
 namespace GW2EIEvtcParser.EIData.BuffSimulators;
 
-internal class BuffSimulationItemWasted : AbstractBuffSimulationItemWasted
+internal class BuffSimulationItemWasted : SimulationItemWasted
 {
 
     public BuffSimulationItemWasted(AgentItem src, long waste, long time) : base(src, waste, time)
     {
     }
-
-    public override long SetBuffDistributionItem(BuffDistribution distribs, long start, long end, long buffID)
+    public override void SetBuffDistributionItem(BuffDistribution distribs, long start, long end, long buffID)
     {
-        Dictionary<AgentItem, BuffDistributionItem> distrib = distribs.GetDistrib(buffID);
         long value = GetValue(start, end);
         if (value > 0)
         {
-            AgentItem agent = Src;
-            if (distrib.TryGetValue(agent, out var toModify))
+            Dictionary<AgentItem, BuffDistributionItem> distrib = distribs.GetDistrib(buffID);
+            AddWaste(distrib, value, Src);
+            foreach (var subSrc in Src.EnglobedAgentItems)
             {
-                toModify.IncrementWaste(value);
-            }
-            else
-            {
-                distrib.Add(agent, new BuffDistributionItem(
-                    0,
-                    0, value, 0, 0, 0));
+                long subValue = GetValue(Math.Max(start, subSrc.FirstAware), Math.Min(end, subSrc.LastAware));
+                if (subValue > 0)
+                {
+                    AddWaste(distrib, subValue, subSrc);
+                }
             }
         }
-        return value;
     }
 }

@@ -1,16 +1,13 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.Extensions;
 
 public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
 {
-    private SingleActor _actor;
+    private readonly SingleActor _actor;
     private AgentItem _agentItem => _actor.AgentItem;
+    private AgentItem _englobingAgentItem => _actor.EnglobingAgentItem;
 
     private CachingCollectionWithTarget<int[]>? _barrier1S;
     private CachingCollectionWithTarget<int[]>? _barrierReceived1S;
@@ -22,85 +19,43 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
     {
         _actor = actor;
     }
-
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitBarrierEvents(ParsedEvtcLog log)
     {
-        if (BarrierEvents == null)
+        if (BarrierEventsByDst == null)
         {
-            BarrierEvents = new List<EXTBarrierEvent>(log.CombatData.EXTBarrierCombatData.GetBarrierData(_agentItem).Where(x => x.ToFriendly));
-            IReadOnlyDictionary<long, Minions> minions = _actor.GetMinions(log); //TODO(Rennorb) @perf: Find average complexity for reserving elements in barrier events
-            foreach (Minions minion in minions.Values)
+            var barrierEvents = new List<EXTBarrierEvent>(log.CombatData.EXTBarrierCombatData.GetBarrierData(_agentItem).Where(x => x.ToFriendly));
+            var minions = _actor.GetMinions(log); //TODO(Rennorb) @perf: Find average complexity for reserving elements in barrier events
+            foreach (Minions minion in minions)
             {
-                BarrierEvents.AddRange(minion.EXTBarrier.GetOutgoingBarrierEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                barrierEvents.AddRange(minion.EXTBarrier.GetOutgoingBarrierEvents(null, log));
             }
-            BarrierEvents.SortByTime();
-            BarrierEventsByDst = BarrierEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            barrierEvents.SortByTime();
+            BarrierEventsByDst = barrierEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            BarrierEventsByDst[ParserHelper._nullAgent] = barrierEvents;
         }
     }
-#pragma warning restore CS8774 // must have non null value when exiting
 
-    public override IEnumerable<EXTBarrierEvent> GetOutgoingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        if (!log.CombatData.HasEXTBarrier)
-        {
-            throw new InvalidOperationException("Healing Stats extension not present");
-        }
 
-        InitBarrierEvents(log);
-
-        if (target != null)
-        {
-            if (BarrierEventsByDst.TryGetValue(target.AgentItem, out var barrierEvents))
-            {
-                return barrierEvents.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return BarrierEvents.Where(x => x.Time >= start && x.Time <= end);
-    }
-
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitIncomingBarrierEvents(ParsedEvtcLog log)
     {
-        if (BarrierReceivedEvents == null)
+        if (BarrierReceivedEventsBySrc == null)
         {
-            BarrierReceivedEvents = new List<EXTBarrierEvent>(log.CombatData.EXTBarrierCombatData.GetBarrierReceivedData(_agentItem).Where(x => x.ToFriendly));
-            BarrierReceivedEventsBySrc = BarrierReceivedEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            var barrierReceivedEvents = new List<EXTBarrierEvent>(log.CombatData.EXTBarrierCombatData.GetBarrierReceivedData(_agentItem).Where(x => x.ToFriendly));
+            BarrierReceivedEventsBySrc = barrierReceivedEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            BarrierReceivedEventsBySrc[ParserHelper._nullAgent] = barrierReceivedEvents;
         }
     }
-#pragma warning restore CS8774 // must have non null value when exiting
 
-    public override IEnumerable<EXTBarrierEvent> GetIncomingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
+    private CachingCollectionWithTarget<List<EXTBarrierEvent>>? _justActorBarrierCache;
+    public IReadOnlyList<EXTBarrierEvent> GetJustActorOutgoingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        if (!log.CombatData.HasEXTBarrier)
+        _justActorBarrierCache ??= new(log);
+        if (!_justActorBarrierCache.TryGetValue(start, end, target, out var healEvents))
         {
-            throw new InvalidOperationException("Healing Stats extension not present");
+            healEvents = GetOutgoingBarrierEvents(target, log, start, end).Where(x => x.From.Is(_agentItem)).ToList();
+            _justActorBarrierCache.Set(start, end, target, healEvents);
         }
-
-        InitIncomingBarrierEvents(log);
-        if (target != null)
-        {
-            if (BarrierReceivedEventsBySrc.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return BarrierReceivedEvents.Where(x => x.Time >= start && x.Time <= end);
-    }
-
-    public IEnumerable<EXTBarrierEvent> GetJustActorOutgoingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        return GetOutgoingBarrierEvents(target, log, start, end).Where(x => x.From == _agentItem);
+        return healEvents;
     }
 
     private static int[] ComputeBarrierGraph(IEnumerable<EXTBarrierEvent> dls, long start, long end)

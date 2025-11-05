@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.EIData.BuffSimulators;

@@ -1,4 +1,6 @@
-﻿namespace Gw2LogParser.EvtcParserExtensions;
+﻿using GW2EIParserCommons;
+
+namespace Gw2LogParser.EvtcParserExtensions;
 
 internal enum OperationState
 {
@@ -13,13 +15,11 @@ internal enum OperationState
 }
 internal sealed class FormOperationController : OperationController
 {
-
-    private CancellationTokenSource _cancelTokenSource;
-
-    private Task _task;
+    private CancellationTokenSource? _cancelTokenSource;
+    private Task? _task;
 
     private readonly DataGridView _dgv;
-    private readonly BindingSource _bdSrc;
+    private readonly BindingSource? _bdSrc;
 
     /// <summary>
     /// State of the button
@@ -35,12 +35,13 @@ internal sealed class FormOperationController : OperationController
     /// </summary>
     public OperationState State { get; private set; }
 
-    public FormOperationController(string location, string status, DataGridView dgv, BindingSource bindingSource, int index) : base(location, status)
+    public FormOperationController(string location, string status, DataGridView dgv, BindingSource? bindingSource, int index) : base(location, status)
     {
         ButtonText = "Parse";
+        ReParseText = "N/A";
         State = OperationState.Ready;
         _dgv = dgv;
-        bindingSource.Add(this);
+        bindingSource?.Add(this);
         _bdSrc = bindingSource;
         Index = index;
         //SetReparseButtonState(false);
@@ -63,7 +64,7 @@ internal sealed class FormOperationController : OperationController
 
     protected override void ThrowIfCanceled()
     {
-        if (_task != null && _cancelTokenSource.IsCancellationRequested)
+        if (_task != null && _cancelTokenSource != null && _cancelTokenSource.IsCancellationRequested)
         {
             _cancelTokenSource.Token.ThrowIfCancellationRequested();
         }
@@ -103,7 +104,7 @@ internal sealed class FormOperationController : OperationController
 
     public void ToCancelState()
     {
-        if (_task == null)
+        if (_task == null || _cancelTokenSource == null)
         {
             return;
         }

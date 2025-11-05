@@ -1,6 +1,5 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -8,9 +7,8 @@ namespace GW2EIEvtcParser.EIData;
 internal abstract class EnemyCastMechanic : CastMechanic
 {
 
-    public EnemyCastMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, internalCoolDown)
+    public EnemyCastMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([mechanicID], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
-        IsEnemyMechanic = true;
     }
 
     public EnemyCastMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)

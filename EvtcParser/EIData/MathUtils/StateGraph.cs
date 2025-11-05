@@ -1,6 +1,4 @@
 ﻿
-using System.Collections.Generic;
-
 namespace GW2EIEvtcParser.EIData;
 public class StateGraph<T>
 {

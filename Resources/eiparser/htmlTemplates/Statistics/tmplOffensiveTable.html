@@ -67,6 +67,11 @@
                         <img :src="UIIcons.Interrupt" alt="Interrupts"                 
                             class="icon icon-hover">
                     </th>
+                    <th class="stat-cell" :class="getHeaderClass('Data', 27)" @click="sortBy('Data', 27)"
+                        data-original-title="CC">
+                        <img :src="UIIcons.CC" alt="CC"
+                             class="icon icon-hover">
+                    </th> 
                     <th class="stat-cell" :class="getHeaderClass('Data', 8)" @click="sortBy('Data', 8)"
                         data-original-title="Times the enemy was invulnerable to attacks">
                         <img :src="UIIcons.Invul" alt="Invuln"
@@ -81,12 +86,7 @@
                         data-original-title="Times the enemy blocked an attack">
                         <img :src="UIIcons.Block" alt="Blocked"
                              class="icon icon-hover">
-                    </th>  
-                    <th class="stat-cell" :class="getHeaderClass('Data', 27)" @click="sortBy('Data', 27)"
-                        data-original-title="CC">
-                        <img :src="UIIcons.CC" alt="CC"
-                             class="icon icon-hover">
-                    </th>    
+                    </th>     
                     <th class="stat-cell" v-if="wvw" :class="getHeaderClass('Data', 17)" @click="sortBy('Data', 17)"
                         data-original-title="Down Contribution">
                          <img :src="UIIcons.Damage" alt="Damage"
@@ -169,6 +169,9 @@
                     <td :class="getBodyClass('Data', 7)">
                         {{row.data[7]}}
                     </td>
+                    <td :class="getBodyClass('Data', 27)" :data-original-title="round3(row.data[28]/1000) + ' seconds'">
+                        {{row.data[27]}}
+                    </td>
                     <td :class="getBodyClass('Data', 8)"
                         :data-original-title="round2(100*row.data[8]/ row.data[0]) + '% of '+ row.data[16] + ' hit(s)'">
                         {{row.data[8]}}
@@ -180,9 +183,6 @@
                     <td :class="getBodyClass('Data', 10)"
                         :data-original-title="round2(100*row.data[10]/ row.data[0]) + '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[10]}}
-                    </td>
-                    <td :class="getBodyClass('Data', 27)" :data-original-title="round3(row.data[28]/1000) + ' seconds'">
-                        {{row.data[27]}}
                     </td>
                     <td v-if="wvw" :class="getBodyClass('Data', 17)"
                         :data-original-title="round2(100*row.data[17]/ row.data[26]) +'% of total damage'">
@@ -234,6 +234,9 @@
                     <td>
                         {{row.data[7]}}
                     </td>
+                    <td :data-original-title="round3(row.data[28] / 1000) + ' seconds'">
+                        {{row.data[27]}}
+                    </td>
                     <td :data-original-title="round2(100*row.data[8]/ row.data[0])+ '% of '+ row.data[16] + ' hit(s)'">
                         {{row.data[8]}}
                     </td>
@@ -242,9 +245,6 @@
                     </td>
                     <td :data-original-title="round2(100*row.data[10]/ row.data[0]) + '% of '+ row.data[0] + ' direct hit(s)'">
                         {{row.data[10]}}
-                    </td>
-                    <td :data-original-title="round3(row.data[28] / 1000) + ' seconds'">
-                        {{row.data[27]}}
                     </td>
                     <td v-if="wvw" :data-original-title="round2(100*row.data[17]/ row.data[26]) +'% of total damage'">
                         {{row.data[17]}}
@@ -268,7 +268,7 @@
     Vue.component("offensive-stats-component", {
         props: ["activetargets", "playerindex", "phaseindex"],
         template: `${template}`,
-        mixins: [numberComponent, sortedTableComponent],
+        mixins: [numberComponent, sortedTableComponent, encounterPhaseComponent],
         data: function () {
             return {
                 targetless: logData.targetless,
@@ -336,8 +336,9 @@
                 return logData.phases[this.phaseindex];
             },
             tableData: function () {
-                if (this.cache.has(this.phaseindex)) {
-                    return this.cache.get(this.phaseindex);
+                const cacheID = this.encounterPhase.id + '-' + this.phaseindex;
+                if (this.cache.has(cacheID)) {
+                    return this.cache.get(cacheID);
                 }
                 const dataLength = this.phase.offensiveStats[0].length;
                 var rows = [];
@@ -348,10 +349,11 @@
                     data: new Array(dataLength).fill(0),
                     count: 0
                 };
+                const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
                 for (var i = 0; i < this.phase.offensiveStats.length; i++) {
                     var data = new Array(dataLength).fill(0);
-                    var player = logData.players[i];
-                    if (player.isFake) {
+                    var player = players[i];
+                    if (!player) {
                         continue;
                     }
                     if (!groups[player.group]) {
@@ -384,11 +386,11 @@
                     rows: rows,
                     sums: sums
                 };
-                this.cache.set(this.phaseindex, res);
+                this.cache.set(cacheID, res);
                 return res;
             },
             tableDataTarget: function () {
-                var cacheID = this.phaseindex + '-';
+                var cacheID = this.encounterPhase.id + '-' + this.phaseindex + '-';
                 cacheID += getTargetCacheID(this.activetargets);
                 if (this.cacheTarget.has(cacheID)) {
                     return this.cacheTarget.get(cacheID);
@@ -401,11 +403,12 @@
                     name: "Total",
                     data: new Array(dataLength).fill(0),
                     count: 0
-                };
+                };        
+                const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
                 for (var i = 0; i < this.phase.offensiveStats.length; i++) {
                     var data = new Array(dataLength).fill(0);
-                    var player = logData.players[i];
-                    if (player.isFake) {
+                    var player = players[i];
+                    if (!player) {
                         continue;
                     }
                     if (!groups[player.group]) {

@@ -269,9 +269,4 @@ internal class BuffData
         IReadOnlyDictionary<long, BuffStatistics> buffs = target.GetBuffs(BuffEnum.Self, log, phase.Start, phase.End);
         return new BuffData(buffs, log.StatisticsHelper.PresentBoons, target.GetGameplayStats(log, phase.Start, phase.End).AverageBoons);
     }
-
-    public static implicit operator List<object>(BuffData v)
-    {
-        throw new NotImplementedException();
-    }
 }

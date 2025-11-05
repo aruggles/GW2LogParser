@@ -1,7 +1,7 @@
-﻿using GW2EIEvtcParser.EIData;
-using System.Numerics;
+﻿using System.Numerics;
 using static GW2EIEvtcParser.EIData.Trigonometry;
 using static GW2EIEvtcParser.ParserHelper;
+using GW2EIEvtcParser.EIData;
 
 namespace GW2EIEvtcParser.ParsedData;
 
@@ -118,6 +118,10 @@ public abstract class EffectEvent : StatusEvent
     {
         if (HasDynamicEndTime)
         {
+            if (maxDuration > 0)
+            {
+                return Math.Min(DynamicEndTime, Time + maxDuration);
+            }
             return DynamicEndTime;
         }
         if (associatedBuff != null)
@@ -153,20 +157,6 @@ public abstract class EffectEvent : StatusEvent
     /// <summary>
     /// Computes the lifespan of an effect.
     /// Will use default duration if all other methods fail
-    /// Clamped to given default duration
-    /// To be used when used effect lingers longer than actual active time
-    /// See <see cref="ComputeEndTime"/> for information about computed end times.
-    /// </summary>
-    public (long start, long end) ComputeLifespanWithMaxedToDuration(ParsedEvtcLog log, long defaultDuration)
-    {
-        long start = Time;
-        long end = ComputeEndTime(log, defaultDuration);
-        return (start, Math.Min(end, start + defaultDuration));
-    }
-
-    /// <summary>
-    /// Computes the lifespan of an effect.
-    /// Will use default duration if all other methods fail
     /// defaultDuration is ignored for <see cref="EffectEventCBTS45"/> and considered as 0.
     /// This method is to be used when the duration of the effect may not be static (ex: a trap AoE getting triggered or when a trait can modify the duration of a skill).
     /// See <see cref="ComputeEndTime"/> for information about computed end times.
@@ -192,6 +182,29 @@ public abstract class EffectEvent : StatusEvent
         long end = start + Duration;
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(Src, secondaryEffect, out var effects))
         {
+            EffectEvent? firstEffect = effects.FirstOrDefault(x => x.Time >= Time);
+            if (firstEffect != null)
+            {
+                end = firstEffect.Time;
+            }
+        }
+        return (start, end);
+    }
+
+    /// <summary>
+    /// Computes the lifespan of an effect.<br></br>
+    /// Takes the <see cref="Time"/> of the main effect as start and the <see cref="Time"/> of the first effect in <paramref name="secondaryEffects"/> found as end.<br></br>
+    /// Checks the matching effects Src.
+    /// </summary>
+    /// <param name="secondaryEffects"><see cref="EffectGUIDs"/> of the secondary effects.</param>
+    /// <returns>The computed start and end times.</returns>
+    public (long start, long end) ComputeLifespanWithSecondaryEffects(ParsedEvtcLog log, GUID[] secondaryEffects)
+    {
+        long start = Time;
+        long end = start + Duration;
+        if (log.CombatData.TryGetEffectEventsBySrcWithGUIDs(Src, secondaryEffects, out var effects))
+        {
+            effects.SortByTime();
             EffectEvent? firstEffect = effects.FirstOrDefault(x => x.Time >= Time);
             if (firstEffect != null)
             {
@@ -242,7 +255,6 @@ public abstract class EffectEvent : StatusEvent
         }
         return (start, end);
     }
-
 
     /// <summary>
     /// Computes the lifespan of an effect.<br></br>

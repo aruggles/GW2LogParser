@@ -18,25 +18,26 @@ internal class TargetDto : ActorDto
         HbHeight = target.HitboxHeight;
         HbWidth = target.HitboxWidth;
         HpLeftPercent = 100.0;
-        if (log.FightData.Success)
+        var targetEncounterPhase = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().FirstOrDefault(x => x.Targets.ContainsKey(target));
+        if (targetEncounterPhase != null && targetEncounterPhase.Success)
         {
             HpLeftPercent = 0;
             BarrierLeftPercent = 0;
         }
         else
         {
-            IReadOnlyList<HealthUpdateEvent> hpUpdates = log.CombatData.GetHealthUpdateEvents(target.AgentItem);
+            var hpUpdates = target.GetHealthUpdates(log);
             if (hpUpdates.Count > 0)
             {
-                HpLeftPercent = hpUpdates.Last().HealthPercent;
+                HpLeftPercent = hpUpdates.Last().Value;
             }
-            IReadOnlyList<BarrierUpdateEvent> barrierUpdates = log.CombatData.GetBarrierUpdateEvents(target.AgentItem);
+            var barrierUpdates = target.GetBarrierUpdates(log);
             if (barrierUpdates.Count > 0)
             {
-                BarrierLeftPercent = barrierUpdates.Last().BarrierPercent;
+                BarrierLeftPercent = barrierUpdates.Last().Value;
             }
         }
         HpLeft = target.GetCurrentHealth(log, HpLeftPercent);
-        BarrierLeft = target.GetCurrentBarrier(log, BarrierLeftPercent, log.FightData.FightEnd);
+        BarrierLeft = target.GetCurrentBarrier(log, BarrierLeftPercent, log.LogData.LogEnd);
     }
 }

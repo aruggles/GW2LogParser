@@ -449,7 +449,7 @@ th:hover img.icon-hover,
 }
 
 .cr-ellipsis {
-    width: 130px;
+    width: 110px;
     display: block;
     overflow: hidden;
     white-space: nowrap;
@@ -469,15 +469,15 @@ th:hover img.icon-hover,
 }
 
 .name-cr-cell {
-    width: 130px;
+    min-width: 110px;
 }
 
 .damage-cr-cell-small {
-    width: 80px;
+    min-width: 90px;
 }
 
 .damage-cr-cell {
-    width: 130px;
+    min-width: 110px;
 }
 
 .sub-tabs {
@@ -821,6 +821,10 @@ td.approximate::before {
     background-color: #EEEEEE;
 }
 
+.fightModeQuickplay-light {
+    background-color: #32FCEB;
+}
+
 .fightModeEmboldened-light {
     background-color: #39925A;
 }
@@ -837,9 +841,18 @@ td.approximate::before {
     background-color: #C9A0FF;
 }
 
+.fightModeUnknown-light {
+    background-color: #EE3000;
+}
+
+
 /* Fight Mode Header - Dark Theme */
 .fightModeStory-dark {
     background-color: #515960;
+}
+
+.fightModeQuickplay-dark {
+    background-color: #006858;
 }
 
 .fightModeEmboldened-dark {
@@ -856,6 +869,10 @@ td.approximate::before {
 
 .fightModeLegendary-dark {
     background-color: #6C4DA3;
+}
+
+.fightModeUnknown-dark {
+    background-color: #990000;
 }
 
 .healthBar {

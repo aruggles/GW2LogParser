@@ -52,7 +52,8 @@
 <script>
 
     Vue.component("player-component", {
-        props: ["players"],
+        props: ["players", "phaseindex"],
+        mixins: [encounterPhaseComponent],
         template: `${template}`,
         methods: {
             getIcon: function (path) {
@@ -60,9 +61,13 @@
             },
             select: function (id) {
                 for (var i = 0; i < this.players.length; i++) {
-                    this.players[i].active = false;
+                    if (id === i) {
+                        reactiveLogdata.activeEncounterPhaseData[this.encounterPhase.encounterID].player = i;
+                        this.players[i].active = true;
+                    } else {
+                        this.players[i].active = false;
+                    }
                 }
-                this.players[id].active = true;
             },
             getCommanderTooltip: function(player) {
                 if (!player.isCommander) {
@@ -89,6 +94,9 @@
             }
         },
         computed: {
+            phase: function() {
+                return logData.phases[this.phaseindex];
+            },
             scoreV2: function() {
                 return logData.evtcBuild > 20210800;
             },
@@ -108,9 +116,10 @@
             },
             groups: function () {
                 var aux = [];
-                for (var i = 0; i < logData.players.length; i++) {
-                    var playerData = logData.players[i];
-                    if (playerData.isFake) {
+                const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
+                for (var i = 0; i < players.length; i++) {
+                    var playerData = players[i];
+                    if (!playerData) {
                         continue;
                     }
                     if (!aux[playerData.group]) {
@@ -133,8 +142,13 @@
             runningExtensions: function () {
                 if (logData.usedExtensions) {
                     var res = [];
-                    for (var i = 0; i < logData.players.length; i++) {
-                        var playerData = logData.players[i];
+                    const players = getActiveNonFakePlayersForPhase(this.encounterPhase);
+                    for (var i = 0; i < players.length; i++) {
+                        var playerData = players[i];
+                        if (!playerData) {
+                            res.push(null);
+                            continue;
+                        }
                         var subRes = [];
                         for (var j = 0; j < logData.usedExtensions.length; j++) {
                             var usedExtension = logData.usedExtensions[j];

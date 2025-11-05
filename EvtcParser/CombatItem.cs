@@ -1,7 +1,6 @@
-﻿using GW2EIEvtcParser.Extensions;
+﻿using System.Runtime.CompilerServices;
+using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser;
@@ -15,8 +14,8 @@ public class CombatItem
     public readonly int BuffDmg;
     public readonly uint OverstackValue;
     public uint SkillID { get; private set; }
-    public readonly ushort SrcInstid;
-    public readonly ushort DstInstid;
+    public ushort SrcInstid { get; private set; }
+    public ushort DstInstid { get; private set; }
     public readonly ushort SrcMasterInstid;
     public readonly ushort DstMasterInstid;
     public readonly byte IFFByte;
@@ -42,6 +41,9 @@ public class CombatItem
     public readonly byte Pad4;
 
     public bool IsExtension => IsStateChange == StateChange.Extension || IsStateChange == StateChange.ExtensionCombat;
+    public bool IsGeographical => IsStateChange == StateChange.Position ||
+            IsStateChange == StateChange.Rotation ||
+            IsStateChange == StateChange.Velocity;
 
     public bool IsEffect => IsStateChange == StateChange.Effect_51 || IsStateChange == StateChange.Effect_45 || IsStateChange == StateChange.EffectAgentCreate || IsStateChange == StateChange.EffectAgentRemove || IsStateChange == StateChange.EffectGroundCreate || IsStateChange == StateChange.EffectGroundRemove;
     public bool IsMissile => IsStateChange == StateChange.MissileCreate || IsStateChange == StateChange.MissileLaunch || IsStateChange == StateChange.MissileRemove;
@@ -50,7 +52,7 @@ public class CombatItem
         || IsStateChange == StateChange.GWBuild || IsStateChange == StateChange.InstanceStart
         || IsStateChange == StateChange.LogNPCUpdate || IsStateChange == StateChange.FractalScale
         || IsStateChange == StateChange.Language || IsStateChange == StateChange.MapID
-        || IsStateChange == StateChange.RuleSet || IsStateChange == StateChange.ShardId
+        || IsStateChange == StateChange.RuleSet || IsStateChange == StateChange.ShardID
         || IsStateChange == StateChange.SquadCombatEnd || IsStateChange == StateChange.SquadCombatStart
         || IsStateChange == StateChange.TickRate;
 
@@ -61,7 +63,7 @@ public class CombatItem
 
     // Constructor
     public CombatItem(long time, ulong srcAgent, ulong dstAgent, int value, int buffDmg, uint overstackValue,
-           uint skillId, ushort srcInstid, ushort dstInstid, ushort srcMasterInstid,
+           uint skillID, ushort srcInstid, ushort dstInstid, ushort srcMasterInstid,
            ushort dstMasterInstid, byte iff, byte isBuff,
            byte result, byte isActivation,
            byte isBuffRemove, byte isNinety, byte isFifty, byte isMoving,
@@ -73,7 +75,7 @@ public class CombatItem
         Value = value;
         BuffDmg = buffDmg;
         OverstackValue = overstackValue;
-        SkillID = skillId;
+        SkillID = skillID;
         SrcInstid = srcInstid;
         DstInstid = dstInstid;
         SrcMasterInstid = srcMasterInstid;
@@ -146,11 +148,12 @@ public class CombatItem
             || IsStateChange == StateChange.Reward
             || IsStateChange == StateChange.TickRate
             || IsStateChange == StateChange.SquadMarker
-            || IsStateChange == StateChange.InstanceStart
             || IsStateChange == StateChange.SquadCombatStart
             || IsStateChange == StateChange.SquadCombatEnd
             || IsStateChange == StateChange.EffectAgentRemove
             || IsStateChange == StateChange.EffectGroundRemove
+            || IsStateChange == StateChange.MapID
+            || IsStateChange == StateChange.MapChange
             ;
     }
 
@@ -161,14 +164,6 @@ public class CombatItem
             return handler.HasTime(this);
         }
         return HasTime();
-    }
-
-    internal bool IsGeographical()
-    {
-        return IsStateChange == StateChange.Position ||
-                IsStateChange == StateChange.Rotation ||
-                IsStateChange == StateChange.Velocity
-                ;
     }
 
     internal bool IsDamage()
@@ -240,7 +235,7 @@ public class CombatItem
             || IsStateChange == StateChange.MaxHealthUpdate
             || IsStateChange == StateChange.PointOfView
             || IsStateChange == StateChange.BuffInitial
-            || IsGeographical()
+            || IsGeographical
             || IsStateChange == StateChange.TeamChange
             || IsStateChange == StateChange.AttackTarget
             || IsStateChange == StateChange.Targetable
@@ -309,7 +304,7 @@ public class CombatItem
     {
         if (DstIsAgent(extensions))
         {
-            return agentItem.Agent == DstAgent && agentItem.InAwareTimes(Time);
+            return agentItem.EnglobingAgentItem.Agent == DstAgent && agentItem.InAwareTimes(Time);
         }
         return false;
     }
@@ -318,7 +313,7 @@ public class CombatItem
     {
         if (DstIsAgent())
         {
-            return agentItem.Agent == DstAgent && agentItem.InAwareTimes(Time);
+            return agentItem.EnglobingAgentItem.Agent == DstAgent && agentItem.InAwareTimes(Time);
         }
         return false;
     }
@@ -327,7 +322,7 @@ public class CombatItem
     {
         if (SrcIsAgent(extensions))
         {
-            return agentItem.Agent == SrcAgent && agentItem.InAwareTimes(Time);
+            return agentItem.EnglobingAgentItem.Agent == SrcAgent && agentItem.InAwareTimes(Time);
         }
         return false;
     }
@@ -336,7 +331,7 @@ public class CombatItem
     {
         if (SrcIsAgent())
         {
-            return agentItem.Agent == SrcAgent && agentItem.InAwareTimes(Time);
+            return agentItem.EnglobingAgentItem.Agent == SrcAgent && agentItem.InAwareTimes(Time);
         }
         return false;
     }
@@ -373,6 +368,18 @@ public class CombatItem
     internal void OverrideDstAgent(ulong agent)
     {
         DstAgent = agent;
+    }
+
+    internal void OverrideSrcAgent(AgentItem agent)
+    {
+        SrcAgent = agent.EnglobingAgentItem.Agent;
+        SrcInstid = agent.EnglobingAgentItem.InstID;
+    }
+
+    internal void OverrideDstAgent(AgentItem agent)
+    {
+        DstAgent = agent.EnglobingAgentItem.Agent;
+        DstInstid = agent.EnglobingAgentItem.InstID;
     }
 
     internal void OverrideValue(int value)

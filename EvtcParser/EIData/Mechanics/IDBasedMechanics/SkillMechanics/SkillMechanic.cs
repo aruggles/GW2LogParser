@@ -1,34 +1,49 @@
-﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData;
 
 
-internal abstract class SkillMechanic : IDBasedMechanic<HealthDamageEvent>
+internal abstract class SkillMechanic<T> : IDBasedMechanic<T> where T : SkillEvent
 {
 
+
+    public delegate IEnumerable<T> CombatEventsGetter(ParsedEvtcLog log, long id);
+
+    private readonly CombatEventsGetter _getter;
     protected bool Minions { get; private set; } = false;
 
-    public SkillMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, internalCoolDown)
+    public SkillMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
+        _getter = getter;
     }
 
-    public SkillMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
-    {
-    }
-
-    public SkillMechanic WithMinions()
+    public SkillMechanic<T> WithMinions()
     {
         Minions = true;
         return this;
     }
 
-    protected abstract AgentItem GetAgentItem(HealthDamageEvent ahde);
 
-    protected AgentItem GetCreditedAgentItem(HealthDamageEvent ahde)
+
+    internal SkillMechanic<T> UsingBuffChecker(long buffID, bool isPresent)
     {
-        AgentItem agentItem = GetAgentItem(ahde);
+        if (isPresent)
+        {
+            return (SkillMechanic<T>)UsingChecker((evt, log) => GetAgentItem(evt).HasBuff(log, buffID, evt.Time - ParserHelper.ServerDelayConstant));
+        }
+        else
+        {
+            return (SkillMechanic<T>)UsingChecker((evt, log) => !GetAgentItem(evt).HasBuff(log, buffID, evt.Time - ParserHelper.ServerDelayConstant));
+        }
+    }
+
+    protected abstract AgentItem GetAgentItem(T evt);
+
+    protected AgentItem GetCreditedAgentItem(T evt)
+    {
+        AgentItem agentItem = GetAgentItem(evt);
         if (Minions)
         {
             agentItem = agentItem.GetFinalMaster();
@@ -41,11 +56,11 @@ internal abstract class SkillMechanic : IDBasedMechanic<HealthDamageEvent>
     {
         foreach (long skillID in MechanicIDs)
         {
-            foreach (HealthDamageEvent ahde in log.CombatData.GetDamageData(skillID))
+            foreach (T evt in _getter(log, skillID))
             {
-                if (TryGetActor(log, GetCreditedAgentItem(ahde), regroupedMobs, out var amp) && Keep(ahde, log))
+                if (TryGetActor(log, GetCreditedAgentItem(evt), regroupedMobs, out var amp) && Keep(evt, log))
                 {
-                    InsertMechanic(log, mechanicLogs, ahde.Time, amp);
+                    InsertMechanic(log, mechanicLogs, evt.Time, amp);
                 }
             }
         }

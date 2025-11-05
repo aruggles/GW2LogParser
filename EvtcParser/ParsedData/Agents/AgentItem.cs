@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics.Metrics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using GW2EIEvtcParser.EIData;
 using static GW2EIEvtcParser.ArcDPSEnums;
@@ -8,6 +9,36 @@ namespace GW2EIEvtcParser.ParsedData;
 
 public class AgentItem
 {
+    public struct MergedAgentItem
+    {
+        internal MergedAgentItem(AgentItem merged, long start, long end)
+        {
+            Merged = merged;
+            MergeStart = start;
+            MergeEnd = end;
+        }
+        internal void ApplyOffset(long offset)
+        {
+            MergeStart -= offset;
+            MergeEnd -= offset;
+        }
+        public readonly AgentItem Merged;
+        public long MergeStart { get; private set; }
+        public long MergeEnd { get; private set; }
+    }
+
+    private List<MergedAgentItem>? _merges;
+    public IReadOnlyList<MergedAgentItem> Merges => _merges ?? [];
+
+    private List<MergedAgentItem>? _regrouped;
+    public IReadOnlyList<MergedAgentItem> Regrouped => _regrouped ?? [];
+
+    private AgentItem? _englobingAgentItem;
+    public bool IsEnglobedAgent => _englobingAgentItem != null;
+    public AgentItem EnglobingAgentItem => _englobingAgentItem ?? this;
+    private List<AgentItem>? _englobedAgentItems;
+    public IReadOnlyList<AgentItem> EnglobedAgentItems => _englobedAgentItems ?? [];
+    public bool IsEnglobingAgent => _englobedAgentItems != null;
 
     private static int AgentCount = 0; //TODO(Rennorb) @correctness @threadding: should this be atomic? 
     public enum AgentType { NPC, Gadget, Player, NonSquadPlayer }
@@ -27,6 +58,8 @@ public class AgentItem
     public AgentType Type { get; protected set; } = AgentType.NPC;
     public long FirstAware { get; protected set; }
     public long LastAware { get; protected set; } = long.MaxValue;
+
+    public long HalfAware => (FirstAware + LastAware) / 2;
     public string Name { get; protected set; } = "UNKNOWN";
     public ParserHelper.Spec Spec { get; private set; } = ParserHelper.Spec.Unknown;
     public ParserHelper.Spec BaseSpec { get; private set; } = ParserHelper.Spec.Unknown;
@@ -34,8 +67,8 @@ public class AgentItem
     public readonly ushort Healing;
     public readonly ushort Condition;
     public readonly ushort Concentration;
-    public readonly uint HitboxWidth;
-    public readonly uint HitboxHeight;
+    public uint HitboxWidth { get; private set; }
+    public uint HitboxHeight { get; private set; }
 
     private readonly bool Unamed;
 
@@ -76,10 +109,10 @@ public class AgentItem
         {
 
         }
-        Unamed = Name.Contains("ch" + ID + "-");
+        Unamed = Name.Contains("ch" + ID + "-") || Name.Contains("gd" + ID + "-");
     }
 
-    internal AgentItem(ulong agent, string name, ParserHelper.Spec spec, int id, ushort instid, ushort toughness, ushort healing, ushort condition, ushort concentration, uint hbWidth, uint hbHeight, long firstAware, long lastAware, bool isFake) : this(agent, name, spec, id, AgentType.NPC, toughness, healing, condition, concentration, hbWidth, hbHeight)
+    internal AgentItem(ulong agent, string name, ParserHelper.Spec spec, int id, AgentType type, ushort instid, ushort toughness, ushort healing, ushort condition, ushort concentration, uint hbWidth, uint hbHeight, long firstAware, long lastAware, bool isFake) : this(agent, name, spec, id, type, toughness, healing, condition, concentration, hbWidth, hbHeight)
     {
         InstID = instid;
         FirstAware = firstAware;
@@ -106,6 +139,7 @@ public class AgentItem
         Master = other.Master;
         IsFake = other.IsFake;
         Unamed = other.Unamed;
+        IsNotInSquadFriendlyPlayer = other.IsNotInSquadFriendlyPlayer;
     }
 
     internal AgentItem()
@@ -131,6 +165,12 @@ public class AgentItem
         Type = type;
     }
 
+    internal void OverrideHitbox(uint hitboxWidth, uint hitboxHeight)
+    {
+        HitboxWidth = hitboxWidth;
+        HitboxHeight = hitboxHeight;
+    }
+
     internal void OverrideName(string name)
     {
         Name = name;
@@ -143,6 +183,10 @@ public class AgentItem
 
     internal void OverrideID(int id, AgentData agentData)
     {
+        if (IsPlayer)
+        {
+            return;
+        }
         agentData.FlagAsDirty(AgentData.AgentDataDirtyStatus.SpeciesDirty);
         ID = id;
     }
@@ -173,9 +217,19 @@ public class AgentItem
         LastAware = lastAware;
     }
 
+    internal void ApplyOffset(long offset)
+    {
+        FirstAware -= offset;
+        LastAware -= offset;
+        foreach (var merge in Merges)
+        {
+            merge.ApplyOffset(offset);
+        }
+    }
+
     internal void SetMaster(AgentItem master)
     {
-        if (IsPlayer || master == this)
+        if (IsPlayer || master.Is(this))
         {
             return;
         }
@@ -183,190 +237,53 @@ public class AgentItem
         while (cur.Master != null)
         {
             cur = cur.Master;
-            if (cur == this)
+            if (cur.Is(this))
             {
                 return;
             }
         }
-        Master = master;
+        Master = master.EnglobingAgentItem;
     }
 
-    internal AgentItem? GetMainAgentWhenAttackTarget(ParsedEvtcLog log, long time)
+    internal AgentItem GetMainAgentWhenAttackTarget(ParsedEvtcLog log)
     {
-        var atEvents = log.CombatData.GetAttackTargetEventsByAttackTarget(this);
-        return atEvents.Any() ? atEvents.LastOrDefault(y => time >= y.Time)?.Src : this;
+        var atEvent = log.CombatData.GetAttackTargetEventByAttackTarget(this);
+        return atEvent?.Src ?? this;
     }
-
-    private static void AddSegment(List<Segment> segments, long start, long end)
+    public bool Is(AgentItem? ag)
     {
-        if (start < end)
+        if (ag == null)
         {
-            segments.Add(new Segment(start, end, 1));
+            return false;
         }
+        return EnglobingAgentItem == ag.EnglobingAgentItem;
     }
 
-    private static void AddValueToStatusList(List<Segment> dead, List<Segment> down, List<Segment> dc, List<Segment> actives, StatusEvent cur, long nextTime, long minTime, int index)
+    public bool IsMasterOrSelf(AgentItem ag)
     {
-        long cTime = cur.Time;
-
-        if (cur is DownEvent)
-        {
-            if (index == 0)
-            {
-                AddSegment(actives, minTime, cTime);
-            }
-            AddSegment(down, cTime, nextTime);
-        }
-        else if (cur is DeadEvent)
-        {
-            if (index == 0)
-            {
-                AddSegment(actives, minTime, cTime);
-            }
-            AddSegment(dead, cTime, nextTime);
-        }
-        else if (cur is DespawnEvent)
-        {
-            if (index == 0)
-            {
-                AddSegment(actives, minTime, cTime);
-            }
-            AddSegment(dc, cTime, nextTime);
-        }
-        else
-        {
-            if (index == 0 && cTime - minTime > 50)
-            {
-                AddSegment(dc, minTime, cTime);
-            }
-            AddSegment(actives, cTime, nextTime);
-        }
+        return GetFinalMaster().Is(ag);
     }
 
-    internal void GetAgentStatus(List<Segment> dead, List<Segment> down, List<Segment> dc, List<Segment> actives, CombatData combatData)
+    public bool IsMaster(AgentItem ag)
     {
-        //TODO(Rennorb) @perf: find average complexity
-        var downEvents = combatData.GetDownEvents(this);
-        var aliveEvents = combatData.GetAliveEvents(this);
-        var deadEvents = combatData.GetDeadEvents(this);
-        var spawnEvents = combatData.GetSpawnEvents(this);
-        var despawnEvents = combatData.GetDespawnEvents(this);
-
-        var status = new List<StatusEvent>(
-            downEvents.Count +
-            aliveEvents.Count +
-            deadEvents.Count +
-            spawnEvents.Count +
-            despawnEvents.Count
-        );
-        status.AddRange(downEvents);
-        status.AddRange(aliveEvents);
-        status.AddRange(deadEvents);
-        status.AddRange(spawnEvents);
-        status.AddRange(despawnEvents);
-        AddSegment(dc, long.MinValue, FirstAware);
-        // State changes are not reliable on non squad actors, so we check if arc provided us with some, we skip events created by EI.
-        if (Type == AgentType.NonSquadPlayer && !status.Any(x => !x.IsCustom))
+        if (ag.Is(this))
         {
-            return;
+            return false;
         }
-
-        if (status.Count == 0)
-        {
-            AddSegment(actives, FirstAware, LastAware);
-            AddSegment(dc, LastAware, long.MaxValue);
-            return;
-        }
-
-        status.SortByTime();
-
-        for (int i = 0; i < status.Count - 1; i++)
-        {
-            StatusEvent cur = status[i];
-            StatusEvent next = status[i + 1];
-            AddValueToStatusList(dead, down, dc, actives, cur, next.Time, FirstAware, i);
-        }
-
-        // check last value
-        if (status.Count > 0)
-        {
-            StatusEvent cur = status.Last();
-            AddValueToStatusList(dead, down, dc, actives, cur, LastAware, FirstAware, status.Count - 1);
-            if (cur is DeadEvent)
-            {
-                AddSegment(dead, LastAware, long.MaxValue);
-            }
-            else
-            {
-                AddSegment(dc, LastAware, long.MaxValue);
-            }
-        }
+        return GetFinalMaster().Is(ag);
     }
-
-    internal void GetAgentBreakbarStatus(List<Segment> nones, List<Segment> actives, List<Segment> immunes, List<Segment> recovering, CombatData combatData)
+    public bool IsMasterOfOrSelf(AgentItem ag)
     {
-        var status = new List<BreakbarStateEvent>(combatData.GetBreakbarStateEvents(this));
-        // State changes are not reliable on non squad actors, so we check if arc provided us with some, we skip events created by EI.
-        if (Type == AgentType.NonSquadPlayer && !status.Any(x => !x.IsCustom))
-        {
-            return;
-        }
-
-        if (status.Count == 0)
-        {
-            AddSegment(nones, FirstAware, LastAware);
-            return;
-        }
-        for (int i = 0; i < status.Count - 1; i++)
-        {
-            BreakbarStateEvent cur = status[i];
-            if (i == 0 && cur.Time > FirstAware)
-            {
-                AddSegment(nones, FirstAware, cur.Time);
-            }
-            BreakbarStateEvent next = status[i + 1];
-            switch (cur.State)
-            {
-                case BreakbarState.Active:
-                    AddSegment(actives, cur.Time, next.Time);
-                    break;
-                case BreakbarState.Immune:
-                    AddSegment(immunes, cur.Time, next.Time);
-                    break;
-                case BreakbarState.None:
-                    AddSegment(nones, cur.Time, next.Time);
-                    break;
-                case BreakbarState.Recover:
-                    AddSegment(recovering, cur.Time, next.Time);
-                    break;
-            }
-        }
-        // check last value
-        if (status.Count > 0)
-        {
-            BreakbarStateEvent cur = status.Last();
-            if (LastAware - cur.Time >= ParserHelper.ServerDelayConstant)
-            {
-                switch (cur.State)
-                {
-                    case BreakbarState.Active:
-                        AddSegment(actives, cur.Time, LastAware);
-                        break;
-                    case BreakbarState.Immune:
-                        AddSegment(immunes, cur.Time, LastAware);
-                        break;
-                    case BreakbarState.None:
-                        AddSegment(nones, cur.Time, LastAware);
-                        break;
-                    case BreakbarState.Recover:
-                        AddSegment(recovering, cur.Time, LastAware);
-                        break;
-                }
-            }
-
-        }
+        return ag.IsMasterOrSelf(this);
     }
-
+    public bool IsMasterOf(AgentItem ag)
+    {
+        if (ag.Is(this))
+        {
+            return false;
+        }
+        return ag.IsMaster(this);
+    }
     public AgentItem GetFinalMaster()
     {
         AgentItem cur = this;
@@ -381,54 +298,70 @@ public class AgentItem
     {
         return FirstAware <= time && LastAware >= time;
     }
+    public bool InAwareTimes(long start, long end)
+    {
+        return new Segment(FirstAware, LastAware).Intersects(start, end);
+    }
+    public bool InAwareTimes(SingleActor other)
+    {
+        return InAwareTimes(other.FirstAware, other.LastAware);
+    }
+    public bool InAwareTimes(AgentItem other)
+    {
+        return InAwareTimes(other.FirstAware, other.LastAware);
+    }
 
     /// <summary>
     /// Checks if a buff is present on the actor. Given buff id must be in the buff simulator, throws <see cref="InvalidOperationException"/> otherwise
     /// </summary>
-    public bool HasBuff(ParsedEvtcLog log, long buffId, long time, long window = 0)
+    public bool HasBuff(ParsedEvtcLog log, long buffID, long time, long window = 0)
     {
-        SingleActor? actor = log.FindActor(this);
-        if (actor == null)
-        {
-            return false;
-        }
-        return actor.HasBuff(log, buffId, time, window);
+        return log.FindActor(this).HasBuff(log, buffID, time, window);
     }
 
     /// <summary>
     /// Checks if a buff is present on the actor and applied by given actor. Given buff id must be in the buff simulator, throws <see cref="InvalidOperationException"/> otherwise
     /// </summary>
-    public bool HasBuff(ParsedEvtcLog log, SingleActor by, long buffId, long time)
+    public bool HasBuff(ParsedEvtcLog log, SingleActor by, long buffID, long time)
     {
-        return log.FindActor(this).HasBuff(log, by, buffId, time);
+        return log.FindActor(this).HasBuff(log, by, buffID, time);
     }
 
     /// <summary>
     /// Checks if the buffs are present on the actor.  Given buff id must be in the buff simulator, throws <see cref="InvalidOperationException"/> otherwise.
     /// </summary>
-    public bool HasAnyBuff(ParsedEvtcLog log, IEnumerable<long> buffIds, long time, long window = 0)
+    public bool HasAnyBuff(ParsedEvtcLog log, IEnumerable<long> buffIDs, long time, long window = 0)
     {
-        return buffIds.Any(id => log.FindActor(this).HasBuff(log, id, time, window));
+        return buffIDs.Any(id => log.FindActor(this).HasBuff(log, id, time, window));
     }
 
-    public Segment GetBuffStatus(ParsedEvtcLog log, long buffId, long time)
+    public Segment GetBuffStatus(ParsedEvtcLog log, long buffID, long time)
     {
-        return log.FindActor(this).GetBuffStatus(log, buffId, time);
+        return log.FindActor(this).GetBuffStatus(log, buffID, time);
     }
 
-    public IReadOnlyList<Segment> GetBuffStatus(ParsedEvtcLog log, long buffId, long start, long end)
+    public IReadOnlyList<Segment> GetBuffStatus(ParsedEvtcLog log, long buffID, long start, long end)
     {
-        return log.FindActor(this).GetBuffStatus(log, buffId, start, end);
+        return log.FindActor(this).GetBuffStatus(log, buffID, start, end);
     }
 
-    public Segment GetBuffStatus(ParsedEvtcLog log, SingleActor by, long buffId, long time)
+    public IReadOnlyList<Segment> GetBuffStatus(ParsedEvtcLog log, long buffID)
     {
-        return log.FindActor(this).GetBuffStatus(log, by, buffId, time);
+        return log.FindActor(this).GetBuffStatus(log, buffID);
     }
 
-    public IReadOnlyList<Segment> GetBuffStatus(ParsedEvtcLog log, SingleActor by, long buffId, long start, long end)
+    public Segment GetBuffStatus(ParsedEvtcLog log, SingleActor by, long buffID, long time)
     {
-        return log.FindActor(this).GetBuffStatus(log, by, buffId, start, end);
+        return log.FindActor(this).GetBuffStatus(log, by, buffID, time);
+    }
+
+    public IReadOnlyList<Segment> GetBuffStatus(ParsedEvtcLog log, SingleActor by, long buffID, long start, long end)
+    {
+        return log.FindActor(this).GetBuffStatus(log, by, buffID, start, end);
+    }
+    public IReadOnlyList<Segment> GetBuffStatus(ParsedEvtcLog log, SingleActor by, long buffID)
+    {
+        return log.FindActor(this).GetBuffStatus(log, by, buffID);
     }
 
 
@@ -440,6 +373,16 @@ public class AgentItem
     public bool IsDownedBeforeNext90(ParsedEvtcLog log, long time)
     {
         return log.FindActor(this).IsDownBeforeNext90(log, time);
+    }
+
+    public (IReadOnlyList<Segment> deads, IReadOnlyList<Segment> downs, IReadOnlyList<Segment> dcs, IReadOnlyList<Segment> actives) GetStatus(ParsedEvtcLog log)
+    {
+        return log.FindActor(this).GetStatus(log);
+    }
+
+    public (IReadOnlyList<Segment> breakbarNones, IReadOnlyList<Segment> breakbarActives, IReadOnlyList<Segment> breakbarImmunes, IReadOnlyList<Segment> breakbarRecoverings) GetBreakbarStatus(ParsedEvtcLog log)
+    {
+        return log.FindActor(this).GetBreakbarStatus(log);
     }
 
     /// <summary>
@@ -545,12 +488,20 @@ public class AgentItem
 
     public bool IsNonIdentifiedSpecies()
     {
-        return IsUnknown || IsSpecies(NonIdentifiedSpecies);
+        if (IsPlayer)
+        {
+            return false;
+        }
+        return IsUnknown || IsAnySpecies([NonIdentifiedSpecies, TargetID.WorldVersusWorld, TargetID.Environment, TargetID.Instance, TargetID.DummyTarget]);
     }
 
     public bool IsSpecies(int id)
     {
-        return !IsPlayer && ID == id;
+        if (IsPlayer)
+        {
+            return false;
+        }
+        return ID == id;
     }
 
 
@@ -588,6 +539,41 @@ public class AgentItem
     {
         return ids.Any(IsSpecies);
     }
+    internal void AddMergeFrom(AgentItem mergedFrom, long start, long end)
+    {
+        _merges ??= [];
+        _merges.Add(new MergedAgentItem(mergedFrom, start, end));
+    }
+
+    internal void AddRegroupedFrom(AgentItem regroupedFrom)
+    {
+        _regrouped ??= [];
+        _regrouped.Add(new MergedAgentItem(regroupedFrom, regroupedFrom.FirstAware, regroupedFrom.LastAware));
+    }
+
+    private void AddEnglobedAgentItem(AgentItem child, AgentData agentData)
+    {
+        if (_englobedAgentItems == null)
+        {
+            _englobedAgentItems = [];
+        }
+        _englobedAgentItems.Add(child);
+        agentData.FlagAsDirty(AgentData.AgentDataDirtyStatus.TypesDirty | AgentData.AgentDataDirtyStatus.SpeciesDirty);
+    }
+    internal void SetEnglobingAgentItem(AgentItem parent, AgentData agentData)
+    {
+        _englobingAgentItem = parent;
+        parent.AddEnglobedAgentItem(this, agentData);
+    }
+
+    internal AgentItem FindEnglobedAgentItem(long time)
+    {
+        if (!IsEnglobingAgent)
+        {
+            return this;
+        }
+        return EnglobedAgentItems.FirstOrDefault(x => x.InAwareTimes(time)) ?? this;
+    }
 }
 
 public static partial class ListExt
@@ -596,9 +582,9 @@ public static partial class ListExt
     public static T? FirstByAware<T>(this IReadOnlyList<T> agents) where T : AgentItem
     {
         (T? Agent, long FirstAware) result = (default, long.MaxValue);
-        foreach (var agent in agents)
+        foreach(var agent in agents)
         {
-            if (agent.FirstAware < result.FirstAware)
+            if(agent.FirstAware < result.FirstAware)
             {
                 result = (agent, agent.FirstAware);
             }

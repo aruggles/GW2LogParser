@@ -314,7 +314,7 @@ internal static class RangerHelper
         var effectApply = log.CombatData.GetBuffDataByIDByDst(SicEmBuff, src).LastOrDefault(y => y is BuffApplyEvent && y.Time <= x.Time);
         if (effectApply != null)
         {
-            return x.To == effectApply.By.GetMainAgentWhenAttackTarget(log, x.Time);
+            return x.To.Is(effectApply.By.GetMainAgentWhenAttackTarget(log));
         }
         return false;
     }
@@ -353,39 +353,39 @@ internal static class RangerHelper
             .WithBuilds(GW2Builds.July2018Balance, GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
         new DamageLogDamageModifier(Mod_FarsightedClose, "Farsighted (<= 600)", "5% with weapon skills below 600 range", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetBelow600Range, DamageModifierMode.sPvPWvW)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025Balance),
         new DamageLogDamageModifier(Mod_FarsightedClose, "Farsighted (<= 600)", "10% with weapon skills below 600 range", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetBelow600Range, DamageModifierMode.PvE)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025Balance),
         new DamageLogDamageModifier(Mod_FarsightedClose, "Farsighted (<= 600)", "5% with weapon skills below 600 range", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetBelow600Range, DamageModifierMode.sPvP)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.February2025Balance),
         new DamageLogDamageModifier(Mod_FarsightedClose, "Farsighted (<= 600)", "10% with weapon skills below 600 range", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetBelow600Range, DamageModifierMode.PvEWvW)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.February2025Balance),
         // - Farsighted (> 600)
         new DamageLogDamageModifier(Mod_FarsightedFar, "Farsighted (> 600)", "10% with weapon skills above 600 range", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetAbove600Range, DamageModifierMode.All)
             .UsingApproximate()
             .WithBuilds(GW2Builds.July2018Balance, GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
         new DamageLogDamageModifier(Mod_FarsightedFar, "Farsighted (> 600)", "15% with weapon skills above 600 range", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetAbove600Range, DamageModifierMode.PvE)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025Balance),
         new DamageLogDamageModifier(Mod_FarsightedFar, "Farsighted (> 600)", "10% with weapon skills above 600 range", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetAbove600Range, DamageModifierMode.sPvPWvW)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.February2025Balance),
         new DamageLogDamageModifier(Mod_FarsightedFar, "Farsighted (> 600)", "10% with weapon skills above 600 range", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetAbove600Range, DamageModifierMode.sPvP)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.February2025Balance),
         new DamageLogDamageModifier(Mod_FarsightedFar, "Farsighted (> 600)", "15% with weapon skills above 600 range", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SteadyFocus, TargetAbove600Range, DamageModifierMode.PvEWvW)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.February2025BalancePatch),
+            .WithBuilds(GW2Builds.February2025Balance),
         // - Predator's Onslaught
         new BuffOnFoeDamageModifier(Mod_PredatorsOnslaught, [Stun, Taunt, Daze, Crippled, Fear, Immobile, Chilled], "Predator's Onslaught", "15% to disabled or movement-impaired foes", DamageSource.All, 15.0, DamageType.Strike, DamageType.All, Source.Ranger, ByPresence, TraitImages.PredatorsOnslaught, DamageModifierMode.All)
             .UsingApproximate(),
         new BuffOnFoeDamageModifier(Mod_Wolfsong, Vulnerability, "Wolfsong", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, ByPresence, TraitImages.Wolfsong, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.April2025Balance),
         new BuffOnFoeDamageModifier(Mod_Wolfsong, Vulnerability, "Wolfsong", "5%", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Ranger, ByPresence, TraitImages.Wolfsong, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.April2025Balance),
 
         // Skirmishing
         // - Hunter's Tactics
@@ -406,7 +406,10 @@ internal static class RangerHelper
         
         // Wilderness Survival
         // - Survival Instincts
-        new DamageLogDamageModifier(Mod_SurvivalInstincts, "Survival Instincts (Outgoing)","10% if hp >=50%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SurvivalInstincts, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 50.0, DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_SurvivalInstinctsOutgoing5_Incoming10, "Survival Instincts (Outgoing)", "5% if hp < 50%", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SurvivalInstincts, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) < 50.0, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.March2024BalanceAndCerusLegendary)
+            .UsingApproximate(),
+        new DamageLogDamageModifier(Mod_SurvivalInstinctsOutgoing10_Incoming5, "Survival Instincts (Outgoing)", "10% if hp >= 50%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SurvivalInstincts, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 50.0, DamageModifierMode.All)
             .WithBuilds(GW2Builds.March2024BalanceAndCerusLegendary)
             .UsingApproximate(),
 
@@ -414,9 +417,9 @@ internal static class RangerHelper
         // - Beastly Warden
         new DamageLogDamageModifier(Mod_BeastlyWardenPetOnly, "Beastly Warden (Pets)", "20% for Ursine and Porcine pets", DamageSource.PetsOnly, 20.0, DamageType.All, DamageType.All, Source.Ranger, TraitImages.BeastlyWarden, (x, log) => IsJuvenileUrsinePet(x.From) || IsJuvenilePorcinePet(x.From), DamageModifierMode.All)
             .UsingEarlyExit((a, log) => {
-                return a.GetMinions(log).Any(x => IsJuvenileUrsinePet(x.Value.ReferenceAgentItem) || IsJuvenilePorcinePet(x.Value.ReferenceAgentItem));
+                return !a.GetMinions(log).Any(x => IsJuvenileUrsinePet(x.ReferenceAgentItem) || IsJuvenilePorcinePet(x.ReferenceAgentItem));
             })
-            .WithBuilds(GW2Builds.April2025BalancePatch),
+            .WithBuilds(GW2Builds.April2025Balance),
         
         // Mace
         new BuffOnActorDamageModifier(Mod_ForceOfNature, ForceOfNature, "Force of Nature", "25%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Ranger, ByPresence, BuffImages.ForceOfNature, DamageModifierMode.All)
@@ -435,13 +438,17 @@ internal static class RangerHelper
         // - Oakheart Salve
         new BuffOnActorDamageModifier(Mod_OakheartSalve, Regeneration, "Oakheart Salve", "-5% under regeneration", DamageSource.Incoming, -5.0, DamageType.Strike, DamageType.All, Source.Ranger, ByPresence, TraitImages.OakheartSalve, DamageModifierMode.All),
         // - Survival Instincts
-        new DamageLogDamageModifier(Mod_SurvivalInstincts, "Survival Instincts (Incoming)","10% if hp <= 50%", DamageSource.Incoming, 10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SurvivalInstincts, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.March2024BalanceAndCerusLegendary),
+        new DamageLogDamageModifier(Mod_SurvivalInstinctsOutgoing10_Incoming5, "Survival Instincts (Incoming)", "-5% if hp > 50%", DamageSource.Incoming, -5, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SurvivalInstincts, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) > 50.0, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.March2024BalanceAndCerusLegendary)
+            .UsingApproximate(),
+        new DamageLogDamageModifier(Mod_SurvivalInstinctsOutgoing5_Incoming10, "Survival Instincts (Incoming)", "-10% if hp <= 50%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Ranger, TraitImages.SurvivalInstincts, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) <= 50.0, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.March2024BalanceAndCerusLegendary)
+            .UsingApproximate(),
     ];
 
     internal static readonly IReadOnlyList<Buff> Buffs =
     [
-        new Buff("Counterattack", Counterattack, Source.Ranger, BuffClassification.Other, SkillImages.Counterattack),
+        new Buff("Counterattack (Ranger Sword)", CounterattackRangerSwordBuff, Source.Ranger, BuffClassification.Other, SkillImages.Counterattack),
         // Signets
         new Buff("Signet of Renewal", SignetOfRenewalBuff, Source.Ranger, BuffClassification.Other, SkillImages.SignetOfRenewal),
         new Buff("Signet of Stone", SignetOfStoneBuff, Source.Ranger, BuffClassification.Other, SkillImages.SignetOfStone),
@@ -547,7 +554,7 @@ internal static class RangerHelper
         // Barrage
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerBarrage1, out var barrages))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, Barrage, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, Barrage);
             foreach (EffectEvent effect in barrages)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 600); // ~600ms interval
@@ -557,7 +564,7 @@ internal static class RangerHelper
         // Bonfire
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerBonfire, out var bonfires))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, Bonfire, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, Bonfire);
             foreach (EffectEvent effect in bonfires)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 8000);
@@ -567,7 +574,7 @@ internal static class RangerHelper
         // Healing Spring - Inactive
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerHealingSpringInactive2, out var healingSpringsInactive))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, HealingSpring, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, HealingSpring);
             foreach (EffectEvent effect in healingSpringsInactive)
             {
                 (long, long) lifespan = effect.ComputeDynamicLifespan(log, 300000);
@@ -583,7 +590,7 @@ internal static class RangerHelper
             var skill = new SkillModeDescriptor(player, Spec.Ranger, HealingSpring, SkillModeCategory.Cleanse | SkillModeCategory.Heal);
             foreach (EffectEvent effect in healingSpringsActive)
             {
-                long duration = log.LogData.GW2Build < GW2Builds.March2024BalanceAndCerusLegendary ? 10000 : 5000;
+                long duration = log.LogMetadata.GW2Build < GW2Builds.March2024BalanceAndCerusLegendary ? 10000 : 5000;
                 (long, long) lifespan = effect.ComputeLifespan(log, duration);
                 AddCircleSkillDecoration(replay, effect, color, skill, lifespan, 240, EffectImages.EffectHealingSpring);
             }
@@ -591,7 +598,7 @@ internal static class RangerHelper
         // Frost Trap
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerFrostTrap, out var frostTraps))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, FrostTrap, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, FrostTrap);
             foreach (EffectEvent effect in frostTraps)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 4000);
@@ -601,7 +608,7 @@ internal static class RangerHelper
         // Flame Trap
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerFlameTrap, out var flameTraps))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, FlameTrap, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, FlameTrap);
             foreach (EffectEvent effect in flameTraps)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 3000);
@@ -611,7 +618,7 @@ internal static class RangerHelper
         // Viper's Nest
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerVipersNest, out var vipersNests))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, VipersNest, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, VipersNest);
             foreach (EffectEvent effect in vipersNests)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 3000);
@@ -621,7 +628,7 @@ internal static class RangerHelper
         // Spike Trap
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RangerSpikeTrap, out var spikeTraps))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Ranger, SpikeTrap, SkillModeCategory.ShowOnSelect | SkillModeCategory.CC);
+            var skill = new SkillModeDescriptor(player, Spec.Ranger, SpikeTrap, SkillModeCategory.CC);
             foreach (EffectEvent effect in spikeTraps)
             {
                 (long, long) lifespan = effect.ComputeLifespan(log, 2000); // roughly time displayed ingame

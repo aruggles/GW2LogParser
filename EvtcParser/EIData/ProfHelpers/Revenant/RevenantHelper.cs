@@ -1,7 +1,7 @@
-﻿using GW2EIEvtcParser.Extensions;
+﻿using System.Numerics;
+using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using System.Numerics;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.DamageModifierIDs;
 using static GW2EIEvtcParser.EIData.Buff;
@@ -31,7 +31,7 @@ internal static class RevenantHelper
         new BuffLossCastFinder(ResistTheDarkness, EmbraceTheDarkness),
         new DamageCastFinder(InvokingTorment, InvokingTorment)
             .WithBuilds(GW2Builds.February2020Balance)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new DamageCastFinder(CallOfTheAssassin, CallOfTheAssassin),
         new DamageCastFinder(CallOfTheDwarf, CallOfTheDwarf),
         new DamageCastFinder(CallOfTheDemon, CallOfTheDemon),
@@ -135,6 +135,11 @@ internal static class RevenantHelper
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.October2018Balance),
         // - Swift Termination
         new DamageLogDamageModifier(Mod_SwiftTermination, "Swift Termination", "20% if target <50%", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Revenant, TraitImages.SwiftTermination, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All),
+        // Brutality
+        new BuffOnFoeDamageModifier(Mod_Brutality, [Stability, Protection], "Brutality", "15% against protection and stability", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Revenant, ByPresence, TraitImages.Brutality, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.June2025Balance),
+        new BuffOnFoeDamageModifier(Mod_Brutality, [Stability, Protection], "Brutality", "10% against protection and stability", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Revenant, ByPresence, TraitImages.Brutality, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.June2025Balance),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -228,7 +233,7 @@ internal static class RevenantHelper
         new Buff("Steadfast Rejuvenation", SteadfastRejuvenation, Source.Revenant, BuffStackType.Stacking, 10, BuffClassification.Other, TraitImages.SteadfastRejuvenation),
         new Buff("Resolute Evasion", ResoluteEvasion, Source.Revenant, BuffClassification.Other, TraitImages.ResoluteEvasion),
         // Scepter
-        new Buff("Blossoming Aura", BlossomingAuraBuff, Source.Revenant, BuffClassification.Other, SkillImages.BlossomingAura),
+        new Buff("Blossoming Aura", BlossomingAuraBuff, Source.Revenant, BuffStackType.Stacking, 25, BuffClassification.Other, SkillImages.BlossomingAura),
         // Spear
         new Buff("Crushing Abyss", CrushingAbyss, Source.Revenant, BuffStackType.Stacking, 5, BuffClassification.Other, SkillImages.CrushingAbyss),
     ];
@@ -384,7 +389,7 @@ internal static class RevenantHelper
         // Abyssal Blitz (Mines)
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RevenantSpearBlitzMines2, out var abyssalBlitzMines))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Revenant, BlitzMines, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Revenant, BlitzMines);
             foreach (EffectEvent effect in abyssalBlitzMines)
             {
                 (long, long) lifespan = effect.ComputeDynamicLifespan(log, 7000);
@@ -395,18 +400,23 @@ internal static class RevenantHelper
         // Abyssal Blot
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RevenantSpearAbyssalBlot, out var abyssalBlots))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Revenant, AbyssalBlot, SkillModeCategory.CC);
+            var skillCC = new SkillModeDescriptor(player, Spec.Revenant, AbyssalBlot, SkillModeCategory.CC);
+            var skillDamage = new SkillModeDescriptor(player, Spec.Revenant, AbyssalBlot);
             foreach (EffectEvent effect in abyssalBlots)
             {
-                (long, long) lifespan = effect.ComputeLifespan(log, 3000);
-                AddCircleSkillDecoration(replay, effect, color, skill, lifespan, 240, EffectImages.EffectAbyssalBlot);
+                (long start, long end) lifespan = effect.ComputeLifespan(log, 3000);
+                (long start, long end) lifespanCC = (lifespan.start, lifespan.start + 500);
+                (long start, long end) lifespanDamage = (lifespanCC.end, lifespan.end);
+                // CC on first pulse
+                AddCircleSkillDecoration(replay, effect, color, skillCC, lifespanCC, 240, EffectImages.EffectAbyssalBlot);
+                AddCircleSkillDecoration(replay, effect, color, skillDamage, lifespanDamage, 240, EffectImages.EffectAbyssalBlot);
             }
         }
 
         // Abyssal Raze
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.RevenantSpearAbyssalRaze, out var abyssalRazes))
         {
-            var skill = new SkillModeDescriptor(player, Spec.Revenant, AbyssalRaze, SkillModeCategory.ShowOnSelect);
+            var skill = new SkillModeDescriptor(player, Spec.Revenant, AbyssalRaze);
             foreach (EffectEvent effect in abyssalRazes)
             {
                 uint radius = 180;

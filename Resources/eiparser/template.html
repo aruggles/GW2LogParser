@@ -74,7 +74,7 @@
             <div v-if="!!errorMessages" class="d-flex flex-column justify-content-center align-items-center">
                 <img v-for="message in errorMessages" class="mb-1 icon" :src="UIIcons.ExclamationMark" :data-original-title="message" />
             </div>
-            <encounter-component :light="light"></encounter-component>
+            <encounter-component :light="light" :encounters="reactiveLogdata.encounters"></encounter-component>
             <div class="d-flex flex-column justify-content-center align-items-center ml-5">
                 <div class="d-flex flex-row justify-content-center align-items-center mt-2 mb-2">
                     <ul class="nav nav-pills" style="pointer-events:auto;">
@@ -116,9 +116,23 @@
             </div>
         </div>
         <div class="footer">
-            <div>Time Start: {{getLogData().encounterStart}} | Time End: {{getLogData().encounterEnd}} | EVTC Duration: {{ getLogData().evtcRecordingDuration}}</div>      
-            <div v-if="getLogData().instanceStart">Instance Start: {{getLogData().instanceStart}} {{ getLogData().instanceIP ? ' | Instance IP: ' + getLogData().instanceIP : '' }}</div>
-            <div>ARC: {{getLogData().arcVersion}} | GW2 Build: {{getLogData().gw2Build}} | Trigger ID: {{getLogData().triggerID}} | Encounter ID: {{getLogData().encounterID}} | {{getLogData().parser}}</div>
+            <div>
+                Time Start: {{getLogData().logStart}} | 
+                Time End: {{getLogData().logEnd}} | 
+                EVTC Duration: {{ getLogData().evtcRecordingDuration}}
+            </div>      
+            <div v-if="getLogData().instanceStart">
+                Instance Start: {{getLogData().instanceStart}} 
+                {{ getLogData().instanceIP ? ' | Instance IP: ' + getLogData().instanceIP : '' }}
+            </div>
+            <div>
+                ARC: {{getLogData().arcVersion}} | 
+                GW2 Build: {{getLogData().gw2Build}} | 
+                Trigger ID: {{getLogData().triggerID}} | 
+                Log ID: {{getLogData().logID}} | 
+                Map ID: {{getLogData().mapID}} | 
+                {{getLogData().parser}}
+            </div>
             <div v-if="uploadLinks">
                 <p v-for="link in uploadLinks" v-if="link.url.length > 0">{{link.key}}: <a :href="link.url">{{link.url}}</a> </p>
             </div>

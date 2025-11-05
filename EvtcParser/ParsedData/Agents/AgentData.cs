@@ -57,7 +57,7 @@ public class AgentData
         {
             instID = (ushort)rnd.Next(ushort.MaxValue / 2, ushort.MaxValue);
         }
-        var agent = new AgentItem(agentValue, name, spec, ID, instID, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight, start, end, isFake);
+        var agent = new AgentItem(agentValue, name, spec, ID, AgentItem.AgentType.NPC, instID, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight, start, end, isFake);
         _allAgentsList.Add(agent);
         _dirty |= AgentDataDirtyStatus.AgentsDirty;
         return agent;
@@ -66,6 +66,25 @@ public class AgentData
     internal AgentItem AddCustomNPCAgent(long start, long end, string name, ParserHelper.Spec spec, TargetID ID, bool isFake, ushort toughness = 0, ushort healing = 0, ushort condition = 0, ushort concentration = 0, uint hitboxWidth = 0, uint hitboxHeight = 0)
     {
         return AddCustomNPCAgent(start, end, name, spec, (int)ID, isFake, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight);
+    }
+
+    internal AgentItem AddCustomAgentFrom(AgentItem from, long start, long end, ParserHelper.Spec spec)
+    {
+        var rnd = new Random();
+        ulong agentValue = 0;
+        while (AgentValues.Contains(agentValue) || agentValue == 0)
+        {
+            agentValue = (ulong)rnd.Next(int.MaxValue / 2, int.MaxValue);
+        }
+        ushort instID = 0;
+        while (InstIDValues.Contains(instID) || instID == 0)
+        {
+            instID = (ushort)rnd.Next(ushort.MaxValue / 2, ushort.MaxValue);
+        }
+        var agent = new AgentItem(agentValue, from.Name, spec, 0, from.Type, instID, from.Toughness, from.Healing, from.Condition, from.Concentration, from.HitboxWidth, from.HitboxHeight, start, end, from.IsFake);
+        _allAgentsList.Add(agent);
+        _dirty |= AgentDataDirtyStatus.AgentsDirty;
+        return agent;
     }
 
     public AgentItem GetAgent(ulong agentAddress, long time)
@@ -167,9 +186,9 @@ public class AgentData
     }
 
 
-    public AgentItem? GetAgentByUniqueID(long uniqueID)
+    public AgentItem GetAgentByUniqueID(long uniqueID)
     {
-        return _allAgentsList.FirstOrDefault(x => x.UniqueID == uniqueID);
+        return _allAgentsList.FirstOrDefault(x => x.UniqueID == uniqueID) ?? ParserHelper._unknownAgent;
     }
 
     public AgentItem GetAgentByInstID(ushort instid, long time)
@@ -194,10 +213,10 @@ public class AgentData
         return ParserHelper._unknownAgent;
     }
 
-    public bool HasSpawnedMinion(MinionID minion, AgentItem? master, long time, long epsilon = ParserHelper.ServerDelayConstant)
+    public bool HasSpawnedMinion(MinionID minion, AgentItem master, long time, long epsilon = ParserHelper.ServerDelayConstant)
     {
         return GetNPCsByID(minion)
-            .Any(agent => agent.GetFinalMaster() == master && Math.Abs(agent.FirstAware - time) < epsilon);
+            .Any(agent => master.IsMasterOf(agent) && Math.Abs(agent.FirstAware - time) < epsilon);
     }
 
     internal void ReplaceAgents(IEnumerable<AgentItem> toRemove, IEnumerable<AgentItem> toAdd)
@@ -215,6 +234,14 @@ public class AgentData
         _dirty |= status;
     }
 
+    internal void ApplyOffset(long offset)
+    {
+        foreach (var agentItem in _allAgentsList)
+        {
+            agentItem.ApplyOffset(offset);
+        }
+    }
+
     internal void RemoveAllFrom(HashSet<AgentItem> agents)
     {
         if (agents.Count == 0)
@@ -227,13 +254,14 @@ public class AgentData
 
     private void Refresh()
     {
+        var notEnglobingAgents = _allAgentsList.Where(x => !x.IsEnglobingAgent);
         _allAgentsByAgent = _allAgentsList.GroupBy(x => x.Agent).ToDictionary(x => x.Key, x => x.ToList());
-        _allNPCsByID = _allAgentsList.Where(x => x.Type == AgentItem.AgentType.NPC).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
-        _allGadgetsByID = _allAgentsList.Where(x => x.Type == AgentItem.AgentType.Gadget).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
+        _allNPCsByID = notEnglobingAgents.Where(x => x.Type == AgentItem.AgentType.NPC).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
+        _allGadgetsByID = notEnglobingAgents.Where(x => x.Type == AgentItem.AgentType.Gadget).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
         _allAgentsByInstID = _allAgentsList.GroupBy(x => x.InstID).ToDictionary(x => x.Key, x => x.ToList());
-        _allAgentsByType = _allAgentsList.GroupBy(x => x.Type).ToDictionary(x => x.Key, x => x.ToList());
+        _allAgentsByType = notEnglobingAgents.GroupBy(x => x.Type).ToDictionary(x => x.Key, x => x.ToList());
 #if DEBUG
-        _allAgentsByName = _allAgentsList.Where(x => !x.Name.Contains("UNKNOWN")).GroupBy(x => x.Name).ToDictionary(x => x.Key, x => x.ToList());
+        _allAgentsByName = notEnglobingAgents.Where(x => !x.Name.Contains("UNKNOWN")).GroupBy(x => x.Name).ToDictionary(x => x.Key, x => x.ToList());
 #endif
         _dirty = AgentDataDirtyStatus.Clean;
     }
@@ -283,14 +311,14 @@ public class AgentData
     {
         foreach (AgentItem a in GetAgentByType(AgentItem.AgentType.NPC))
         {
-            if (a.Master != null && froms.Contains(a.Master))
+            if (a.Master != null && froms.Any(a.Is))
             {
                 a.SetMaster(to);
             }
         }
         foreach (AgentItem a in GetAgentByType(AgentItem.AgentType.Gadget))
         {
-            if (a.Master != null && froms.Contains(a.Master))
+            if (a.Master != null && froms.Any(a.Is))
             {
                 a.SetMaster(to);
             }
@@ -332,18 +360,23 @@ public class AgentData
     /// <returns><see langword="true"/> if an <see cref="AgentItem"/> was found for the given <see cref="ChestID"/>; otherwise,  <see langword="false"/>.</returns>
     public bool TryGetFirstAgentItem(ChestID chestID, [NotNullWhen(returnValue: true)] out AgentItem? agentItem)
     {
-        return TryGetFirstAgentItem((int)chestID, out agentItem);
+        agentItem = GetGadgetsByID(chestID).FirstOrDefault();
+        if (agentItem != null)
+        {
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
-    /// Tries to retrieve the first <see cref="AgentItem"/> corresponding to the provided <paramref name="agentId"/>.<br></br>
+    /// Tries to retrieve the first <see cref="AgentItem"/> corresponding to the provided <paramref name="speciesID"/>.<br></br>
     /// </summary>
-    /// <param name="agentId">The ID of the agent to search for.</param>
+    /// <param name="speciesID">The ID of the agent to search for.</param>
     /// <param name="agentItem">The <see cref="AgentItem"/> found, if any.</param>
-    /// <returns><see langword="true"/> if an <see cref="AgentItem"/> was found for the given <paramref name="agentId"/>; otherwise, <see langword="false"/>.</returns>
-    public bool TryGetFirstAgentItem(int agentId, [NotNullWhen(returnValue: true)] out AgentItem? agentItem)
+    /// <returns><see langword="true"/> if an <see cref="AgentItem"/> was found for the given <paramref name="speciesID"/>; otherwise, <see langword="false"/>.</returns>
+    public bool TryGetFirstAgentItem(int speciesID, [NotNullWhen(returnValue: true)] out AgentItem? agentItem)
     {
-        agentItem = GetNPCsByID(agentId).FirstOrDefault();
+        agentItem = GetNPCsByID(speciesID).FirstOrDefault();
         if (agentItem != null)
         {
             return true;

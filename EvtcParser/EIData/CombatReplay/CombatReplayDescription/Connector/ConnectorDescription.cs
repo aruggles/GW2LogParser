@@ -1,7 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using static GW2EIEvtcParser.EIData.AgentFacingAgentConnector;
-using static GW2EIEvtcParser.EIData.AgentFacingConnector;
-using static GW2EIEvtcParser.EIData.AngleConnector;
 
 namespace GW2EIEvtcParser.EIData;
 

@@ -11,6 +11,7 @@ public static class ParserHelper
 {
 
     internal static readonly AgentItem _unknownAgent = new();
+    internal static readonly AgentItem _nullAgent = new();
 
     public const int CombatReplayPollingRate = 300;
     internal const uint CombatReplaySkillDefaultSizeInPixel = 22;
@@ -38,38 +39,43 @@ public static class ParserHelper
     public const long MinimumInCombatDuration = 2200;
 
     internal const int PhaseTimeLimit = 1000;
+    internal const int BreakbarPhaseTimeBuildup = 2000;
 
 
     public enum Source
     {
         Common,
         Item, Gear,
-        Necromancer, Reaper, Scourge, Harbinger,
-        Elementalist, Tempest, Weaver, Catalyst,
-        Mesmer, Chronomancer, Mirage, Virtuoso,
-        Warrior, Berserker, Spellbreaker, Bladesworn,
-        Revenant, Herald, Renegade, Vindicator,
-        Guardian, Dragonhunter, Firebrand, Willbender,
-        Thief, Daredevil, Deadeye, Specter,
-        Ranger, Druid, Soulbeast, Untamed,
-        Engineer, Scrapper, Holosmith, Mechanist,
+        // professions, sort alphabetically per base spec then add elite spec per expansion
+        Elementalist, Tempest, Weaver, Catalyst, Evoker,
+        Engineer, Scrapper, Holosmith, Mechanist, Amalgam,
+        Guardian, Dragonhunter, Firebrand, Willbender, Luminary,
+        Mesmer, Chronomancer, Mirage, Virtuoso, Troubadour,
+        Necromancer, Reaper, Scourge, Harbinger, Ritualist,
+        Ranger, Druid, Soulbeast, Untamed, Galeshot,
+        Revenant, Herald, Renegade, Vindicator, Conduit,
+        Thief, Daredevil, Deadeye, Specter, Antiquary,
+        Warrior, Berserker, Spellbreaker, Bladesworn, Paragon,
+        //
         PetSpecific,
-        FightSpecific,
+        EncounterSpecific,
         FractalInstability,
         Unknown
     };
 
     public enum Spec
     {
-        Necromancer, Reaper, Scourge, Harbinger,
-        Elementalist, Tempest, Weaver, Catalyst,
-        Mesmer, Chronomancer, Mirage, Virtuoso,
-        Warrior, Berserker, Spellbreaker, Bladesworn,
-        Revenant, Herald, Renegade, Vindicator,
-        Guardian, Dragonhunter, Firebrand, Willbender,
-        Thief, Daredevil, Deadeye, Specter,
-        Ranger, Druid, Soulbeast, Untamed,
-        Engineer, Scrapper, Holosmith, Mechanist,
+        // professions, sort alphabetically per base spec then add elite spec per expansion
+        Elementalist, Tempest, Weaver, Catalyst, Evoker,
+        Engineer, Scrapper, Holosmith, Mechanist, Amalgam,
+        Guardian, Dragonhunter, Firebrand, Willbender, Luminary,
+        Mesmer, Chronomancer, Mirage, Virtuoso, Troubadour,
+        Necromancer, Reaper, Scourge, Harbinger, Ritualist,
+        Ranger, Druid, Soulbeast, Untamed, Galeshot,
+        Revenant, Herald, Renegade, Vindicator, Conduit,
+        Thief, Daredevil, Deadeye, Specter, Antiquary,
+        Warrior, Berserker, Spellbreaker, Bladesworn, Paragon,
+        //
         NPC, Gadget,
         Unknown
     };
@@ -179,7 +185,7 @@ public static class ParserHelper
     {
         const string CHARSET = "0123456789ABCDEF";
         int offset = 0;
-        foreach (var c in bytes)
+        foreach(var c in bytes)
         {
             destination[offset++] = CHARSET[(c & 0xf0) >> 4];
             destination[offset++] = CHARSET[c & 0x0f];
@@ -188,7 +194,7 @@ public static class ParserHelper
 
     internal static bool IsSupportedStateChange(StateChange state)
     {
-        return state != StateChange.Unknown && state != StateChange.ReplInfo && state != StateChange.StatReset && state != StateChange.APIDelayed && state != StateChange.Idle;
+        return state != StateChange.Unknown && state != StateChange.ReplInfo && state != StateChange.StatReset && state != StateChange.APIDelayed && state != StateChange.Idle && state != StateChange.AgentChange;
     }
 
     /*
@@ -246,180 +252,6 @@ public static class ParserHelper
         return durationString;
     }
 
-
-    internal delegate bool ExtraRedirection(CombatItem evt, AgentItem from, AgentItem to);
-    /// <summary>
-    /// Method used to redirect a subset of events from redirectFrom to to
-    /// </summary>
-    /// <param name="combatData"></param>
-    /// <param name="extensions"></param>
-    /// <param name="agentData"></param>
-    /// <param name="redirectFrom">AgentItem the events need to be redirected from</param>
-    /// <param name="stateCopyFroms">AgentItems from where last known states (hp, position, etc) will be copied from</param>
-    /// <param name="to">AgentItem the events need to be redirected to</param>
-    /// <param name="copyPositionalDataFromAttackTarget">If true, "to" will get the positional data from attack targets, if possible</param>
-    /// <param name="extraRedirections">function to handle special conditions, given event either src or dst matches from</param>
-    internal static void RedirectEventsAndCopyPreviousStates(List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions, AgentData agentData, AgentItem redirectFrom, List<AgentItem> stateCopyFroms, AgentItem to, bool copyPositionalDataFromAttackTarget, ExtraRedirection? extraRedirections = null)
-    {
-        // Redirect combat events
-        foreach (CombatItem evt in combatData)
-        {
-            if (to.InAwareTimes(evt.Time))
-            {
-                var srcMatchesAgent = evt.SrcMatchesAgent(redirectFrom, extensions);
-                var dstMatchesAgent = evt.DstMatchesAgent(redirectFrom, extensions);
-                if (extraRedirections != null && !extraRedirections(evt, redirectFrom, to))
-                {
-                    continue;
-                }
-                if (srcMatchesAgent)
-                {
-                    evt.OverrideSrcAgent(to.Agent);
-                }
-                if (dstMatchesAgent)
-                {
-                    evt.OverrideDstAgent(to.Agent);
-                }
-            }
-        }
-        // Copy attack targets
-        var attackTargetAgents = new HashSet<AgentItem>();
-        var attackTargetsToCopy = combatData.Where(x => x.IsStateChange == StateChange.AttackTarget && x.DstMatchesAgent(redirectFrom)).ToList();
-        var targetableOns = combatData.Where(x => x.IsStateChange == StateChange.Targetable && x.DstAgent == 1);
-        // Events copied
-        var copied = new List<CombatItem>(attackTargetsToCopy.Count + 10);
-        foreach (CombatItem c in attackTargetsToCopy)
-        {
-            var cExtra = new CombatItem(c);
-            cExtra.OverrideTime(to.FirstAware - 1); // To make sure they are put before all actual agent events
-            cExtra.OverrideDstAgent(to.Agent);
-            combatData.Add(cExtra);
-            copied.Add(cExtra);
-            AgentItem at = agentData.GetAgent(c.SrcAgent, c.Time);
-            if (targetableOns.Any(x => x.SrcMatchesAgent(at)))
-            {
-                attackTargetAgents.Add(at);
-            }
-        }
-        // Copy states
-        var stateEventsToCopy = new List<CombatItem>();
-        Func<CombatItem, bool> canCopyFromAgent = (evt) => stateCopyFroms.Any(x => evt.SrcMatchesAgent(x));
-        var stateChangeCopyFromAgentConditions = new List<Func<CombatItem, bool>>()
-        {
-            (x) => x.IsStateChange == StateChange.BreakbarState,
-            (x) => x.IsStateChange == StateChange.MaxHealthUpdate,
-            (x) => x.IsStateChange == StateChange.HealthUpdate,
-            (x) => x.IsStateChange == StateChange.BreakbarPercent,
-            (x) => x.IsStateChange == StateChange.BarrierUpdate,
-            (x) => (x.IsStateChange == StateChange.EnterCombat || x.IsStateChange == StateChange.ExitCombat),
-            (x) => (x.IsStateChange == StateChange.Spawn || x.IsStateChange == StateChange.Despawn || x.IsStateChange == StateChange.ChangeDead || x.IsStateChange == StateChange.ChangeDown || x.IsStateChange == StateChange.ChangeUp),
-        };
-        if (!copyPositionalDataFromAttackTarget || attackTargetAgents.Count == 0)
-        {
-            stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Position);
-            stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Rotation);
-            stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Velocity);
-        }
-        foreach (Func<CombatItem, bool> stateChangeCopyCondition in stateChangeCopyFromAgentConditions)
-        {
-            CombatItem? stateToCopy = combatData.LastOrDefault(x => stateChangeCopyCondition(x) && canCopyFromAgent(x) && x.Time <= to.FirstAware);
-            if (stateToCopy != null)
-            {
-                stateEventsToCopy.Add(stateToCopy);
-            }
-        }
-        // Copy positional data from attack targets
-        if (copyPositionalDataFromAttackTarget && attackTargetAgents.Count != 0)
-        {
-            Func<CombatItem, bool> canCopyFromAttackTarget = (evt) => attackTargetAgents.Any(x => evt.SrcMatchesAgent(x));
-            var stateChangeCopyFromAttackTargetConditions = new List<Func<CombatItem, bool>>()
-            {
-                (x) => x.IsStateChange == StateChange.Position,
-                (x) => x.IsStateChange == StateChange.Rotation,
-                (x) => x.IsStateChange == StateChange.Velocity,
-            };
-            foreach (Func<CombatItem, bool> stateChangeCopyCondition in stateChangeCopyFromAttackTargetConditions)
-            {
-                CombatItem? stateToCopy = combatData.LastOrDefault(x => stateChangeCopyCondition(x) && canCopyFromAttackTarget(x) && x.Time <= to.FirstAware);
-                if (stateToCopy != null)
-                {
-                    stateEventsToCopy.Add(stateToCopy);
-                }
-            }
-        }
-        if (stateEventsToCopy.Count > 0)
-        {
-            foreach (CombatItem c in stateEventsToCopy)
-            {
-                var cExtra = new CombatItem(c);
-                cExtra.OverrideTime(to.FirstAware - 1); // To make sure they are put before all actual agent events
-                cExtra.OverrideSrcAgent(to.Agent);
-                combatData.Add(cExtra);
-                copied.Add(cExtra);
-            }
-        }
-        if (copied.Count > 0)
-        {
-            combatData.SortByTime();
-            foreach (CombatItem c in copied)
-            {
-                c.OverrideTime(to.FirstAware);
-            }
-        }
-        // Redirect NPC masters
-        foreach (AgentItem ag in agentData.GetAgentByType(AgentItem.AgentType.NPC))
-        {
-            if (ag.Master == redirectFrom && to.InAwareTimes(ag.FirstAware))
-            {
-                ag.SetMaster(to);
-            }
-        }
-        // Redirect Gadget masters
-        foreach (AgentItem ag in agentData.GetAgentByType(AgentItem.AgentType.Gadget))
-        {
-            if (ag.Master == redirectFrom && to.InAwareTimes(ag.FirstAware))
-            {
-                ag.SetMaster(to);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Method used to redirect all events from redirectFrom to to
-    /// </summary>
-    /// <param name="combatData"></param>
-    /// <param name="extensions"></param>
-    /// <param name="agentData"></param>
-    /// <param name="redirectFrom">AgentItem the events need to be redirected from</param>
-    /// <param name="to">AgentItem the events need to be redirected to</param>
-    /// <param name="extraRedirections">function to handle special conditions, given event either src or dst matches from</param>
-    internal static void RedirectAllEvents(IReadOnlyList<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions, AgentData agentData, AgentItem redirectFrom, AgentItem to, ExtraRedirection? extraRedirections = null)
-    {
-        // Redirect combat events
-        foreach (CombatItem evt in combatData)
-        {
-            var srcMatchesAgent = evt.SrcMatchesAgent(redirectFrom, extensions);
-            var dstMatchesAgent = evt.DstMatchesAgent(redirectFrom, extensions);
-            if (!dstMatchesAgent && !srcMatchesAgent)
-            {
-                continue;
-            }
-            if (extraRedirections != null && !extraRedirections(evt, redirectFrom, to))
-            {
-                continue;
-            }
-            if (srcMatchesAgent)
-            {
-                evt.OverrideSrcAgent(to.Agent);
-            }
-            if (dstMatchesAgent)
-            {
-                evt.OverrideDstAgent(to.Agent);
-            }
-        }
-        agentData.SwapMasters(redirectFrom, to);
-    }
-
     /// <summary>
     /// Dictionary to find the <see cref="Spec"/> Specialization / Profession given a <see cref="string"/> as reference.
     /// </summary>
@@ -427,42 +259,61 @@ public static class ParserHelper
     {
         { "NPC", Spec.NPC },
         { "GDG", Spec.Gadget },
+        //
+        { "Galeshot", Spec.Galeshot },
         { "Untamed", Spec.Untamed },
         { "Druid", Spec.Druid },
         { "Soulbeast", Spec.Soulbeast },
         { "Ranger", Spec.Ranger },
+        //
+        { "Amalgam", Spec.Amalgam },
         { "Scrapper", Spec.Scrapper },
         { "Holosmith", Spec.Holosmith },
         { "Mechanist", Spec.Mechanist },
         { "Engineer", Spec.Engineer },
+        //
+        { "Antiquary", Spec.Antiquary },
         { "Specter", Spec.Specter },
         { "Daredevil", Spec.Daredevil },
         { "Deadeye", Spec.Deadeye },
         { "Thief", Spec.Thief },
+        //
+        { "Evoker", Spec.Evoker },
         { "Catalyst", Spec.Catalyst },
         { "Weaver", Spec.Weaver },
         { "Tempest", Spec.Tempest },
         { "Elementalist", Spec.Elementalist },
+        //
+        { "Troubadour", Spec.Troubadour },
         { "Virtuoso", Spec.Virtuoso },
         { "Mirage", Spec.Mirage },
         { "Chronomancer", Spec.Chronomancer },
         { "Mesmer", Spec.Mesmer },
+        //
+        { "Ritualist", Spec.Ritualist },
         { "Harbinger", Spec.Harbinger },
         { "Scourge", Spec.Scourge },
         { "Reaper", Spec.Reaper },
         { "Necromancer", Spec.Necromancer },
+        //
+        { "Paragon", Spec.Paragon },
         { "Bladesworn", Spec.Bladesworn },
         { "Spellbreaker", Spec.Spellbreaker },
         { "Berserker", Spec.Berserker },
         { "Warrior", Spec.Warrior },
+        //
+        { "Luminary", Spec.Luminary },
         { "Willbender", Spec.Willbender },
         { "Firebrand", Spec.Firebrand },
         { "Dragonhunter", Spec.Dragonhunter },
         { "Guardian", Spec.Guardian },
+        //
+        { "Conduit", Spec.Conduit },
         { "Vindicator", Spec.Vindicator },
         { "Renegade", Spec.Renegade },
         { "Herald", Spec.Herald },
         { "Revenant", Spec.Revenant },
+        //
         { "", Spec.Unknown },
     };
 
@@ -476,38 +327,55 @@ public static class ParserHelper
     /// </summary>
     private static IReadOnlyDictionary<Spec, Spec> SpecToBaseProfDictionary = new Dictionary<Spec, Spec>()
     {
+        { Spec.Galeshot, Spec.Ranger },
         { Spec.Untamed, Spec.Ranger },
         { Spec.Soulbeast, Spec.Ranger },
         { Spec.Druid, Spec.Ranger },
         { Spec.Ranger, Spec.Ranger },
+        //
+        { Spec.Amalgam, Spec.Engineer },
         { Spec.Mechanist, Spec.Engineer },
         { Spec.Holosmith, Spec.Engineer },
         { Spec.Scrapper, Spec.Engineer },
         { Spec.Engineer, Spec.Engineer },
+        //
+        { Spec.Antiquary, Spec.Thief },
         { Spec.Specter, Spec.Thief },
         { Spec.Deadeye, Spec.Thief },
         { Spec.Daredevil, Spec.Thief },
         { Spec.Thief, Spec.Thief },
+        //
+        { Spec.Evoker, Spec.Elementalist },
         { Spec.Catalyst, Spec.Elementalist },
         { Spec.Weaver, Spec.Elementalist },
         { Spec.Tempest, Spec.Elementalist },
         { Spec.Elementalist, Spec.Elementalist },
+        //
+        { Spec.Troubadour, Spec.Mesmer },
         { Spec.Virtuoso, Spec.Mesmer },
         { Spec.Mirage, Spec.Mesmer },
         { Spec.Chronomancer, Spec.Mesmer },
         { Spec.Mesmer, Spec.Mesmer },
+        //
+        { Spec.Ritualist, Spec.Necromancer },
         { Spec.Harbinger, Spec.Necromancer },
         { Spec.Scourge, Spec.Necromancer },
         { Spec.Reaper, Spec.Necromancer },
         { Spec.Necromancer, Spec.Necromancer },
+        //
+        { Spec.Paragon, Spec.Warrior },
         { Spec.Bladesworn, Spec.Warrior },
         { Spec.Spellbreaker, Spec.Warrior },
         { Spec.Berserker, Spec.Warrior },
         { Spec.Warrior, Spec.Warrior },
+        //
+        { Spec.Luminary, Spec.Guardian },
         { Spec.Willbender, Spec.Guardian },
         { Spec.Firebrand, Spec.Guardian },
         { Spec.Dragonhunter, Spec.Guardian },
         { Spec.Guardian, Spec.Guardian },
+        //
+        { Spec.Conduit, Spec.Revenant },
         { Spec.Vindicator, Spec.Revenant },
         { Spec.Renegade, Spec.Revenant },
         { Spec.Herald, Spec.Revenant },
@@ -524,38 +392,55 @@ public static class ParserHelper
     /// </summary>
     private static IReadOnlyDictionary<Spec, List<Source>> SpecToSourcesDictionary = new Dictionary<Spec, List<Source>>()
     {
+        { Spec.Galeshot, new List<Source> { Source.Ranger, Source.Galeshot } },
         { Spec.Untamed, new List<Source> { Source.Ranger, Source.Untamed } },
         { Spec.Soulbeast, new List<Source> { Source.Ranger, Source.Soulbeast } },
         { Spec.Druid, new List<Source> { Source.Ranger, Source.Druid } },
         { Spec.Ranger, new List<Source> { Source.Ranger } },
+        //
+        { Spec.Amalgam, new List<Source> { Source.Engineer, Source.Amalgam } },
         { Spec.Mechanist, new List<Source> { Source.Engineer, Source.Mechanist } },
         { Spec.Holosmith, new List<Source> { Source.Engineer, Source.Holosmith } },
         { Spec.Scrapper, new List<Source> { Source.Engineer, Source.Scrapper } },
         { Spec.Engineer, new List<Source> { Source.Engineer } },
+        //
+        { Spec.Antiquary, new List<Source> { Source.Thief, Source.Antiquary } },
         { Spec.Specter, new List<Source> { Source.Thief, Source.Specter } },
         { Spec.Deadeye, new List<Source> { Source.Thief, Source.Deadeye } },
         { Spec.Daredevil, new List<Source> { Source.Thief, Source.Daredevil } },
         { Spec.Thief, new List<Source> { Source.Thief } },
+        //
+        { Spec.Evoker, new List<Source> { Source.Elementalist, Source.Evoker } },
         { Spec.Catalyst, new List<Source> { Source.Elementalist, Source.Catalyst } },
         { Spec.Weaver, new List<Source> { Source.Elementalist, Source.Weaver } },
         { Spec.Tempest, new List<Source> { Source.Elementalist, Source.Tempest } },
         { Spec.Elementalist, new List<Source> { Source.Elementalist } },
+        //
+        { Spec.Troubadour, new List<Source> { Source.Mesmer, Source.Troubadour } },
         { Spec.Virtuoso, new List<Source> { Source.Mesmer, Source.Virtuoso } },
         { Spec.Mirage, new List<Source> { Source.Mesmer, Source.Mirage } },
         { Spec.Chronomancer, new List<Source> { Source.Mesmer, Source.Chronomancer } },
         { Spec.Mesmer, new List<Source> { Source.Mesmer } },
+        //
+        { Spec.Ritualist, new List<Source> { Source.Necromancer, Source.Ritualist } },
         { Spec.Harbinger, new List<Source> { Source.Necromancer, Source.Harbinger } },
         { Spec.Scourge, new List<Source> { Source.Necromancer, Source.Scourge } },
         { Spec.Reaper, new List<Source> { Source.Necromancer, Source.Reaper } },
         { Spec.Necromancer, new List<Source> { Source.Necromancer } },
+        //
+        { Spec.Paragon, new List<Source> { Source.Warrior, Source.Paragon } },
         { Spec.Bladesworn, new List<Source> { Source.Warrior, Source.Bladesworn } },
         { Spec.Spellbreaker, new List<Source> { Source.Warrior, Source.Spellbreaker } },
         { Spec.Berserker, new List<Source> { Source.Warrior, Source.Berserker } },
         { Spec.Warrior, new List<Source> { Source.Warrior } },
+        //
+        { Spec.Luminary, new List<Source> { Source.Guardian, Source.Luminary } },
         { Spec.Willbender, new List<Source> { Source.Guardian, Source.Willbender } },
         { Spec.Firebrand, new List<Source> { Source.Guardian, Source.Firebrand } },
         { Spec.Dragonhunter, new List<Source> { Source.Guardian, Source.Dragonhunter } },
         { Spec.Guardian, new List<Source> { Source.Guardian } },
+        //
+        { Spec.Conduit, new List<Source> { Source.Revenant, Source.Conduit } },
         { Spec.Vindicator, new List<Source> { Source.Revenant, Source.Vindicator } },
         { Spec.Renegade, new List<Source> { Source.Revenant, Source.Renegade } },
         { Spec.Herald, new List<Source> { Source.Revenant, Source.Herald } },
@@ -564,7 +449,7 @@ public static class ParserHelper
 
     public static IReadOnlyList<Source> SpecToSources(Spec spec)
     {
-        return SpecToSourcesDictionary.TryGetValue(spec, out var sourceList) ? sourceList : [];
+        return SpecToSourcesDictionary.TryGetValue(spec, out var sourceList) ? sourceList : [ ];
     }
 
     internal static string GetHighResolutionProfIcon(Spec spec)
@@ -606,16 +491,25 @@ public static class ParserHelper
     public static IReadOnlyDictionary<BuffAttribute, string> BuffAttributesStrings { get; private set; } = new Dictionary<BuffAttribute, string>()
     {
         { BuffAttribute.Power, "Power" },
+        { BuffAttribute.PowerSidekick, "Power" },
         { BuffAttribute.Precision, "Precision" },
+        { BuffAttribute.PrecisionSidekick, "Precision" },
         { BuffAttribute.Toughness, "Toughness" },
+        { BuffAttribute.ToughnessSidekick, "Toughness" },
         { BuffAttribute.DefensePercent, "Defense" },
         { BuffAttribute.Vitality, "Vitality" },
+        { BuffAttribute.VitalitySidekick, "Vitality" },
         { BuffAttribute.VitalityPercent, "Vitality" },
         { BuffAttribute.Ferocity, "Ferocity" },
+        { BuffAttribute.FerocitySidekick, "Ferocity" },
         { BuffAttribute.Healing, "Healing Power" },
+        { BuffAttribute.HealingSidekick, "Healing Power" },
         { BuffAttribute.Condition, "Condition Damage" },
+        { BuffAttribute.ConditionSidekick, "Condition Damage" },
         { BuffAttribute.Concentration, "Concentration" },
+        { BuffAttribute.ConcentrationSidekick, "Concentration" },
         { BuffAttribute.Expertise, "Expertise" },
+        { BuffAttribute.ExpertiseSidekick, "Expertise" },
         { BuffAttribute.AllStatsPercent, "All Stats" },
         { BuffAttribute.FishingPower, "Fishing Power" },
         { BuffAttribute.Armor, "Armor" },
@@ -715,92 +609,52 @@ public static class ParserHelper
         }
         int id = minion.ID;
         bool res = ProfHelper.IsKnownMinionID(id);
-        switch (spec)
+        var baseSpec = SpecToBaseSpec(spec);
+        switch (baseSpec)
         {
             //
             case Spec.Elementalist:
-            case Spec.Tempest:
-            case Spec.Weaver:
-            case Spec.Catalyst:
                 res |= ElementalistHelper.IsKnownMinionID(id);
+                res |= EvokerHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Necromancer:
-            case Spec.Scourge:
-            case Spec.Harbinger:
-                res |= NecromancerHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Reaper:
                 res |= NecromancerHelper.IsKnownMinionID(id);
                 res |= ReaperHelper.IsKnownMinionID(id);
+                res |= RitualistHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Mesmer:
                 res |= MesmerHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Chronomancer:
-                res |= MesmerHelper.IsKnownMinionID(id);
                 res |= ChronomancerHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Mirage:
-                res |= MesmerHelper.IsKnownMinionID(id);
                 res |= MirageHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Virtuoso:
-                res |= MesmerHelper.IsKnownMinionID(id);
                 res |= VirtuosoHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Thief:
                 res |= ThiefHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Daredevil:
-                res |= ThiefHelper.IsKnownMinionID(id);
                 res |= DaredevilHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Deadeye:
-                res |= ThiefHelper.IsKnownMinionID(id);
                 res |= DeadeyeHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Specter:
-                res |= ThiefHelper.IsKnownMinionID(id);
                 res |= SpecterHelper.IsKnownMinionID(id);
+                res |= AntiquaryHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Engineer:
-            case Spec.Holosmith:
-                res |= EngineerHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Scrapper:
                 res |= EngineerHelper.IsKnownMinionID(id);
                 res |= ScrapperHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Mechanist:
-                res |= EngineerHelper.IsKnownMinionID(id);
                 res |= MechanistHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Ranger:
-            case Spec.Druid:
-            case Spec.Soulbeast:
-            case Spec.Untamed:
                 res |= RangerHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Revenant:
-            case Spec.Herald:
-            case Spec.Vindicator:
-                res |= RevenantHelper.IsKnownMinionID(id);
-                break;
-            case Spec.Renegade:
                 res |= RevenantHelper.IsKnownMinionID(id);
                 res |= RenegadeHelper.IsKnownMinionID(id);
                 break;
             //
             case Spec.Guardian:
-            case Spec.Dragonhunter:
-            case Spec.Firebrand:
-            case Spec.Willbender:
                 res |= GuardianHelper.IsKnownMinionID(id);
                 break;
         }

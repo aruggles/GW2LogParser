@@ -1,7 +1,5 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
-using System.Linq;
 using static GW2EIEvtcParser.Extensions.HealingStatsExtensionHandler;
 
 namespace GW2EIEvtcParser.Extensions;
@@ -10,32 +8,32 @@ public class EXTHealingCombatData
 {
     private readonly Dictionary<AgentItem, List<EXTHealingEvent>> _healData;
     private readonly Dictionary<AgentItem, List<EXTHealingEvent>> _healReceivedData;
-    private readonly Dictionary<long, List<EXTHealingEvent>> _healDataById;
+    private readonly Dictionary<long, List<EXTHealingEvent>> _healDataByID;
 
     private readonly Dictionary<long, EXTHealingType> EncounteredIDs = []; //TODO(Rennorb) @perf
 
     private readonly IReadOnlyCollection<long> _hybridHealIDs;
 
-    internal EXTHealingCombatData(Dictionary<AgentItem, List<EXTHealingEvent>> healData, Dictionary<AgentItem, List<EXTHealingEvent>> healReceivedData, Dictionary<long, List<EXTHealingEvent>> healDataById, IReadOnlyCollection<long> hybridHealIDs)
+    internal EXTHealingCombatData(Dictionary<AgentItem, List<EXTHealingEvent>> healData, Dictionary<AgentItem, List<EXTHealingEvent>> healReceivedData, Dictionary<long, List<EXTHealingEvent>> healDataByID, IReadOnlyCollection<long> hybridHealIDs)
     {
         _healData = healData;
         _healReceivedData = healReceivedData;
-        _healDataById = healDataById;
+        _healDataByID = healDataByID;
         _hybridHealIDs = hybridHealIDs;
     }
 
     public IReadOnlyList<EXTHealingEvent> GetHealData(AgentItem key)
     {
-        return _healData.GetValueOrEmpty(key);
+        return CombatData.GetTimeValueOrEmpty(_healData, key);
     }
     public IReadOnlyList<EXTHealingEvent> GetHealReceivedData(AgentItem key)
     {
-        return _healReceivedData.GetValueOrEmpty(key);
+        return CombatData.GetTimeValueOrEmpty(_healReceivedData, key);
     }
 
     public IReadOnlyList<EXTHealingEvent> GetHealData(long key)
     {
-        return _healDataById.GetValueOrEmpty(key);
+        return _healDataByID.GetValueOrEmpty(key);
     }
 
     public EXTHealingType GetHealingType(long id, ParsedEvtcLog log)
@@ -48,7 +46,7 @@ public class EXTHealingCombatData
         {
             return type;
         }
-        if (log.CombatData.GetDamageData(id).Any(x => x.HealthDamage > 0 && !x.DoubleProcHit))
+        if (log.CombatData.GetDamageData(id).Any(x => x.HealthDamage > 0 && !x.IsNotADamageEvent))
         {
             type = EXTHealingType.ConversionBased;
         }

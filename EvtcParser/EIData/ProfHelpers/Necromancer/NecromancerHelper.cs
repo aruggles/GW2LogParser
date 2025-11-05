@@ -22,7 +22,7 @@ internal static class NecromancerHelper
         new BuffLossCastFinder(ExitDeathShroud, DeathShroud)
             .UsingBeforeWeaponSwap(),
         new DamageCastFinder(LesserEnfeeble, LesserEnfeeble)
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new DamageCastFinder(LesserSpinalShivers, LesserSpinalShivers)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
 
@@ -30,12 +30,12 @@ internal static class NecromancerHelper
         new DamageCastFinder(UnholyBurst, UnholyBurst),
         new DamageCastFinder(SpitefulSpirit, SpitefulSpirit)
             .UsingDisableWithEffectData()
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new EffectCastFinder(SpitefulSpirit, EffectGUIDs.NecromancerUnholyBurst)
             .UsingSrcBaseSpecChecker(Spec.Necromancer)
-            .UsingChecker((evt, combatData, skillData, agentData) => !CombatData.FindRelatedEvents(combatData.GetBuffData(DesertShroudBuff).OfType<BuffRemoveAllEvent>(), evt.Time, 50).Any()) // collides with sandstorm shroud
+            .UsingChecker((evt, combatData, skillData, agentData) => !CombatData.FindRelatedEvents(combatData.GetBuffRemoveAllData(DesertShroudBuff), evt.Time, 50).Any()) // collides with sandstorm shroud
             .UsingChecker((evt, combatData, skillData, agentData) => !combatData.HasRelatedHit(UnholyBurst, evt.Src, evt.Time))
-            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
 
         new BuffGainCastFinder(SpectralArmorSkill, SpectralArmorBuff)
             .WithBuilds(GW2Builds.December2018Balance),
@@ -44,7 +44,7 @@ internal static class NecromancerHelper
         new BuffGainCastFinder(SpectralWalkSkill, SpectralWalkBuff)
             .WithBuilds(GW2Builds.December2018Balance),
         new BuffLossCastFinder(SpectralRecallSkill, SpectralWalkTeleportBuff)
-            .UsingChecker((evt, combatData, skillData, agentData) => !CombatData.FindRelatedEvents(combatData.GetBuffData(SpectralWalkBuff).OfType<BuffRemoveAllEvent>(), evt.Time + 120).Any())
+            .UsingChecker((evt, combatData, skillData, agentData) => !CombatData.FindRelatedEvents(combatData.GetBuffRemoveAllData(SpectralWalkBuff), evt.Time + 120).Any())
             .WithBuilds(GW2Builds.December2018Balance),
         new EffectCastFinderByDst(PlagueSignetSkill, EffectGUIDs.NecromancerPlagueSignet)
             .UsingDstBaseSpecChecker(Spec.Necromancer),
@@ -56,7 +56,7 @@ internal static class NecromancerHelper
         new MinionCommandCastFinder(NecroticTraversal, (int) MinionID.FleshWurm),
         // Spear
         new EffectCastFinder(DistressSkill, EffectGUIDs.NecromancerSpearDistress)
-            .UsingChecker((effectEvent, combatData, agentData, skillData) => CombatData.FindRelatedEvents(combatData.GetBuffRemoveAllData(DistressBuff).OfType<BuffRemoveAllEvent>(), effectEvent.Time).Any()),
+            .UsingChecker((effectEvent, combatData, agentData, skillData) => CombatData.FindRelatedEvents(combatData.GetBuffRemoveAllData(DistressBuff), effectEvent.Time).Any()),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers =
@@ -90,14 +90,14 @@ internal static class NecromancerHelper
         new BuffOnActorDamageModifier(Mod_SoulBarbs, SoulBarbs, "Soul Barbs", "10% after entering or exiting shroud", DamageSource.NoPets, 10.0, DamageType.StrikeAndConditionAndLifeLeech, DamageType.All, Source.Necromancer, ByPresence, TraitImages.SoulBarbs, DamageModifierMode.All)
             .WithBuilds(GW2Builds.May2021Balance),
         // - Death Perception
-        new BuffOnActorDamageModifier(Mod_DeathPerception, [DeathShroud, ReapersShroud, DesertShroudBuff, HarbingerShroud], "Death Perception", "15% crit damage while in shroud", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DeathPerception, DamageModifierMode.All)
+        new BuffOnActorDamageModifier(Mod_DeathPerception, [DeathShroud, ReapersShroud, DesertShroudBuff, HarbingerShroud, RitualistsShroud], "Death Perception", "15% crit damage while in shroud", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DeathPerception, DamageModifierMode.All)
             .UsingChecker((x, log) => x.HasCrit)
             .WithBuilds(GW2Builds.June2022Balance),
 
         // Death Magic
         // - Necromantic Corruption
-        new DamageLogDamageModifier(Mod_NecromanticCorruption, "Necromantic Corruption", "25% strike damage for minions", DamageSource.PetsOnly, 25.0, DamageType.Strike, DamageType.All, Source.Necromancer, TraitImages.NecromanticCorruption, (x, log) => IsAnyUndeadMinion(x.From), DamageModifierMode.All)
-            .UsingEarlyExit((a, log) => a.GetMinions(log).Any(x => IsAnyUndeadMinion(x.Value.ReferenceAgentItem))),
+        new DamageLogDamageModifier(Mod_NecromanticCorruption, "Necromantic Corruption", "25% strike damage for minions", DamageSource.PetsOnly, 25.0, DamageType.Strike, DamageType.All, Source.Necromancer, TraitImages.NecromanticCorruption, (x, log) => IsUndeadMinion(x.From), DamageModifierMode.All)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => IsUndeadMinion(x.ReferenceAgentItem))),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -157,7 +157,8 @@ internal static class NecromancerHelper
         new Buff("Flesh of the Master", FleshOfTheMaster, Source.Necromancer, BuffStackType.Stacking, 25, BuffClassification.Other, TraitImages.FleshOfTheMaster)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.October2019Balance),
         new Buff("Vampiric Aura", VampiricAura, Source.Necromancer, BuffClassification.Defensive, TraitImages.VampiricPresence),
-        new Buff("Vampiric Strikes", VampiricStrikes, Source.Necromancer, BuffClassification.Other, TraitImages.VampiricPresence),
+        new Buff("Vampiric Strikes (Player)", VampiricStrikesPlayer, Source.Necromancer, BuffClassification.Other, TraitImages.Vampiric),
+        new Buff("Vampiric Strikes (Minion)", VampiricStrikesMinion, Source.Necromancer, BuffClassification.Other, TraitImages.Vampiric),
         new Buff("Last Rites", LastRites, Source.Necromancer, BuffClassification.Defensive, TraitImages.LastRites),
         new Buff("Soul Barbs", SoulBarbs, Source.Necromancer, BuffClassification.Other, TraitImages.SoulBarbs),
         new Buff("Taste For Blood", TasteForBlood, Source.Necromancer, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Support, TraitImages.OverflowingThirst),
@@ -165,7 +166,7 @@ internal static class NecromancerHelper
         new Buff("Extirpation", Extirpation, Source.Necromancer, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Other, SkillImages.Extirpate),
         new Buff("Soul Shards", SoulShards, Source.Necromancer, BuffStackType.StackingConditionalLoss, 6, BuffClassification.Other, BuffImages.SoulShards),
         new Buff("Distress", DistressBuff, Source.Necromancer, BuffClassification.Other, SkillImages.Distress),
-        new Buff("Dark Stalker", DarkStalker, Source.Necromancer, BuffStackType.Stacking, 25, BuffClassification.Other, SkillImages.MonsterSkill),
+        new Buff("Dark Stalker (Spear)", DarkStalkerSpear, Source.Necromancer, BuffStackType.Stacking, 25, BuffClassification.Other, SkillImages.MonsterSkill),
     ];
 
     private static readonly HashSet<long> _shroudTransform =
@@ -182,7 +183,8 @@ internal static class NecromancerHelper
     {
         return IsDeathShroudTransform(id)
             || ReaperHelper.IsReaperShroudTransform(id)
-            || HarbingerHelper.IsHarbingerShroudTransform(id);
+            || HarbingerHelper.IsHarbingerShroudTransform(id)
+            || RitualistHelper.IsRitualistShroudTransform(id);
     }
 
     private static readonly HashSet<int> Minions =
@@ -203,7 +205,7 @@ internal static class NecromancerHelper
     /// <summary>
     /// Checks if a minion is a Necromancer, Reaper or Rune/Relic of the Lich minion.
     /// </summary>
-    internal static bool IsAnyUndeadMinion(AgentItem agentItem)
+    internal static bool IsUndeadMinion(AgentItem agentItem)
     {
         if (agentItem.Type == AgentItem.AgentType.Gadget)
         {
@@ -264,8 +266,8 @@ internal static class NecromancerHelper
             {
                 // The effect doesn't clear up correctly making the effect last 12000ms, only the ring of the AoE disappears.
                 // Duration in PvP is 6000, otherwise 8000.
-                long duration = log.FightData.Logic.SkillMode == EncounterLogic.FightLogic.SkillModeEnum.sPvP ? 6000 : 8000;
-                (long, long) lifespan = effect.ComputeLifespanWithMaxedToDuration(log, duration);
+                long duration = log.LogData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.sPvP ? 6000 : 8000;
+                (long, long) lifespan = effect.ComputeLifespan(log, duration);
                 AddCircleSkillDecoration(replay, effect, color, skill, lifespan, 240, EffectImages.EffectCorrosivePoisonCloud);
             }
         }
@@ -299,7 +301,7 @@ internal static class NecromancerHelper
         // Mark of Blood or Chillblains (Staff 2/3)
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.NecromancerMarkOfBloodOrChillblains, out var markOfBloodOrChillblains))
         {
-            var markCasts = player.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).Where(x => x.SkillId == MarkOfBlood || x.SkillId == Chillblains || x.Skill.IsDodge(log.SkillData));
+            var markCasts = player.GetCastEvents(log).Where(x => x.SkillID == MarkOfBlood || x.SkillID == Chillblains || x.Skill.IsDodge(log.SkillData));
             foreach (EffectEvent effect in markOfBloodOrChillblains)
             {
                 SkillModeDescriptor skill;
@@ -308,7 +310,7 @@ internal static class NecromancerHelper
                 var markCastsOnEffect = markCasts.Where(x => effect.Time - ServerDelayConstant > x.Time && x.EndTime > effect.Time + ServerDelayConstant);
                 if (markCastsOnEffect.Count() == 1)
                 {
-                    skill = new SkillModeDescriptor(player, Spec.Necromancer, markCastsOnEffect.First().SkillId);
+                    skill = new SkillModeDescriptor(player, Spec.Necromancer, markCastsOnEffect.First().SkillID);
                     if (skill.SkillID != MarkOfBlood && skill.SkillID != Chillblains)
                     {
                         fromDodge = true;
@@ -405,7 +407,7 @@ internal static class NecromancerHelper
             var skill = new SkillModeDescriptor(player, Spec.Necromancer, SpectralRing, SkillModeCategory.CC);
             foreach (EffectEvent effect in spectralRings)
             {
-                long duration = log.FightData.Logic.SkillMode == EncounterLogic.FightLogic.SkillModeEnum.WvW ? 5000 : 8000;
+                long duration = log.LogData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.WvW ? 5000 : 8000;
                 (long, long) lifespan = effect.ComputeDynamicLifespan(log, duration);
                 AddDoughnutSkillDecoration(replay, effect, color, skill, lifespan, 180, 200, EffectImages.EffectSpectralRing);
             }

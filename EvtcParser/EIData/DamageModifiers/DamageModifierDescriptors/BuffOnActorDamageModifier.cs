@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.Collections.Generic;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -52,7 +51,7 @@ internal class BuffOnActorDamageModifier : DamageModifierDescriptor
         {
             return res;
         }
-        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null, log.FightData.FightStart, log.FightData.FightEnd);
+        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
         if (damageModifier.NeedsMinions)
         {
             var ignoredSources = new HashSet<SingleActor>();

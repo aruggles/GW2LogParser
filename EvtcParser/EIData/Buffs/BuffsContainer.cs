@@ -10,7 +10,7 @@ namespace GW2EIEvtcParser.EIData;
 public class BuffsContainer
 {
 
-    public readonly IReadOnlyDictionary<long, Buff> BuffsByIds;
+    public readonly IReadOnlyDictionary<long, Buff> BuffsByIDs;
     public readonly IReadOnlyDictionary<BuffClassification, IReadOnlyList<Buff>> BuffsByClassification;
     public readonly IReadOnlyDictionary<ParserHelper.Source, IReadOnlyList<Buff>> BuffsBySource;
     private readonly Dictionary<string, Buff> _buffsByName;
@@ -18,7 +18,7 @@ public class BuffsContainer
     private readonly BuffSourceFinder _buffSourceFinder;
 
 
-    internal BuffsContainer(CombatData combatData, ParserController operation)
+    internal BuffsContainer(CombatData combatData, SkillData skillData, ParserController operation)
     {
         var AllBuffs = new List<IReadOnlyList<Buff>>()
         {
@@ -34,7 +34,7 @@ public class BuffsContainer
             UtilityBuffs.Writs,
             UtilityBuffs.OtherConsumables,
             UtilityBuffs.UtilityProcs,
-            EncounterBuffs.FightSpecific,
+            EncounterBuffs.EncounterSpecific,
             EncounterBuffs.FractalInstabilities,
             WvWBuffs.Commons,
             //
@@ -42,46 +42,55 @@ public class BuffsContainer
             HeraldHelper.Buffs,
             RenegadeHelper.Buffs,
             VindicatorHelper.Buffs,
+            ConduitHelper.Buffs,
             //
             WarriorHelper.Buffs,
             BerserkerHelper.Buffs,
             SpellbreakerHelper.Buffs,
             BladeswornHelper.Buffs,
+            ParagonHelper.Buffs,
             //
             GuardianHelper.Buffs,
             DragonhunterHelper.Buffs,
             FirebrandHelper.Buffs,
             WillbenderHelper.Buffs,
+            LuminaryHelper.Buffs,
             //
             RangerHelper.Buffs,
             DruidHelper.Buffs,
             SoulbeastHelper.Buffs,
             UntamedHelper.Buffs,
+            GaleshotHelper.Buffs,
             //
             ThiefHelper.Buffs,
             DaredevilHelper.Buffs,
             DeadeyeHelper.Buffs,
             SpecterHelper.Buffs,
+            AntiquaryHelper.Buffs,
             //
             EngineerHelper.Buffs,
             ScrapperHelper.Buffs,
             HolosmithHelper.Buffs,
             MechanistHelper.Buffs,
+            AmalgamHelper.Buffs,
             //
             MesmerHelper.Buffs,
             ChronomancerHelper.Buffs,
             MirageHelper.Buffs,
             VirtuosoHelper.Buffs,
+            TroubadourHelper.Buffs,
             //
             NecromancerHelper.Buffs,
             ReaperHelper.Buffs,
             ScourgeHelper.Buffs,
             HarbingerHelper.Buffs,
+            RitualistHelper.Buffs,
             //
             ElementalistHelper.Buffs,
             TempestHelper.Buffs,
             WeaverHelper.Buffs,
             CatalystHelper.Buffs,
+            EvokerHelper.Buffs,
         };
         var currentBuffs = new List<Buff>();
         foreach (IReadOnlyList<Buff> buffs in AllBuffs)
@@ -130,7 +139,7 @@ public class BuffsContainer
             }
         }
         //
-        BuffsByIds = currentBuffs.GroupBy(x => x.ID).ToDictionary(x => x.Key, x =>
+        BuffsByIDs = currentBuffs.GroupBy(x => x.ID).ToDictionary(x => x.Key, x =>
         {
             if (x.Count() > 1 && x.Key != SkillIDs.NoBuff && x.Key != SkillIDs.Unknown)
             {
@@ -138,8 +147,19 @@ public class BuffsContainer
             }
             return x.First();
         });
+        operation.UpdateProgressWithCancellationCheck("Parsing: Adjusting Skill icons using buffs");
+        var adjusted = 0;
+        foreach (var pair in BuffsByIDs)
+        {
+            if (skillData.TryGet(pair.Key, out var skill))
+            {
+                adjusted++;
+                skill.OverrideFromBuff(pair.Value);
+            }
+        }
+        operation.UpdateProgressWithCancellationCheck($"Parsing: Adjusted {adjusted} Skill icons using buffs");
         operation.UpdateProgressWithCancellationCheck("Parsing: Adjusting Buffs");
-        BuffInfoSolver.AdjustBuffs(combatData, BuffsByIds, operation);
+        BuffInfoSolver.AdjustBuffs(combatData, BuffsByIDs, operation);
         foreach (Buff buff in currentBuffs)
         {
             BuffInfoEvent? buffInfoEvt = combatData.GetBuffInfoEvent(buff.ID);
@@ -149,7 +169,7 @@ public class BuffsContainer
                 {
                     if (formula.Attr1 == BuffAttribute.Unknown)
                     {
-                        operation.UpdateProgressWithCancellationCheck("Parsing: Unknown Formula for " + buff.Name + ": " + formula.GetDescription(true, BuffsByIds, buff));
+                        operation.UpdateProgressWithCancellationCheck("Parsing: Unknown Formula for " + buff.Name + ": " + formula.GetDescription(true, BuffsByIDs, buff));
                     }
                 }
             }

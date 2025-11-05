@@ -162,7 +162,7 @@ function addMechanicsToGraph(data, phase, phaseIndex) {
     }
 }
 
-function updateMechanicsYValues(res, phase, phaseIndex, phaseGraphData, max) {
+function updateMechanicsYValues(res, phase, phaseIndex, phaseGraphData, activePlayers, max) {
     for (var i = 0; i < graphData.mechanics.length; i++) {
         var mech = graphData.mechanics[i];
         var mechData = logData.mechanicMap[i];
@@ -184,15 +184,20 @@ function updateMechanicsYValues(res, phase, phaseIndex, phaseGraphData, max) {
                 }
             }
         } else {
+            let indexInGraph = 0;
             for (var j = 0; j < mech.points[phaseIndex].length; j++) {
+                if (!activePlayers[j]) {
+                    continue;
+                }
                 var pts = mech.points[phaseIndex][j];
                 for (var k = 0; k < pts.length; k++) {
                     var time = pts[k][0];
                     var ftime = Math.floor(time);
-                    var y = res[j][ftime];
-                    var yp1 = res[j][ftime + 1];
+                    var y = res[indexInGraph][ftime];
+                    var yp1 = res[indexInGraph][ftime + 1];
                     chart.push(interpolatePoint(ftime, ftime + 1, y, yp1, time));
                 }
+                indexInGraph++;
             }
         }
     }
@@ -1045,4 +1050,131 @@ function validateStartPath(path) {
         return false;
     }
     return setting.startsWith(path);
+}
+
+function getActivePlayers(time) {
+    let res = [];
+    for (let i = 0; i < logData.players.length; i++) {
+        const player = logData.players[i];
+        if ( 
+            (
+                player.notInSquad && 
+                (
+                    player.firstAware > time || 
+                    player.lastAware < time
+                )
+            ) || 
+            (
+                    player.isEnglobed && 
+                (
+                    (!player.isFirstEnglobed && player.firstAware > time) ||
+                    (!player.isLastEnglobed && player.lastAware < time)
+                )
+            )
+        ) {
+            res.push(null);
+        } else {
+            res.push(player);
+        }
+    }
+    return res;
+}
+
+function getActiveNonFakePlayers(time) {
+    let res = [];
+    for (let i = 0; i < logData.players.length; i++) {
+        const player = logData.players[i];
+        if (player.isFake || 
+            (
+                player.notInSquad && 
+                (
+                    player.firstAware > time || 
+                    player.lastAware < time
+                )
+            ) || 
+            (
+                player.isEnglobed && 
+                (            
+                    (!player.isFirstEnglobed && player.firstAware > time) ||
+                    (!player.isLastEnglobed && player.lastAware < time)
+                )
+            )
+        ) {
+            res.push(null);
+        } else {
+            res.push(player);
+        }
+    }
+    return res;
+}
+
+function getActivePlayersForPhase(phase) {
+    if (phase.type !== PhaseTypes.INSTANCE && phase.type !== PhaseTypes.ENCOUNTER) {
+        throw "Expected an instance or encounter phase";
+    }
+    let res = [];
+    const start = phase.start;
+    const end = phase.end;
+    for (let i = 0; i < logData.players.length; i++) {
+        const player = logData.players[i];
+        if ((player.lastAware <= start || player.firstAware >= end)) {
+            res.push(null);
+        } else {
+            res.push(player);
+        }
+    }
+    return res;
+}
+
+function getActiveNonFakePlayersForPhase(phase) {
+    if (phase.type !== PhaseTypes.INSTANCE && phase.type !== PhaseTypes.ENCOUNTER) {
+        throw "Expected an instance or encounter phase";
+    }
+    let res = [];
+    const start = phase.start;
+    const end = phase.end;
+    for (let i = 0; i < logData.players.length; i++) {
+        const player = logData.players[i];
+        if (player.isFake || ((player.lastAware <= start || player.firstAware >= end))) {
+            res.push(null);
+        } else {
+            res.push(player);
+        }
+    }
+    return res;
+}
+
+function getPhasesForSelectedEncounter(phases, encounters) {
+    for (let i = 0; i < encounters.length; i++) {
+        const encounter = encounters[i];
+        if (encounter.active) {
+            const phase = logData.phases[encounter.index];
+            let resPhases = [];
+            if (phase.type === PhaseTypes.INSTANCE) {
+                if (IsMultiEncounterLog) {
+                    for (let j = 0; j < phases.length; j++) {
+                        const subPhase = logData.phases[j];
+                        if (subPhase === phase || subPhase.type === PhaseTypes.ENCOUNTER) {
+                            resPhases.push(phases[j]);
+                        }
+                    }
+                } else {
+                    return phases;
+                }
+            } else {
+                if (IsMultiEncounterLog) {
+                    for (let j = 0; j < phases.length; j++) {
+                        const subPhase = logData.phases[j];
+                        if (subPhase === phase || subPhase.encounterPhase === encounter.index) {
+                            resPhases.push(phases[j]);
+                        }
+                    }
+                } else {
+                    return phases;
+                }
+            }
+            return resPhases;
+        }
+    }
+    return phases;
 }

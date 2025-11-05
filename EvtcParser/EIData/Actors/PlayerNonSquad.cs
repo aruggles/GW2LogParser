@@ -1,7 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System.IO;
-using System.Security.Principal;
-using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -18,11 +15,6 @@ public class PlayerNonSquad : PlayerActor
         }
         Character = Spec.ToString() + " pl-" + AgentItem.InstID;
         Account = "Non Squad Player " + (++NonSquadPlayers);
-    }
-    protected override void TrimCombatReplay(ParsedEvtcLog log, CombatReplay replay)
-    {
-        // Down, Dead, Alive, Spawn and Despawn events are not reliable
-        replay.Trim(FirstAware, LastAware);
     }
 
 }

@@ -123,7 +123,22 @@ public class Buff : IVersionable
         return new Buff(name + " " + id, id, Source.Item, capacity > 1 ? BuffStackType.Stacking : BuffStackType.Force, capacity, classification, link);
     }
 
-    internal void VerifyBuffInfoEvent(BuffInfoEvent buffInfoEvent, ParserController operation)
+    private bool IsIncompatibleStackLogic(BuffStackType expectedStackType)
+    {
+        switch (StackType)
+        {
+            // Simulation logic does not change
+            case BuffStackType.StackingConditionalLoss:
+            case BuffStackType.Stacking:
+            case BuffStackType.StackingUniquePerSrc:
+                return !(expectedStackType == BuffStackType.StackingConditionalLoss || expectedStackType == BuffStackType.Stacking || expectedStackType == BuffStackType.StackingUniquePerSrc);
+            default:
+                break;
+        }
+        return expectedStackType != StackType;
+    }
+
+    internal void VerifyBuffInfoEvent(BuffInfoEvent buffInfoEvent, EvtcVersionEvent versionEvent, ParserController operation)
     {
         if (buffInfoEvent.BuffID != ID)
         {
@@ -135,7 +150,15 @@ public class Buff : IVersionable
         }
         if (buffInfoEvent.StackingType != StackType && buffInfoEvent.StackingType != BuffStackType.Unknown)
         {
-            operation.UpdateProgressWithCancellationCheck("Parsing: Incoherent stack type for " + Name + ": is " + StackType + " but expected " + buffInfoEvent.StackingType);
+            var message = "Incoherent stack type for " + Name + ": is " + StackType + " but expected " + buffInfoEvent.StackingType;
+//#if DEBUG
+//            // I don't exactly remember when stack type on buff info event was fixed on arc's side
+//            if (versionEvent.Build > 20240600 && IsIncompatibleStackLogic(buffInfoEvent.StackingType))
+//            {
+//                throw new InvalidDataException(message);
+//            }
+//#endif
+            operation.UpdateProgressWithCancellationCheck("Parsing: " + message);
         }
     }
 
@@ -167,35 +190,35 @@ public class Buff : IVersionable
         };
     }
 
-    internal static BuffSourceFinder GetBuffSourceFinder(CombatData combatData, HashSet<long> boonIds)
+    internal static BuffSourceFinder GetBuffSourceFinder(CombatData combatData, HashSet<long> boonIDs)
     {
         ulong gw2Build = combatData.GetGW2BuildEvent().Build;
 
         if (gw2Build >= GW2Builds.March2024BalanceAndCerusLegendary)
         {
-            return new BuffSourceFinder20240319(boonIds);
+            return new BuffSourceFinder20240319(boonIDs);
         }
         if (gw2Build >= GW2Builds.October2022BalanceHotFix)
         {
-            return new BuffSourceFinder20221018(boonIds);
+            return new BuffSourceFinder20221018(boonIDs);
         }
         if (gw2Build >= GW2Builds.EODBeta2)
         {
-            return new BuffSourceFinder20210921(boonIds);
+            return new BuffSourceFinder20210921(boonIDs);
         }
         if (gw2Build >= GW2Builds.May2021Balance)
         {
-            return new BuffSourceFinder20210511(boonIds);
+            return new BuffSourceFinder20210511(boonIDs);
         }
         if (gw2Build >= GW2Builds.October2019Balance)
         {
-            return new BuffSourceFinder20191001(boonIds);
+            return new BuffSourceFinder20191001(boonIDs);
         }
         if (gw2Build >= GW2Builds.March2019Balance)
         {
-            return new BuffSourceFinder20190305(boonIds);
+            return new BuffSourceFinder20190305(boonIDs);
         }
-        return new BuffSourceFinder20181211(boonIds);
+        return new BuffSourceFinder20181211(boonIDs);
     }
 
     public bool Available(CombatData combatData)

@@ -4,12 +4,12 @@ using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.EIData;
 
-public class PlayerActor : SingleActor
+public abstract class PlayerActor : SingleActor
 {
     public bool IsFriendlyPlayer => AgentItem.Type == AgentItem.AgentType.Player || AgentItem.IsNotInSquadFriendlyPlayer;
 
     // Constructors
-    internal PlayerActor(AgentItem agent) : base(agent)
+    protected PlayerActor(AgentItem agent) : base(agent)
     {
         if (agent.IsNPC)
         {
@@ -19,6 +19,13 @@ public class PlayerActor : SingleActor
         {
             throw new EvtcAgentException("Players can't be fake actors");
         }
+    }
+
+    internal void Anonymize(int index)
+    {
+        Character = "Player " + index;
+        Account = "Account " + index;
+        AgentItem.OverrideName(Character + "\0:" + Account + "\0" + Group);
     }
     internal override void OverrideName(string name)
     {
@@ -43,12 +50,22 @@ public class PlayerActor : SingleActor
     {
         return !IsFriendlyPlayer && !forceLowResolutionIfApplicable ? GetHighResolutionProfIcon(Spec) : GetProfIcon(Spec);
     }
-
+    protected override IReadOnlyList<Segment> GetActiveSegmentsForCRTrim(ParsedEvtcLog log)
+    {
+        var (deads, downs, _, actives) = GetStatus(log);
+        List<Segment> segments = [
+            .. deads,
+            .. downs,
+            .. actives
+            ];
+        segments.Sort((x, y) => x.Start.CompareTo(y.Start));
+        return segments;
+    }
     protected override void InitAdditionalCombatReplayData(ParsedEvtcLog log, CombatReplay replay)
     {
         base.InitAdditionalCombatReplayData(log, replay);
-        // Fight related stuff
-        log.FightData.Logic.ComputePlayerCombatReplayActors(this, log, replay);
+        // Logic related stuff
+        log.LogData.Logic.ComputePlayerCombatReplayActors(this, log, replay);
         ProfHelper.ComputeProfessionCombatReplayActors(this, log, replay);
         if (replay.Rotations.Count != 0)
         {

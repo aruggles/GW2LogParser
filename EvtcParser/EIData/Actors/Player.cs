@@ -11,6 +11,7 @@ public class Player : PlayerActor
 {
 
     private List<GenericSegment<GUID>>? CommanderStates = null;
+    private bool _squadless = false;
     // Constructors
     internal Player(AgentItem agent, bool noSquad) : base(agent)
     {
@@ -28,25 +29,30 @@ public class Player : PlayerActor
             throw new EvtcAgentException("Missing Group on Player");
         }
         Account = name[1].TrimStart(':');
+        _squadless = noSquad;
         Group = noSquad ? 1 : int.Parse(name[2], NumberStyles.Integer, CultureInfo.InvariantCulture);
+#if DEBUG
+        if (AgentItem.IsEnglobedAgent)
+        {
+            Character = $"${Character} {EnglobingAgentItem.EnglobedAgentItems.IndexOf(AgentItem) + 1}";
+        }
+#endif
     }
 
 
     internal void MakeSquadless()
     {
+        _squadless = true;
         Group = 1;
     }
 
     internal void OverrideGroup(int group)
     {
+        if (_squadless)
+        {
+            return;
+        }
         Group = group;
-    }
-
-    internal void Anonymize(int index)
-    {
-        Character = "Player " + index;
-        Account = "Account " + index;
-        AgentItem.OverrideName(Character + "\0:" + Account + "\0" + Group);
     }
 
     internal override (Dictionary<long, BuffStatistics> Buffs, Dictionary<long, BuffStatistics> ActiveBuffs) ComputeBuffs(ParsedEvtcLog log, long start, long end, BuffEnum type)
@@ -68,11 +74,11 @@ public class Player : PlayerActor
         return (type) switch
         {
             BuffEnum.Group =>
-                BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p.Group == Group && this != p), log, AgentItem, start, end),
+                BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p.Group == Group && this != p), log, this, start, end),
             BuffEnum.OffGroup =>
-                BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p.Group != Group), log, AgentItem, start, end),
+                BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p.Group != Group), log, this, start, end),
             BuffEnum.Squad =>
-                BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p != this), log, AgentItem, start, end),
+                BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p != this), log, this, start, end),
             _ => BuffVolumeStatistics.GetBuffVolumesForSelf(log, this, start, end),
         };
     }
@@ -96,11 +102,12 @@ public class Player : PlayerActor
     {
         if (CommanderStates == null)
         {
-            var useGUIDs = log.LogData.EvtcBuild >= ArcDPSBuilds.FunctionalIDToGUIDEvents;
-            var statesByPlayer = new Dictionary<Player, IReadOnlyList<GenericSegment<GUID>>>(log.PlayerList.Count);
-            foreach (Player player in log.PlayerList)
+            var useGUIDs = log.LogMetadata.EvtcBuild >= ArcDPSBuilds.FunctionalIDToGUIDEvents;
+            var statesByPlayer = new Dictionary<AgentItem, IReadOnlyList<GenericSegment<GUID>>>(log.PlayerList.Count);
+            var relevantPlayers = log.PlayerList.DistinctBy(x => x.EnglobingAgentItem).Select(x => x.EnglobingAgentItem);
+            foreach (var player in relevantPlayers)
             {
-                IReadOnlyList<MarkerEvent> markerEvents = log.CombatData.GetMarkerEvents(player.AgentItem);
+                IReadOnlyList<MarkerEvent> markerEvents = log.CombatData.GetMarkerEvents(player);
                 //TODO(Rennorb) @perf: find average complexity
                 var commanderMarkerStates = new List<GenericSegment<GUID>>(markerEvents.Count);
                 foreach (MarkerEvent markerEvent in markerEvents)
@@ -110,7 +117,7 @@ public class Player : PlayerActor
                     {
                         if (marker.IsCommanderTag)
                         {
-                            commanderMarkerStates.Add(new(markerEvent.Time, Math.Min(markerEvent.EndTime, log.FightData.LogEnd), marker.ContentGUID));
+                            commanderMarkerStates.Add(new(markerEvent.Time, Math.Min(markerEvent.EndTime, log.LogData.EvtcLogEnd), marker.ContentGUID));
                             if (markerEvent.EndNotSet)
                             {
                                 break;
@@ -120,7 +127,7 @@ public class Player : PlayerActor
                     else if (markerEvent.MarkerID != 0)
                     {
                         commanderMarkerStates.Clear();
-                        commanderMarkerStates.Add(new(player.FirstAware, log.FightData.LogEnd, MarkerGUIDs.BlueCommanderTag));
+                        commanderMarkerStates.Add(new(player.FirstAware, log.LogData.EvtcLogEnd, MarkerGUIDs.BlueCommanderTag));
                         break;
                     }
                 }
@@ -130,14 +137,14 @@ public class Player : PlayerActor
                 }
             }
 
-            if (!statesByPlayer.ContainsKey(this))
+            if (!statesByPlayer.Any(x => AgentItem.Is(x.Key)))
             {
                 CommanderStates = [];
                 return CommanderStates;
             }
 
             //TODO(Rennorb) @perf: find average complexity
-            var states = new List<(Player p, GenericSegment<GUID> seg)>(statesByPlayer.Count * statesByPlayer.Values.FirstOrDefault()?.Count ?? 1);
+            var states = new List<(AgentItem p, GenericSegment<GUID> seg)>(statesByPlayer.Count * statesByPlayer.Values.FirstOrDefault()?.Count ?? 1);
             foreach (var (player, state) in statesByPlayer)
             {
                 foreach (var segment in state)
@@ -152,20 +159,33 @@ public class Player : PlayerActor
             var (lastPlayer, lastSegment) = states[0];
             foreach (var (player, seg) in states.Skip(1))
             {
-                if (lastPlayer == player && lastSegment.Value == seg.Value)
+                if (lastPlayer.Is(player) && lastSegment.Value == seg.Value)
                 {
                     lastSegment.End = seg.End;
                 }
                 else
                 {
                     //TODO(Rennorb) @correctness: This just seems wrong. what if the players are interleaved?
-                    if (player == this) { CommanderStates.Add(lastSegment); }
+                    if (player.Is(AgentItem))
+                    {
+                        CommanderStates.Add(lastSegment);
+                    }
 
                     lastPlayer = player;
                     lastSegment = seg;
                 }
             }
-            if (lastPlayer == this) { CommanderStates.Add(lastSegment); }
+            if (lastPlayer.Is(AgentItem))
+            {
+                CommanderStates.Add(lastSegment);
+            }
+            // Clamp to aware times
+            for (var i = 0; i < CommanderStates.Count; i++)
+            {
+                var seg = CommanderStates[i];
+                CommanderStates[i] = new(Math.Max(seg.Start, FirstAware), Math.Min(seg.End, LastAware), seg.Value);
+            }
+            CommanderStates.RemoveAll(x => x.IsEmpty());
         }
         return CommanderStates;
     }
@@ -208,27 +228,6 @@ public class Player : PlayerActor
             }
         }
         base.InitAdditionalCombatReplayData(log, replay);
-    }
-
-    /// <summary> Calculates a list of positions of the player which are null in places where the player is dead or disconnected. </summary>
-    public List<ParametricPoint3D?> GetCombatReplayActivePositions(ParsedEvtcLog log)
-    {
-        var (_, _, _, actives) = GetStatus(log);
-        var positions = GetCombatReplayPolledPositions(log);
-        var activePositions = new List<ParametricPoint3D?>(positions.Count);
-        for (int i = 0; i < positions.Count; i++)
-        {
-            var cur = positions[i]!;
-            if (actives.Any(x => x.ContainsPoint(cur.Time)))
-            {
-                activePositions.Add(cur);
-            }
-            else
-            {
-                activePositions.Add(null);
-            }
-        }
-        return activePositions;
     }
 
 }

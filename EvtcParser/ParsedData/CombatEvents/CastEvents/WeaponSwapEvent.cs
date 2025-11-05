@@ -1,5 +1,4 @@
 ﻿namespace GW2EIEvtcParser.ParsedData;
-
 using static GW2EIEvtcParser.ArcDPSEnums;
 
 public class WeaponSwapEvent : CastEvent

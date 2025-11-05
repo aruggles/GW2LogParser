@@ -1,8 +1,5 @@
-﻿using GW2EIEvtcParser.ParserHelpers;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Windows.Forms;
+﻿using System.Numerics;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.ParsedData;

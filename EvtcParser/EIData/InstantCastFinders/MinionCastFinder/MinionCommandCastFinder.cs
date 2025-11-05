@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParsedData;
-using System;
 using static GW2EIEvtcParser.SkillIDs;
 
 namespace GW2EIEvtcParser.EIData;

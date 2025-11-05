@@ -41,24 +41,34 @@ internal static class GearDamageModifiers
         // Sigils
         new BuffOnFoeDamageModifier(Mod_ImpactSigil, [Stun, Knockdown], "Impact Sigil", "7% on stunned or knocked-down target", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.SuperiorSigilOfImpact, DamageModifierMode.All),
         // Relics
-        new BuffOnFoeDamageModifier(Mod_RelicOfTheDragonhunter, RelicOfTheDragonhunterTargetBuff, "Relic of the Dragonhunter", "10% after trap hit", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfTheDragonhunter, DamageModifierMode.All).UsingChecker((x, log) =>
-        {
-            var src = log.FindActor(x.From);
-            var dst = log.FindActor(x.To);
-            return dst.HasBuff(log, src, RelicOfTheDragonhunterTargetBuff, x.Time);
-        }).UsingApproximate(), // Reapplication while buff is running is done via extension, extensions source finding is not capable of always finding the source
-        new BuffOnFoeDamageModifier(Mod_RelicOfIsgarren, RelicOfIsgarrenTargetBuff, "Relic of Isgarren", "10% after evade", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfIsgarren, DamageModifierMode.All).UsingChecker((x, log) =>
-        {
-            var src = log.FindActor(x.From);
-            var dst = log.FindActor(x.To);
-            return dst.HasBuff(log, src, RelicOfIsgarrenTargetBuff, x.Time);
-        }).UsingApproximate(), // Reapplication while buff is running is done via extension, extensions source finding is not capable of always finding the source
-        new BuffOnFoeDamageModifier(Mod_RelicOfPeitha, RelicOfPeithaTargetBuff, "Relic of Peitha", "10% after blade hit", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfPeitha, DamageModifierMode.All).UsingChecker((x, log) =>
-        {
-            var src = log.FindActor(x.From);
-            var dst = log.FindActor(x.To);
-            return dst.HasBuff(log, src, RelicOfPeithaTargetBuff, x.Time);
-        }).WithBuilds(GW2Builds.November2023Balance).UsingApproximate(), // Reapplication while buff is running is done via extension, extensions source finding is not capable of always finding the source
+        new BuffOnFoeDamageModifier(Mod_RelicOfTheDragonhunter, RelicOfTheDragonhunterTargetBuff, "Relic of the Dragonhunter", "10% after trap hit", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfTheDragonhunter, DamageModifierMode.All)
+            .UsingEarlyExit((a, log) => log.CombatData.GetBuffApplyDataByIDBySrc(RelicOfTheDragonhunterTargetBuff, a.AgentItem).Count == 0)
+            .UsingChecker((x, log) =>
+            {
+                var src = log.FindActor(x.From);
+                var dst = log.FindActor(x.To);
+                return dst.HasBuff(log, src, RelicOfTheDragonhunterTargetBuff, x.Time);
+            })
+            .UsingApproximate(), // Reapplication while buff is running is done via extension, extensions source finding is not capable of always finding the source
+        new BuffOnFoeDamageModifier(Mod_RelicOfIsgarren, RelicOfIsgarrenTargetBuff, "Relic of Isgarren", "10% after evade", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfIsgarren, DamageModifierMode.All)
+            .UsingEarlyExit((a, log) => log.CombatData.GetBuffApplyDataByIDBySrc(RelicOfIsgarrenTargetBuff, a.AgentItem).Count == 0)
+            .UsingChecker((x, log) =>
+            {
+                var src = log.FindActor(x.From);
+                var dst = log.FindActor(x.To);
+                return dst.HasBuff(log, src, RelicOfIsgarrenTargetBuff, x.Time);
+            })
+            .UsingApproximate(), // Reapplication while buff is running is done via extension, extensions source finding is not capable of always finding the source
+        new BuffOnFoeDamageModifier(Mod_RelicOfPeitha, RelicOfPeithaTargetBuff, "Relic of Peitha", "10% after blade hit", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfPeitha, DamageModifierMode.All)
+            .UsingEarlyExit((a, log) => log.CombatData.GetBuffApplyDataByIDBySrc(RelicOfPeithaTargetBuff, a.AgentItem).Count == 0)
+            .UsingChecker((x, log) =>
+            {
+                var src = log.FindActor(x.From);
+                var dst = log.FindActor(x.To);
+                return dst.HasBuff(log, src, RelicOfPeithaTargetBuff, x.Time);
+            })
+            .WithBuilds(GW2Builds.November2023Balance)
+            .UsingApproximate(), // Reapplication while buff is running is done via extension, extensions source finding is not capable of always finding the source
         new BuffOnActorDamageModifier(Mod_RelicOfTheThief, RelicOfTheThief, "Relic of the Thief", "1% per stack", DamageSource.NoPets, 1.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByStack, ItemImages.RelicOfTheThief, DamageModifierMode.All),
         new BuffOnActorDamageModifier(Mod_RelicOfFireworks, RelicOfFireworks, "Relic of Fireworks", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfFireworks, DamageModifierMode.All).WithBuilds(GW2Builds.StartOfLife, GW2Builds.September2023Balance),
         new BuffOnActorDamageModifier(Mod_RelicOfFireworks, RelicOfFireworks, "Relic of Fireworks", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfFireworks, DamageModifierMode.sPvP).WithBuilds(GW2Builds.September2023Balance),
@@ -74,8 +84,14 @@ internal static class GearDamageModifiers
             .WithBuilds(GW2Builds.March2025W8CMReleaseAndNewCoreRelics),
         new BuffOnActorDamageModifier(Mod_RelicOfFire, FireAura, "Relic of Fire", "7% under fire aura", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfFire, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.March2025W8CMReleaseAndNewCoreRelics),
-        new BuffOnActorDamageModifier(Mod_RelicOfBloodstone, BloodstoneFervor, "Bloodstone Fervor", "15% strike damage", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfBloodstone, DamageModifierMode.PvE),
-        new BuffOnActorDamageModifier(Mod_RelicOfBloodstone, BloodstoneFervor, "Bloodstone Fervor", "10% strike damage", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfBloodstone, DamageModifierMode.sPvPWvW),
+        // Relic of Bloodstone
+        new BuffOnActorDamageModifier(Mod_RelicOfBloodstone, BloodstoneFervor, "Bloodstone Fervor", "15% strike damage", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfBloodstone, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.June2025Balance, GW2Builds.July2025BalanceHotFix),
+        new BuffOnActorDamageModifier(Mod_RelicOfBloodstone, BloodstoneFervor, "Bloodstone Fervor", "10% strike damage", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfBloodstone, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.June2025Balance, GW2Builds.July2025BalanceHotFix),
+        new BuffOnActorDamageModifier(Mod_RelicOfBloodstone, BloodstoneFervor, "Bloodstone Fervor", "10% strike damage", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ByPresence, ItemImages.RelicOfBloodstone, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.July2025BalanceHotFix),
+        //
         new DamageLogDamageModifier(Mod_RelicOfTheEagle,"Relic of the Eagle", "10% if target <50% HP", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Gear, ItemImages.RelicOfTheEagle, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All)
             .WithBuilds(GW2Builds.March2025W8CMReleaseAndNewCoreRelics),
     ];
@@ -86,7 +102,7 @@ internal static class GearDamageModifiers
         new DamageLogDamageModifier(Mod_RuneOfHoelbrak, "Rune of Hoelbrak", "-10% condition damamge", DamageSource.Incoming, -10.0, DamageType.Condition, DamageType.All, Source.Gear, ItemImages.SuperiorRuneOfHoelbrak, (x, log) => true, DamageModifierMode.All)
             .WithBuilds(GW2Builds.November2018Rune, GW2Builds.SOTOReleaseAndBalance),
         new DamageLogDamageModifier(Mod_RuneOfTheStars, "Rune of the Stars", "-10% condition damamge", DamageSource.Incoming, -10.0, DamageType.Condition, DamageType.All, Source.Gear, ItemImages.SuperiorRuneOfTheStars, (x, log) => true, DamageModifierMode.All).WithBuilds(GW2Builds.November2018Rune, GW2Builds.SOTOReleaseAndBalance),
-        new DamageLogDamageModifier(Mod_RuneOfMercy, "Rune of Mercy", "-20%", DamageSource.Incoming, -20.0, DamageType.StrikeAndCondition, DamageType.All, Source.Gear, ItemImages.SuperiorRuneOfMercy, (x, log) => log.CombatData.GetAnimatedCastData(Resurrect).Any(y => y.Caster == x.To && x.Time >= y.Time && x.Time <= y.EndTime), DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_RuneOfMercy, "Rune of Mercy", "-20%", DamageSource.Incoming, -20.0, DamageType.StrikeAndCondition, DamageType.All, Source.Gear, ItemImages.SuperiorRuneOfMercy, (x, log) => log.CombatData.GetAnimatedCastData(Resurrect).Any(y => y.Caster.Is(x.To) && x.Time >= y.Time && x.Time <= y.EndTime), DamageModifierMode.All)
             .WithBuilds(GW2Builds.November2018Rune, GW2Builds.SOTOReleaseAndBalance),
         new DamageLogDamageModifier(Mod_RuneOfTheScrapper, "Rune of the Scrapper", "-10% condition damamge", DamageSource.Incoming, -7.0, DamageType.StrikeAndCondition, DamageType.All, Source.Gear, ItemImages.SuperiorRuneOfTheScrapper, (x,log) =>
                 x.From.TryGetCurrentPosition(log, x.Time, out var currentPosition)

@@ -32,214 +32,99 @@ public class Minions : Actor
 
     #region DAMAGE
 
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitDamageEvents(ParsedEvtcLog log)
     {
-        if (DamageEvents == null)
+        if (DamageEventByDst == null)
         {
-            DamageEvents = new List<HealthDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
+            var damageEvents = new List<HealthDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
             foreach (NPC minion in _minionList)
             {
-                DamageEvents.AddRange(minion.GetDamageEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                damageEvents.AddRange(minion.GetDamageEvents(null, log, Master.FirstAware, Master.LastAware));
             }
-            DamageEvents.SortByTime();
-            DamageEventByDst = DamageEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            damageEvents.SortByTime();
+            DamageEventByDst = damageEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            DamageEventByDst[ParserHelper._nullAgent] = damageEvents;
         }
     }
-#pragma warning restore CS8774 // must have non null value when exiting
-    public override IEnumerable<HealthDamageEvent> GetDamageEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        InitDamageEvents(log);
-
-        if (target != null)
-        {
-            if (DamageEventByDst.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return DamageEvents.Where(x => x.Time >= start && x.Time <= end);
-    }
-
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitDamageTakenEvents(ParsedEvtcLog log)
     {
-        if (DamageTakenEvents == null)
+        if (DamageTakenEventsBySrc == null)
         {
-            DamageTakenEvents = new List<HealthDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
+            var damageTakenEvents = new List<HealthDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
             foreach (NPC minion in _minionList)
             {
-                DamageTakenEvents.AddRange(minion.GetDamageTakenEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                damageTakenEvents.AddRange(minion.GetDamageTakenEvents(null, log, Master.FirstAware, Master.LastAware));
             }
-            DamageTakenEvents.SortByTime();
-            DamageTakenEventsBySrc = DamageTakenEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            damageTakenEvents.SortByTime();
+            DamageTakenEventsBySrc = damageTakenEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            DamageTakenEventsBySrc[ParserHelper._nullAgent] = damageTakenEvents;
         }
-    }
-#pragma warning restore CS8774 // must have non null value when exiting
-    public override IEnumerable<HealthDamageEvent> GetDamageTakenEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        InitDamageTakenEvents(log);
-
-        if (target != null)
-        {
-            if (DamageTakenEventsBySrc.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-        return DamageTakenEvents.Where(x => x.Time >= start && x.Time <= end);
     }
     #endregion DAMAGE
 
     #region BREAKBAR DAMAGE
 
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitBreakbarDamageEvents(ParsedEvtcLog log)
     {
-        if (BreakbarDamageEvents == null)
+        if (BreakbarDamageEventsByDst == null)
         {
-            BreakbarDamageEvents = new List<BreakbarDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
+            var breakbarDamageEvents = new List<BreakbarDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
             foreach (NPC minion in _minionList)
             {
-                BreakbarDamageEvents.AddRange(minion.GetBreakbarDamageEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                breakbarDamageEvents.AddRange(minion.GetBreakbarDamageEvents(null, log, Master.FirstAware, Master.LastAware));
             }
-            BreakbarDamageEvents.SortByTime();
-            BreakbarDamageEventsByDst = BreakbarDamageEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            breakbarDamageEvents.SortByTime();
+            BreakbarDamageEventsByDst = breakbarDamageEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            BreakbarDamageEventsByDst[ParserHelper._nullAgent] = breakbarDamageEvents;
         }
     }
-#pragma warning restore CS8774 // must have non null value when exiting
-    public override IEnumerable<BreakbarDamageEvent> GetBreakbarDamageEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        InitBreakbarDamageEvents(log);
 
-        if (target != null)
-        {
-            if (BreakbarDamageEventsByDst.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return BreakbarDamageEvents.Where(x => x.Time >= start && x.Time <= end);
-    }
-
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitBreakbarDamageTakenEvents(ParsedEvtcLog log)
     {
-        if (BreakbarDamageTakenEvents == null)
+        if (BreakbarDamageTakenEventsBySrc == null)
         {
-            BreakbarDamageTakenEvents = new List<BreakbarDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
+            var breakbarDamageTakenEvents = new List<BreakbarDamageEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
             foreach (NPC minion in _minionList)
             {
-                BreakbarDamageTakenEvents.AddRange(minion.GetBreakbarDamageTakenEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                breakbarDamageTakenEvents.AddRange(minion.GetBreakbarDamageTakenEvents(null, log, Master.FirstAware, Master.LastAware));
             }
-            BreakbarDamageTakenEvents.SortByTime();
-            BreakbarDamageTakenEventsBySrc = BreakbarDamageTakenEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            breakbarDamageTakenEvents.SortByTime();
+            BreakbarDamageTakenEventsBySrc = breakbarDamageTakenEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            BreakbarDamageTakenEventsBySrc[ParserHelper._nullAgent] = breakbarDamageTakenEvents;
         }
-    }
-#pragma warning restore CS8774 // must have non null value when exiting
-    public override IEnumerable<BreakbarDamageEvent> GetBreakbarDamageTakenEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        InitBreakbarDamageTakenEvents(log);
-
-        if (target != null)
-        {
-            if (BreakbarDamageTakenEventsBySrc.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return BreakbarDamageTakenEvents.Where(x => x.Time >= start && x.Time <= end);
     }
     #endregion BREAKBAR DAMAGE
 
 
     #region CROWD CONTROL
 
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitOutgoingCrowdControlEvents(ParsedEvtcLog log)
     {
-        if (OutgoingCrowdControlEvents == null)
+        if (OutgoingCrowdControlEventsByDst == null)
         {
-            OutgoingCrowdControlEvents = new List<CrowdControlEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
+            var outgoingCrowdControlEvents = new List<CrowdControlEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
             foreach (NPC minion in _minionList)
             {
-                OutgoingCrowdControlEvents.AddRange(minion.GetOutgoingCrowdControlEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                outgoingCrowdControlEvents.AddRange(minion.GetOutgoingCrowdControlEvents(null, log, Master.FirstAware, Master.LastAware));
             }
-            OutgoingCrowdControlEvents.SortByTime();
-            OutgoingCrowdControlEventsByDst = OutgoingCrowdControlEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            outgoingCrowdControlEvents.SortByTime();
+            OutgoingCrowdControlEventsByDst = outgoingCrowdControlEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+            OutgoingCrowdControlEventsByDst[ParserHelper._nullAgent] = outgoingCrowdControlEvents;
         }
     }
-#pragma warning restore CS8774 // must have non null value when exiting
-    public override IEnumerable<CrowdControlEvent> GetOutgoingCrowdControlEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        InitOutgoingCrowdControlEvents(log);
-
-        if (target != null)
-        {
-            if (OutgoingCrowdControlEventsByDst.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return OutgoingCrowdControlEvents.Where(x => x.Time >= start && x.Time <= end);
-    }
-
-#pragma warning disable CS8774 // must have non null value when exiting
     protected override void InitIncomingCrowdControlEvents(ParsedEvtcLog log)
     {
-        if (IncomingCrowdControlEvents == null)
+        if (IncomingCrowdControlEventsBySrc == null)
         {
-            IncomingCrowdControlEvents = new List<CrowdControlEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
+            var incomingCrowdControlEvents = new List<CrowdControlEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
             foreach (NPC minion in _minionList)
             {
-                IncomingCrowdControlEvents.AddRange(minion.GetIncomingCrowdControlEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd));
+                incomingCrowdControlEvents.AddRange(minion.GetIncomingCrowdControlEvents(null, log, Master.FirstAware, Master.LastAware));
             }
-            IncomingCrowdControlEvents.SortByTime();
-            IncomingCrowdControlEventsBySrc = IncomingCrowdControlEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            incomingCrowdControlEvents.SortByTime();
+            IncomingCrowdControlEventsBySrc = incomingCrowdControlEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
+            IncomingCrowdControlEventsBySrc[ParserHelper._nullAgent] = incomingCrowdControlEvents;
         }
-    }
-#pragma warning restore CS8774 // must have non null value when exiting
-    public override IEnumerable<CrowdControlEvent> GetIncomingCrowdControlEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
-    {
-        InitIncomingCrowdControlEvents(log);
-
-        if (target != null)
-        {
-            if (IncomingCrowdControlEventsBySrc.TryGetValue(target.AgentItem, out var list))
-            {
-                return list.Where(x => x.Time >= start && x.Time <= end);
-            }
-            else
-            {
-                return [];
-            }
-        }
-
-        return IncomingCrowdControlEvents.Where(x => x.Time >= start && x.Time <= end);
     }
     #endregion CROWD CONTROL
 
@@ -249,27 +134,21 @@ public class Minions : Actor
         CastEvents = new List<CastEvent>(_minionList.Count); //TODO(Rennorb) @perf: find average complexity
         foreach (NPC minion in _minionList)
         {
-            CastEvents.AddRange(minion.GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd));
+            CastEvents.AddRange(minion.GetCastEvents(log, Master.FirstAware, Master.LastAware));
         }
         CastEvents.SortByTimeThenSwap();
     }
 
-    public override IEnumerable<CastEvent> GetCastEvents(ParsedEvtcLog log, long start, long end)
+    private CachingCollection<long>? _intersectingCastTimeCache;
+    public long GetIntersectingCastTime(ParsedEvtcLog log, long start, long end)
     {
-        if (CastEvents == null)
+        _intersectingCastTimeCache ??= new(log);
+        if (!_intersectingCastTimeCache.TryGetValue(start, end, out var time))
         {
-            InitCastEvents(log);
+            time = GetIntersectingCastEvents(log).Sum(cl => Math.Min(cl.EndTime, end) - Math.Max(cl.Time, start));
+            _intersectingCastTimeCache.Set(start, end, time);
         }
-        return CastEvents.Where(x => x.Time >= start && x.Time <= end);
-    }
-
-    public override IEnumerable<CastEvent> GetIntersectingCastEvents(ParsedEvtcLog log, long start, long end)
-    {
-        if (CastEvents == null)
-        {
-            InitCastEvents(log);
-        }
-        return CastEvents.Where(x => KeepIntersectingCastLog(x, start, end));
+        return time;
     }
     #endregion CAST
 
@@ -279,19 +158,19 @@ public class Minions : Actor
         {
             return true;
         }
-        if (log.CombatData.HasEXTHealing && EXTHealing.GetOutgoingHealEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd).Any())
+        if (log.CombatData.HasEXTHealing && EXTHealing.GetOutgoingHealEvents(null, log).Any())
         {
             return true;
         }
-        if (log.CombatData.HasEXTBarrier && EXTBarrier.GetOutgoingBarrierEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd).Any())
+        if (log.CombatData.HasEXTBarrier && EXTBarrier.GetOutgoingBarrierEvents(null, log).Any())
         {
             return true;
         }
-        if (GetDamageEvents(null, log, log.FightData.FightStart, log.FightData.FightEnd).Any())
+        if (GetDamageEvents(null, log).Any())
         {
             return true;
         }
-        if (GetCastEvents(log, log.FightData.FightStart, log.FightData.FightEnd).Any(x => x.SkillId != SkillIDs.WeaponStow && x.SkillId != SkillIDs.WeaponDraw && x.SkillId != SkillIDs.WeaponSwap && x.SkillId != SkillIDs.MirageCloakDodge))
+        if (GetCastEvents(log).Any(x => x.SkillID != SkillIDs.WeaponStow && x.SkillID != SkillIDs.WeaponDraw && x.SkillID != SkillIDs.WeaponSwap && x.SkillID != SkillIDs.MirageCloakDodge))
         {
             return true;
         }
@@ -305,13 +184,13 @@ public class Minions : Actor
     internal IReadOnlyList<IReadOnlyList<Segment>> GetLifeSpanSegments(ParsedEvtcLog log)
     {
         var minionsSegments = new List<List<Segment>>();
-        long fightEnd = log.FightData.FightEnd;
+        long logEnd = log.LogData.LogEnd;
         foreach (NPC minion in _minionList)
         {
             var minionSegments = new List<Segment>();
-            long start = Math.Max(minion.FirstAware, 0);
+            long start = Math.Max(Math.Max(minion.FirstAware, Master.FirstAware), 0);
             // Find end
-            long end = minion.LastAware;
+            long end = Math.Min(minion.LastAware, Master.LastAware);
             DeadEvent? dead = log.CombatData.GetDeadEvents(minion.AgentItem).LastOrDefault();
             if (dead != null)
             {
@@ -323,10 +202,10 @@ public class Minions : Actor
                 end = Math.Min(despawn.Time, end);
             }
             //
-            end = Math.Min(end, fightEnd);
-            minionSegments.Add(new Segment(log.FightData.FightStart, start, 0));
+            end = Math.Min(end, logEnd);
+            minionSegments.Add(new Segment(log.LogData.LogStart, start, 0));
             minionSegments.Add(new Segment(start, end, 1));
-            minionSegments.Add(new Segment(end, fightEnd, 0));
+            minionSegments.Add(new Segment(end, logEnd, 0));
             minionSegments.RemoveAll(x => x.Start > x.End);
             minionsSegments.Add(minionSegments);
         }
