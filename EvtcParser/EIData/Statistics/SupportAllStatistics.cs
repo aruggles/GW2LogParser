@@ -10,6 +10,8 @@ public class SupportAllStatistics : SupportPerAllyStatistics
 
     public readonly int StunBreakCount;
     public readonly double RemovedStunDuration;
+    public readonly int StunBreakSelfCount;
+    public readonly double RemovedStunSelfDuration;
 
     private static (int Count, long Duration) GetReses(ParsedEvtcLog log, SingleActor actor, long start, long end)
     {
@@ -28,15 +30,21 @@ public class SupportAllStatistics : SupportPerAllyStatistics
 
     internal SupportAllStatistics(ParsedEvtcLog log, long start, long end, SingleActor actor) : base(log, start, end, actor, null)
     {
-        var resArray = GetReses(log, actor, start, end);
-        ResurrectCount = resArray.Count;
-        ResurrectTime = Math.Round((double)resArray.Duration / 1000, ParserHelper.TimeDigit);
-        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakEvents(actor.AgentItem))
+        var (Count, Duration) = GetReses(log, actor, start, end);
+        ResurrectCount = Count;
+        ResurrectTime = Math.Round((double)Duration / 1000, ParserHelper.TimeDigit);
+        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakData(actor.AgentItem))
         {
             StunBreakCount++;
             RemovedStunDuration += sbe.RemainingDuration;
+            if (sbe.To.Is(actor.AgentItem))
+            {
+                StunBreakSelfCount++;
+                RemovedStunSelfDuration += sbe.RemainingDuration;
+            }
         }
         RemovedStunDuration = Math.Round(RemovedStunDuration / 1000, ParserHelper.TimeDigit);
+        RemovedStunSelfDuration = Math.Round(RemovedStunSelfDuration / 1000, ParserHelper.TimeDigit);
     }
 
 }

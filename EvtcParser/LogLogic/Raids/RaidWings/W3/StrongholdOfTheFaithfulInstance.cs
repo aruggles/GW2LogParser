@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -38,19 +39,19 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         MechanicList.Add(_xera.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Stronghold Of The Faithful";
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var chest = agentData.GetGadgetsByID(_xera.ChestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
             return;
         }
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
     }
     private List<EncounterPhaseData> HandleEscortPhases(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, IReadOnlyList<SingleActor> glennas, ParsedEvtcLog log, List<PhaseData> phases)
     {
@@ -95,10 +96,10 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         return encounterPhases;
     }
 
-    private List<EncounterPhaseData> HandleTwistedCastlePhases(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, ParsedEvtcLog log, List<PhaseData> phases)
+    private List<EncounterPhaseData> HandleTwistedCastlePhases(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, IReadOnlyDictionary<int, List<NPC>> trashMobsByIDs, ParsedEvtcLog log, List<PhaseData> phases)
     {
         var encounterPhases = new List<EncounterPhaseData>();
-        if (targetsByIDs.TryGetValue((int)TargetID.HauntingStatue, out var statues) && targetsByIDs.TryGetValue((int)TargetID.DummyTarget, out var dummies))
+        if (trashMobsByIDs.TryGetValue((int)TargetID.HauntingStatue, out var statues) && targetsByIDs.TryGetValue((int)TargetID.DummyTarget, out var dummies))
         {
             var dummy = dummies.FirstOrDefault(x => x.Character == "Twisted Castle");
             if (dummy == null)
@@ -120,7 +121,7 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
                     if (statue.FirstAware > prevStatue.LastAware)
                     {
                         packedStatus.Add(currentPack);
-                        currentPack = new List<SingleActor>();
+                        currentPack = [];
                     }
                     currentPack.Add(statue);
                 }
@@ -229,6 +230,7 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
     {
         List<PhaseData> phases = GetInitialPhase(log);
         var targetsByIDs = Targets.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
+        var trashMobsByIDs = TrashMobs.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
         {
             var escortPhases = HandleEscortPhases(targetsByIDs, NonSquadFriendlies.Where(x => x.IsSpecies(TargetID.Glenna)).ToList(), log, phases);
             foreach (var escortPhase in escortPhases)
@@ -238,21 +240,19 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
             }
         }
         {
-            var kcPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.KeepConstruct, [], "Keep Construct", _keepConstruct, (log, kc) => log.CombatData.GetBuffApplyData(SkillIDs.AchievementEligibilityDownDownDowned).Any(x => x.Time >= kc.FirstAware && x.Time <= kc.LastAware) ? LogData.LogMode.CM : LogData.LogMode.Normal);
-            var statues = Targets.Where(x => x.IsAnySpecies(KeepConstruct.KCStatues));
+            var kcPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.KeepConstruct, [], "Keep Construct", _keepConstruct, (log, kc) => log.CombatData.GetBuffApplyData(SkillIDs.AchievementEligibilityDownDownDowned).Any(x => x.Time >= kc.FirstAware && x.Time <= kc.LastAware) ? LogData.Mode.CM : LogData.Mode.Normal);
             foreach (var kcPhase in kcPhases)
             {
                 var keepConstruct = kcPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.KeepConstruct));
-                kcPhase.AddTargets(statues, log, PhaseData.TargetPriority.NonBlocking);
                 phases.AddRange(KeepConstruct.ComputePhases(log, keepConstruct, Targets, kcPhase, requirePhases));
             }
         }
-        HandleTwistedCastlePhases(targetsByIDs, log, phases);
+        HandleTwistedCastlePhases(targetsByIDs, trashMobsByIDs, log, phases);
         {
             var xeraPhases = HandleXeraPhases(targetsByIDs, log, phases);
             foreach (var xeraPhase in xeraPhases)
             {
-                var xera = xeraPhase.Targets.Keys.FirstOrDefault(x => x.IsSpecies(TargetID.KeepConstruct));
+                var xera = xeraPhase.Targets.Keys.FirstOrDefault(x => x.IsSpecies(TargetID.Xera));
                 phases.AddRange(Xera.ComputePhases(log, xera, Targets, xeraPhase, requirePhases));
             }
         }
@@ -303,7 +303,7 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         return friendlies.Distinct().ToList();
     }
 
-    private static void MergeXeraAgents(AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
+    private static void MergeXeraAgents(AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions, EvtcVersionEvent evtcVersion)
     {
         var xeras = agentData.GetNPCsByID(TargetID.Xera);
         var xeras2 = agentData.GetNPCsByID(TargetID.Xera2);
@@ -313,8 +313,7 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
             var attachedXera = xeras.LastOrDefault(x => x.FirstAware < xera2.FirstAware && x.FirstAware >= start);
             if (attachedXera != null)
             {
-                attachedXera.OverrideAwareTimes(attachedXera.FirstAware, xera2.LastAware);
-                AgentManipulationHelper.RedirectAllEvents(combatData, extensions, agentData, xera2, attachedXera);
+                Xera.MergeSecondXeraToFirstXera(attachedXera, xera2, agentData, combatData, extensions, evtcVersion);
             }
             start = xera2.LastAware;
         }
@@ -329,7 +328,7 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         // For encounters before reaching Xera
         agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "Xera Pre Event", Spec.NPC, TargetID.DummyTarget, true);
         Xera.FindBloodstones(agentData, combatData);
-        MergeXeraAgents(agentData, combatData, extensions);
+        MergeXeraAgents(agentData, combatData, extensions, evtcVersion);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
         Escort.RenameSubMcLeods(Targets);
         Xera.RenameBloodStones(Targets);
@@ -337,7 +336,7 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         {
             if (target.IsSpecies(TargetID.Xera))
             {
-                Xera.SetManualHPForXera(target);
+                Xera.AdjustXeraHP(target, Xera.GetXera2Merge(target.AgentItem) != null);
             }
         }
     }
@@ -352,12 +351,12 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -405,6 +404,14 @@ internal class StrongholdOfTheFaithfulInstance : StrongholdOfTheFaithful
         foreach (StrongholdOfTheFaithful logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

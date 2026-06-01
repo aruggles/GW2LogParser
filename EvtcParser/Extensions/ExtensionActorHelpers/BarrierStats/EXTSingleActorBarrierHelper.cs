@@ -15,6 +15,11 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
     private CachingCollectionWithTarget<EXTFinalOutgoingBarrierStat>? _outgoinBarrierStats;
     private CachingCollectionWithTarget<EXTFinalIncomingBarrierStat>? _incomingBarrierStats;
 
+    protected override AgentItem GetAgentItemForCachingSrc()
+    {
+        return _agentItem;
+    }
+
     internal EXTSingleActorBarrierHelper(SingleActor actor) : base()
     {
         _actor = actor;
@@ -24,7 +29,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
         if (BarrierEventsByDst == null)
         {
             var barrierEvents = new List<EXTBarrierEvent>(log.CombatData.EXTBarrierCombatData.GetBarrierData(_agentItem).Where(x => x.ToFriendly));
-            var minions = _actor.GetMinions(log); //TODO(Rennorb) @perf: Find average complexity for reserving elements in barrier events
+            var minions = _actor.GetMinions(log); //TODO_PERF(Rennorb): Find average complexity for reserving elements in barrier events
             foreach (Minions minion in minions)
             {
                 barrierEvents.AddRange(minion.EXTBarrier.GetOutgoingBarrierEvents(null, log));
@@ -49,7 +54,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
     private CachingCollectionWithTarget<List<EXTBarrierEvent>>? _justActorBarrierCache;
     public IReadOnlyList<EXTBarrierEvent> GetJustActorOutgoingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _justActorBarrierCache ??= new(log);
+        _justActorBarrierCache ??= new(_agentItem, log);
         if (!_justActorBarrierCache.TryGetValue(start, end, target, out var healEvents))
         {
             healEvents = GetOutgoingBarrierEvents(target, log, start, end).Where(x => x.From.Is(_agentItem)).ToList();
@@ -78,7 +83,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
             previousTime = time;
             graph[time] += dl.BarrierGiven;
         }
-
+        
         for (int i = previousTime + 1; i < graph.Length; i++)
         {
             graph[i] = graph[previousTime];
@@ -89,7 +94,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
 
     public IReadOnlyList<int> Get1SBarrierList(ParsedEvtcLog log, long start, long end, SingleActor? target)
     {
-        _barrier1S ??= new CachingCollectionWithTarget<int[]>(log);
+        _barrier1S ??= new (_agentItem, log);
         if (!_barrier1S.TryGetValue(start, end, target, out int[]? graph))
         {
             graph = ComputeBarrierGraph(GetOutgoingBarrierEvents(target, log, start, end), start, end);
@@ -100,7 +105,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
     }
     public IReadOnlyList<int> Get1SBarrierReceivedList(ParsedEvtcLog log, long start, long end, SingleActor? target)
     {
-        _barrierReceived1S ??= new CachingCollectionWithTarget<int[]>(log);
+        _barrierReceived1S ??= new (_agentItem, log);
         if (!_barrierReceived1S.TryGetValue(start, end, target, out int[]? graph))
         {
             graph = ComputeBarrierGraph(GetIncomingBarrierEvents(target, log, start, end), start, end);
@@ -112,7 +117,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
 
     public EXTFinalOutgoingBarrierStat GetOutgoingBarrierStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _outgoinBarrierStats ??= new CachingCollectionWithTarget<EXTFinalOutgoingBarrierStat>(log);
+        _outgoinBarrierStats ??= new (_agentItem, log);
         if (!_outgoinBarrierStats.TryGetValue(start, end, target, out EXTFinalOutgoingBarrierStat? value))
         {
             value = new EXTFinalOutgoingBarrierStat(log, start, end, _actor, target);
@@ -123,7 +128,7 @@ public class EXTSingleActorBarrierHelper : EXTActorBarrierHelper
 
     public EXTFinalIncomingBarrierStat GetIncomingBarrierStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _incomingBarrierStats ??= new CachingCollectionWithTarget<EXTFinalIncomingBarrierStat>(log);
+        _incomingBarrierStats ??= new (_agentItem, log);
         if (!_incomingBarrierStats.TryGetValue(start, end, target, out EXTFinalIncomingBarrierStat? value))
         {
             value = new EXTFinalIncomingBarrierStat(log, start, end, _actor, target);

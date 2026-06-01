@@ -48,11 +48,14 @@ internal static class Colors
     public static Color DarkRed = new(128, 0, 0);
     public static Color RedBrownish = new(71, 35, 32);
     public static Color RedSkin = new(198, 101, 94);
+    public static Color DarkRedSkin = new(99, 50, 57);
     public static Color Orange = new(255, 100, 0);
     public static Color LightOrange = new(250, 120, 0);
+    public static Color FluoOrange = new(220, 72, 11);
     public static Color BreakbarRecoveringOrange = new(168, 104, 61);
     public static Color Sand = new(177, 157, 111);
     public static Color Yellow = new(255, 220, 0);
+    public static Color DarkYellow = new(170, 135, 0);
     public static Color LightBrown = new(196, 164, 132);
     public static Color DarkBrown = new(53, 33, 0);
     public static Color Brown = new(120, 100, 0);
@@ -77,6 +80,7 @@ internal static class Colors
     public static Color Purple = new(150, 0, 255);
     public static Color DarkPurple = new(50, 0, 150);
     public static Color LightPurple = new(200, 140, 255);
+    public static Color FixationPurple = new(255, 80, 255);
     public static Color Pink = new(255, 0, 150);
     public static Color DesaturatedPink = new(200, 60, 150);
     public static Color LightPink = new(255, 140, 255);

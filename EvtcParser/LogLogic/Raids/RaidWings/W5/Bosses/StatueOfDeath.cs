@@ -11,12 +11,13 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
+using GW2EIGW2API;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class StatueOfDeath : HallOfChains
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstHealthDamageHitMechanic(HungeringMiasma, new MechanicPlotlySetting(Symbols.TriangleLeftOpen,Colors.DarkGreen), "Vomit", "Hungering Miasma (Vomit Goo)","Vomit Dmg", 0),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(ReclaimedEnergyBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Yellow), "Light Orb Collected", "Applied when taking a light orb","Light Orb", 0),
@@ -54,12 +55,12 @@ internal class StatueOfDeath : HallOfChains
     {
         return
         [
-            TargetID.OrbSpider,
+            TargetID.TwistedSpirit,
             TargetID.SpiritHorde1,
             TargetID.SpiritHorde2,
             TargetID.SpiritHorde3,
-            TargetID.GreenSpirit1,
-            TargetID.GreenSpirit2
+            TargetID.LostSpirit1,
+            TargetID.LostSpirit2
         ];
     }
 
@@ -87,9 +88,30 @@ internal class StatueOfDeath : HallOfChains
         return startToUse;
     }
 
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    {
+        if (agentData.GetNPCsByIDs([TargetID.TwistedSpirit, TargetID.LostSpirit1, TargetID.LostSpirit2]).Any(x => x.FirstAware < 7000))
+        {
+            return LogData.StartStatus.Late;
+        }
+        var baseStatus = base.GetLogStartStatus(combatData, agentData, logData);
+        var logStartNPCUpdateEvent = combatData.GetLogNPCUpdateEvents().FirstOrDefault();
+        if (baseStatus != LogData.StartStatus.Normal || logStartNPCUpdateEvent == null)
+        {
+            return baseStatus;
+        }
+        var peasants = new List<AgentItem>(agentData.GetNPCsByID(TargetID.AscalonianPeasant1));
+        peasants.AddRange(agentData.GetNPCsByID(TargetID.AscalonianPeasant2));
+        if (!peasants.Any(x => x.LastAware <= 0))
+        {
+            return LogData.StartStatus.Late;
+        }
+        return LogData.StartStatus.Normal;
+    }
+
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -104,7 +126,7 @@ internal class StatueOfDeath : HallOfChains
                         switch (cast.SkillID)
                         {
                             case Imbibe:
-                                replay.Decorations.Add(new OverheadProgressBarDecoration(ParserHelper.CombatReplayOverheadProgressBarMajorSizeInPixel, (cast.Time, cast.EndTime), Colors.Red, 0.6, Colors.Black, 0.2, [(cast.Time, 0), (cast.ExpectedEndTime, 100)], new AgentConnector(target))
+                                replay.Decorations.Add(new OverheadProgressBarDecoration(CombatReplayOverheadProgressBarMajorSizeInPixel, (cast.Time, cast.EndTime), Colors.Red, 0.6, Colors.Black, 0.2, [(cast.Time, 0), (cast.ExpectedEndTime, 100)], new AgentConnector(target))
                                 .UsingRotationConnector(new AngleConnector(180)));
                                 break;
                             case HungeringMiasma:
@@ -114,7 +136,7 @@ internal class StatueOfDeath : HallOfChains
                                 uint radius = 900;
                                 if (target.TryGetCurrentFacingDirection(log, lifespan.start, out var facing) && target.TryGetCurrentPosition(log, lifespan.start, out var position))
                                 {
-                                    replay.Decorations.Add(new PieDecoration(radius, 60, lifespan, Colors.GreenishYellow, 0.5, new PositionConnector(position)).UsingGrowingEnd(lifespan.start + cascading).UsingRotationConnector(new AngleConnector(facing)));
+                                    replay.Decorations.Add(new PieDecoration(radius, 60, lifespan, Colors.GreenishYellow, 0.5, new PositionConnector(position.Value)).UsingGrowingEnd(lifespan.start + cascading).UsingRotationConnector(new AngleConnector(facing.Value)));
                                 }
                                 break;
                             case PseudoDeathEaterOfSouls:
@@ -127,8 +149,8 @@ internal class StatueOfDeath : HallOfChains
                     }
                 }
                 break;
-            case (int)TargetID.GreenSpirit1:
-            case (int)TargetID.GreenSpirit2:
+            case (int)TargetID.LostSpirit1:
+            case (int)TargetID.LostSpirit2:
                 {
                     foreach (CastEvent cast in target.GetAnimatedCastEvents(log))
                     {
@@ -148,7 +170,7 @@ internal class StatueOfDeath : HallOfChains
             case (int)TargetID.SpiritHorde1:
             case (int)TargetID.SpiritHorde2:
             case (int)TargetID.SpiritHorde3:
-            case (int)TargetID.OrbSpider:
+            case (int)TargetID.TwistedSpirit:
                 break;
             default:
                 break;
@@ -158,7 +180,7 @@ internal class StatueOfDeath : HallOfChains
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -223,7 +245,7 @@ internal class StatueOfDeath : HallOfChains
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -242,18 +264,25 @@ internal class StatueOfDeath : HallOfChains
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
     }
-
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
     {
-        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
+    {
+        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents, successHandler);
+    }
+
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Statue of Death";
     }

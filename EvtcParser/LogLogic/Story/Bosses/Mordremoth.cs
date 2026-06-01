@@ -46,7 +46,7 @@ internal class Mordremoth : StoryInstance
             return phases;
         }
         // Invul check
-        phases.AddRange(GetPhasesByInvul(log, Determined762, mainTarget, false, true));
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, mainTarget, false, true));
         for (int i = 1; i < phases.Count; i++)
         {
             PhaseData phase = phases[i];
@@ -76,24 +76,24 @@ internal class Mordremoth : StoryInstance
         ];
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         SingleActor mordremoth = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Mordremoth)) ?? throw new MissingKeyActorsException("Mordremoth not found");
         BuffApplyEvent? buffApply = combatData.GetBuffApplyDataByIDByDst(Determined895, mordremoth.AgentItem).OfType<BuffApplyEvent>().LastOrDefault();
         if (buffApply != null)
         {
-            logData.SetSuccess(true, mordremoth.LastAware);
+            successHandler.SetSuccess(true, mordremoth.LastAware);
         } 
         else
         {
-            logData.SetSuccess(false, mordremoth.LastAware);
+            successHandler.SetSuccess(false, mordremoth.LastAware);
         }
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor mordremoth = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Mordremoth)) ?? throw new MissingKeyActorsException("Mordremoth not found");
-        return (mordremoth.GetHealth(combatData) > 9e6) ? LogData.LogMode.CM : LogData.LogMode.Story;
+        return (mordremoth.GetHealth(combatData) > 9e6) ? LogData.Mode.CM : LogData.Mode.Story;
     }
 
     internal override IReadOnlyList<TargetID>  GetFriendlyNPCIDs()

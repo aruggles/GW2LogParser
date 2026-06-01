@@ -15,13 +15,13 @@ public class HTMLAssets
 
     public HTMLAssets()
     {
-        var orderedScripts = new List<string>()
-        {
+        List<string> orderedScripts =
+        [
             Gw2LogParser.Properties.Resources.global,
             Gw2LogParser.Properties.Resources.mixins,
             Gw2LogParser.Properties.Resources.functions,
             Gw2LogParser.Properties.Resources.main_js,
-        };
+        ];
         string scriptContent = orderedScripts[0];
         for (int i = 1; i < orderedScripts.Count; i++)
         {
@@ -30,12 +30,12 @@ public class HTMLAssets
         List<string> templates = BuildTemplates();
         EIJavascriptCode = scriptContent.Replace("TEMPLATE_COMPILE", string.Join("\n", templates));
         //
-        var orderedCRScripts = new List<string>()
-        {
+        List<string> orderedCRScripts =
+        [
             Gw2LogParser.Properties.Resources.animator,
             Gw2LogParser.Properties.Resources.actors,
             Gw2LogParser.Properties.Resources.decorations,
-        };
+        ];
         string scriptCRContent = orderedCRScripts[0];
         for (int i = 1; i < orderedCRScripts.Count; i++)
         {
@@ -154,8 +154,8 @@ public class HTMLAssets
 
     private static List<string> BuildCRTemplates()
     {
-        var templates = new List<string>
-        {
+        List<string> templates =
+        [
             Gw2LogParser.Properties.Resources.tmplCombatReplayDamageData,
             Gw2LogParser.Properties.Resources.tmplCombatReplayStatusData,
             Gw2LogParser.Properties.Resources.tmplCombatReplayDamageTable,
@@ -165,15 +165,12 @@ public class HTMLAssets
             Gw2LogParser.Properties.Resources.tmplCombatReplayActorRotation,
             Gw2LogParser.Properties.Resources.tmplCombatReplayTargetStats,
             Gw2LogParser.Properties.Resources.tmplCombatReplayTargetStatus,
-            Gw2LogParser.Properties.Resources.tmplCombatReplayTargetsStats,
-            Gw2LogParser.Properties.Resources.tmplCombatReplayPlayersStats,
+            Gw2LogParser.Properties.Resources.tmplCombatReplayActorsStats,
             Gw2LogParser.Properties.Resources.tmplCombatReplayUI,
-            Gw2LogParser.Properties.Resources.tmplCombatReplayPlayerSelect,
-            Gw2LogParser.Properties.Resources.tmplCombatReplayTargetSelect,
             Gw2LogParser.Properties.Resources.tmplCombatReplayExtraDecorations,
             Gw2LogParser.Properties.Resources.tmplCombatReplayAnimationControl,
             Gw2LogParser.Properties.Resources.tmplCombatReplayMechanicsList
-        };
+        ];
         var res = new List<string>();
         foreach (string template in templates)
         {
@@ -184,8 +181,8 @@ public class HTMLAssets
 
     private static List<string> BuildHealingExtensionTemplates()
     {
-        var templates = new List<string>
-        {
+        List<string> templates =
+        [
             Gw2LogParser.Properties.Resources.tmplHealingExtensionView,
             Gw2LogParser.Properties.Resources.tmplTargetPlayers,
             Gw2LogParser.Properties.Resources.tmplIncomingHealingTable,
@@ -203,7 +200,7 @@ public class HTMLAssets
             Gw2LogParser.Properties.Resources.tmplBarrierDistPlayer,
             Gw2LogParser.Properties.Resources.tmplBarrierDistTable,
             Gw2LogParser.Properties.Resources.tmplBarrierTakenDistPlayer
-        };
+        ];
         var res = new List<string>();
         foreach (string template in templates)
         {
@@ -212,3 +209,4 @@ public class HTMLAssets
         return res;
     }
 }
+

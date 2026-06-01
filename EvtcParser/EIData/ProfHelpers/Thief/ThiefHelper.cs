@@ -31,16 +31,16 @@ internal static class ThiefHelper
             .UsingNotAccurate(), // same id as leeching venom trait?
         new EffectCastFinder(Pitfall, EffectGUIDs.ThiefPitfallAoE)
             .UsingSrcBaseSpecChecker(Spec.Thief),
-        new EffectCastFinder(ThousandNeedles, EffectGUIDs.ThiefThousandNeedlesAoECollision)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ThiefThousandNeedlesAoE1, 280)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ThiefThousandNeedlesAoE2, 280)
+        new EffectCastFinder(ThousandNeedles, EffectGUIDs.EnemyAoE240)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ThiefThousandNeedlesAoE1, 280)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ThiefThousandNeedlesAoE2, 280)
             .UsingSrcBaseSpecChecker(Spec.Thief),
         new EffectCastFinder(SealArea, EffectGUIDs.ThiefSealAreaAoE)
             .UsingSrcBaseSpecChecker(Spec.Thief),
         new BuffGainCastFinder(ShadowPortal, ShadowPortalOpenedBuff),
         new EffectCastFinderByDst(InfiltratorsSignetSkill, EffectGUIDs.ThiefInfiltratorsSignet1)
             .UsingDstBaseSpecChecker(Spec.Thief)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ThiefInfiltratorsSignet2),
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ThiefInfiltratorsSignet2),
         new EffectCastFinderByDst(SignetOfAgilitySkill, EffectGUIDs.ThiefSignetOfAgility)
             .UsingDstBaseSpecChecker(Spec.Thief),
         new EffectCastFinderByDst(SignetOfShadowsSkill, EffectGUIDs.ThiefSignetOfShadows)
@@ -61,28 +61,28 @@ internal static class ThiefHelper
             .WithBuilds(GW2Builds.June2025Balance),
         // - Executioner
         new DamageLogDamageModifier(Mod_Executioner, "Executioner", "20% if target <50% HP", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.Executioner, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All),
-        
+
         // Critical Strikes
         // - Twin Fangs
         new DamageLogDamageModifier(Mod_TwinFangs, "Twin Fangs","7% if hp >=90%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.FerociousStrikes, (x, log) => x.IsOverNinety && x.HasCrit, DamageModifierMode.All)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.March2024BalanceAndCerusLegendary),
-        new DamageLogDamageModifier(Mod_TwinFangs, "Twin Fangs","7% if hp >=50%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.FerociousStrikes, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 50.0 && x.HasCrit, DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_TwinFangs, "Twin Fangs","7% if hp >=50%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.FerociousStrikes, (x, log) => x.HasCrit && x.From.GetCurrentHealthPercent(log, x.Time) >= 50.0, DamageModifierMode.All)
             .WithBuilds(GW2Builds.March2024BalanceAndCerusLegendary)
             .UsingApproximate(),
         // - Ferocious Strikes
         new DamageLogDamageModifier(Mod_FerociousStrikes, "Ferocious Strikes", "10% on critical strikes if target >50%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.FerociousStrikes, (x, log) => !x.AgainstUnderFifty && x.HasCrit, DamageModifierMode.All),
-        
+
         // Trickery
         // - Lead Attacks
-        new BuffOnActorDamageModifier(Mod_LeadAttacks, LeadAttacks, "Lead Attacks", "1% (10s) per initiative spent", DamageSource.NoPets, 1.0, DamageType.StrikeAndCondition, DamageType.All, Source.Thief, ByStack, TraitImages.LeadAttacks, DamageModifierMode.All), 
-        // It's not always possible to detect the presence of pistol and the trait is additive with itself. Staff master is worse as we can't detect endurance at all       
-        
+        new BuffOnActorDamageModifier(Mod_LeadAttacks, LeadAttacks, "Lead Attacks", "1% (10s) per initiative spent", DamageSource.NoPets, 1.0, DamageType.StrikeAndCondition, DamageType.All, Source.Thief, ByStack, TraitImages.LeadAttacks, DamageModifierMode.All),
+        // It's not always possible to detect the presence of pistol and the trait is additive with itself. Staff master is worse as we can't detect endurance at all
+
         // Acrobatics
         // - Fluid Strikes
         new BuffOnActorDamageModifier(Mod_FluidStrikes, FluidStrikes, "Fluid Strikes", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Thief, ByPresence, TraitImages.FluidStrikes, DamageModifierMode.All)
             .WithBuilds(GW2Builds.July2023BalanceAndSilentSurfCM),
-        
-        // Spear       
+
+        // Spear
         new BuffOnActorDamageModifier(Mod_DistractingThrow, DistractingThrowBuff, "Distracting Throw", "10%", DamageSource.NoPets, 10, DamageType.StrikeAndCondition, DamageType.All, Source.Thief, ByPresence, SkillImages.DistractingThrow, DamageModifierMode.PvE),
         new BuffOnActorDamageModifier(Mod_DistractingThrow, DistractingThrowBuff, "Distracting Throw", "5%", DamageSource.NoPets, 5, DamageType.StrikeAndCondition, DamageType.All, Source.Thief, ByPresence, SkillImages.DistractingThrow, DamageModifierMode.sPvPWvW),
     ];
@@ -90,7 +90,7 @@ internal static class ThiefHelper
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
     [
         // Marauder's Resilience
-        new DamageLogDamageModifier(Mod_MaraudersResilience, "Marauder's Resilience", "-10% from foes within 360 range", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.MaraudersResilience, (x, log) => !TargetWithinRangeChecker(x, log, 360, false), DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_MaraudersResilience, "Marauder's Resilience", "-10% from foes within 360 range", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Thief, TraitImages.MaraudersResilience, (x, log) => TargetOutsideRangeChecker(x, log, 360, true), DamageModifierMode.All)
             .UsingApproximate()
             .WithBuilds(GW2Builds.April2019Balance)
     ];

@@ -51,26 +51,26 @@
                     <td :class="getBodyClass('Name')" class="text-left">{{row.player.name}}</td>
                     <td :class="getBodyClass('Account')">{{row.player.acc}}</td>
                     <td v-if="!targetless" :class="getBodyClass('Data', 0)"
-                        :data-original-title="getPlayerTooltip(0, row, tableData.sums)">
+                        :data-original-title="getPlayerTooltip(0, row, tableData.sums, true)">
                         {{getPlayerCell(0, row)}}</td>
                     <td v-if="!targetless" :class="getBodyClass('Data', 1)"
-                        :data-original-title="getPlayerTooltip(1, row, tableData.sums)">
+                        :data-original-title="getPlayerTooltip(1, row, tableData.sums, true, false, true)">
                         {{getPlayerCell(1, row)}}</td>
                     <td v-if="!targetless" :class="getBodyClass('Data', 2)"
-                        :data-original-title="getPlayerTooltip(2, row, tableData.sums)">
+                        :data-original-title="getPlayerTooltip(2, row, tableData.sums, true, true, false)">
                         {{getPlayerCell(2, row)}}</td>
                     <td v-if="!targetless && hasBreakbarDamage" :class="getBodyClass('Data', 3)"
                         :data-original-title="computeTotalContribution(3, row.dps,tableData.sums)+ '<br>'+ computeGroupContribution(row.player.group, 3, row.dps,tableData.sums)">
                         {{round1(row.dps[3])}}
                     </td>
                     <td :class="getBodyClass('Data', 4)"
-                        :data-original-title="getPlayerTooltip(4, row, tableData.sums)">
+                        :data-original-title="getPlayerTooltip(4, row, tableData.sums, false)">
                         {{getPlayerCell(4, row)}}</td>
                     <td :class="getBodyClass('Data', 5)"
-                        :data-original-title="getPlayerTooltip(5, row, tableData.sums)">
+                        :data-original-title="getPlayerTooltip(5, row, tableData.sums, false, false, true)">
                         {{getPlayerCell(5, row)}}</td>
                     <td :class="getBodyClass('Data', 6)"
-                        :data-original-title="getPlayerTooltip(6, row, tableData.sums)">
+                        :data-original-title="getPlayerTooltip(6, row, tableData.sums, false, true, false)">
                         {{getPlayerCell(6, row)}}</td>
 
                     <td v-if="hasBreakbarDamage" :class="getBodyClass('Data', 7)"
@@ -113,7 +113,7 @@
     Vue.component("damage-stats-component", {
         props: ["activetargets", "playerindex", "phaseindex"],
         template: `${template}`,
-        mixins: [numberComponent, sortedTableComponent, encounterPhaseComponent],
+        mixins: [numberComponent, sortedTableComponent, encounterPhaseComponent, UIIconsComponent],
         data: function () {
             return {
                 targetless: logData.targetless,
@@ -127,35 +127,35 @@
             };
         },
         methods: {
-            sortBy: function(key, index) {
+            sortBy: function (key, index) {
                 this.sortByBase(this.sortdata, key, index);
             },
-            getHeaderClass: function(key, index) {
+            getHeaderClass: function (key, index) {
                 return this.getHeaderClassBase(this.sortdata, key, index);
             },
-            getBodyClass: function(key, index, approximate) {
+            getBodyClass: function (key, index, approximate) {
                 var classes = this.getBodyClassBase(this.sortdata, key, index);
                 classes.approximate = !!approximate;
                 return classes;
             },
-            sortData: function(rows) {
+            sortData: function (rows) {
                 var order = this.sortdata.order === "asc" ? 1 : -1;
                 switch (this.sortdata.key) {
                     case "Sub":
-                        rows.sort((x,y) => order * (x.player.group - y.player.group) || this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * (x.player.group - y.player.group) || this.sortByPlayerName(x, y));
                         break;
                     case "Prof":
-                        rows.sort((x,y) => order * this.sortByPlayerProfession(x, y) || this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * this.sortByPlayerProfession(x, y) || this.sortByPlayerName(x, y));
                         break;
                     case "Name":
-                        rows.sort((x,y) => order * this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * this.sortByPlayerName(x, y));
                         break;
                     case "Account":
-                        rows.sort((x,y) => order * this.sortByPlayerAccount(x, y));
+                        rows.sort((x, y) => order * this.sortByPlayerAccount(x, y));
                         break;
                     case "Data":
                         var index = this.sortdata.index;
-                        rows.sort((x,y) => order * (x.dps[index] - y.dps[index]) || this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * (x.dps[index] - y.dps[index]) || this.sortByPlayerName(x, y));
                         break;
                     default:
                         return null;
@@ -175,23 +175,40 @@
                 }
                 return this.round2(row[index] * 100 / sums[sumId].dps[index]) + '% of group';
             },
-            getPlayerTooltip: function(index, row, sums) {
-                return (!this.showDamage ? row.dps[index] : this.round(row.dps[index]/this.phase.durationS)) + ' damage'+
-                 '<br>' + this.computeTotalContribution(index, row.dps, sums) +
-                 '<br>'+ this.computeGroupContribution(row.player.group, index, row.dps, sums);
+            computeSelfContribution: function (index, totalIndex, row, target) {
+                const playerTotal = row.dps[totalIndex] || 1; // If total == 0 divide by 1, 0/1 = 0%;
+
+                var selfContrib = this.round2(row.dps[index] * 100 / playerTotal) + '% of self';
+                return selfContrib + (target ? " target" : " all");
             },
-            getPlayerCell: function(index, row) {
-                return this.showDamage ? row.dps[index] : this.round(row.dps[index]/this.phase.durationS)
+            getPlayerTooltip: function (index, row, sums, target, showConditionContribution = false, showPowerContribution = false) {
+                var damage = (!this.showDamage ? row.dps[index] : this.round(row.dps[index] / this.phase.durationS));
+                var total = this.computeTotalContribution(index, row.dps, sums);
+                var group = this.computeGroupContribution(row.player.group, index, row.dps, sums);
+
+                if (showConditionContribution || showPowerContribution) {
+                    return damage + ' damage' +
+                        '<br>' + this.computeSelfContribution(index, showConditionContribution ? index - 2 : index - 1, row, target) +
+                        '<br>' + total +
+                        '<br>' + group;
+                } else {
+                    return damage + ' damage' +
+                        '<br>' + total +
+                        '<br>' + group;
+                }
             },
-            getSumTooltip: function(index, row) {
-                return (!this.showDamage ? row.dps[index] : this.round(row.dps[index]/this.phase.durationS)) + ' damage';
+            getPlayerCell: function (index, row) {
+                return this.showDamage ? row.dps[index] : this.round(row.dps[index] / this.phase.durationS)
             },
-            getSumCell: function(index, row) {
-                return this.showDamage ? row.dps[index] : this.round(row.dps[index]/this.phase.durationS)
+            getSumTooltip: function (index, row) {
+                return (!this.showDamage ? row.dps[index] : this.round(row.dps[index] / this.phase.durationS)) + ' damage';
+            },
+            getSumCell: function (index, row) {
+                return this.showDamage ? row.dps[index] : this.round(row.dps[index] / this.phase.durationS)
             }
         },
         computed: {
-            tableid: function() {
+            tableid: function () {
                 return "dps-table";
             },
             phase: function () {
@@ -257,9 +274,6 @@
                 this.cacheTarget.set(cacheID, res);
                 return res;
             },
-            UIIcons: function() {
-                return UIIcons;
-            }
         }
     });
 </script>

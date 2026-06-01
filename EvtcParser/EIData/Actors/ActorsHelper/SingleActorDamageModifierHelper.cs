@@ -54,8 +54,8 @@ partial class SingleActor
 
         if (_outgoingDamageModifierStatsPerTargets == null)
         {
-            _outgoingDamageModifierStatsPerTargets = new CachingCollectionWithTarget<Dictionary<int, DamageModifierStat>>(log);
-            _outgoingDamageModifierEventsPerTargets = new CachingCollectionWithTarget<Dictionary<int, List<DamageModifierEvent>>>(log);
+            _outgoingDamageModifierStatsPerTargets = new (AgentItem, log);
+            _outgoingDamageModifierEventsPerTargets = new (AgentItem, log);
         }
 
         if (_outgoingDamageModifierStatsPerTargets.TryGetValue(start, end, target, out var res))
@@ -85,7 +85,7 @@ partial class SingleActor
                 damageMods.AddRange(list);
             }
 
-            damageMods.AddRange(log.DamageModifiers.GetOutgoingModifiersPerSpec(Spec));
+            damageMods.AddRange(log.DamageModifiers.GetPersonalOutgoingModifiersPerSpec(Spec));
 
             var damageModifierEvents = new List<DamageModifierEvent>(damageMods.Count * 150);
             foreach (OutgoingDamageModifier damageMod in damageMods)
@@ -125,7 +125,7 @@ partial class SingleActor
             }
         }
         return ComputeDamageModifierStats(target, log, start, end);
-
+        
     }
 
     private Dictionary<int, DamageModifierStat> ComputeIncomingDamageModifierStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
@@ -172,8 +172,8 @@ partial class SingleActor
 
         if (_incomingDamageModifierStatsPerTargets == null)
         {
-            _incomingDamageModifierStatsPerTargets = new CachingCollectionWithTarget<Dictionary<int, DamageModifierStat>>(log);
-            _incomingDamageModifierEventsPerTargets = new CachingCollectionWithTarget<Dictionary<int, List<DamageModifierEvent>>>(log);
+            _incomingDamageModifierStatsPerTargets = new (AgentItem, log);
+            _incomingDamageModifierEventsPerTargets = new (AgentItem, log);
         }
 
         if (_incomingDamageModifierStatsPerTargets.TryGetValue(start, end, target, out var res))
@@ -203,7 +203,7 @@ partial class SingleActor
             {
                 damageMods.AddRange(list);
             }
-            damageMods.AddRange(log.DamageModifiers.GetIncomingModifiersPerSpec(Spec));
+            damageMods.AddRange(log.DamageModifiers.GetPersonalIncomingModifiersPerSpec(Spec));
 
             var damageModifierEvents = new List<DamageModifierEvent>(damageMods.Count * 60);
             foreach (IncomingDamageModifier damageMod in damageMods)
@@ -241,7 +241,7 @@ partial class SingleActor
                 _incomingDamageModifierEventsPerTargets.Set(start, end, log.FindActor(actor), events);
             }
         }
-        return ComputeIncomingDamageModifierStats(target, log, start, end);
+        return ComputeIncomingDamageModifierStats(target, log, start, end);       
     }
 
 

@@ -3,6 +3,7 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogCategories;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
@@ -24,7 +25,7 @@ internal class MountBalriorConvergenceInstance : ConvergenceLogic
         Extension = "mntbalrconv";
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         var mainBoss = Targets.FirstOrDefault(x => x.IsAnySpecies([TargetID.DecimaTheStormsingerConv, TargetID.GreerTheBlightbringerConv, TargetID.UraTheSteamshriekerConv]));
         var name = "Convergence: Mount Balrior";
@@ -73,9 +74,9 @@ internal class MountBalriorConvergenceInstance : ConvergenceLogic
         ];
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return combatData.GetBuffApplyData(UnstableAttunementJW).Any(x => x.To.IsPlayer) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return combatData.GetBuffApplyData(UnstableAttunementJW).Any(x => x.To.IsPlayer) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 
     internal override LogData.InstancePrivacyMode GetInstancePrivacyMode(CombatData combatData, AgentData agentData, LogData logData)
@@ -112,7 +113,7 @@ internal class MountBalriorConvergenceInstance : ConvergenceLogic
                 icon = EncounterIconUra;
                 break;
         }
-        var fullPhase = new EncounterPhaseData(Math.Max(log.LogData.LogStart, target.FirstAware), Math.Min(target.LastAware, log.LogData.LogEnd), phaseName, log.LogData.Success, icon, log.LogData.Mode, log.LogData.Logic.LogID).WithParentPhase(phases[0]);
+        var fullPhase = log.LogData.CreateEncounterPhase(Math.Max(log.LogData.LogStart, target.FirstAware), Math.Min(target.LastAware, log.LogData.LogEnd), phaseName, icon).WithParentPhase(phases[0]);
         fullPhase.AddTarget(target, log);
         phases.Add(fullPhase);
         if (!requirePhases)

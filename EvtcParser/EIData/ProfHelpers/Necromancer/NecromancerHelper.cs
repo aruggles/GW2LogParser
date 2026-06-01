@@ -63,7 +63,12 @@ internal static class NecromancerHelper
     [
         // Spite
         // - Spiteful Talisman
-        new BuffOnFoeDamageModifier(Mod_SpitefulTalisman, NumberOfBoons, "Spiteful Talisman", "10% on boonless target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByAbsence, TraitImages.SpitefulTalisman, DamageModifierMode.All),
+        new BuffOnFoeDamageModifier(Mod_SpitefulTalisman, NumberOfBoons, "Spiteful Talisman", "10% on boonless target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByAbsence, TraitImages.SpitefulTalisman, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_SpitefulTalisman, NumberOfBoons, "Spiteful Talisman", "10% on boonless target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByAbsence, TraitImages.SpitefulTalisman, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_SpitefulTalisman, NumberOfBoons, "Spiteful Talisman", "5% on boonless target", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByAbsence, TraitImages.SpitefulTalisman, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // - Death's Embrace
         new BuffOnActorDamageModifier(Mod_DeathsEmbrace, Downed, "Death's Embrace", "25% on while downed", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DeathsEmbrace, DamageModifierMode.All)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.February2020Balance),
@@ -80,6 +85,10 @@ internal static class NecromancerHelper
             .WithBuilds(GW2Builds.February2020Balance, GW2Builds.July2020Balance),
         new BuffOnFoeDamageModifier(Mod_Dread, Fear, "Dread", "15% on feared target", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.UnholyFervor, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.February2020Balance, GW2Builds.July2020Balance),
+        new BuffOnActorDamageModifier(Mod_Dread, Dread, "Dread", "20%", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.UnholyFervor, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_Dread, Dread, "Dread", "15%", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.UnholyFervor, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.January2026Balance),
         // - Close to Death
         new DamageLogDamageModifier(Mod_CloseToDeath, "Close to Death", "20% below 50% HP", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Necromancer, TraitImages.CloseToDeath, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All),
         
@@ -92,11 +101,17 @@ internal static class NecromancerHelper
         // - Death Perception
         new BuffOnActorDamageModifier(Mod_DeathPerception, [DeathShroud, ReapersShroud, DesertShroudBuff, HarbingerShroud, RitualistsShroud], "Death Perception", "15% crit damage while in shroud", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DeathPerception, DamageModifierMode.All)
             .UsingChecker((x, log) => x.HasCrit)
-            .WithBuilds(GW2Builds.June2022Balance),
+            .WithBuilds(GW2Builds.June2022Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_DeathPerception, [DeathShroud, ReapersShroud, DesertShroudBuff, HarbingerShroud, RitualistsShroud], "Death Perception", "15% crit damage while in shroud", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DeathPerception, DamageModifierMode.sPvPWvW)
+            .UsingChecker((x, log) => x.HasCrit)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_DeathPerception, [DeathShroud, ReapersShroud, DesertShroudBuff, HarbingerShroud, RitualistsShroud], "Death Perception", "10% crit damage while in shroud", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DeathPerception, DamageModifierMode.PvE)
+            .UsingChecker((x, log) => x.HasCrit)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
 
         // Death Magic
         // - Necromantic Corruption
-        new DamageLogDamageModifier(Mod_NecromanticCorruption, "Necromantic Corruption", "25% strike damage for minions", DamageSource.PetsOnly, 25.0, DamageType.Strike, DamageType.All, Source.Necromancer, TraitImages.NecromanticCorruption, (x, log) => IsUndeadMinion(x.From), DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_NecromanticCorruption, "Necromantic Corruption", "25% for Minions", DamageSource.PetsOnly, 25.0, DamageType.Strike, DamageType.All, Source.Necromancer, TraitImages.NecromanticCorruption, (x, log) => IsUndeadMinion(x.From), DamageModifierMode.All)
             .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => IsUndeadMinion(x.ReferenceAgentItem))),
     ];
 
@@ -110,8 +125,7 @@ internal static class NecromancerHelper
         // - Dark Defiance
         new BuffOnActorDamageModifier(Mod_DarkDefiance, Protection, "Dark Defiance", "-20%", DamageSource.Incoming, -20, DamageType.Condition, DamageType.All, Source.Necromancer, ByPresence, TraitImages.DarkDefiance, DamageModifierMode.All),
         // - Beyond the Veil
-        new BuffOnActorDamageModifier(Mod_BeyondTheVeil, DeathsCarapace, "Beyond the Veil", "-10%", DamageSource.Incoming, -10, DamageType.Condition, DamageType.All, Source.Necromancer, ByPresence, TraitImages.BeyondTheVeil, DamageModifierMode.PvE)
-            .UsingChecker((dl, log) => dl.To.GetBuffStatus(log, DeathsCarapace, dl.Time).Value >= 10)
+        new BuffOnActorDamageModifier(Mod_BeyondTheVeil, DeathsCarapace, "Beyond the Veil", "-10%", DamageSource.Incoming, -10, DamageType.Condition, DamageType.All, Source.Necromancer, new GainComputerByAtLeastNStacksPresent(10), TraitImages.BeyondTheVeil, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.October2019Balance),
     ];
 
@@ -162,6 +176,7 @@ internal static class NecromancerHelper
         new Buff("Last Rites", LastRites, Source.Necromancer, BuffClassification.Defensive, TraitImages.LastRites),
         new Buff("Soul Barbs", SoulBarbs, Source.Necromancer, BuffClassification.Other, TraitImages.SoulBarbs),
         new Buff("Taste For Blood", TasteForBlood, Source.Necromancer, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Support, TraitImages.OverflowingThirst),
+        new Buff("Dread", Dread, Source.Necromancer, BuffClassification.Other, TraitImages.UnholyFervor),
         // Spear
         new Buff("Extirpation", Extirpation, Source.Necromancer, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Other, SkillImages.Extirpate),
         new Buff("Soul Shards", SoulShards, Source.Necromancer, BuffStackType.StackingConditionalLoss, 6, BuffClassification.Other, BuffImages.SoulShards),
@@ -301,14 +316,14 @@ internal static class NecromancerHelper
         // Mark of Blood or Chillblains (Staff 2/3)
         if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.NecromancerMarkOfBloodOrChillblains, out var markOfBloodOrChillblains))
         {
-            var markCasts = player.GetCastEvents(log).Where(x => x.SkillID == MarkOfBlood || x.SkillID == Chillblains || x.Skill.IsDodge(log.SkillData));
+            var markCasts = player.GetAnimatedCastEvents(log).Where(x => x.SkillID == MarkOfBlood || x.SkillID == Chillblains || x.Skill.IsDodge(log.SkillData));
             foreach (EffectEvent effect in markOfBloodOrChillblains)
             {
                 SkillModeDescriptor skill;
                 string icon;
                 bool fromDodge = false;
-                var markCastsOnEffect = markCasts.Where(x => effect.Time - ServerDelayConstant > x.Time && x.EndTime > effect.Time + ServerDelayConstant);
-                if (markCastsOnEffect.Count() == 1)
+                var markCastsOnEffect = markCasts.Where(x => x.IntersectsExpectedCastWindow(effect.Time)).ToList();
+                if (markCastsOnEffect.Count == 1)
                 {
                     skill = new SkillModeDescriptor(player, Spec.Necromancer, markCastsOnEffect.First().SkillID);
                     if (skill.SkillID != MarkOfBlood && skill.SkillID != Chillblains)

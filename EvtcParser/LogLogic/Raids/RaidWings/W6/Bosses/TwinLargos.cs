@@ -3,6 +3,7 @@ using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
@@ -14,10 +15,10 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class TwinLargos : MythwrightGambit
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
-                new EnemyCastStartMechanic(AquaticBarrage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC", "Breakbar","Breakbar", 0),
-                new EnemyCastEndMechanic(AquaticBarrage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed", "Breakbar broken","CCed", 0),
+                new EnemyCastStartMechanic(AquaticBarrage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC.L", "Breakbar","Breakbar", 0),
+                new EnemyCastEndMechanic(AquaticBarrage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed.L", "Breakbar broken","CCed", 0),
             ]),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(Waterlogged, new MechanicPlotlySetting(Symbols.HexagonOpen,Colors.LightBlue), "Debuff", "Waterlogged (stacking water debuff)","Waterlogged", 0),
@@ -89,13 +90,13 @@ internal class TwinLargos : MythwrightGambit
         return [];
     }
 
-    private static List<PhaseData> GetTargetPhases(ParsedEvtcLog log, SingleActor target, string baseName, EncounterPhaseData encounterPhase)
+    private static List<SubPhasePhaseData> GetTargetPhases(ParsedEvtcLog log, SingleActor target, string baseName, EncounterPhaseData encounterPhase)
     {
         long phaseStart = encounterPhase.Start;
         long phaseEnd = 0;
         long start = encounterPhase.Start;
         long end = encounterPhase.End;
-        var targetPhases = new List<PhaseData>();
+        var targetPhases = new List<SubPhasePhaseData>();
         var states = new List<TimeCombatEvent>();
         states.AddRange(log.CombatData.GetEnterCombatEvents(target.AgentItem));
         states.AddRange(GetBuffApplyRemoveSequence(log.CombatData, Determined762, target, true, true).Where(x => x is BuffApplyEvent));
@@ -125,7 +126,7 @@ internal class TwinLargos : MythwrightGambit
         targetPhases.RemoveAll(x => x.DurationInMS < ParserHelper.PhaseTimeLimit);
         for (int i = 0; i < targetPhases.Count; i++)
         {
-            PhaseData phase = targetPhases[i];
+            var phase = targetPhases[i];
             phase.Name = baseName + " P" + (i + 1);
             phase.AddParentPhase(encounterPhase);
             phase.AddTarget(target, log);
@@ -133,7 +134,7 @@ internal class TwinLargos : MythwrightGambit
         return targetPhases;
     }
 
-    private static void FallBackPhases(SingleActor target, List<PhaseData> phases, ParsedEvtcLog log, EncounterPhaseData encounterPhase, bool firstPhaseAt0)
+    private static void FallBackPhases(SingleActor target, IReadOnlyList<SubPhasePhaseData> phases, ParsedEvtcLog log, EncounterPhaseData encounterPhase, bool firstPhaseAt0)
     {
         IReadOnlyCollection<AgentItem> pAgents = log.PlayerAgents;
         // clean Nikare/Kenut missing enter combat events related bugs
@@ -216,21 +217,19 @@ internal class TwinLargos : MythwrightGambit
         }
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor nikare, SingleActor? kenut, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor nikare, SingleActor? kenut, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        long start = encounterPhase.Start;
-        long end = encounterPhase.End;
-        var phases = new List<PhaseData>(6);
-        List<PhaseData> nikPhases = GetTargetPhases(log, nikare, "Nikare", encounterPhase);
+        var phases = new List<SubPhasePhaseData>(6);
+        var nikPhases = GetTargetPhases(log, nikare, "Nikare", encounterPhase);
         FallBackPhases(nikare, nikPhases, log, encounterPhase, true);
         phases.AddRange(nikPhases);
         if (kenut != null)
         {
-            List<PhaseData> kenPhases = GetTargetPhases(log, kenut, "Kenut", encounterPhase);
+            var kenPhases = GetTargetPhases(log, kenut, "Kenut", encounterPhase);
             FallBackPhases(kenut, kenPhases, log, encounterPhase, false);
             phases.AddRange(kenPhases);
         }
@@ -250,14 +249,14 @@ internal class TwinLargos : MythwrightGambit
         return phases;
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (TargetHPPercentUnderThreshold(TargetID.Kenut, logData.LogStart, combatData, Targets) ||
             TargetHPPercentUnderThreshold(TargetID.Nikare, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     internal static void AdjustFinalHPEvents(List<CombatItem> combatData, AgentItem agentItem)
@@ -288,13 +287,12 @@ internal class TwinLargos : MythwrightGambit
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
         (long start, long end) lifespan;
-
-        var cls = target.GetCastEvents(log);
+        
         switch (target.ID)
         {
             case (int)TargetID.Nikare:
@@ -354,7 +352,7 @@ internal class TwinLargos : MythwrightGambit
                                 if (target.TryGetCurrentFacingDirection(log, cast.Time + 250, out var facing))
                                 {
                                     var positionConnector = (AgentConnector)new AgentConnector(target).WithOffset(new(width / 2, 0, 0), true);
-                                    var rotationConnextor = new AngleConnector(facing);
+                                    var rotationConnextor = new AngleConnector(facing.Value);
                                     replay.Decorations.AddWithBorder((RectangleDecoration)new RectangleDecoration(width, height, lifespan, Colors.LightOrange, 0.4, positionConnector).UsingRotationConnector(rotationConnextor));
                                 }
                             }
@@ -371,7 +369,7 @@ internal class TwinLargos : MythwrightGambit
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -388,7 +386,7 @@ internal class TwinLargos : MythwrightGambit
             replay.Decorations.AddWithFilledWithGrowing(new CircleDecoration(debuffRadius, seg, Colors.Orange, 0.4, new AgentConnector(p)).UsingFilled(false), true, toDropStart + timer);
             if (p.TryGetCurrentInterpolatedPosition(log, toDropEnd, out var position))
             {
-                replay.Decorations.AddWithGrowing(new CircleDecoration(radius, debuffRadius, (toDropEnd, toDropEnd + duration), Colors.DarkWhite, 0.5, new PositionConnector(position)).UsingFilled(false), toDropStart + duration);
+                replay.Decorations.AddWithGrowing(new CircleDecoration(radius, debuffRadius, (toDropEnd, toDropEnd + duration), Colors.DarkWhite, 0.5, new PositionConnector(position.Value)).UsingFilled(false), toDropStart + duration);
             }
             replay.Decorations.AddOverheadIcon(seg, p, ParserIcons.TidalPoolOverhead);
         }
@@ -403,7 +401,7 @@ internal class TwinLargos : MythwrightGambit
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -414,13 +412,20 @@ internal class TwinLargos : MythwrightGambit
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
     }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Twin Largos";
     }
@@ -451,10 +456,10 @@ internal class TwinLargos : MythwrightGambit
         return false;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor nikare = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Nikare)) ?? throw new MissingKeyActorsException("Nikare not found");
         SingleActor? kenut = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Kenut));
-        return HasCastAquaticDomainOrCMHP(combatData, nikare, kenut) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return HasCastAquaticDomainOrCMHP(combatData, nikare, kenut) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 }

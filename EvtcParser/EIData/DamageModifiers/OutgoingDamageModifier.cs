@@ -28,8 +28,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.Damage;
                     case DamageSource.NoPets:
                         return damageData.ActorDamage;
-                        /*case DamageSource.PetsOnly:
-                            return damageData.Damage - damageData.ActorDamage;*/
+                    /*case DamageSource.PetsOnly:
+                        return damageData.Damage - damageData.ActorDamage;*/
                 }
                 break;
             case DamageType.Condition:
@@ -40,8 +40,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.ConditionDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorConditionDamage;
-                        /*case DamageSource.PetsOnly:
-                            return damageData.ConditionDamage - damageData.ActorConditionDamage;*/
+                    /*case DamageSource.PetsOnly:
+                        return damageData.ConditionDamage - damageData.ActorConditionDamage;*/
                 }
                 break;
             case DamageType.Power:
@@ -52,8 +52,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.PowerDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorPowerDamage;
-                        /*case DamageSource.PetsOnly:
-                            return damageData.PowerDamage - damageData.ActorPowerDamage;*/
+                    /*case DamageSource.PetsOnly:
+                        return damageData.PowerDamage - damageData.ActorPowerDamage;*/
                 }
                 break;
             case DamageType.LifeLeech:
@@ -64,8 +64,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.LifeLeechDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorLifeLeechDamage;
-                        /*case DamageSource.PetsOnly:
-                            return damageData.LifeLeechDamage - damageData.ActorLifeLeechDamage;*/
+                    /*case DamageSource.PetsOnly:
+                        return damageData.LifeLeechDamage - damageData.ActorLifeLeechDamage;*/
                 }
                 break;
             case DamageType.Strike:
@@ -76,8 +76,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.StrikeDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorStrikeDamage;
-                        /*case DamageSource.PetsOnly:
-                            return damageData.StrikeDamage - damageData.ActorStrikeDamage;*/
+                    /*case DamageSource.PetsOnly:
+                        return damageData.StrikeDamage - damageData.ActorStrikeDamage;*/
                 }
                 break;
             case DamageType.StrikeAndCondition:
@@ -88,8 +88,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.StrikeDamage + damageData.ConditionDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorStrikeDamage + damageData.ActorConditionDamage;
-                        /*case DamageSource.PetsOnly:
-                            return (damageData.StrikeDamage + damageData.ConditionDamage) - (damageData.ActorStrikeDamage + damageData.ActorConditionDamage);*/
+                    /*case DamageSource.PetsOnly:
+                        return (damageData.StrikeDamage + damageData.ConditionDamage) - (damageData.ActorStrikeDamage + damageData.ActorConditionDamage);*/
                 }
                 break;
             case DamageType.StrikeAndLifeLeech:
@@ -100,8 +100,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.StrikeDamage + damageData.LifeLeechDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorStrikeDamage + damageData.ActorLifeLeechDamage;
-                        /*case DamageSource.PetsOnly:
-                            return (damageData.StrikeDamage + damageData.LifeLeechDamage) - (damageData.ActorStrikeDamage + damageData.ActorLifeLeechDamage);*/
+                    /*case DamageSource.PetsOnly:
+                        return (damageData.StrikeDamage + damageData.LifeLeechDamage) - (damageData.ActorStrikeDamage + damageData.ActorLifeLeechDamage);*/
                 }
                 break;
             case DamageType.ConditionAndLifeLeech:
@@ -112,8 +112,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.ConditionDamage + damageData.LifeLeechDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorConditionDamage + damageData.ActorLifeLeechDamage;
-                        /*case DamageSource.PetsOnly:
-                            return (damageData.ConditionDamage + damageData.LifeLeechDamage) - (damageData.ActorConditionDamage + damageData.ActorLifeLeechDamage);*/
+                    /*case DamageSource.PetsOnly:
+                        return (damageData.ConditionDamage + damageData.LifeLeechDamage) - (damageData.ActorConditionDamage + damageData.ActorLifeLeechDamage);*/
                 }
                 break;
             case DamageType.StrikeAndConditionAndLifeLeech:
@@ -124,8 +124,8 @@ public class OutgoingDamageModifier : DamageModifier
                         return damageData.StrikeDamage + damageData.ConditionDamage + damageData.LifeLeechDamage;
                     case DamageSource.NoPets:
                         return damageData.ActorStrikeDamage + damageData.ActorConditionDamage + damageData.ActorLifeLeechDamage;
-                        /*case DamageSource.PetsOnly:
-                            return (damageData.StrikeDamage + damageData.ConditionDamage + damageData.LifeLeechDamage) - (damageData.ActorStrikeDamage + damageData.ActorConditionDamage + damageData.ActorLifeLeechDamage);*/
+                    /*case DamageSource.PetsOnly:
+                        return (damageData.StrikeDamage + damageData.ConditionDamage + damageData.LifeLeechDamage) - (damageData.ActorStrikeDamage + damageData.ActorConditionDamage + damageData.ActorLifeLeechDamage);*/
                 }
                 break;
             default:
@@ -147,8 +147,15 @@ public class OutgoingDamageModifier : DamageModifier
         }
         throw new NotImplementedException("Not implemented damage source " + DmgSrc);
     }
+
+
     internal override AgentItem GetFoe(HealthDamageEvent evt)
     {
-        return evt.To;
+        return FoeAlwaysMaster ? evt.To.GetFinalMaster() : evt.To;
+    }
+
+    internal override AgentItem GetActor(HealthDamageEvent evt)
+    {
+        return ActorAlwaysMaster ? evt.From.GetFinalMaster() : evt.From;
     }
 }

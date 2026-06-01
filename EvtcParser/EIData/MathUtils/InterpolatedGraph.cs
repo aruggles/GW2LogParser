@@ -12,8 +12,8 @@ public class InterpolatedGraph<T>
 
     public InterpolatedGraph(int first, int last, int polling)
     {
-        First = first;
-        Last = last;
+        First = first; 
+        Last = last; 
         Polling = polling;
         int durationInMS = (int)(last - first);
         int durationInS = durationInMS / 1000;

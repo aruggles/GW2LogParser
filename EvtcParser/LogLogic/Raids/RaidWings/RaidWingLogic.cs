@@ -22,11 +22,16 @@ internal abstract class RaidWingLogic : RaidLogic
         return combatData.GetRewardEvents().FirstOrDefault(x => x.RewardType == RewardTypes.OldRaidReward2 && x.Time > start && x.Time < end);
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    protected virtual (long downAndOutID, TargetID targetID) GetDownAndOutIDs()
+    {
+        return (SkillIDs.NoBuff, TargetID.Unknown);
+    }
+
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         if (IsInstance)
         {
-            logData.SetSuccess(true, GetFinalMapChangeTime(logData, combatData));
+            successHandler.SetSuccess(true, GetFinalMapChangeTime(logData, combatData));
             return;
         }
         var raidRewardsTypes = new HashSet<int>();
@@ -42,11 +47,39 @@ internal abstract class RaidWingLogic : RaidLogic
         RewardEvent? reward = rewards.FirstOrDefault(x => raidRewardsTypes.Contains(x.RewardType) && x.Time > logData.LogStart);
         if (reward != null)
         {
-            logData.SetSuccess(true, reward.Time);
+            successHandler.SetSuccess(true, reward.Time);
         }
         else
         {
-            NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents);
+            NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents, successHandler);
+        }
+    }
+
+    internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
+    {
+        base.SetInstanceBuffs(log, instanceBuffs);
+        (long downAndOutID, TargetID targetID) = GetDownAndOutIDs();
+        if (downAndOutID != SkillIDs.NoBuff && targetID != TargetID.Unknown)
+        {
+            var mainPhase = log.LogData.GetMainPhase(log);
+            var encounterPhase = log.LogData.GetEncounterPhases(log).FirstOrDefault(x => x.Success && x.Targets.Keys.Any(x => x.IsSpecies(targetID)));
+            if (encounterPhase != null)
+            {
+                foreach (var player in log.PlayerList)
+                {
+                    if (encounterPhase.IntersectsWindow(player.FirstAware, player.LastAware) && player.HasBuff(log, downAndOutID, encounterPhase.End, ParserHelper.ServerDelayConstant))
+                    {
+                        // Loss is delayed and thus does not match success time of the encounter
+                        var apply = log.CombatData.GetBuffApplyDataByIDByDst(downAndOutID, player.EnglobingAgentItem).OfType<BuffApplyEvent>().FirstOrDefault();
+                        instanceBuffs.Add(new InstanceBuff(log.Buffs.BuffsByIDs[downAndOutID], 1, mainPhase, apply != null ? 
+                            apply.AppliedDuration - (encounterPhase.End - apply.Time) 
+                            :  
+                            0
+                         ));
+                        break;
+                    }
+                }
+            }
         }
     }
 }

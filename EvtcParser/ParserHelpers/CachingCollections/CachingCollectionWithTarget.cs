@@ -3,14 +3,34 @@ using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser;
 
-public class CachingCollectionWithTarget<T>(ParsedEvtcLog log)
-    : CachingCollectionCustom<SingleActor, T>(log, _nullActor, log.LogData.Logic.Hostiles.Count)
+public class CachingCollectionWithTarget<T> : CachingCollectionCustom<SingleActor, T>
 {
-    private static readonly NPC _nullActor = new(ParserHelper._nullAgent);
+
+    private static readonly SingleActor _nullActor = new DummyActor(ParserHelper._nullAgent);
+
+    public CachingCollectionWithTarget(AgentItem src, ParsedEvtcLog log) : base(log, _nullActor, log.FriendlyAgents.Contains(src.GetFinalMaster()) ? 
+        log.LogData.Logic.Targets.Count 
+        :
+        log.LogData.Logic.TargetAgents.Contains(src.GetFinalMaster()) ? 
+            log.Friendlies.Count 
+            : 
+            5
+    )
+    {
+    }
 }
 
 
-public class CachingCollectionWithAgentTarget<T>(ParsedEvtcLog log)
-    : CachingCollectionCustom<AgentItem, T>(log, ParserHelper._nullAgent, log.LogData.Logic.Hostiles.Count)
+public class CachingCollectionWithAgentTarget<T> : CachingCollectionCustom<AgentItem, T>
 {
+    public CachingCollectionWithAgentTarget(AgentItem src, ParsedEvtcLog log) : base(log, ParserHelper._nullAgent, log.FriendlyAgents.Contains(src.GetFinalMaster()) ?
+        log.LogData.Logic.Targets.Count
+        :
+        log.LogData.Logic.TargetAgents.Contains(src.GetFinalMaster()) ?
+            log.Friendlies.Count
+            : 
+            5
+    )
+    {
+    }
 }

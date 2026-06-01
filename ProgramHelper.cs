@@ -20,10 +20,13 @@ public sealed class ProgramHelper : IDisposable
     public static readonly string SkillAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/SkillList.json";
     public static readonly string SpecAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/SpecList.json";
     public static readonly string TraitAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/TraitList.json";
+    public static readonly string MapAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/MapList.json";
     public static readonly string EILogPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Logs/";
     public readonly Version ParserVersion;
-    public static readonly GW2APIController apiController = new(SkillAPICacheLocation, SpecAPICacheLocation, TraitAPICacheLocation);
+    public static readonly GW2APIController apiController = new(SkillAPICacheLocation, SpecAPICacheLocation, TraitAPICacheLocation, MapAPICacheLocation);
     internal readonly static HTMLAssets htmlAssets = new();
+    // Max input log file size (MB) the parser will attempt. Beyond this, parsing aborts with TooLongException.
+    public const long DefaultTooBigLimitMB = 1500;
     public static bool MemoryCheck { get; set; } = false;
     public static bool EnableTracing { get; set; } = false;
     public static ConcurrentBag<LogContainer> CompletedLogs { get; set; } = [];
@@ -62,6 +65,7 @@ public sealed class ProgramHelper : IDisposable
                                             Properties.Settings.Default.ParseCombatReplay,
                                             Properties.Settings.Default.ComputeDamageModifiers,
                                             Properties.Settings.Default.CustomTooShort,
+                                            DefaultTooBigLimitMB,
                                             Properties.Settings.Default.DetailledWvW), apiController);
 
             //Process evtc here
@@ -100,8 +104,8 @@ public sealed class ProgramHelper : IDisposable
         DirectoryInfo saveDirectory = GetSaveDirectory(fInfo);
         var formOperation = operation as FormOperationController;
         var index = formOperation == null ? DateTime.Now.ToFileTime() : formOperation.Index;
-        string result = log.LogData.Success ? "kill" : "fail";
-        var uploadResults = new UploadResults("", "");
+        string result = log.LogData.GetMainPhase(log).Success ? "kill" : "fail";
+        var uploadResults = new UploadResults();
         operation.OutLocation = saveDirectory.FullName;
 
         using var _t1 = new AutoTrace("Generate HTML");
@@ -153,7 +157,7 @@ public sealed class ProgramHelper : IDisposable
             return;
         }
         var report = new Report();
-        var uploadResults = new UploadResults("", "");
+        var uploadResults = new UploadResults();
         
         FileInfo? fileInfo = null;
         DirectoryInfo? saveDirectory = null;

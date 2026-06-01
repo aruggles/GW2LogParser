@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -27,7 +28,7 @@ internal class SilentSurfInstance : SilentSurf
         MechanicList.Add(_kanaxai.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Silent Surf Fractal";
     }
@@ -37,9 +38,9 @@ internal class SilentSurfInstance : SilentSurf
         var crMap = new CombatReplayMap((800, 960), (-15360, -18432, 15360, 18432));
         arenaDecorations.Add(new ArenaDecoration((log.LogData.LogStart, log.LogData.LogEnd), CombatReplaySilentSurf, crMap));
         _kanaxai.GetCombatMapInternal(log, arenaDecorations);
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var lastKanaxai = agentData.GetNPCsByID(TargetID.KanaxaiScytheOfHouseAurkusCM).LastOrDefault(x => combatData.GetEnterCombatEvents(x).Any());
         if (lastKanaxai != null)
@@ -49,7 +50,7 @@ internal class SilentSurfInstance : SilentSurf
             var determinedApply = determinedBuffs.FirstOrDefault(x => x is BuffApplyEvent && x.Time > enterCombat.Time);
             if (determinedApply != null && !combatData.GetDespawnEvents(lastKanaxai).Any(x => Math.Abs(x.Time - determinedApply.Time) < ServerDelayConstant))
             {
-                logData.SetSuccess(true, determinedApply.Time);
+                successHandler.SetSuccess(true, determinedApply.Time);
             }
         }
     }
@@ -83,7 +84,7 @@ internal class SilentSurfInstance : SilentSurf
                     end = determinedApply.Time;
                 }
                 var name = "Kanaxai";
-                var mode = LogData.LogMode.CMNoName;
+                var mode = LogData.Mode.CMNoName;
                 AddInstanceEncounterPhase(log, phases, encounterPhases, [kanaxai], [], [], mainPhase, name, start, end, success, _kanaxai, mode);
             }
         }
@@ -148,9 +149,9 @@ internal class SilentSurfInstance : SilentSurf
         return _kanaxai.SpecialBuffEventProcess(combatData, skillData);
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
-        return _kanaxai.SpecialCastEventProcess(combatData, skillData);
+        return _kanaxai.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID);
     }
 
     internal override List<HealthDamageEvent> SpecialDamageEventProcess(CombatData combatData, AgentData agentData, SkillData skillData)
@@ -179,6 +180,11 @@ internal class SilentSurfInstance : SilentSurf
     {
         base.SetInstanceBuffs(log, instanceBuffs);
         _kanaxai.SetInstanceBuffs(log, instanceBuffs);
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        _kanaxai.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
     }
 
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()

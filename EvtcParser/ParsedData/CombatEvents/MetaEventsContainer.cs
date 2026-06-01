@@ -39,6 +39,12 @@ internal class MetaEventsContainer
     public readonly Dictionary<long, SkillGUIDEvent> SkillGUIDEventsBySkillID = [];
     public readonly Dictionary<GUID, SkillGUIDEvent> SkillGUIDEventsByGUID = [];
 
+    public readonly Dictionary<long, EmoteGUIDEvent> EmoteGUIDEventsByEmoteID = [];
+    public readonly Dictionary<GUID, EmoteGUIDEvent> EmoteGUIDEventsByGUID = [];
+
+    public readonly Dictionary<ulong, TeamGUIDEvent> TeamGUIDEventsByTeamID = [];
+    public readonly Dictionary<GUID, TeamGUIDEvent> TeamGUIDEventsByGUID = [];
+
     public readonly List<AttackTargetEvent> AttackTargetEvents = [];
     public readonly Dictionary<AgentItem, List<AttackTargetEvent>> AttackTargetEventsBySrc = [];
     public readonly Dictionary<AgentItem, AttackTargetEvent> AttackTargetEventByAttackTarget = [];

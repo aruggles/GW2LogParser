@@ -1,6 +1,6 @@
 ﻿namespace GW2EIEvtcParser.ParsedData;
 
-public class CrowdControlEvent : SkillEvent
+public class CrowdControlEvent : NonDamageEvent
 {
     //
 
@@ -11,5 +11,9 @@ public class CrowdControlEvent : SkillEvent
     {
         Duration = evtcItem.Value;
         DefianceCalculation = evtcItem.Value + (int)evtcItem.OverstackValue;
+    }
+    internal override double GetValue()
+    {
+        return Duration;
     }
 }

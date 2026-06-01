@@ -35,23 +35,29 @@ internal static class SpellbreakerHelper
             .WithBuilds(GW2Builds.August2022Balance),
         new BuffOnFoeDamageModifier(Mod_PureStrikeBoons, NumberOfBoons, "Pure Strike (boons)", "7.5% crit damage", DamageSource.NoPets, 7.5, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByPresence, TraitImages.PureStrike, DamageModifierMode.PvE)
             .UsingChecker((x, log) => x.HasCrit)
-            .WithBuilds(GW2Builds.August2022Balance),
+            .WithBuilds(GW2Builds.August2022Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PureStrikeBoons, NumberOfBoons, "Pure Strike (boons)", "5% crit damage", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByPresence, TraitImages.PureStrike, DamageModifierMode.PvE)
+            .UsingChecker((x, log) => x.HasCrit)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // Pure Strike (No Boons)
         new BuffOnFoeDamageModifier(Mod_PureStrikeNoBoons, NumberOfBoons, "Pure Strike (no boons)", "14% crit damage", DamageSource.NoPets, 14.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByAbsence, TraitImages.PureStrike, DamageModifierMode.All)
-            .UsingChecker( (x, log) => x.HasCrit)
+            .UsingChecker((x, log) => x.HasCrit)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.August2022Balance),
         new BuffOnFoeDamageModifier(Mod_PureStrikeNoBoons, NumberOfBoons, "Pure Strike (no boons)", "14% crit damage", DamageSource.NoPets, 14.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByAbsence, TraitImages.PureStrike, DamageModifierMode.sPvPWvW)
-            .UsingChecker( (x, log) => x.HasCrit)
+            .UsingChecker((x, log) => x.HasCrit)
             .WithBuilds(GW2Builds.August2022Balance),
         new BuffOnFoeDamageModifier(Mod_PureStrikeNoBoons, NumberOfBoons, "Pure Strike (no boons)", "15% crit damage", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByAbsence, TraitImages.PureStrike, DamageModifierMode.PvE)
-            .UsingChecker( (x, log) => x.HasCrit)
-            .WithBuilds(GW2Builds.August2022Balance),
+            .UsingChecker((x, log) => x.HasCrit)
+            .WithBuilds(GW2Builds.August2022Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PureStrikeNoBoons, NumberOfBoons, "Pure Strike (no boons)", "10% crit damage", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByAbsence, TraitImages.PureStrike, DamageModifierMode.PvE)
+            .UsingChecker((x, log) => x.HasCrit)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // Magebane Tether
         new BuffOnFoeDamageModifier(Mod_MagebaneTether, MagebaneTetherBuff, "Magebane Tether", "10% to tethered target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByPresence, TraitImages.MagebaneTether, DamageModifierMode.PvEInstanceOnly)
-            .UsingChecker((x, log) => x.To.HasBuff(log, log.FindActor(x.From), MagebaneTetherBuff, x.Time))
+            .WithBuffOnFoeFromActor()
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.August2022Balance),
         new BuffOnFoeDamageModifier(Mod_MagebaneTether, MagebaneTetherBuff, "Magebane Tether", "15% to tethered target", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Spellbreaker, ByPresence, TraitImages.MagebaneTether, DamageModifierMode.PvEInstanceOnly)
-            .UsingChecker((x, log) => x.To.HasBuff(log, log.FindActor(x.From), MagebaneTetherBuff, x.Time))
+            .WithBuffOnFoeFromActor()
             .WithBuilds(GW2Builds.August2022Balance),
     ];
 

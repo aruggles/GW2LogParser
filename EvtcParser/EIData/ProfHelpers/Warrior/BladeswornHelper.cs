@@ -26,7 +26,8 @@ internal static class BladeswornHelper
         new BuffGainCastFinder(FlowStabilizer, PositiveFlow)
             .UsingChecker((bae, combatData, agentData, skillData) =>
             {
-                return 2 == CombatData.FindRelatedEvents(combatData.GetBuffApplyDataByIDByDst(PositiveFlow, bae.To).OfType<BuffApplyEvent>(), bae.Time).Count(apply => apply.By.Is(bae.To));
+                return 2 == CombatData.FindRelatedEvents(combatData.GetBuffApplyDataByIDByDst(PositiveFlow, bae.To).OfType<BuffApplyEvent>(), bae.Time)
+                    .Count(apply => apply.By.Is(bae.To) && Math.Abs(apply.AppliedDuration - 8000) < ServerDelayConstant);
             }),
         new EffectCastFinder(DragonspikeMineSkill, EffectGUIDs.BladeswornDragonspikeMine)
             .UsingSrcSpecChecker(Spec.Bladesworn),

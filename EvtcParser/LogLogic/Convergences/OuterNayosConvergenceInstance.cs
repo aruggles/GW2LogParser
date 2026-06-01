@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogCategories;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
@@ -23,7 +24,7 @@ internal class OuterNayosConvergenceInstance : ConvergenceLogic
         Extension = "outnayconv";
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         var mainBoss = Targets.FirstOrDefault(x => x.IsAnySpecies([
             TargetID.DemonKnight,
@@ -96,9 +97,9 @@ internal class OuterNayosConvergenceInstance : ConvergenceLogic
         ];
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return combatData.GetBuffApplyData(UnstableAttunementSotO).Any(x => x.To.IsPlayer) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return combatData.GetBuffApplyData(UnstableAttunementSotO).Any(x => x.To.IsPlayer) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 
     internal override LogData.InstancePrivacyMode GetInstancePrivacyMode(CombatData combatData, AgentData agentData, LogData logData)
@@ -147,7 +148,7 @@ internal class OuterNayosConvergenceInstance : ConvergenceLogic
                 phaseName = "Full Umbriel";
                 break;
         }
-        var fullPhase = new EncounterPhaseData(Math.Max(log.LogData.LogStart, target.FirstAware), Math.Min(target.LastAware, log.LogData.LogEnd), phaseName, log).WithParentPhase(phases[0]);
+        var fullPhase = log.LogData.CreateEncounterPhase(Math.Max(log.LogData.LogStart, target.FirstAware), Math.Min(target.LastAware, log.LogData.LogEnd), phaseName).WithParentPhase(phases[0]);
         fullPhase.AddTarget(target, log);
         phases.Add(fullPhase);
 

@@ -1,6 +1,7 @@
 ﻿using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.EIData.SkillModeDescriptor;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SkillIDs;
@@ -10,10 +11,16 @@ namespace GW2EIEvtcParser.EIData;
 
 internal static class ProfHelper
 {
-
+    private static readonly List<InstantCastFinder> _genericNeedsToBeBeforeTheRestInstantCastFinders_NeverAddAnythingElse = 
+    [
+        new BuffLossCastFinder(RelicOfFireworksBuffLoss, RelicOfFireworks)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+        new BuffLossCastFinder(RelicOfTheClawBuffLoss, RelicOfTheClaw)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+    ];
     private static readonly List<InstantCastFinder> _genericInstantCastFinders =
     [
-        // Sigils
+        #region Sigils
         new DamageCastFinder(RingOfEarth_MinorSigilOfGeomancy, RingOfEarth_MinorSigilOfGeomancy)
             .UsingICD(500)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
@@ -87,7 +94,8 @@ internal static class ProfHelper
         new MissileCastFinder(Snowball_SigilOfMischief, Snowball_SigilOfMischief)
             .UsingICD(500)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-        // Runes
+        #endregion Sigils
+        #region Runes
         new EffectCastFinderByDst(RuneOfNightmare, EffectGUIDs.RuneOfNightmare)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear)
             .WithBuilds(GW2Builds.November2018Rune, GW2Builds.SOTOReleaseAndBalance),
@@ -103,17 +111,10 @@ internal static class ProfHelper
         new MinionSpawnCastFinder(RunePrivateerSpawn, (int)MinionID.TropicalBird)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.SOTOReleaseAndBalance),
-        // Combos
-        new EXTHealingCastFinder(WaterBlastCombo1, WaterBlastCombo1),
-        new EXTHealingCastFinder(WaterBlastCombo2, WaterBlastCombo2),
-        new EXTHealingCastFinder(WaterLeapCombo, WaterLeapCombo),
-        new BreakbarDamageCastFinder(LightningLeapCombo, LightningLeapCombo),
-        // Misc
-        new BuffGainCastFinder(PortalEntranceWhiteMantleWatchwork, PortalWeavingWhiteMantleWatchwork),
-        new BuffGainCastFinder(PortalExitWhiteMantleWatchwork, PortalUsesWhiteMantleWatchwork)
-            .UsingBeforeWeaponSwap(),
-        new BreakbarDamageCastFinder(Technobabble, Technobabble),
-        // Relics
+        #endregion Runes
+        #region Relics
+        new DamageCastFinder(RelicOfShacklesDamageSkill, RelicOfShacklesDamageSkill)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGainCastFinder(RelicOfVass, RelicOfVass)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGainCastFinder(RelicOfTheFirebrand, RelicOfTheFirebrand)
@@ -126,15 +127,18 @@ internal static class ProfHelper
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGainCastFinder(SoulOfTheTitan, SoulOfTheTitan)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+        new BuffGainCastFinder(RelicOfFogBuff, RelicOfFogBuff)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+        new BuffGainCastFinder(RelicOfTheCoralHeartBuff, RelicOfTheCoralHeartBuff)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGiveCastFinder(RelicOfDagdaHit, RelicOfDagdaBuff)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGiveCastFinder(RelicOfIsgarrenTargetBuff, RelicOfIsgarrenTargetBuff)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGiveCastFinder(RelicOfTheDragonhunterTargetBuff, RelicOfTheDragonhunterTargetBuff)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-        new BuffLossCastFinder(RelicOfFireworksBuffLoss, RelicOfFireworks)
-            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-        new BuffLossCastFinder(RelicOfTheClawBuffLoss, RelicOfTheClaw)
+        new BuffGiveCastFinder(RelicOfShacklesApplicationBuff, RelicOfShacklesApplicationBuff)
+            .UsingICD(100)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfCerusHit, EffectGUIDs.RelicOfCerusEye)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
@@ -145,7 +149,9 @@ internal static class ProfHelper
         new EffectCastFinder(RelicOfFireworks, EffectGUIDs.RelicOfFireworks)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new BuffGainCastFinder(RelicOfTheClaw, RelicOfTheClaw)
-            .UsingOverridenDurationChecker(0)
+            .UsingChecker((ba, combatData, agentData, skillData) => {
+                return !combatData.GetBuffRemoveSingleDataByIDByDst(RelicOfTheClaw, ba.To).Any(x => Math.Abs(x.Time - ba.Time) < ServerDelayConstant);
+            })
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfPeithaBlade, EffectGUIDs.RelicOfPeitha)
             .UsingDisableWithMissileData()
@@ -166,23 +172,20 @@ internal static class ProfHelper
         //    return effects != null && effects.Any(x => x.Time > evt.Time);
         //}).UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfTheWizardsTower, EffectGUIDs.RelicWhiteCircle)
-            .UsingSecondaryEffectChecker(EffectGUIDs.RelicOfTheWizardsTower)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.RelicOfTheWizardsTower)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfTheTwinGenerals, EffectGUIDs.RelicOfTheTwinGenerals)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfSorrowBuff, EffectGUIDs.RelicOfSorrow3)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfTheStormsingerChain, EffectGUIDs.RelicOfTheStormsinger)
-            .UsingChecker((effectEvent, combatData, agentData, skillData) =>
-            {
-                return combatData.HasLostBuff(RelicOfTheStormsingerBuff, effectEvent.Src, effectEvent.Time);
-            })
+            .UsingChecker((effectEvent, combatData, agentData, skillData) => combatData.HasLostBuff(RelicOfTheStormsingerBuff, effectEvent.Src, effectEvent.Time))
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfTheBeehive, EffectGUIDs.RelicWhiteCircle)
-            .UsingSecondaryEffectChecker(EffectGUIDs.RelicOfTheBeehive1, 1000, ServerDelayConstant)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.RelicOfTheBeehive1, 1000)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfMountBalrior, EffectGUIDs.RelicOfMountBalrior1)
-            .UsingSecondaryEffectChecker(EffectGUIDs.RelicOfMountBalrior2)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.RelicOfMountBalrior2)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(RelicOfTheHolosmith, EffectGUIDs.RelicOfTheHolosmith)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
@@ -190,6 +193,9 @@ internal static class ProfHelper
             .UsingICD(0)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EffectCastFinder(BloodstoneExplosion, EffectGUIDs.RelicOfBloodstone)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+        new EffectCastFinder(RelicOfTheNauticalBeastDamageHealing, EffectGUIDs.RelicOfTheNauticalBeastGround2)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.RelicOfTheNauticalBeastGround1)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new EXTHealingCastFinder(RelicOfKarakosaHealing, RelicOfKarakosaHealing)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
@@ -220,7 +226,11 @@ internal static class ProfHelper
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
         new MissileCastFinder(RelicOfPeithaBlade, RelicOfPeithaBlade)
             .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
-        // Mounts
+        new MissileCastFinder(RelicOfTheForestDwellerMissileDamage, RelicOfTheForestDwellerMissileDamage)
+            .UsingICD(100)
+            .UsingOrigin(InstantCastFinder.InstantCastOrigin.Gear),
+        #endregion Relics
+        #region Mounts
         new BuffGainCastFinder(BondOfLifeSkill, BondOfLifeBuff),
         new BuffGainCastFinder(BondOfVigorSkill, BondOfVigorBuff),
         new BuffGainCastFinder(BondOfFaithSkill, EvasionBondOfFaith)
@@ -230,7 +240,20 @@ internal static class ProfHelper
         new EffectCastFinderByDst(SkyscaleSkill, EffectGUIDs.SkyscaleLaunch),
         new EffectCastFinder(SkyscaleFireballSkill, EffectGUIDs.SkyscaleFireball),
         new EffectCastFinder(SkyscaleBlastSkill, EffectGUIDs.SkyscaleBlast1)
-            .UsingSecondaryEffectChecker(EffectGUIDs.SkyscaleBlast2),
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.SkyscaleBlast2),
+        #endregion Mounts
+        #region Combos
+        new EXTHealingCastFinder(WaterBlastCombo1, WaterBlastCombo1),
+        new EXTHealingCastFinder(WaterBlastCombo2, WaterBlastCombo2),
+        new EXTHealingCastFinder(WaterLeapCombo, WaterLeapCombo),
+        new BreakbarDamageCastFinder(LightningLeapCombo, LightningLeapCombo),
+        #endregion Combos
+        #region Misc
+        new BuffGainCastFinder(PortalEntranceWhiteMantleWatchwork, PortalWeavingWhiteMantleWatchwork),
+        new BuffGainCastFinder(PortalExitWhiteMantleWatchwork, PortalUsesWhiteMantleWatchwork)
+            .UsingBeforeWeaponSwap(),
+        new BreakbarDamageCastFinder(Technobabble, Technobabble),
+        #endregion Misc
     ];
 
     internal static void AttachMasterToGadgetByCastData(CombatData combatData, IReadOnlyCollection<AgentItem> gadgets, IReadOnlyList<long> castIDS, long castEndThreshold)
@@ -310,190 +333,171 @@ internal static class ProfHelper
     //
     internal static IReadOnlyCollection<InstantCastFinder> GetProfessionInstantCastFinders(IReadOnlyList<AgentItem> players)
     {
-        var instantCastFinders = new HashSet<InstantCastFinder>(_genericInstantCastFinders);
-        foreach (AgentItem p in players)
+        List<InstantCastFinder> instantCastFinders = new (500);
+        instantCastFinders.AddRange(_genericNeedsToBeBeforeTheRestInstantCastFinders_NeverAddAnythingElse);
+        instantCastFinders.AddRange(_genericInstantCastFinders);
+        foreach (Spec spec in players.Select(x => x.BaseSpec).Distinct())
         {
-            switch (p.Spec)
+            switch (spec)
             {
                 //
                 case Spec.Elementalist:
-                    ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Tempest:
-                    ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    TempestHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Weaver:
-                    ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    WeaverHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Catalyst:
-                    ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    CatalystHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Evoker:
-                    ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    EvokerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    ElementalistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Necromancer:
-                    NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Reaper:
-                    NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    ReaperHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Scourge:
-                    NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    ScourgeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Harbinger:
-                    NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    HarbingerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Ritualist:
-                    NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    RitualistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    NecromancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Mesmer:
-                    MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Chronomancer:
-                    MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    ChronomancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Mirage:
-                    MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    MirageHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Virtuoso:
-                    MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    VirtuosoHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Troubadour:
-                    MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    TroubadourHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    MesmerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Thief:
-                    ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Daredevil:
-                    ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    DaredevilHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Deadeye:
-                    ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    DeadeyeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Specter:
-                    ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    SpecterHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Antiquary:
-                    ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    AntiquaryHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    ThiefHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Engineer:
-                    EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Scrapper:
-                    EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    ScrapperHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Holosmith:
-                    EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    HolosmithHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Mechanist:
-                    EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    MechanistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Amalgam:
-                    EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    AmalgamHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    EngineerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Ranger:
-                    RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Druid:
-                    RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    DruidHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Soulbeast:
-                    RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    SoulbeastHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Untamed:
-                    RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    UntamedHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Galeshot:
-                    RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    GaleshotHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    RangerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Revenant:
-                    RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Herald:
-                    RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    HeraldHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Renegade:
-                    RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    RenegadeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Vindicator:
-                    RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    VindicatorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Conduit:
-                    RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    ConduitHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    RevenantHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Guardian:
-                    GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Dragonhunter:
-                    GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    DragonhunterHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Firebrand:
-                    GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    FirebrandHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Willbender:
-                    GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    WillbenderHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    break;
-                case Spec.Luminary:
-                    GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    LuminaryHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    GuardianHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 //
                 case Spec.Warrior:
-                    WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
+            }        
+        }
+        foreach (Spec spec in players.Select(x => x.Spec).Distinct())
+        {
+            switch (spec)
+            {
+                //
+                case Spec.Tempest:
+                    TempestHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Weaver:
+                    WeaverHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Catalyst:
+                    CatalystHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Evoker:
+                    EvokerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Reaper:
+                    ReaperHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Scourge:
+                    ScourgeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Harbinger:
+                    HarbingerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Ritualist:
+                    RitualistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Chronomancer:
+                    ChronomancerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Mirage:
+                    MirageHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Virtuoso:
+                    VirtuosoHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Troubadour:
+                    TroubadourHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Daredevil:
+                    DaredevilHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Deadeye:
+                    DeadeyeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Specter:
+                    SpecterHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Antiquary:
+                    AntiquaryHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Scrapper:
+                    ScrapperHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Holosmith:
+                    HolosmithHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Mechanist:
+                    MechanistHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Amalgam:
+                    AmalgamHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Druid:
+                    DruidHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Soulbeast:
+                    SoulbeastHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Untamed:
+                    UntamedHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Galeshot:
+                    GaleshotHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Herald:
+                    HeraldHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Renegade:
+                    RenegadeHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Vindicator:
+                    VindicatorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Conduit:
+                    ConduitHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
+                case Spec.Dragonhunter:
+                    DragonhunterHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Firebrand:
+                    FirebrandHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Willbender:
+                    WillbenderHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                case Spec.Luminary:
+                    LuminaryHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
+                    break;
+                //
                 case Spec.Berserker:
-                    WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    BerserkerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    BerserkerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 case Spec.Spellbreaker:
-                    WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    SpellbreakerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    SpellbreakerHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 case Spec.Bladesworn:
-                    WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    BladeswornHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    BladeswornHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
                 case Spec.Paragon:
-                    WarriorHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
-                    ParagonHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x));
+                    ParagonHelper.InstantCastFinder.ForEach(x => instantCastFinders.Add(x.GetInstance()));
                     break;
             }
         }
@@ -587,15 +591,16 @@ internal static class ProfHelper
             // Guardian
             case Spec.Guardian:
             case Spec.Dragonhunter:
+            case Spec.Willbender:
                 GuardianHelper.ComputeProfessionCombatReplayActors(player, log, replay);
                 break;
             case Spec.Firebrand:
                 GuardianHelper.ComputeProfessionCombatReplayActors(player, log, replay);
                 FirebrandHelper.ComputeProfessionCombatReplayActors(player, log, replay);
                 break;
-            case Spec.Willbender:
             case Spec.Luminary:
                 GuardianHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                LuminaryHelper.ComputeProfessionCombatReplayActors(player, log, replay);
                 break;
             // Mesmer
             case Spec.Mesmer:
@@ -642,8 +647,11 @@ internal static class ProfHelper
                 break;
             case Spec.Soulbeast:
             case Spec.Untamed:
+                RangerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                break;
             case Spec.Galeshot:
                 RangerHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                GaleshotHelper.ComputeProfessionCombatReplayActors(player, log, replay);
                 break;
             // Revenant
             case Spec.Revenant:
@@ -670,6 +678,7 @@ internal static class ProfHelper
                 break;
             case Spec.Antiquary:
                 ThiefHelper.ComputeProfessionCombatReplayActors(player, log, replay);
+                AntiquaryHelper.ComputeProfessionCombatReplayActors(player, log, replay);
                 break;
             // Warrior
             case Spec.Warrior:
@@ -687,13 +696,13 @@ internal static class ProfHelper
         }
     }
 
-#if DEBUG_EFFECTS
-    internal static void DEBUG_ComputeProfessionCombatReplayActors(AbstractPlayer p, ParsedEvtcLog log, CombatReplay replay)
+    #if DEBUG_EFFECTS
+    internal static void DEBUG_ComputeProfessionCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        var knownEffects = new HashSet<long>();
-        CombatReplay.DebugEffects(p, log, replay, knownEffects);
+        var knownEffects = new HashSet<GUID>();
+        CombatReplay.DebugEffects(p, log, replay.Decorations, knownEffects);
     }
-#endif
+    #endif
 
     private static readonly HashSet<Spec> _canSummonClones =
     [
@@ -726,6 +735,8 @@ internal static class ProfHelper
     /// </summary>
     private static readonly HashSet<int> CommonMinions =
     [
+        // Raids
+        (int)MinionID.InsectSwarm,
         // Racial Summons
         (int)MinionID.HoundOfBalthazar,
         (int)MinionID.SnowWurm,
@@ -773,7 +784,7 @@ internal static class ProfHelper
 
     public static void ComputeMinionCombatReplayActors(SingleActor minion, SingleActor master, ParsedEvtcLog log, CombatReplay replay)
     {
-
+        
         switch (minion.ID)
         {
             case (int)MinionID.JadeMech:
@@ -794,9 +805,11 @@ internal static class ProfHelper
         {
             AddOffensiveBoonsDecorations(minion, master, log, replay);
             var phantasmalForceStatus = minion.GetBuffStatus(log, PhantasmalForce).Where(x => x.Value > 0);
-            replay.Decorations.AddRotatedOverheadIconsWithValueAsText(phantasmalForceStatus, minion, TraitImages.PhantasmalForce_Mistrust, 90, 15);
+            replay.Decorations.AddRotatedOverheadIconsWithValueAsText(phantasmalForceStatus, minion, TraitImages.PhantasmalForce_Mistrust, 60, 15);
+            var chronoPhantasmaResummon = minion.GetBuffStatus(log, ChronophantasmaResummonBuff).Where(x => x.Value > 0);
+            replay.Decorations.AddRotatedOverheadIconsWithValueAsText(chronoPhantasmaResummon, minion, TraitImages.Chronophantasma, 120, 15);
         }
-        if (NecromancerHelper.IsUndeadMinion(minion.AgentItem))
+        if (NecromancerHelper.IsUndeadMinion(minion.AgentItem) || RitualistHelper.IsSpiritMinion(minion.AgentItem))
         {
             AddOffensiveBoonsDecorations(minion, master, log, replay);
         }
@@ -804,7 +817,7 @@ internal static class ProfHelper
 
     public static void AdjustMinionName(AgentItem minion)
     {
-        switch (minion.GetFinalMaster().BaseSpec)
+        switch (minion.GetFinalMaster().GetBaseSpecAtTime(minion.HalfAware))
         {
             case Spec.Mesmer:
                 MesmerHelper.AdjustMinionName(minion);
@@ -812,10 +825,13 @@ internal static class ProfHelper
             default:
                 break;
         }
-        switch (minion.GetFinalMaster().Spec)
+        switch (minion.GetFinalMaster().GetSpecAtTime(minion.HalfAware))
         {
             case Spec.Evoker:
                 EvokerHelper.AdjustMinionName(minion);
+                break;
+            case Spec.Troubadour:
+                TroubadourHelper.AdjustMinionName(minion);
                 break;
             default:
                 break;
@@ -858,7 +874,7 @@ internal static class ProfHelper
     {
         if (combatData.GetAnimatedCastData(skill.ID).Count > 0)
         {
-            return [];
+            return [ ];
         }
 
         var applies = buffs.OfType<BuffApplyEvent>().ToList();
@@ -878,7 +894,7 @@ internal static class ProfHelper
     {
         if (combatData.GetAnimatedCastData(skill.ID).Count > 0)
         {
-            return [];
+            return [ ];
         }
 
         return buffs.Select(bae => new AnimatedCastEvent(bae.To, skill, bae.Time - startOffset, skillDuration));
@@ -944,17 +960,49 @@ internal static class ProfHelper
     }
 
     /// <summary>
-    /// Checks for self HP to be higher than the target HP.
+    /// Checks for from HP to be higher than the to HP.
     /// </summary>
-    internal static bool SelfHigherHPChecker(DamageEvent x, ParsedEvtcLog log)
+    internal static bool FromHigherThanToHPChecker(DamageEvent x, ParsedEvtcLog log)
     {
-        double selfHP = x.From.GetCurrentHealthPercent(log, x.Time);
-        double dstHP = x.To.GetCurrentHealthPercent(log, x.Time);
-        if (selfHP < 0.0 || dstHP < 0.0)
+        double fromHP = x.From.GetCurrentHealthPercent(log, x.Time);
+        double toHP = x.To.GetCurrentHealthPercent(log, x.Time);
+        if (fromHP < 0.0 || toHP < 0.0)
         {
             return false;
         }
-        return selfHP > dstHP;
+        return fromHP > toHP;
+    }
+
+    /// <summary>
+    /// Checks for to HP to be between lower and higer.
+    /// </summary>
+    internal static DamageLogChecker ToHPChecker(double lower, double higher = 101)
+    {
+        return (x, log) =>
+        {
+            double toHP = x.To.GetCurrentHealthPercent(log, x.Time);
+            if (toHP < 0.0)
+            {
+                return false;
+            }
+            return higher > toHP && toHP >= lower;
+        };
+    }
+
+    /// <summary>
+    /// Checks for from HP to be between lower and higer.
+    /// </summary>
+    internal static DamageLogChecker FromHPChecker(double lower, double higher = 101)
+    {
+        return (x, log) =>
+        {
+            double fromHP = x.From.GetCurrentHealthPercent(log, x.Time);
+            if (fromHP < 0.0)
+            {
+                return false;
+            }
+            return higher > fromHP && fromHP >= lower;
+        };
     }
 
     /// <summary>
@@ -963,10 +1011,25 @@ internal static class ProfHelper
     /// <param name="includeRange">Wether the range value should be included in the distance.</param>
     internal static bool TargetWithinRangeChecker(DamageEvent x, ParsedEvtcLog log, long range, bool includeRange = true)
     {
-        x.From.TryGetCurrentPosition(log, x.Time, out var currentPosition);
-        x.To.TryGetCurrentPosition(log, x.Time, out var currentTargetPosition);
-        var distance = (currentPosition - currentTargetPosition).Length();
+        if (x.From.TryGetCurrentPosition(log, x.Time, out var currentPosition) && x.To.TryGetCurrentPosition(log, x.Time, out var currentTargetPosition))
+        {
+            var distance = (currentPosition.Value - currentTargetPosition.Value).Length();
+            return includeRange ? distance <= range : distance < range;
+        }
+        return false;
+    }
 
-        return includeRange ? distance <= range : distance < range;
+    /// <summary>
+    /// Checks the distance between Src and Dst to be less than <paramref name="range"/>.
+    /// </summary>
+    /// <param name="includeRange">Wether the range value should be included in the distance.</param>
+    internal static bool TargetOutsideRangeChecker(DamageEvent x, ParsedEvtcLog log, long range, bool includeRange = false)
+    {
+        if (x.From.TryGetCurrentPosition(log, x.Time, out var currentPosition) && x.To.TryGetCurrentPosition(log, x.Time, out var currentTargetPosition))
+        {
+            var distance = (currentPosition.Value - currentTargetPosition.Value).Length();
+            return includeRange ? distance >= range : distance > range;
+        }
+        return false;
     }
 }

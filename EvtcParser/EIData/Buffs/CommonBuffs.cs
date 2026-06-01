@@ -16,7 +16,10 @@ internal static class CommonBuffs
         new Buff("Quickness", Quickness, Source.Common, BuffStackType.Queue, 5, BuffClassification.Boon, BuffImages.Quickness),
         new Buff("Alacrity", Alacrity, Source.Common, BuffStackType.Queue, 9, BuffClassification.Boon, BuffImages.Alacrity),
         new Buff("Protection", Protection, Source.Common, BuffStackType.Queue, 5, BuffClassification.Boon, BuffImages.Protection),
-        new Buff("Regeneration", Regeneration, Source.Common, BuffStackType.Regeneration, 5, BuffClassification.Boon, BuffImages.Regeneration),
+        new Buff("Regeneration", Regeneration, Source.Common, BuffStackType.Queue, 5, BuffClassification.Boon, BuffImages.Regeneration)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.February2018Balance),
+        new Buff("Regeneration", Regeneration, Source.Common, BuffStackType.Regeneration, 5, BuffClassification.Boon, BuffImages.Regeneration)
+            .WithBuilds(GW2Builds.February2018Balance),
         new Buff("Vigor", Vigor, Source.Common, BuffStackType.Queue, 5, BuffClassification.Boon, BuffImages.Vigor),
         new Buff("Aegis", Aegis, Source.Common, BuffStackType.Queue, 9, BuffClassification.Boon, BuffImages.Aegis),
         new Buff("Stability", Stability, Source.Common, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Boon, BuffImages.Stability),
@@ -87,6 +90,9 @@ internal static class CommonBuffs
         new Buff("Branded Accumulation", BrandedAccumulation, Source.Common, BuffStackType.Stacking, 25, BuffClassification.Other, BuffImages.AchillesBane),
         new Buff("Revive Sickness", ReviveSickness, Source.Common, BuffClassification.Other, BuffImages.ReviveSickness),
         new Buff("Portal Interact Cooldown", PortalInteractCooldown, Source.Common, BuffClassification.Other, BuffImages.CooldownNegative),
+        //
+        new Buff("Blur", Blur, [Source.Mesmer, Source.Evoker], BuffClassification.Other, SkillImages.Distortion)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
         // Auras
         new Buff("Chaos Aura", ChaosAura, Source.Common, BuffClassification.Support, BuffImages.ChaosAura),
         new Buff("Fire Aura", FireAura, Source.Common, BuffClassification.Support, BuffImages.FireAura),
@@ -194,7 +200,6 @@ internal static class CommonBuffs
         new Buff("Relic of the Scourge", RelicOfTheScourge, Source.Gear, BuffStackType.Stacking, 10, BuffClassification.Gear, ItemImages.RelicOfTheScourge),
         new Buff("Relic of the Weaver", RelicOfTheWeaver, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfTheWeaver),
         new Buff("Relic of the Zephyrite", RelicOfTheZephyrite, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfTheZephyrite),
-        new Buff("Relic of Cerus", RelicOfCerusBuff, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfCerus),
         new Buff("Relic of Dagda", RelicOfDagdaBuff, Source.Gear, BuffStackType.Stacking, 1, BuffClassification.Gear, ItemImages.RelicOfDagda),
         new Buff("Relic of Isgarren", RelicOfIsgarrenTargetBuff, Source.Gear, BuffStackType.StackingUniquePerSrc, 999, BuffClassification.Debuff, ItemImages.RelicOfIsgarren),
         new Buff("Relic of Lyhr", RelicOfLyhr, Source.Gear, BuffClassification.Defensive, ItemImages.RelicOfLyhr),
@@ -216,6 +221,11 @@ internal static class CommonBuffs
         new Buff("Bloodstone Volatility", BloodstoneVolatility, Source.Gear, BuffStackType.Stacking, 3, BuffClassification.Gear, ItemImages.RelicOfBloodstone),
         new Buff("Bloodstone Fervor", BloodstoneFervor, Source.Gear, BuffStackType.Stacking, 3, BuffClassification.Gear, ItemImages.RelicOfBloodstone),
         new Buff("Agony of the choir", AgonyOfTheChoir, Source.Gear, BuffStackType.Stacking, 25, BuffClassification.Debuff, BuffImages.SpectralAgony),
+        new Buff("Relic of the Scoundrel", RelicOfTheScoundrel, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfTheScoundrel),
+        new Buff("Relic of the Coral Heart", RelicOfTheCoralHeartBuff, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfTheCoralHeart),
+        new Buff("Relic of Fog", RelicOfFogBuff, Source.Gear, BuffStackType.StackingConditionalLoss, 3, BuffClassification.Gear, ItemImages.RelicOfFog),
+        new Buff("Relic of the Forest Dweller (Float)", RelicOfTheForestDwellerFloatBuff, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfTheForestDweller),
+        new Buff("Relic of Shackles (Application)", RelicOfShacklesApplicationBuff, Source.Gear, BuffClassification.Gear, ItemImages.RelicOfShackles),
     ];
 
 }

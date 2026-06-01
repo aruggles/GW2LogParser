@@ -1,6 +1,7 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -44,7 +45,7 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
         }
         return crMap;
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var lastArkk = agentData.GetNPCsByID(TargetID.Arkk).LastOrDefault();
         if (lastArkk != null)
@@ -52,11 +53,11 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
             var death = combatData.GetDeadEvents(lastArkk).FirstOrDefault();
             if (death != null)
             {
-                logData.SetSuccess(true, death.Time);
+                successHandler.SetSuccess(true, death.Time);
             }
         }
     }
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Shattered Observatory";
     }
@@ -91,7 +92,7 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
                     var lastDamageTaken = skorvald.GetDamageTakenEvents(null, log).LastOrDefault(x => x.CreditedFrom.IsPlayer);
                     if (lastDamageTaken != null)
                     {
-                        var invul895Apply = log.CombatData.GetBuffApplyDataByIDByDst(SkillIDs.Determined895, skorvald.AgentItem).Where(x => x.Time > lastDamageTaken.Time - 500).LastOrDefault();
+                        var invul895Apply = log.CombatData.GetBuffApplyDataByIDByDst(SkillIDs.Determined895, skorvald.AgentItem).LastOrDefault(x => x.Time > lastDamageTaken.Time - 500);
                         if (invul895Apply != null)
                         {
                             end = invul895Apply.Time;
@@ -100,7 +101,7 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
                     }
                 }
                 var isCM = cmAnomalies.Any(x => skorvald.InAwareTimes(x.FirstAware));
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [skorvald], anomalies, [], mainPhase, "Skorvald", start, end, success, _skorvald, isCM ? LogData.LogMode.CM : LogData.LogMode.Normal);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [skorvald], anomalies, [], mainPhase, "Skorvald", start, end, success, _skorvald, isCM ? LogData.Mode.CM : LogData.Mode.Normal);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -138,7 +139,7 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
                         end = effect.Time;
                     }
                 }
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [artsariiv], [], [], mainPhase, "Artsariiv", start, end, success, _artsariiv, LogData.LogMode.CMNoName );
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [artsariiv], [], [], mainPhase, "Artsariiv", start, end, success, _artsariiv, LogData.Mode.CMNoName );
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -177,7 +178,7 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
                     success = true;
                     end = death.Time;
                 }
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [arkk], subBosses, [], mainPhase, "Arkk", start, end, success, _arkk, LogData.LogMode.CMNoName);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [arkk], subBosses, [], mainPhase, "Arkk", start, end, success, _arkk, LogData.Mode.CMNoName);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -266,7 +267,7 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
         Skorvald.DetectUnknownAnomalies(agentData, combatData);
         Artsariiv.DetectCloneArtsariivs(evtcVersion, agentData, combatData);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
-        Skorvald.RenameAnomalies(Targets);
+        Skorvald.RenameAnomalies(Targets, combatData);
         Artsariiv.RenameSmallArtsariivs(TrashMobs);
         Artsariiv.RenameCloneArtsariivs(Targets, combatData);
     }
@@ -281,12 +282,12 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -334,6 +335,14 @@ internal class ShatteredObservatoryInstance : ShatteredObservatory
         foreach (var logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

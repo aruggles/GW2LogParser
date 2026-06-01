@@ -1,4 +1,6 @@
-﻿namespace GW2EIJSON;
+﻿using System.Text.Json.Serialization;
+
+namespace GW2EIJSON;
 
 /// <summary>
 /// Class corresponding to mechanics
@@ -19,6 +21,18 @@ public class JsonMechanics
         /// The actor who is concerned by the mechanic
         /// </summary>
         public string? Actor;
+        /// <summary>
+        /// Species ID of the Actor, 0 for players
+        /// </summary>
+        public int Id;
+        /// <summary>
+        /// Instance ID of the Actor
+        /// </summary>
+        public int Instid;
+        /// <summary>
+        /// Weight of the event
+        /// </summary>
+        public double Weight;
     }
 
 
@@ -41,11 +55,17 @@ public class JsonMechanics
     /// Description of the mechanic, this is the description that appears on hover on EI HTML Mechanic tables.
     /// </summary>
     public string? Description;
+    /// <summary>
+    /// Internal cooldown of the mechanic, to be ignored if missing. EI considers the same mechanic triggering within internal cooldown to be the same mechanic.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? InternalCooldown;
 
     /// <summary>
     /// If true, then the mechanic represent an achievement eligibility mechanic. \n
     /// Will only appear on successful encounters. \n
-    /// Any Player who appears in <see cref="MechanicsData"/> will not be eligible for the achievement.
+    /// Any Player who appears in <see cref="MechanicsData"/> will not be eligible for the achievement. \n
+    /// Discontinued as of EI 3.17.0.0.
     /// </summary>
     public bool IsAchievementEligibility;
 }

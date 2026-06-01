@@ -19,7 +19,7 @@ namespace GW2EIBuilders.HtmlModels;
 
 using BuffInstanceItem = long[];
 
-//TODO(Rennorb) @perf
+//TODO_PERF(Rennorb)
 internal class LogDataDto
 {
     public List<TargetDto>? Targets;
@@ -37,7 +37,7 @@ internal class LogDataDto
     public List<long>? Enhancements;
     public List<long>? OtherConsumables;
     public List<BuffInstanceItem>? InstanceBuffs;
-    public List<long> DmgModifiersItem = new(20);
+    public List<long> DmgModifiersItem = new (20);
     public List<long> DmgIncModifiersItem = new(20);
     public List<long> DmgModifiersCommon = new(20);
     public List<long> DmgIncModifiersCommon = new(20);
@@ -82,11 +82,12 @@ internal class LogDataDto
     public string RecordedBy;
     public string RecordedAccountBy;
     public int FractalScale;
+    public string? Region;
     public List<string> UploadLinks;
     public List<string>? UsedExtensions;
     public List<List<string>>? PlayersRunningExtensions;
     //
-    private LogDataDto(ParsedEvtcLog log, bool light, Version parserVersion, string[] uploadLinks)
+    private LogDataDto(ParsedEvtcLog log, bool light, Version parserVersion, UploadResults uploadLinks)
     {
         log.UpdateProgressWithCancellationCheck("HTML: building Meta Data");
         LogStart = log.LogMetadata.DateStartStd;
@@ -112,7 +113,16 @@ internal class LogDataDto
         RecordedAccountBy = log.LogMetadata.PoVAccount;
         var fractaleScaleEvent = log.CombatData.GetFractalScaleEvent();
         FractalScale = fractaleScaleEvent != null ? fractaleScaleEvent.Scale : 0;
-        UploadLinks = uploadLinks.ToList();
+        var shardEvent = log.CombatData.GetShardEvents().FirstOrDefault();
+        if (shardEvent != null)
+        {
+            var region = shardEvent.RegionToString();
+            if (region != null)
+            {
+                Region = region;
+            }
+        }
+        UploadLinks = [uploadLinks.DPSReportEILink];
         if (log.LogMetadata.UsedExtensions.Any())
         {
             UsedExtensions = [];
@@ -153,7 +163,7 @@ internal class LogDataDto
         NoMechanics = log.LogData.Logic.HasNoEncounterSpecificMechanics;
         if (log.LogMetadata.LogErrors.Count > 0)
         {
-            LogErrors = new List<string>(log.LogMetadata.LogErrors);
+            LogErrors = [.. log.LogMetadata.LogErrors];
         }
     }
 
@@ -203,7 +213,7 @@ internal class LogDataDto
         // Collect all personal damage mods by spec
         foreach (var pair in log.FriendliesListBySpec)
         {
-            var specDamageModsID = new HashSet<int>(log.DamageModifiers.GetOutgoingModifiersPerSpec(pair.Key).Select(x => x.ID));
+            var specDamageModsID = new HashSet<int>(log.DamageModifiers.GetPersonalOutgoingModifiersPerSpec(pair.Key).Select(x => x.ID));
             var damageModsToUse = new HashSet<OutgoingDamageModifier>(pair.Value.Count);
             foreach (SingleActor actor in pair.Value)
             {
@@ -233,7 +243,7 @@ internal class LogDataDto
         // Collect all personal damage mods by spec
         foreach (var pair in log.FriendliesListBySpec)
         {
-            var specDamageModsID = new HashSet<int>(log.DamageModifiers.GetIncomingModifiersPerSpec(pair.Key).Select(x => x.ID));
+            var specDamageModsID = new HashSet<int>(log.DamageModifiers.GetPersonalIncomingModifiersPerSpec(pair.Key).Select(x => x.ID));
             var damageModsToUse = new HashSet<IncomingDamageModifier>(pair.Value.Count);
             foreach (SingleActor actor in pair.Value)
             {
@@ -247,7 +257,7 @@ internal class LogDataDto
         }
         foreach (KeyValuePair<Spec, IReadOnlyList<IncomingDamageModifier>> pair in damageModBySpecs)
         {
-            dgmModDict[pair.Key.ToString()] = new(pair.Value.Count);
+            dgmModDict[pair.Key.ToString()] = new (pair.Value.Count);
             foreach (IncomingDamageModifier mod in pair.Value)
             {
                 dgmModDict[pair.Key.ToString()].Add(mod.ID);
@@ -335,7 +345,7 @@ internal class LogDataDto
         InstanceBuffs = new(instanceBuffs.Count);
         foreach (var instanceBuff in instanceBuffs)
         {
-            InstanceBuffs.Add([instanceBuff.Buff.ID, instanceBuff.Stack, instanceBuff.AttachedPhase.Start, instanceBuff.AttachedPhase.End]);
+            InstanceBuffs.Add([instanceBuff.Buff.ID, instanceBuff.Stack, instanceBuff.AttachedPhase.Start, instanceBuff.AttachedPhase.End, instanceBuff.RemainingDuration]);
             usedBuffs[instanceBuff.Buff.ID] = instanceBuff.Buff;
         }
     }
@@ -454,14 +464,14 @@ internal class LogDataDto
         }
     }
 
-    public static LogDataDto BuildLogData(ParsedEvtcLog log, bool cr, bool light, Version parserVersion, string[] uploadLinks)
+    public static LogDataDto BuildLogData(ParsedEvtcLog log, bool cr, bool light, Version parserVersion, UploadResults uploadLinks)
     {
         using var _t = new AutoTrace("BuildLogData");
 
-        var usedBuffs = new Dictionary<long, Buff>(128); //TODO(Rennorb) @perf: find capacity dependencies
-        var usedDamageMods = new HashSet<OutgoingDamageModifier>(32); //TODO(Rennorb) @perf: find capacity dependencies
-        var usedIncDamageMods = new HashSet<IncomingDamageModifier>(16); //TODO(Rennorb) @perf: find capacity dependencies
-        var usedSkills = new Dictionary<long, SkillItem>(256); //TODO(Rennorb) @perf: find capacity dependencies
+        var usedBuffs = new Dictionary<long, Buff>(128); //TODO_PERF(Rennorb) @find capacity dependencies
+        var usedDamageMods = new HashSet<OutgoingDamageModifier>(32); //TODO_PERF(Rennorb) @find capacity dependencies
+        var usedIncDamageMods = new HashSet<IncomingDamageModifier>(16); //TODO_PERF(Rennorb) @find capacity dependencies
+        var usedSkills = new Dictionary<long, SkillItem>(256); //TODO_PERF(Rennorb) @find capacity dependencies
 
         log.UpdateProgressWithCancellationCheck("HTML: building Log Data");
         var logData = new LogDataDto(log, light, parserVersion, uploadLinks);
@@ -475,7 +485,7 @@ internal class LogDataDto
         log.UpdateProgressWithCancellationCheck("HTML: building Graph Data");
         logData.GraphData = new ChartDataDto(log);
         _t.Log("built graph data");
-
+        
         log.UpdateProgressWithCancellationCheck("HTML: building Players");
         logData.Players = new(log.Friendlies.Count);
         foreach (SingleActor actor in log.Friendlies)
@@ -490,7 +500,7 @@ internal class LogDataDto
         logData.Enemies = new(enemies.Count);
         foreach (SingleActor enemy in enemies)
         {
-            logData.Enemies.Add(new EnemyDto() { Name = enemy.Character, FirstAware = enemy.FirstAware / 1000.0, LastAware = enemy.LastAware / 1000.0 });
+            logData.Enemies.Add(new EnemyDto() { Name = enemy.Character, FirstAware = enemy.FirstAware / 1000.0, LastAware = enemy.LastAware / 1000.0  });
         }
         _t.Log("built enemy data");
 
@@ -502,24 +512,24 @@ internal class LogDataDto
             logData.Targets.Add(targetDto);
         }
         _t.Log("built target data");
-
+        
         log.UpdateProgressWithCancellationCheck("HTML: building Skill/Buff/Damage Modifier dictionaries");
         Dictionary<Spec, IReadOnlyList<Buff>> persBuffDict = BuildPersonalBuffData(log, logData.PersBuffs, usedBuffs);
         Dictionary<Spec, IReadOnlyList<OutgoingDamageModifier>> persOutDamageModDict = BuildPersonalOutgoingDamageModData(log, logData.DmgModifiersPers, usedDamageMods);
         Dictionary<Spec, IReadOnlyList<IncomingDamageModifier>> persIncDamageModDict = BuildPersonalIncomingDamageModData(log, logData.DmgIncModifiersPers, usedIncDamageMods);
-
-        var allOutDamageMods = new HashSet<int>(60);
+        
+        var allOutDamageMods         = new HashSet<int>(60);
         var commonOutDamageModifiers = new List<OutgoingDamageModifier>(20);
-        var itemOutDamageModifiers = new List<OutgoingDamageModifier>(20);
-        var allIncDamageMods = new HashSet<int>(60);
+        var itemOutDamageModifiers   = new List<OutgoingDamageModifier>(20);
+        var allIncDamageMods         = new HashSet<int>(60);
         var commonIncDamageModifiers = new List<IncomingDamageModifier>(20);
-        var itemIncDamageModifiers = new List<IncomingDamageModifier>(20);
-
+        var itemIncDamageModifiers   = new List<IncomingDamageModifier>(20);
+        
         logData.BuildBuffDictionaries(log, usedBuffs);
         logData.BuildOutgoingDamageModDictionaries(log, usedDamageMods, allOutDamageMods, commonOutDamageModifiers, itemOutDamageModifiers);
         logData.BuildIncomingDamageModDictionaries(log, usedIncDamageMods, allIncDamageMods, commonIncDamageModifiers, itemIncDamageModifiers);
         _t.Log("built modifier dicts");
-
+        
         log.UpdateProgressWithCancellationCheck("HTML: building Phases");
         IReadOnlyList<PhaseData> phases = log.LogData.GetPhases(log);
         logData.Phases = new(phases.Count);
@@ -533,7 +543,7 @@ internal class LogDataDto
             logData.Phases.Add(phaseDto);
         }
         _t.Log("built phases");
-
+        
         if (log.CombatData.HasEXTHealing)
         {
             log.UpdateProgressWithCancellationCheck("HTML: building Healing Extension");
@@ -545,7 +555,7 @@ internal class LogDataDto
             }
         }
         _t.Log("built healing data");
-
+        
         SkillDto.AssembleSkills(usedSkills.Values, logData.SkillMap, log);
         DamageModDto.AssembleDamageModifiers(usedDamageMods, logData.DamageModMap);
         DamageModDto.AssembleDamageModifiers(usedIncDamageMods, logData.DamageIncModMap);

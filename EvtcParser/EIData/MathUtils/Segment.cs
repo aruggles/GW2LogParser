@@ -1,7 +1,6 @@
 ﻿namespace GW2EIEvtcParser.EIData;
 
-public static class SegmentExt
-{
+public static class SegmentExt {
     public static double IntersectingArea(this in Segment self, in Segment other) => IntersectingArea(self, other.Start, other.End);
 
     public static double IntersectingArea(this in Segment self, long start, long end)
@@ -11,7 +10,7 @@ public static class SegmentExt
         return Math.Max(minEnd - maxStart, 0) * self.Value;
     }
 
-
+    
     /// <summary>
     /// Fuse consecutive segments with same value. The list should not be empty.
     /// </summary>
@@ -20,10 +19,10 @@ public static class SegmentExt
 
         GenericSegment<T> last = segments[0];
         int lastIndex = 0;
-        for (int i = 1; i < segments.Count; i++)
+        for(int i = 1; i < segments.Count; i++)
         {
             var current = segments[i];
-            //TODO(Rennorb) perf
+            //TODO_PERF(Rennorb)
             if (current.IsEmpty())
             {
                 continue;

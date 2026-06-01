@@ -24,7 +24,7 @@ internal static class VirtuosoHelper
                 {
                     return false;
                 }
-                if (combatData.GetAnimatedCastData(BladeRenewal).Any(castEvt => castEvt.Caster.Is(evt.Src) && evt.Time <= castEvt.EndTime && evt.Time >= castEvt.Time)) {
+                if (combatData.GetAnimatedCastData(BladeRenewal).Any(castEvt => castEvt.Caster.Is(evt.Src) && castEvt.IntersectsActualCastWindow(evt.Time, 0))) {
                     return false;
                 }
                 return true;
@@ -43,10 +43,20 @@ internal static class VirtuosoHelper
         // Mental Focus
         new DamageLogDamageModifier(Mod_MentalFocus, "Mental Focus", "10% to foes within 600 range", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Virtuoso, TraitImages.MentalFocus, (x, log) => TargetWithinRangeChecker(x, log, 600), DamageModifierMode.PvE)
             .UsingApproximate()
-            .WithBuilds(GW2Builds.EODBeta4),
+            .WithBuilds(GW2Builds.EODBeta1, GW2Builds.April2026Balancepocalypse),
+        new DamageLogDamageModifier(Mod_MentalFocus, "Mental Focus", "7% to foes within 600 range", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Virtuoso, TraitImages.MentalFocus, (x, log) => TargetWithinRangeChecker(x, log, 600), DamageModifierMode.sPvPWvW)
+            .UsingApproximate()
+            .WithBuilds(GW2Builds.EODBeta1),
+        new DamageLogDamageModifier(Mod_MentalFocus, "Mental Focus", "5% to foes within 600 range", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Virtuoso, TraitImages.MentalFocus, (x, log) => TargetWithinRangeChecker(x, log, 600), DamageModifierMode.PvE)
+            .UsingApproximate()
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // Deadly Blades
         new BuffOnActorDamageModifier(Mod_DeadlyBlades, DeadlyBlades, "Deadly Blades", "5%", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Virtuoso, ByPresence, TraitImages.DeadlyBlades, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.EODBeta4),
+            .WithBuilds(GW2Builds.EODBeta4, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_DeadlyBlades, DeadlyBlades, "Deadly Blades", "5%", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Virtuoso, ByPresence, TraitImages.DeadlyBlades, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_DeadlyBlades, DeadlyBlades, "Deadly Blades", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Virtuoso, ByPresence, TraitImages.DeadlyBlades, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers = [];

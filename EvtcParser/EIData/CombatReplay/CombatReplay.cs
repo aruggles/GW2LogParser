@@ -9,18 +9,18 @@ namespace GW2EIEvtcParser.EIData;
 public class CombatReplay
 {
 
-    //TODO(Rennorb) @perf: capacity
+    //TODO_PERF(Rennorb) @capacity
     internal IReadOnlyList<ParametricPoint3D> Positions => _Positions;
     internal IReadOnlyList<ParametricPoint3D> PolledPositions => _PolledPositions;
     internal IReadOnlyList<ParametricPoint3D> Velocities => _Velocities;
     internal IReadOnlyList<ParametricPoint3D> Rotations => _Rotations;
     internal IReadOnlyList<ParametricPoint3D> PolledRotations => _PolledRotations;
 
-    private List<ParametricPoint3D> _Positions = [];
-    private ParametricPoint3D[] _PolledPositions = [];
-    private List<ParametricPoint3D> _Velocities = [];
-    private List<ParametricPoint3D> _Rotations = [];
-    private ParametricPoint3D[] _PolledRotations = [];
+    protected List<ParametricPoint3D> _Positions = [];
+    protected ParametricPoint3D[] _PolledPositions = [];
+    protected List<ParametricPoint3D> _Velocities = [];
+    protected List<ParametricPoint3D> _Rotations = [];
+    protected ParametricPoint3D[] _PolledRotations = [];
 
     internal readonly List<Segment> Hidden = [];
     private long _start = -1;
@@ -33,32 +33,36 @@ public class CombatReplay
     {
         _start = log.LogData.LogStart;
         _end = log.LogData.LogEnd;
-        //TODO(Rennorb) @perf: capacity
+        //TODO_PERF(Rennorb) @capacity
         Decorations = new(log.LogData.Logic.DecorationCache);
     }
 
-    internal void AddPosition(ParametricPoint3D position)
+    internal virtual void AddPosition(ParametricPoint3D position)
     {
         _Positions.Add(position);
     }
 
-    internal void AddVelocity(ParametricPoint3D velocity)
+    internal virtual void AddVelocity(ParametricPoint3D velocity)
     {
         _Velocities.Add(velocity);
     }
 
-    internal void AddRotation(ParametricPoint3D rotation)
+    internal virtual void AddRotation(ParametricPoint3D rotation)
     {
         _Rotations.Add(rotation);
     }
 
-    internal void CopyFrom(CombatReplay other)
+    internal virtual void CopyFrom(CombatReplay other)
     {
         _Positions = other.Positions.ToList();
         _PolledPositions = other.PolledPositions.ToArray();
         _Rotations = other.Rotations.ToList();
         _PolledRotations = other.PolledRotations.ToArray();
         _Velocities = other.Velocities.ToList();
+    }
+
+    internal virtual void CopyPositionsFrom(CombatReplay other)
+    {
     }
 
     internal void Trim(long start, long end)
@@ -94,7 +98,7 @@ public class CombatReplay
         return res - 1;
     }
 
-    private void HandlePosition(long t, ref int polledPositionTableIndex, ref int positionTableIndex, ref int velocityTableIndex, int rate)
+    protected void HandlePosition(long t, ref int polledPositionTableIndex, ref int positionTableIndex, ref int velocityTableIndex, int rate)
     {
         ParametricPoint3D pos = _Positions[positionTableIndex];
         if (t <= pos.Time)
@@ -117,7 +121,7 @@ public class CombatReplay
                 }
                 else
                 {
-                    ParametricPoint3D last = _PolledPositions.Last().Time > pos.Time ? _PolledPositions.Last() : pos;
+                    ParametricPoint3D last = _PolledPositions[polledPositionTableIndex - 1].Time > pos.Time ? _PolledPositions[polledPositionTableIndex - 1] : pos;
                     velocityTableIndex = UpdateVelocityIndex(_Velocities, t, velocityTableIndex);
                     ParametricPoint3D velocity = default;
                     if (velocityTableIndex >= 0 && velocityTableIndex < Velocities.Count)
@@ -140,7 +144,7 @@ public class CombatReplay
         }
     }
 
-    private void HandleRotation(long t, ref int polledRotationTableIndex, ref int rotationTableIndex, int rate)
+    protected void HandleRotation(long t, ref int polledRotationTableIndex, ref int rotationTableIndex, int rate)
     {
         var rot = _Rotations[rotationTableIndex];
         if (t <= rot.Time)
@@ -163,7 +167,7 @@ public class CombatReplay
                 }
                 else
                 {
-                    ParametricPoint3D last = _PolledRotations.Last().Time > rot.Time ? _PolledRotations.Last() : rot;
+                    ParametricPoint3D last = _PolledRotations[polledRotationTableIndex - 1].Time > rot.Time ? _PolledRotations[polledRotationTableIndex - 1] : rot;
                     if (nextRot.Time - last.Time > ArcDPSPollingRate + rate)
                     {
                         _PolledRotations[polledRotationTableIndex++] = rot.WithChangedTime(t);
@@ -179,7 +183,7 @@ public class CombatReplay
         }
     }
 
-    internal void PollingRate(long logDuration, bool forcePolling)
+    internal virtual void PollingRate(long logDuration, bool forcePolling)
     {
         if (_Positions.Count == 0 && forcePolling)
         {
@@ -214,7 +218,7 @@ public class CombatReplay
                 HandlePosition(t, ref polledPositionTableIndex, ref positionTableIndex, ref velocityTableIndex, rate);
                 HandleRotation(t, ref polledRotationTableIndex, ref rotationTableIndex, rate);
             }
-        }
+        } 
         else
         {
             for (long t = startOffset; t < logDuration; t += rate)
@@ -232,7 +236,7 @@ public class CombatReplay
     internal static void DebugEffects(SingleActor actor, ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var effectEventsOnAgent = log.CombatData.GetEffectEventsByDst(actor.AgentItem)
-            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Time >= start && x.Time <= end)
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.GUID) && x.Time >= start && x.Time <= end)
             .ToList();
         var effectGUIDsOnAgent = effectEventsOnAgent.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsOnAgentDistinct = effectGUIDsOnAgent.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
@@ -258,7 +262,7 @@ public class CombatReplay
                     if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
                     {
                         color = Colors.DarkBlue;
-                        positionConnector = new PositionConnector(position);
+                        positionConnector = new PositionConnector(position.Value);
                     }
                     else
                     {
@@ -281,7 +285,7 @@ public class CombatReplay
             }
         }
         var effectEventsByAgent = log.CombatData.GetEffectEventsBySrc(actor.AgentItem)
-            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Time >= start && x.Time <= end)
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.GUID) && x.Time >= start && x.Time <= end)
             .ToList();
         var effectGUIDsByAgent = effectEventsByAgent.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsByAgentDistinct = effectGUIDsByAgent.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
@@ -307,7 +311,7 @@ public class CombatReplay
                     if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
                     {
                         color = Colors.DarkGreen;
-                        positionConnector = new PositionConnector(position);
+                        positionConnector = new PositionConnector(position.Value);
                     }
                     else
                     {
@@ -334,7 +338,7 @@ public class CombatReplay
     internal static void DebugUnknownEffects(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var allEffectEvents = log.CombatData.GetEffectEvents()
-            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Src.IsUnamedSpecies() && x.Time >= start && x.Time <= end && x.EffectID > 0)
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.GUID) && x.Src.IsUnamedSpecies() && x.Time >= start && x.Time <= end && x.EffectID > 0)
             .ToList();
         var effectGUIDs = allEffectEvents.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsDistinct = effectGUIDs.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
@@ -360,7 +364,7 @@ public class CombatReplay
                     if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
                     {
                         color = Colors.DarkBlue;
-                        positionConnector = new PositionConnector(position);
+                        positionConnector = new PositionConnector(position.Value);
                     }
                     else
                     {
@@ -388,7 +392,7 @@ public class CombatReplay
     internal static void DebugAllNPCEffects(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var allEffectEvents = log.CombatData.GetEffectEvents()
-            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && !x.Src.GetFinalMaster().IsPlayer && (!x.IsAroundDst || !x.Dst.GetFinalMaster().IsPlayer) && x.Time >= start && x.Time <= end && x.EffectID > 0)
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.GUID) && !x.Src.GetFinalMaster().IsPlayer && (!x.IsAroundDst || !x.Dst.GetFinalMaster().IsPlayer) && x.Time >= start && x.Time <= end && x.EffectID > 0)
             .ToList();
         var effectGUIDs = allEffectEvents.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsDistinct = effectGUIDs.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
@@ -414,7 +418,7 @@ public class CombatReplay
                     if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
                     {
                         color = Colors.DarkBlue;
-                        positionConnector = new PositionConnector(position);
+                        positionConnector = new PositionConnector(position.Value);
                     }
                     else
                     {
@@ -441,7 +445,7 @@ public class CombatReplay
     internal static void DebugAllEffects(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, HashSet<GUID> knownEffectIDs, long start = long.MinValue, long end = long.MaxValue)
     {
         var allEffectEvents = log.CombatData.GetEffectEvents()
-            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.ContentGUID) && x.Time >= start && x.Time <= end && x.EffectID > 0)
+            .Where(x => !knownEffectIDs.Contains(x.GUIDEvent.GUID) && x.Time >= start && x.Time <= end && x.EffectID > 0)
             .ToList();
         var effectGUIDs = allEffectEvents.Select(x => x.GUIDEvent).ToList();
         var effectGUIDsDistinct = effectGUIDs.GroupBy(x => x).ToDictionary(x => x.Key, x => x.ToList().Count);
@@ -467,7 +471,7 @@ public class CombatReplay
                     if (dstActor.TryGetCurrentPosition(log, effectEvt.Time, out var position))
                     {
                         color = Colors.DarkBlue;
-                        positionConnector = new PositionConnector(position);
+                        positionConnector = new PositionConnector(position.Value);
                     }
                     else
                     {
@@ -510,7 +514,7 @@ public class CombatReplay
     internal static void DebugAllNPCMissiles(ParsedEvtcLog log, CombatReplayDecorationContainer decorations, long start = long.MinValue, long end = long.MaxValue)
     {
         var allMissileEvents = log.CombatData.GetMissileEvents()
-            .Where(x => x.Time >= start && x.Time <= end && x.SkillID > 0 && x.Src.IsNPC);
+            .Where(x => x.Time >= start && x.Time <= end && x.SkillID > 0 && x.Src.GetFinalMaster().IsNPC);
         decorations.AddNonHomingMissiles(log, allMissileEvents, Colors.Red, 0.5, DebugMissileRadius);
     }
     #endregion DEBUG MISSILES
@@ -521,6 +525,25 @@ public class CombatReplay
     internal void AddHideByBuff(SingleActor actor, ParsedEvtcLog log, long buffID)
     {
         Hidden.AddRange(actor.GetBuffStatus(log, buffID).Where(x => x.Value > 0));
+    }
+
+    internal void AddHideByEncounterPhases(IReadOnlyList<EncounterPhaseData> encounterPhases, ParsedEvtcLog log)
+    {
+        long nextInvisible = log.LogData.EvtcLogStart;
+        for (var i = 0; i < encounterPhases.Count; i++)
+        {
+            if (i == 0)
+            {
+                Hidden.Add(new(log.LogData.EvtcLogStart, encounterPhases[i].Start));
+                nextInvisible = encounterPhases[i].End;
+            }
+            if (i < encounterPhases.Count - 1)
+            {
+                Hidden.Add(new(encounterPhases[i].End, encounterPhases[i + 1].Start));
+                nextInvisible = encounterPhases[i + 1].End;
+            }
+        }
+        Hidden.Add(new(nextInvisible, log.LogData.EvtcLogEnd));
     }
 }
 

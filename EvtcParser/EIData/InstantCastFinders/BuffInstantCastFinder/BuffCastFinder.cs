@@ -27,59 +27,59 @@ internal abstract class BuffCastFinder<Event> : CheckedCastFinder<Event> where E
 
     internal BuffCastFinder<Event> UsingByBaseSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.By.BaseSpec == spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.By.GetBaseSpecAtTime(evt.Time) == spec);
         return this;
     }
 
     internal BuffCastFinder<Event> UsingToBaseSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.To.BaseSpec == spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.To.GetBaseSpecAtTime(evt.Time) == spec);
         return this;
     }
 
     internal BuffCastFinder<Event> UsingBySpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.By.Spec == spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.By.GetSpecAtTime(evt.Time) == spec);
         return this;
     }
 
     internal BuffCastFinder<Event> UsingByNotSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.By.Spec != spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.By.GetSpecAtTime(evt.Time) != spec);
         return this;
     }
 
     internal BuffCastFinder<Event> UsingBySpecsChecker(HashSet<Spec> specs)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => specs.Contains(evt.By.Spec));
+        UsingChecker((evt, combatData, agentData, skillData) => specs.Contains(evt.By.GetSpecAtTime(evt.Time)));
         return this;
     }
     internal BuffCastFinder<Event> UsingByNotSpecsChecker(HashSet<Spec> specs)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => !specs.Contains(evt.By.Spec));
+        UsingChecker((evt, combatData, agentData, skillData) => !specs.Contains(evt.By.GetSpecAtTime(evt.Time)));
         return this;
     }
 
     internal BuffCastFinder<Event> UsingToSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.To.Spec == spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.To.GetSpecAtTime(evt.Time) == spec);
         return this;
     }
 
     internal BuffCastFinder<Event> UsingToNotSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.To.Spec != spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.To.GetSpecAtTime(evt.Time) != spec);
         return this;
     }
 
     internal BuffCastFinder<Event> UsingToSpecsChecker(HashSet<Spec> specs)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => specs.Contains(evt.To.Spec));
+        UsingChecker((evt, combatData, agentData, skillData) => specs.Contains(evt.To.GetSpecAtTime(evt.Time)));
         return this;
     }
     internal BuffCastFinder<Event> UsingToNotSpecsChecker(HashSet<Spec> specs)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => !specs.Contains(evt.To.Spec));
+        UsingChecker((evt, combatData, agentData, skillData) => !specs.Contains(evt.To.GetSpecAtTime(evt.Time)));
         return this;
     }
 

@@ -15,7 +15,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class KeepConstruct : StrongholdOfTheFaithful
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstBuffApplyMechanic([StatueFixated1, StatueFixated2], new MechanicPlotlySetting(Symbols.Star,Colors.Magenta), "Fixate", "Fixated by Statue","Fixated", 0),
             new PlayerDstHealthDamageHitMechanic(HailOfFury, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Red), "Debris", "Hail of Fury (Falling Debris)","Debris", 0),
             new EnemyDstBuffApplyMechanic(Compromised, new MechanicPlotlySetting(Symbols.Hexagon,Colors.Blue), "Rift#", "Compromised (Pushed Orb through Rifts)","Compromised", 0),
@@ -73,7 +73,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
         ];
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor keepConstruct, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor keepConstruct, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
@@ -81,10 +81,10 @@ internal class KeepConstruct : StrongholdOfTheFaithful
         }
         long encounterStart = encounterPhase.Start;
         long encounterEnd = encounterPhase.End;
-        var phases = new List<PhaseData>(20);
+        var phases = new List<SubPhasePhaseData>(20);
         // Main phases 35025
         var kcPhaseInvuls = keepConstruct.GetBuffStatus(log, XerasBoon);
-        var mainPhases = new List<PhaseData>();
+        var mainPhases = new List<SubPhasePhaseData>();
         var mainPhaseCount = 1;
         foreach (var c in kcPhaseInvuls)
         {
@@ -123,19 +123,20 @@ internal class KeepConstruct : StrongholdOfTheFaithful
             }
         }
         int burnCount = 1;
-        var burnPhases = new List<PhaseData>(5);
+        var burnPhases = new List<SubPhasePhaseData>(5);
         foreach (Segment seg in segments)
         {
-            var phase = new SubPhasePhaseData(seg.Start, seg.End, "Burn " + burnCount++ + " (" + seg.Value + " orbs)");
-            phase.AddTarget(keepConstruct, log);
-            phase.AddParentPhases(mainPhases);
-            phases.Add(phase);
-            burnPhases.Add(phase);
+            var burnPhase = new SubPhasePhaseData(seg.Start, seg.End, "Burn " + burnCount++ + " (" + seg.Value + " orbs)");
+            burnPhase.AddTarget(keepConstruct, log);
+            burnPhase.AddParentPhases(mainPhases);
+            AddTargetsToPhase(burnPhase, targets, KCStatues, log, PhaseData.TargetPriority.NonBlocking);
+            phases.Add(burnPhase);
+            burnPhases.Add(burnPhase);
         }
         phases.Sort((x, y) => x.Start.CompareTo(y.Start));
         // pre burn phases
         int preBurnCount = 1;
-        var preBurnPhases = new List<PhaseData>(5);
+        var preBurnPhases = new List<SubPhasePhaseData>(5);
         var kcInvuls = keepConstruct.GetBuffStatus(log, Determined762);
         foreach (var invul in kcInvuls)
         {
@@ -148,11 +149,11 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                     long preBurnStart = (prevPhase.End >= preBurnEnd ? prevPhase.Start : prevPhase.End) + 1;
                     if (preBurnEnd - preBurnStart > PhaseTimeLimit)
                     {
-                        var phase = new SubPhasePhaseData(preBurnStart, preBurnEnd, "Pre-Burn " + preBurnCount++);
-                        phase.AddParentPhases(mainPhases);
-                        phase.AddTarget(keepConstruct, log);
-                        AddTargetsToPhase(phase, targets, KCStatues, log, PhaseData.TargetPriority.NonBlocking);
-                        preBurnPhases.Add(phase);
+                        var preBurnPhase = new SubPhasePhaseData(preBurnStart, preBurnEnd, "Pre-Burn " + preBurnCount++);
+                        preBurnPhase.AddParentPhases(mainPhases);
+                        preBurnPhase.AddTarget(keepConstruct, log);
+                        AddTargetsToPhase(preBurnPhase, targets, KCStatues, log, PhaseData.TargetPriority.NonBlocking);
+                        preBurnPhases.Add(preBurnPhase);
                     }
                 }
             }
@@ -160,11 +161,11 @@ internal class KeepConstruct : StrongholdOfTheFaithful
         phases.AddRange(preBurnPhases);
         phases.Sort((x, y) => x.Start.CompareTo(y.Start));
         // add leftover phases
-        PhaseData? cur = null;
-        var leftOverPhases = new List<PhaseData>(5);
+        SubPhasePhaseData? cur = null;
+        var leftOverPhases = new List<SubPhasePhaseData>(5);
         for (int i = 0; i < phases.Count; i++)
         {
-            PhaseData phase = phases[i];
+            var phase = phases[i];
             if (mainPhases.Contains(phase))
             {
                 cur = phase;
@@ -179,6 +180,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                         var leftOverPhase = new SubPhasePhaseData(phase.End, cur.End, "Leftover " + burnIndex);
                         leftOverPhase.AddParentPhases(mainPhases);
                         leftOverPhase.AddTarget(keepConstruct, log);
+                        AddTargetsToPhase(leftOverPhase, targets, KCStatues, log, PhaseData.TargetPriority.NonBlocking);
                         leftOverPhases.Add(leftOverPhase);
                     }
                 }
@@ -188,22 +190,22 @@ internal class KeepConstruct : StrongholdOfTheFaithful
         return phases;
     }
 
-    internal static readonly IReadOnlyList<TargetID> KCStatues = [
-            TargetID.Jessica,
-            TargetID.Olson,
-            TargetID.Engul,
-            TargetID.Faerla,
-            TargetID.Caulle,
-            TargetID.Henley,
-            TargetID.Galletta,
-            TargetID.Ianim
+    private static readonly IReadOnlyList<TargetID> KCStatues = 
+    [
+        TargetID.Jessica,
+        TargetID.Olson,
+        TargetID.Engul,
+        TargetID.Faerla,
+        TargetID.Caulle,
+        TargetID.Henley,
+        TargetID.Galletta,
+        TargetID.Ianim,
     ];
     internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
     {
         List<PhaseData> phases = GetInitialPhase(log);
         SingleActor mainTarget = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.KeepConstruct)) ?? throw new MissingKeyActorsException("Keep Construct not found");
         phases[0].AddTarget(mainTarget, log);
-        phases[0].AddTargets(Targets.Where(x => x.IsAnySpecies(KCStatues)), log, PhaseData.TargetPriority.NonBlocking);
         phases.AddRange(ComputePhases(log, mainTarget, Targets, (EncounterPhaseData)phases[0], requirePhases));
        
         return phases;
@@ -249,7 +251,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -275,7 +277,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                                 long skillCast = end - 1000;
                                 if (target.TryGetCurrentInterpolatedPosition(log, end, out var position))
                                 {
-                                    replay.Decorations.AddWithFilledWithGrowing(new CircleDecoration(400, (start, skillCast), Colors.LightOrange, 0.5, new PositionConnector(position)).UsingFilled(false), true, skillCast);
+                                    replay.Decorations.AddWithFilledWithGrowing(new CircleDecoration(400, (start, skillCast), Colors.LightOrange, 0.5, new PositionConnector(position.Value)).UsingFilled(false), true, skillCast);
                                 }
                             }
                             break;
@@ -287,7 +289,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                                 {
                                     var connector = new AgentConnector(target);
                                     replay.Decorations.Add(new CircleDecoration(200, (start, start + (ticks + 1) * 1000), Colors.Red, 0.4, connector));
-                                    float initialAngle = facing.GetRoundedZRotationDeg();
+                                    float initialAngle = facing.Value.GetRoundedZRotationDeg();
                                     replay.Decorations.Add(new PieDecoration(bladeRadius, bladeOpeningAngle, (start, start + 2 * duration), Colors.Magenta, 0.5, connector).UsingRotationConnector(new AngleConnector(initialAngle))); // First blade lasts twice as long
                                     for (int i = 1; i < ticks; i++)
                                     {
@@ -305,9 +307,9 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                                 {
                                     var connector = new AgentConnector(target);
                                     replay.Decorations.Add(new CircleDecoration(200, (start, start + (ticks + 1) * 1000), Colors.Red, 0.4, connector));
-                                    float initialAngle1 = facing.GetRoundedZRotationDeg();
+                                    float initialAngle1 = facing.Value.GetRoundedZRotationDeg();
                                     replay.Decorations.Add(new PieDecoration(bladeRadius, bladeOpeningAngle, (start, start + 2 * duration), Colors.Magenta, 0.5, connector).UsingRotationConnector(new AngleConnector(initialAngle1))); // First blade lasts twice as long
-                                    float initialAngle2 = RadianToDegreeF(Math.Atan2(-facing.Y, -facing.X));
+                                    float initialAngle2 = RadianToDegreeF(Math.Atan2(-facing.Value.Y, -facing.Value.X));
                                     replay.Decorations.Add(new PieDecoration(bladeRadius, bladeOpeningAngle, (start, start + 2 * duration), Colors.Magenta, 0.5, connector).UsingRotationConnector(new AngleConnector(initialAngle2))); // First blade lasts twice as long
                                     for (int i = 1; i < ticks; i++)
                                     {
@@ -327,7 +329,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                                 {
                                     var connector = new AgentConnector(target);
                                     replay.Decorations.Add(new CircleDecoration(200, (start, start + (ticks + 1) * 1000), Colors.Red, 0.4, connector));
-                                    float initialAngle1 = RadianToDegreeF(Math.Atan2(-facing.Y, -facing.X));
+                                    float initialAngle1 = RadianToDegreeF(Math.Atan2(-facing.Value.Y, -facing.Value.X));
                                     replay.Decorations.Add(new PieDecoration(bladeRadius, bladeOpeningAngle, (start, start + 2 * duration), Colors.Magenta, 0.5, connector).UsingRotationConnector(new AngleConnector(initialAngle1))); // First blade lasts twice as long
                                     float initialAngle2 = initialAngle1 + 120;
                                     replay.Decorations.Add(new PieDecoration(bladeRadius, bladeOpeningAngle, (start, start + 2 * duration), Colors.Magenta, 0.5, connector).UsingRotationConnector(new AngleConnector(initialAngle2))); // First blade lasts twice as long
@@ -397,14 +399,14 @@ internal class KeepConstruct : StrongholdOfTheFaithful
 
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return combatData.GetSkills().Contains(AchievementEligibilityDownDownDowned) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return combatData.GetBuffApplyData(AchievementEligibilityDownDownDowned).Any(x => x.Time > -100) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -417,7 +419,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
         }
         // Fixated Statue tether to Player
         var fixatedStatue = GetBuffApplyRemoveSequence(log.CombatData, [StatueFixated1, StatueFixated2], p, true, true);
-        replay.Decorations.AddTether(fixatedStatue, Colors.Magenta, 0.5);
+        replay.Decorations.AddTethers(fixatedStatue, Colors.Magenta, 0.5);
         // Fixation Overhead
         IEnumerable<Segment> fixations = p.GetBuffStatus(log, [StatueFixated1, StatueFixated2]).Where(x => x.Value > 0);
         replay.Decorations.AddOverheadIcons(fixations, p, ParserIcons.FixationPurpleOverhead);
@@ -430,7 +432,7 @@ internal class KeepConstruct : StrongholdOfTheFaithful
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -455,12 +457,12 @@ internal class KeepConstruct : StrongholdOfTheFaithful
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
 
-        var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+        var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
         foreach (var encounterPhase in encounterPhases)
         {
             if (encounterPhase.Success && encounterPhase.IsCM)
@@ -479,6 +481,13 @@ internal class KeepConstruct : StrongholdOfTheFaithful
                     instanceBuffs.Add(new(log.Buffs.BuffsByIDs[AchievementEligibilityDownDownDowned], 1, encounterPhase));
                 }
             }
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

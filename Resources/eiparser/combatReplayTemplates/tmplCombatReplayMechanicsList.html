@@ -1,69 +1,72 @@
 <template>
     <div class="d-flex flex-row flex-wrap justify-content-center align-items-center">
+        <div class="d-flex align-items-center mb-2 scale85">
+            <input id="followTimeline" type="checkbox" v-model="followTimeline" class="mr-1"/>
+            <label for="followTimeline" class="mb-0 ml-1">Scroll with timeline</label>
+        </div>
         <div id="combat-replay-mechanics-list" class="combat-replay-mechanics-list-container d-flex d-flex-row justify-content-center w-100 scrollable-y"
-            style="max-width:450px">
-            <table class="table table-sm table-striped table-hover" cellspacing="0" width="100%">
+             style="max-width:450px; overflow-y:auto;">
+            <table class="table table-sm table-striped table-hover mb-0" cellspacing="0" width="100%">
                 <thead>
                     <tr>
-                        <th style="width:100px">Time</th>
-                        <th style="width:200px"
-                            class="text-left combat-replay-mechanics-list-header position-relative">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Filter Mechanics">
-                                Mechanic <span class="caret"></span>
-                            </a>
-                            <ul class="dropdown-menu p-2 font-weight-normal scrollabledropdown"
-                                style="width: 200px;">
-                                <div class="d-flex flex-column justify-content-center align-items-center mb-1"
-                                    style="border-bottom: 2px solid #bbb;">
-                                    <li>
-                                        <button style="width:165px;" type="button" class="btn btn-primary btn-sm"
-                                            @click="selectAllMechanics()" @click.stop="stopClickEvent">Select all
-                                            mechanics</button>
-                                    </li>
-                                    <li class="mb-1">
-                                        <button style="width:165px;" type="button" class="btn btn-primary btn-sm"
-                                            @click="deselectAllMechanics()" @click.stop="stopClickEvent">Deselect all
-                                            mechanics</button>
-                                    </li>
-                                </div>
-
-                                <li v-for="(mechanic, index) in mechanicsList" :key="index">
-                                    <input :id="'crml-mechanic-' + index" type="checkbox" v-model="mechanic.included"
-                                        @click.stop="stopClickEvent" />
-                                    <label :for="'crml-mechanic-' + index" @click.stop="stopClickEvent">
-                                        {{mechanic.shortName}}
-                                    </label>
-                                </li>
-                            </ul>
+                        <th class="sticky-header wd-100px">
+                            <div class="position-relative">Time</div>
                         </th>
-                        <th style="width:150px;"
-                            class="text-left combat-replay-mechanics-list-header position-relative">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Filter Actors">
-                                Actor <span class="caret"></span>
-                            </a>
-                            <ul class="dropdown-menu p-2 font-weight-normal scrollabledropdown"
-                                style="width:150px;">
-                                <div class="d-flex flex-column justify-content-center align-items-center mb-1"
-                                    style="border-bottom: 2px solid #bbb;">
-                                    <li>
-                                        <button style="width:140px;" type="button" class="btn btn-primary btn-sm"
-                                            @click="selectAllActors()" @click.stop="stopClickEvent">Select all
-                                            actors</button>
+                        <th class="sticky-header text-left combat-replay-mechanics-list-header wd-200px">
+                            <div class="position-relative">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Filter Mechanics">
+                                    Mechanic <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu p-2 font-weight-normal scrollabledropdown wd-200px">
+                                    <li class="d-flex flex-column justify-content-center align-items-center mb-1">
+                                        <button style="width:165px;padding: 0.25rem 1rem;" type="button" class="btn btn-primary btn-sm"
+                                                @click="selectAllMechanics()" @click.stop="stopClickEvent">
+                                            Select all mechanics
+                                        </button>
                                     </li>
-                                    <li class="mb-1">
-                                        <button style="width:140px;" type="button" class="btn btn-primary btn-sm"
-                                            @click="deselectAllActors()" @click.stop="stopClickEvent">Deselect all
-                                            actors</button>
+                                    <li class="d-flex flex-column justify-content-center align-items-center mb-1 separator-border-bottom">
+                                        <button style="width:165px;padding: 0.25rem 1rem;" type="button" class="btn btn-primary btn-sm"
+                                                @click="deselectAllMechanics()" @click.stop="stopClickEvent">
+                                            Deselect all mechanics
+                                        </button>
                                     </li>
-                                </div>
-                                <li v-for="(actor, index) in actorsList" :key="index">
-                                    <input :id="'crml-actor-' + index" type="checkbox" v-model="actor.included"
-                                        @click.stop="stopClickEvent" />
-                                    <label :for="'crml-actor-' + index" @click.stop="stopClickEvent">
-                                        {{actor.name}}
-                                    </label>
-                                </li>
-                            </ul>
+                                    <li v-for="(mechanic, index) in mechanicsList" :key="index">
+                                        <input :id="'crml-mechanic-' + index" type="checkbox" v-model="mechanic.included"
+                                               @click.stop="stopClickEvent" />
+                                        <label :for="'crml-mechanic-' + index" @click.stop="stopClickEvent">
+                                            {{mechanic.shortName}}
+                                        </label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </th>
+                        <th class="sticky-header text-left combat-replay-mechanics-list-header wd-150px">
+                            <div class="position-relative">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Filter Actors">
+                                    Actor <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu p-2 font-weight-normal scrollabledropdown wd-150px">
+                                    <li class="d-flex flex-column justify-content-center align-items-center mb-1">
+                                        <button style="width:140px;padding: 0.25rem 1rem;" type="button" class="btn btn-primary btn-sm"
+                                                @click="selectAllActors()" @click.stop="stopClickEvent">
+                                            Select all actors
+                                        </button>
+                                    </li>
+                                    <li class="d-flex flex-column justify-content-center align-items-center mb-1 separator-border-bottom">
+                                        <button style="width:140px;padding: 0.25rem 1rem;" type="button" class="btn btn-primary btn-sm"
+                                                @click="deselectAllActors()" @click.stop="stopClickEvent">
+                                            Deselect all actors
+                                        </button>
+                                    </li>
+                                    <li v-for="(actor, index) in actorsList" :key="index">
+                                        <input :id="'crml-actor-' + index" type="checkbox" v-model="actor.included"
+                                               @click.stop="stopClickEvent" />
+                                        <label :for="'crml-actor-' + index" @click.stop="stopClickEvent">
+                                            {{actor.name}}
+                                        </label>
+                                    </li>
+                                </ul>
+                            </div>
                         </th>
                     </tr>
                 </thead>
@@ -86,7 +89,7 @@
 
 <script>
     Vue.component("combat-replay-mechanics-list-component", {
-        props: ['selectedplayerid'],
+        props: ['time', 'selectedplayerid'],
         template: `${template}`,
         data: function () {
             var mechanicEvents = [];
@@ -187,6 +190,7 @@
                 mechanicsList: mechanicsList,
                 scrollTop: 0,
                 div: null,
+                followTimeline: false,
             };
         },
         activated() {
@@ -202,6 +206,8 @@
         },
         methods: {
             selectMechanic: function (mechanic) {
+                this.followTimeline = false;
+                animator.stopAnimate(true);
                 animator.updateTime(mechanic.time);
             },
             stopClickEvent: function (event) {
@@ -227,6 +233,34 @@
                     this.actorsList[i].included = false;
                 }
             },
+            scrollToClosestEvent: function (time) {
+                const events = this.filteredMechanicEvents;
+                const container = this.div;
+
+                // find closest event index
+                let closestIndex = 0;
+                let minDiff = Math.abs(events[0].time - time);
+
+                for (let i = 1; i < events.length; i++) {
+                    const diff = Math.abs(events[i].time - time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIndex = i;
+                    }
+                }
+
+                // scroll to that row
+                const rows = container.getElementsByTagName("tr");
+                const targetRow = rows[closestIndex + 1]; // +1 skips header row
+
+                const containerRect = container.getBoundingClientRect();
+                const rowRect = targetRow.getBoundingClientRect();
+
+                const offset = rowRect.top - containerRect.top;
+                const targetScroll = container.scrollTop + offset - container.clientHeight / 2;
+
+                container.scrollTop = targetScroll;
+            },
         },
         computed: {
             filteredMechanicEvents: function () {
@@ -242,6 +276,16 @@
                     return true;
                 }.bind(this))
             },
+        },
+        watch: {
+            time: function (newTime) {
+                if (!this.followTimeline) return;
+                this.scrollToClosestEvent(newTime);
+            },      
+            followTimeline: function (newValue) {
+                if (!newValue) return;
+                this.scrollToClosestEvent(this.time);
+            }
         },
     });
 </script>

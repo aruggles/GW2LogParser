@@ -8,7 +8,7 @@ public class DeathRecap
     {
         public long ID { get; internal set; }
         public bool IndirectDamage { get; internal set; }
-        public string SourceAgent { get; internal set; }
+        public string SourceAgent { get; internal set; } = "";
         public int Damage { get; internal set; }
         public int Time { get; internal set; }
     }
@@ -19,7 +19,7 @@ public class DeathRecap
 
     internal DeathRecap(ParsedEvtcLog log, IEnumerable<HealthDamageEvent> damageLogs, DeadEvent dead, IReadOnlyList<DownEvent> downs, IReadOnlyList<AliveEvent> ups, long lastDeathTime)
     {
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         DeathTime = dead.Time;
         DownEvent? downed;
         AliveEvent? upped = ups.LastOrDefault(x => x.Time <= dead.Time && x.Time >= lastDeathTime);

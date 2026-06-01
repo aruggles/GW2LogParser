@@ -1,10 +1,12 @@
-﻿using GW2EIEvtcParser.ParserHelpers;
+﻿using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.DamageModifierIDs;
 using static GW2EIEvtcParser.EIData.Buff;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SkillIDs;
+using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -16,37 +18,86 @@ internal static class TroubadourHelper
         new EffectCastFinder(TaleOfTheValiantMarshal, EffectGUIDs.TroubadourTaleOfTheValiantMarshal),
         new EffectCastFinder(TaleOfTheHonorableRogue, EffectGUIDs.TroubadourTaleOfTheHonorableRogue),
         new EffectCastFinder(SyncopateDelayedWave, EffectGUIDs.TroubadourSyncopateDelayedWave1)
-            .UsingSecondaryEffectChecker(EffectGUIDs.TroubadourSyncopateDelayedWave2)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.TroubadourSyncopateDelayedWave2)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
     ];
 
-    internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers =
+    internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers = 
     [
         // Altered Chord
-        new BuffOnActorDamageModifier(Mod_AlteredChord, AlteredChord, "Altered Chord", "25% strike damage", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.AlteredChord, DamageModifierMode.PvE),
-        new BuffOnActorDamageModifier(Mod_AlteredChord, AlteredChord, "Altered Chord", "15% strike damage", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.AlteredChord, DamageModifierMode.sPvPWvW),
+        new BuffOnActorDamageModifier(Mod_AlteredChord, AlteredChord, "Altered Chord", "25%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.AlteredChord, DamageModifierMode.PvE),
+        new BuffOnActorDamageModifier(Mod_AlteredChord, AlteredChord, "Altered Chord", "15%", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.AlteredChord, DamageModifierMode.sPvPWvW),
         
         // Lute Playing
-        new BuffOnActorDamageModifier(Mod_LutePlaying, LutePlaying, "Lute Playing", "4% strike and condition damage", DamageSource.NoPets, 4.0, DamageType.StrikeAndCondition, DamageType.All, Source.Troubadour, ByPresence, TraitImages.ReverberatingLute, DamageModifierMode.All),
+        new BuffOnActorDamageModifier(Mod_LutePlaying, LutePlaying, "Lute Playing", "4%", DamageSource.NoPets, 4.0, DamageType.StrikeAndCondition, DamageType.All, Source.Troubadour, ByPresence, SkillImages.LivelyLute, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_LutePlaying, LutePlaying, "Lute Playing", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Troubadour, ByPresence, SkillImages.LivelyLute, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
         
         // Harmonize
-        // TODO Verify if only strike damage or also condition
-        new BuffOnActorDamageModifier(Mod_Harmonize, [LutePlaying, FlutePlaying, DrumPlaying, HarpPlaying], "Harmonize", "4% per instrument playing", DamageSource.NoPets, 4.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByMultiPresence, TraitImages.Harmonize, DamageModifierMode.All),
+        new BuffOnActorDamageModifier(Mod_Harmonize, [LutePlaying, FlutePlaying, DrumPlaying, HarpPlaying], "Harmonize", "4% per instrument playing", DamageSource.NoPets, 4.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByMultiPresence, TraitImages.Harmonize, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.OctoberVoERelease),
         
         // Shredding
-        new BuffOnActorDamageModifier(Mod_Shredding, LutePlaying, "Shredding", "20% strike damage", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.Shredding, DamageModifierMode.PvE),
-        new BuffOnActorDamageModifier(Mod_Shredding, LutePlaying, "Shredding", "10% strike damage", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.Shredding, DamageModifierMode.sPvPWvW),
+        new BuffOnActorDamageModifier(Mod_Shredding, LutePlaying, "Shredding", "20%", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.Shredding, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_Shredding, LutePlaying, "Shredding (Replaces Lute Playing)", "25%", DamageSource.NoPets, 25.0, DamageType.StrikeAndCondition, DamageType.All, Source.Troubadour, ByPresence, TraitImages.Shredding, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_Shredding, LutePlaying, "Shredding (Replaces Lute Playing)", "20%", DamageSource.NoPets, 20.0, DamageType.StrikeAndCondition, DamageType.All, Source.Troubadour, ByPresence, TraitImages.Shredding, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
+        // Symphonic resonance Lute
+        new BuffOnActorDamageModifier(Mod_SymphonicResonanceLute, LutePlaying, "Symphonic Resonance (Lute Playing)", "25%", DamageSource.NoPets, 25.0, DamageType.StrikeAndCondition, DamageType.All, Source.Troubadour, ByPresence, TraitImages.SymphonicResonance, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.OctoberVoERelease),
     ];
 
-    internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers = [];
+    internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers = 
+    [
+        new BuffOnActorDamageModifier(Mod_LoveSong, HarpPlaying, "Love Song", "-10%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.LoveSong, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_LoveSong, HarpPlaying, "Love Song", "-7%", DamageSource.Incoming, -7.0, DamageType.Strike, DamageType.All, Source.Troubadour, ByPresence, TraitImages.LoveSong, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
+    ];
 
-    internal static readonly IReadOnlyList<Buff> Buffs =
+    internal static readonly IReadOnlyList<Buff> Buffs = 
     [
         new Buff("Harp Playing", HarpPlaying, Source.Troubadour, BuffClassification.Other, SkillImages.HarmoniousHarp),
         new Buff("Drum Playing", DrumPlaying, Source.Troubadour, BuffClassification.Other, SkillImages.DeafeningDrum),
         new Buff("Flute Playing", FlutePlaying, Source.Troubadour, BuffClassification.Other, SkillImages.FlusteringFlute),
         new Buff("Scion's Reprieve", ScionsReprieve, Source.Troubadour, BuffClassification.Other, SkillImages.TaleOfTheSecondScion),
-        new Buff("Lute Playing", LutePlaying, Source.Troubadour, BuffClassification.Other, TraitImages.ReverberatingLute),
+        new Buff("Lute Playing", LutePlaying, Source.Troubadour, BuffClassification.Other, SkillImages.LivelyLute),
         new Buff("Altered Chord", AlteredChord, Source.Troubadour, BuffClassification.Other, TraitImages.AlteredChord),
     ];
+
+    private static readonly HashSet<int> _afterImages =
+    [
+        (int)MinionID.LivelyLuteAfterimage,
+        (int)MinionID.DeafeningDrumAfterimage,
+        (int)MinionID.FlusteringFluteAfterimage,
+        (int)MinionID.HarmoniousHarpAfterimage,
+    ];
+
+    internal static bool IsKnownMinionID(int id)
+    {
+        return _afterImages.Contains(id);
+    }
+    internal static void AdjustMinionName(AgentItem minion)
+    {
+        switch (minion.ID)
+        {
+            case (int)MinionID.LivelyLuteAfterimage:
+                minion.OverrideName("Lively Lute " + minion.Name);
+                break;
+            case (int)MinionID.DeafeningDrumAfterimage:
+                minion.OverrideName("Deafening Drum " + minion.Name);
+                break;
+            case (int)MinionID.FlusteringFluteAfterimage:
+                minion.OverrideName("Flustering Flute " + minion.Name);
+                break;
+            case (int)MinionID.HarmoniousHarpAfterimage:
+                minion.OverrideName("Harmonious Harp " + minion.Name);
+                break;
+            default:
+                break;
+        }
+    }
 }

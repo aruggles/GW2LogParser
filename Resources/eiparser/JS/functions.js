@@ -30,8 +30,13 @@ function computeSliderGradient(color, fillColor, startPercent, endPercent) {
     return template;
 };
 
+const duckify = url => 'https://external-content.duckduckgo.com/iu/?u=' + encodeURIComponent(url);
+
 function _buildFallBackURL(url) {
-    if (!url.includes("render")) {
+    if (replaceImgur && url.startsWith("https://i.imgur.com")) {
+        return duckify(url);
+    }
+    if (!url.includes("render") || apiRenderServiceOkay) {
         // not using API render service
         return url;
     }
@@ -175,7 +180,7 @@ function updateMechanicsYValues(res, phase, phaseIndex, phaseGraphData, activePl
                 if (tarId >= 0) {
                     var health = phaseGraphData.targets[j].healthStates;
                     for (var k = 0; k < pts.length; k++) {
-                        chart.push(findState(health, pts[k], 0, health.length - 1) * max / 100.0);
+                        chart.push(findState(health, pts[k][0], 0, health.length - 1) * max / 100.0);
                     }
                 } else {
                     for (var k = 0; k < pts.length; k++) {
@@ -724,7 +729,7 @@ function computeBuffData(buffData, data) {
                 text: [],
                 yaxis: boon.stacking ? 'y4' : 'y',
                 type: 'scatter',
-                visible: boonItem.visible ? null : 'legendonly',
+                visible: 'legendonly',
                 line: {
                     color: boonItem.color,
                     shape: 'hv'
@@ -905,7 +910,7 @@ function computeBuffData(buffData, data) {
                 y: [],
                 yaxis: boon.stacking ? 'stacking' : 'y' + (2 + ystart++),
                 type: 'scatter',
-                visible: boonItem.visible || !boon.stacking ? null : 'legendonly',
+                visible: 'legendonly',
                 line: {
                     color: boonItem.color,
                     shape: 'hv'
@@ -1177,4 +1182,21 @@ function getPhasesForSelectedEncounter(phases, encounters) {
         }
     }
     return phases;
+}
+
+function playerIsRunningHealingExtension(playerData) {
+    if (!logData.usedExtensions) {
+        return false;
+    }
+    for (var j = 0; j < logData.usedExtensions.length; j++) {
+        var usedExtension = logData.usedExtensions[j];
+        if (!usedExtension.includes("Healing Stats")) {
+            continue;
+        }
+        var playersRunning = logData.playersRunningExtensions[j];
+        if (playersRunning.includes(playerData.name)) {
+            return true;
+        }
+    }
+    return false;
 }

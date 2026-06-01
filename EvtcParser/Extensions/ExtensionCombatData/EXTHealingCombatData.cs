@@ -10,7 +10,7 @@ public class EXTHealingCombatData
     private readonly Dictionary<AgentItem, List<EXTHealingEvent>> _healReceivedData;
     private readonly Dictionary<long, List<EXTHealingEvent>> _healDataByID;
 
-    private readonly Dictionary<long, EXTHealingType> EncounteredIDs = []; //TODO(Rennorb) @perf
+    private readonly Dictionary<long, EXTHealingType> EncounteredIDs = []; //TODO_PERF(Rennorb)
 
     private readonly IReadOnlyCollection<long> _hybridHealIDs;
 
@@ -46,9 +46,11 @@ public class EXTHealingCombatData
         {
             return type;
         }
-        if (log.CombatData.GetDamageData(id).Any(x => x.HealthDamage > 0 && !x.IsNotADamageEvent))
+        var skill = log.SkillData.Get(id);
+        var damageData = log.CombatData.GetDamageData(id).Where(x => x.HealthDamage > 0 && !x.IsNotADamageEvent).ToList();
+        if (damageData.Count > 0)
         {
-            type = EXTHealingType.ConversionBased;
+            type = damageData.Any(x => x.IsLifeLeech) || skill.CanHeal ? EXTHealingType.Hybrid : EXTHealingType.ConversionBased;
         }
         else
         {

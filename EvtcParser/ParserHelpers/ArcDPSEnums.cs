@@ -32,7 +32,12 @@ public static class ArcDPSEnums
         public const int ExtraDataInGUIDEvents = 20241030;
         public const int LogStartLogEndPerCombatSequenceOnInstanceLogs = 20250315;
         public const int SpeciesSkillGUIDs = 20250428;
+        public const int MissilesIntroduced = 20250525;
         public const int BuffFormulaOriginalAttribute = 20250913;
+        public const int EmoteAndGadgetInteractionAdded = 20260318;
+        public const int AnimationAsStateChanges = 20260430;
+        public const int BuffAppliesAndRemovesAsStateChanges = 20260501;
+        public const int ResultEnumRework = 20260501;
         //
         public const int EndOfLife = int.MaxValue;
     }
@@ -96,12 +101,13 @@ public static class ArcDPSEnums
     // Activation
     public enum Activation : byte
     {
-        None = 0,
-        Normal = 1,
-        Quickness = 2,
-        CancelFire = 3,
-        CancelCancel = 4,
-        Reset = 5,
+        None = 0, // not used - not this kind of event
+        Normal = 1, // started skill/animation activation
+        Quickness = 2, // unused as of nov 5 2019
+        Minimum = 3,  // stopped skill activation with reaching tooltip time
+        Cancel = 4, // stopped skill activation without reaching tooltip time
+        Reset = 5, // animation completed fully
+        NoData = 6, // Treat it as CancelFire
 
         Unknown
     };
@@ -110,7 +116,58 @@ public static class ArcDPSEnums
     {
         return bt < (byte)Activation.Unknown ? (Activation)bt : Activation.Unknown;
     }
+    public enum AnimationStart : byte
+    {
+        None = 0,
+        Command = 1,
+        Dodge = 2,
+        StowDraw = 3,
+        MoveSkill = 4,
+        MotionSkill = 5,
+        GadgetInteract = 6,
+        Emote = 7,
 
+        Unknown
+    };
+
+    public static AnimationStart GetAnimationStart(byte bt)
+    {
+        return bt < (byte)AnimationStart.Unknown ? (AnimationStart)bt : AnimationStart.Unknown;
+    }
+    public enum AnimationStop : byte
+    {
+        None = 0,
+        Instant = 1,
+        MultiDefunc = 2,
+        Transition = 3,
+        Partial = 4,
+        Ended = 5,
+        Cancel = 6,
+        StowDraw = 7,
+        Interrupt = 8,
+        Death = 9,
+        Downed = 10,
+        CrowdControl = 11,
+        Command = 12,
+        MotionSkill = 13,
+        MoveDodge = 14,
+        MotionSkillViaReset = 15,
+        MoveSkill = 16,
+        MovePos = 17,
+        Any = 18,
+        GadgetViaReset = 19,
+        ManualExpiry = 20,
+        Despawn = 21,
+        ReturnControl = 22,
+        Ready = 23,
+
+        Unknown
+    };
+
+    public static AnimationStop GetAnimationStop(byte bt)
+    {
+        return bt < (byte)AnimationStop.Unknown ? (AnimationStop)bt : AnimationStop.Unknown;
+    }
     // Buff remove
     public enum BuffRemove : byte
     {
@@ -128,6 +185,7 @@ public static class ArcDPSEnums
     }
 
     // Buff cycle
+    // Retired as of 20260501
     public enum BuffCycle : byte
     {
         Cycle, // damage happened on tick timer
@@ -146,30 +204,37 @@ public static class ArcDPSEnums
 
     // Result
 
-    public enum PhysicalResult : byte
+    public enum DamageResult : byte
     {
-        Normal = 0,
-        Crit = 1,
-        Glance = 2,
-        Block = 3,
-        Evade = 4,
+        DirectNormal = 0,
+        DirectCrit = 1,
+        DirectGlance = 2,
+        DirectBlock = 3,
+        DirectEvade = 4,
         Interrupt = 5,
-        Absorb = 6,
-        Blind = 7,
+        DirectOrBuffAbsorb = 6,
+        DirectBlind = 7,
         KillingBlow = 8,
         Downed = 9,
         BreakbarDamage = 10,
         Activation = 11,
         CrowdControl = 12,
+        DirectOrBuffInvert = 13,
+        BuffCycle = 14, // damage happened on tick timer
+        BuffNotCycle = 15, // damage happened outside tick timer (resistable)
+        BuffNotCycle_DamageToTargetOnHit = 16, // damage happened to target on hiting target
+        BuffNotCycle_DamageToSourceOnHit = 17, // damage happened to source on hiting target
+        BuffNotCycle_DamageToTargetOnStackRemove = 18, // damage happened to target on source losing a stack
 
         Unknown
     };
 
-    public static PhysicalResult GetPhysicalResult(byte bt)
+    public static DamageResult GetDamageResult(byte bt)
     {
-        return bt < (byte)PhysicalResult.Unknown ? (PhysicalResult)bt : PhysicalResult.Unknown;
+        return bt < (byte)DamageResult.Unknown ? (DamageResult)bt : DamageResult.Unknown;
     }
 
+    // Retired as of 20260501
     public enum ConditionResult : byte
     {
         ExpectedToHit = 0,
@@ -177,7 +242,6 @@ public static class ArcDPSEnums
         InvulByPlayerSkill1 = 2,
         InvulByPlayerSkill2 = 3,
         InvulByPlayerSkill3 = 4,
-        //BreakbarDamage = 5,
 
         Unknown
     };
@@ -189,7 +253,7 @@ public static class ArcDPSEnums
     // State Change    
     public enum StateChange : byte
     {
-        None = 0,
+        Combat = 0,
         EnterCombat = 1,
         ExitCombat = 2,
         ChangeUp = 3,
@@ -217,7 +281,7 @@ public static class ArcDPSEnums
         MapID = 25,
         ReplInfo = 26,
         StackActive = 27,
-        StackReset = 28,
+        StackDeactive = 28, // Formerly as StackReset
         Guild = 29,
         BuffInfo = 30,
         BuffFormula = 31,
@@ -255,6 +319,13 @@ public static class ArcDPSEnums
         EffectAgentRemove = 63,
         AgentChange = 64,
         MapChange = 65,
+        EarlyExit = 66,
+        AnimationStart = 67,
+        AnimationStop = 68, 
+        BuffApply = 69,
+        BuffChange = 70, // Extension
+        BuffRemoveSingle = 71, // Single or Manual
+        BuffRemoveAll = 72,
         Unknown
     };
 
@@ -403,10 +474,32 @@ public static class ArcDPSEnums
         ConditionSidekick = -43,
         ConcentrationSidekick = -44,
         ExpertiseSidekick = -45,
+        HealingEffectivenessOutgoingAdditive2 = -46,
+        AboveHealth = -47,
     }
 
-    public static BuffAttribute GetBuffAttribute(short bt, int evtcBuild)
+    private const int ATTR_FORM_CUSTOM_STAT_TO_STAT = 40;
+    private const int ATTR_WRITS_TO_STAT = 41;
+
+    public static BuffAttribute GetBuffAttribute(short bt, int type, int evtcBuild)
     {
+        // ArcDPS type 40 is ATTR_FORM_CUSTOM_STAT_TO_STAT, may change in the future
+        // Current max value for type seems to be in the range's of 20
+        if (type >= ATTR_FORM_CUSTOM_STAT_TO_STAT)
+        {
+            // Writs TBC? 
+            if (type == ATTR_WRITS_TO_STAT && bt == 2)
+            {
+                return BuffAttribute.AboveHealth;
+            }
+            // Restrict it to stat attributes for now
+            if (bt >= 1 && bt <= 9)
+            {
+                return (BuffAttribute)(bt);
+            }
+            return BuffAttribute.None;
+        }
+
         if (evtcBuild >= ArcDPSBuilds.EICanDoManualBuffAttributes)
         {
             return bt == 0 ? BuffAttribute.None : BuffAttribute.Unknown;
@@ -494,6 +587,8 @@ public static class ArcDPSEnums
         Marker = 1,
         Skill = 2,
         Species = 3,
+        Team = 4,
+        Emote = 5,
         Unknown
     }
     public static ContentLocal GetContentLocal(byte bt)
@@ -514,6 +609,36 @@ public static class ArcDPSEnums
     public static IFF GetIFF(byte bt)
     {
         return bt < (byte)IFF.Unknown ? (IFF)bt : IFF.Unknown;
+    }
+
+    // Language
+
+    public enum LanguageEnum : byte
+    {
+        English = 0,
+        Missing = 1,
+        French = 2,
+        German = 3,
+        Spanish = 4,
+        Chinese = 5,
+        Unknown = 6
+    }
+
+    public static LanguageEnum GetLanguage(byte bt)
+    {
+        return bt < (byte)LanguageEnum.Unknown ? (LanguageEnum)bt
+            : LanguageEnum.Unknown;
+    }
+
+    // Region
+
+    public enum RegionEnum : byte
+    {
+        NA = 0,
+        EU = 1,
+        CN = 2,
+
+        Unknown,
     }
 
 }

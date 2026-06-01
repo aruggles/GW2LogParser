@@ -18,8 +18,8 @@ internal static class MirageHelper
         new DamageCastFinder(Jaunt, Jaunt)
             .UsingDisableWithEffectData(),
         new EffectCastFinder(Jaunt, EffectGUIDs.MirageJaunt)
-            .UsingSecondaryEffectChecker(EffectGUIDs.MirageJauntConflict1)
-            .UsingSecondaryEffectChecker(EffectGUIDs.MirageJauntConflict2)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.MirageJauntConflict1)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.MirageJauntConflict2)
             .UsingSrcSpecChecker(Spec.Mirage),
         new BuffGainCastFinder(MirageCloakDodge, MirageCloak),
         // Illusionary Ambush not trackable due to conflicting effects with Jaunt and Axe of Symmetry
@@ -42,7 +42,11 @@ internal static class MirageHelper
             .WithBuilds(GW2Builds.July2025BalanceHotFix),
         // Nomad's Endurance
         new BuffOnActorDamageModifier(Mod_NomadsEndurance, Vigor, "Nomad's Endurance", "10%", DamageSource.NoPets, 10, DamageType.StrikeAndCondition, DamageType.All, Source.Mirage, ByPresence, TraitImages.NomadsEndurance, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.February2025Balance),
+            .WithBuilds(GW2Builds.February2025Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_NomadsEndurance, Vigor, "Nomad's Endurance", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Mirage, ByPresence, TraitImages.NomadsEndurance, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_NomadsEndurance, Vigor, "Nomad's Endurance", "5%", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Mirage, ByPresence, TraitImages.NomadsEndurance, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers = [];

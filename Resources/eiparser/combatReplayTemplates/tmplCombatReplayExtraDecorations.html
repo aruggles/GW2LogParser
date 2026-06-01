@@ -1,5 +1,5 @@
 <template>
-    <div class="d-flex flex-column justify-content-center align-items-center" style="max-width: 500px;">           
+    <div class="d-flex flex-column justify-content-center align-items-center max-wd-500px scale85">           
         <h4>General Settings</h4>
         <div class="d-flex flex-row justify-content-center flex-wrap">
             <div class="form-check mb-2 mr-2" :data-original-title="'Viewpoint will follow selected actor, as long as selected actor is drawn'">
@@ -48,7 +48,7 @@
                 <label class="form-check-label" for="selectedMinionsCheck">Selected's Minions</label>
             </div>
         </div>
-        <div v-if="showSkills" class="d-flex flex-column justify-content-center align-items-center" style="max-width: 500px;">
+        <div v-if="showSkills" class="d-flex flex-column justify-content-center align-items-center max-wd-500px">
             <h4>Global Skill Settings</h4>
             <div class="d-flex flex-row justify-content-center flex-wrap">
                 <div class="form-check mb-2 mr-2" v-for="skillCategory in skillCategories">
@@ -58,56 +58,56 @@
                 </div>
             </div>
         </div>
-        <div class="d-flex flex-row justify-content-center">
+        <div class="d-flex flex-row justify-content-center" :class="{'ei-disabled': !animationStatus.selectedExtraDecorations}">
             <div class="mr-3">
                 <h4>Range Selectors</h4>
                 <div class="form-check mt-1 mb-2">
                     <input type="checkbox" class="form-check-input" id="circle1Check" 
-                        :checked=" getAnimator().rangeControl[0].enabled" v-on:change="getAnimator().toggleRange(0)">
+                        :checked="false" v-on:change="getAnimator().toggleRange(0, $event.target.checked)">
                     <label class="form-check-label" for="circle1Check">Circle 1</label>
                 </div>
                 <div class="d-flex flex-row justify-content-between align-items-center">
                     <span>Radius: </span>
-                    <custom-numberform-component style="width: 100px;" :minValue="1" :id="'circle1Text'"
-                                                        :placeholderValue="getAnimator().rangeControl[0].radius"></custom-numberform-component>
+                    <custom-numberform-component class="wd-100px" :minValue="1" :id="'circle1Text'"
+                                                        :placeholderValue="180"></custom-numberform-component>
                 </div>
                 <div class="form-check mt-1 mb-2">
                     <input type="checkbox" class="form-check-input" id="circle2Check" 
-                        :checked=" getAnimator().rangeControl[1].enabled" v-on:change="getAnimator().toggleRange(1)">
+                        :checked="false" v-on:change="getAnimator().toggleRange(1, $event.target.checked)">
                     <label class="form-check-label" for="circle2Check">Circle 2</label>
                 </div>
                 <div class="d-flex flex-row justify-content-between align-items-center">
                     <span>Radius: </span>
-                    <custom-numberform-component style="width: 100px;" :minValue="1" :id="'circle2Text'"
-                                                        :placeholderValue="getAnimator().rangeControl[1].radius"></custom-numberform-component>
+                    <custom-numberform-component class="wd-100px" :minValue="1" :id="'circle2Text'"
+                                                        :placeholderValue="360"></custom-numberform-component>
                 </div>
                 <div class="form-check mt-1 mb-2">
                     <input type="checkbox" class="form-check-input" id="circle3Check" 
-                        :checked=" getAnimator().rangeControl[2].enabled" v-on:change="getAnimator().toggleRange(2)">
+                        :checked="false" v-on:change="getAnimator().toggleRange(2, $event.target.checked)">
                     <label class="form-check-label" for="circle3Check">Circle 3</label>
                 </div>
                 <div class="d-flex flex-row justify-content-between align-items-center">
                     <span>Radius: </span>
-                    <custom-numberform-component style="width: 100px;" :minValue="1" :id="'circle3Text'"
-                                                        :placeholderValue="getAnimator().rangeControl[2].radius"></custom-numberform-component>
+                    <custom-numberform-component class="wd-100px" :minValue="1" :id="'circle3Text'"
+                                                        :placeholderValue="720"></custom-numberform-component>
                 </div>
             </div>
             <div class="ml-3">
                 <h4 data-original-title="Has an effect only when facing arrow are present">Cone Indicator</h4>
                 <div class="form-check mt-1 mb-2">
                     <input type="checkbox" class="form-check-input" id="coneCheck" 
-                        :checked=" getAnimator().coneControl.enabled" v-on:change="getAnimator().toggleConeDisplay()">
+                        :checked="false" v-on:change="getAnimator().toggleConeDisplay($event.target.checked)">
                     <label class="form-check-label" for="coneCheck">Display Cone</label>
                 </div>
                 <div class="d-flex flex-row justify-content-between align-items-center mb-1">
                     <span>Radius: </span>
-                    <custom-numberform-component style="width: 100px;" :minValue="1" :id="'coneRadiusText'"
-                                                        :placeholderValue="getAnimator().coneControl.radius"></custom-numberform-component>
+                    <custom-numberform-component class="wd-100px" :minValue="1" :id="'coneRadiusText'"
+                                                        :placeholderValue="360"></custom-numberform-component>
                 </div>
                 <div class="d-flex flex-row justify-content-between align-items-center mt-1">
                     <span>Opening: </span>
-                    <custom-numberform-component style="width: 100px;" :minValue="1" :maxValue="360" :id="'coneAngleText'"
-                                                        :placeholderValue="getAnimator().coneControl.openingAngle"></custom-numberform-component>
+                    <custom-numberform-component class="wd-100px" :minValue="1" :maxValue="360" :id="'coneAngleText'"
+                                                        :placeholderValue="90"></custom-numberform-component>
                 </div>
             </div>
         </div>
@@ -121,6 +121,7 @@
         template: `${template}`,
         data: function() {
             return {
+                animationStatus: reactiveAnimationData,
                 showSkills: animator.skillMechanicActorData.any(),
                 showMechanics: animator.overheadActorData.any() || animator.mechanicActorData.any(),
                 showSquadMarkers: animator.squadMarkerData.any() || animator.overheadSquadMarkerData.any(),

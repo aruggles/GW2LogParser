@@ -64,7 +64,7 @@
     </script>
     <div class="d-flex justify-content-center align-item-center mt-2" id="loading">
         <div class="card" style="width: 75%;">
-            <div class="card-body" style="margin: 100px; text-align: center;">
+            <div class="card-body text-center" style="margin: 100px;">
                 Loading data...
             </div>
         </div>
@@ -116,31 +116,79 @@
             </div>
         </div>
         <div class="footer">
-            <div>
-                Time Start: {{getLogData().logStart}} | 
-                Time End: {{getLogData().logEnd}} | 
-                EVTC Duration: {{ getLogData().evtcRecordingDuration}}
-            </div>      
-            <div v-if="getLogData().instanceStart">
-                Instance Start: {{getLogData().instanceStart}} 
-                {{ getLogData().instanceIP ? ' | Instance IP: ' + getLogData().instanceIP : '' }}
+            <div class="footer_grid">
+                <div class="footer_section">
+                    <div class="footer_item">
+                        <span class="label">Log Start</span>
+                        <span>{{ getLogData().logStart }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">Log End</span>
+                        <span>{{ getLogData().logEnd }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">Evtc Recording Duration</span>
+                        <span>{{ getLogData().evtcRecordingDuration }}</span>
+                    </div>
+                    <div class="footer_item" v-if="getLogData().instanceStart">
+                        <span class="label">Instance Start</span>
+                        <span>{{ getLogData().instanceStart }}</span>
+                    </div>
+                    <div class="footer_item" v-if="getLogData().instanceIP">
+                        <span class="label">Instance IP</span>
+                        <span>{{ getLogData().instanceIP }}</span>
+                    </div>
+                    <div class="footer_item" v-if="getLogData().region">
+                        <span class="label">Region</span>
+                        <span>{{ getLogData().region }}</span>
+                    </div>
+                </div>
+                <div class="footer_section">
+                    <div class="footer_item">
+                        <span class="label">Arcdps Version</span>
+                        <span>{{ getLogData().arcVersion }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">Parser Version</span>
+                        <span>{{ getLogData().parser }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">GW2 Build</span>
+                        <span>{{ getLogData().gw2Build }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">Trigger ID</span>
+                        <span>{{ getLogData().triggerID }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">Log ID</span>
+                        <span>{{ getLogData().logID }}</span>
+                    </div>
+                    <div class="footer_item">
+                        <span class="label">Map ID</span>
+                        <span>{{ getLogData().mapID }}</span>
+                    </div>
+                </div>
+                <div class="footer_section"
+                     v-if="(usedExtensions && usedExtensions.length) || (uploadLinks && uploadLinks.length)">
+                    <div v-if="usedExtensions && usedExtensions.length">
+                        <span class="label_center">Extensions</span>
+                        <div class="footer_tags">
+                            <span v-for="(usedExtension, id) in usedExtensions" :key="'ext-' + id" class="tag">{{ usedExtension }}</span>
+                        </div>
+                    </div>
+                    <div v-if="uploadLinks && uploadLinks.length">
+                        <span class="label_center">Upload Link</span>
+                        <div class="footer_item footer_item--stack" v-for="link in uploadLinks" :key="link.key" v-if="link.url && link.url.length > 0">
+                            <span class="label">{{ link.key }}:</span>
+                            <a :href="link.url" target="_blank" rel="noopener noreferrer">{{ link.url }}</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                ARC: {{getLogData().arcVersion}} | 
-                GW2 Build: {{getLogData().gw2Build}} | 
-                Trigger ID: {{getLogData().triggerID}} | 
-                Log ID: {{getLogData().logID}} | 
-                Map ID: {{getLogData().mapID}} | 
-                {{getLogData().parser}}
+            <div class="footer_bottom">
+                Recorded by: {{ getLogData().recordedBy }} - {{ getLogData().recordedAccountBy }}
             </div>
-            <div v-if="uploadLinks">
-                <p v-for="link in uploadLinks" v-if="link.url.length > 0">{{link.key}}: <a :href="link.url">{{link.url}}</a> </p>
-            </div>
-            <div v-if="usedExtensions">
-                <span>Used Extensions: </span>
-                <span v-for="(usedExtension, id) in usedExtensions">{{(id > 0 ? "|" : "") + usedExtension}}</span>
-            </div>
-            <div class="mb-2">File recorded by: {{getLogData().recordedBy}} - {{getLogData().recordedAccountBy}}</div>
         </div>
     </div>
 </body>

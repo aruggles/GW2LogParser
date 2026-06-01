@@ -17,8 +17,8 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Dhuum : HallOfChains
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
-            new PlayerDstHealthDamageHitMechanic(HatefulEphemera, new MechanicPlotlySetting(Symbols.Square,Colors.LightOrange), "Golem", "Hateful Ephemera (Golem AoE dmg)","Golem Dmg", 0),
+    internal readonly MechanicGroup Mechanics = new([
+            new PlayerDstHealthDamageHitMechanic(HatefulEphemera, new MechanicPlotlySetting(Symbols.Square,Colors.LightOrange), "Golem.D", "Hateful Ephemera (Golem AoE dmg)","Golem Dmg", 0),
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic(ArcingAfflictionHit, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Red), "Bomb dmg", "Arcing Affliction (Bomb) hit","Bomb dmg", 0),
                 new PlayerDstBuffApplyMechanic(ArcingAffliction, new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Bomb", "Arcing Affliction (Bomb) application","Bomb", 0),
@@ -47,25 +47,42 @@ internal class Dhuum : HallOfChains
                  }),
             ]),
             new MechanicGroup([
+                new PlayerDstHealthDamageHitMechanic(ConeSlash, new MechanicPlotlySetting(Symbols.TriangleUp,Colors.DarkGreen), "Cone", "Boon ripping Cone Attack","Cone", 0),
+                new PlayerDstHealthDamageHitMechanic(CullDamage, new MechanicPlotlySetting(Symbols.BowtieOpen,Colors.Teal), "Crack", "Cull (Fearing Fissures)","Cracks", 0),
+                new PlayerDstHealthDamageHitMechanic(PutridBomb, new MechanicPlotlySetting(Symbols.Circle,Colors.DarkGreen), "Mark", "Necro Marks during Scythe attack","Necro Marks", 0),
+                new PlayerDstHealthDamageHitMechanic(CataclysmicCycle, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.LightOrange), "Suck dmg", "Damage when sucked to close to middle","Suck dmg", 0),
+                new MechanicGroup([
+                    new PlayerDstHealthDamageHitMechanic(DeathMark, new MechanicPlotlySetting(Symbols.Hexagon,Colors.LightOrange), "Dip", "Lesser Death Mark hit (Dip into ground)","Dip AoE", 0),
+                    new PlayerDstHealthDamageHitMechanic(GreaterDeathMark, new MechanicPlotlySetting(Symbols.Circle,Colors.LightOrange), "KB dmg", "Knockback damage during Greater Deathmark (mid port)","Knockback dmg", 0),
+                ]),
+                new PlayerDstHealthDamageHitMechanic(RendingSwipe, new MechanicPlotlySetting(Symbols.TriangleLeft, Colors.LightOrange), "Enf.Swipe", "Hit by Dhuum's Enforcer Rending Swipe", "Rending Swipe Hit", 0),
+            ]),
+            new MechanicGroup([
                 new PlayerSrcPlayerDstBuffApplyMechanic(DhuumShacklesBuff, new MechanicPlotlySetting(Symbols.Diamond,Colors.Teal), "Shackles","Soul Shackle (Tether) application", "Shackles",10000),//  //also used for removal.
                 new PlayerDstHealthDamageHitMechanic(DhuumShacklesHit, new MechanicPlotlySetting(Symbols.DiamondOpen,Colors.Teal), "Shackles dmg", "Soul Shackle (Tether) dmg ticks","Shackles Dmg", 0)
                     .UsingChecker((de,log) => de.HealthDamage > 0),
             ]),
+            new MechanicGroup([
+                new PlayerCastStartMechanic(DhuumEtherealSealInteract, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Teal), "Eth.Seal.S","Started channeling an Ethereal Seal", "Ethereal Seal channeling",0)
+                    .UsingChecker((gie, log) => !gie.IsInterrupted),
+                new PlayerCastEndMechanic(DhuumEtherealSealInteract, new MechanicPlotlySetting(Symbols.Circle,Colors.Teal), "Eth.Seal.I","Succesfully interacted with an Ethereal Seal", "Ethereal Seal interacted",0)
+                    .UsingChecker((gie, log) => !gie.IsInterrupted),
+                new PlayerCastEndMechanic(DhuumEtherealSealInteract, new MechanicPlotlySetting(Symbols.CircleCross,Colors.Teal), "Eth.Seal.F","Failed to interact with an Ethereal Seal", "Ethereal Seal failed",0)
+                    .UsingChecker((gie, log) => gie.IsInterrupted),
+            ]),
             new PlayerDstBuffApplyMechanic(Superspeed, new MechanicPlotlySetting(Symbols.TriangleRight, Colors.Grey), "SupSpeed.Orb", "Gained Superspeed from Desmina (Walked over orb)", "Took Superspeed orb", 0)
                 .UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.DhuumDesmina)),
-            new PlayerDstHealthDamageHitMechanic(ConeSlash, new MechanicPlotlySetting(Symbols.TriangleUp,Colors.DarkGreen), "Cone", "Boon ripping Cone Attack","Cone", 0),
-            new PlayerDstHealthDamageHitMechanic(CullDamage, new MechanicPlotlySetting(Symbols.BowtieOpen,Colors.Teal), "Crack", "Cull (Fearing Fissures)","Cracks", 0),
-            new PlayerDstHealthDamageHitMechanic(PutridBomb, new MechanicPlotlySetting(Symbols.Circle,Colors.DarkGreen), "Mark", "Necro Marks during Scythe attack","Necro Marks", 0),
-            new PlayerDstHealthDamageHitMechanic(CataclysmicCycle, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.LightOrange), "Suck dmg", "Damage when sucked to close to middle","Suck dmg", 0),
-            new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(DeathMark, new MechanicPlotlySetting(Symbols.Hexagon,Colors.LightOrange), "Dip", "Lesser Death Mark hit (Dip into ground)","Dip AoE", 0),
-                new PlayerDstHealthDamageHitMechanic(GreaterDeathMark, new MechanicPlotlySetting(Symbols.Circle,Colors.LightOrange), "KB dmg", "Knockback damage during Greater Deathmark (mid port)","Knockback dmg", 0),
-            ]),
-            new PlayerDstHealthDamageHitMechanic(RendingSwipe, new MechanicPlotlySetting(Symbols.TriangleLeft, Colors.LightOrange), "Enf.Swipe", "Hit by Dhuum's Enforcer Rending Swipe", "Rending Swipe Hit", 0),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(EchosPickup, new MechanicPlotlySetting(Symbols.Square,Colors.Red), "Echo PU", "Picked up by Ender's Echo","Ender's Pick up", 3000),
                 new PlayerDstBuffRemoveMechanic(EchosPickup, new MechanicPlotlySetting(Symbols.Square,Colors.Blue), "F Echo","Freed from Ender's Echo", "Freed from Echo", 0)
-                    .UsingChecker( (br,log) => !log.CombatData.GetDeadEvents(br.To).Where(x => Math.Abs(x.Time - br.Time) <= 150).Any()),
+                    .UsingChecker((br,log) => !log.CombatData.GetDeadEvents(br.To).Any(x => Math.Abs(x.Time - br.Time) <= 150)),
+                new PlayerBreakbarDamageMechanic(new MechanicPlotlySetting(Symbols.StarDiamond, Colors.White), "Echo.BrkDmg", "Breakbar damage done against Ender's Echo while a player is picked", "Breakbar Damage Ender's Echo", 0, (log, a) => log.CombatData.GetBreakbarDamageData(a))
+                    .UsingChecker((brae, log) => brae.To.IsSpecies(TargetID.EndersEcho) && EchoBreakbarMechanicChecker(log, brae.Time))
+                    .UsingWeight(),
+                new PlayerSrcBuffApplyMechanic([Fear, Taunt, Immobile, Slow], new MechanicPlotlySetting(Symbols.StarDiamond, Colors.Red), "Echo.BrkCndApp1", "Applied Fear, Taunt, Immobile, Slow against Ender's Echo breakbar while a player is picked", "Strong Condition Breakbar Ender's Echo", 0)
+                    .UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.EndersEcho) && EchoBreakbarMechanicChecker(log, bae.Time)),
+                new PlayerSrcBuffApplyMechanic([Chilled, Blind, Weakness, Crippled], new MechanicPlotlySetting(Symbols.StarDiamond, Colors.LightRed), "Echo.BrkCndApp2", "Applied Chilled, Blind, Weakness, Crippled against Ender's Echo breakbar while a player is picked", "Weak Condition Breakbar Ender's Echo", 0)
+                    .UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.EndersEcho) && EchoBreakbarMechanicChecker(log, bae.Time)),
             ]),
             new PlayerSrcBuffApplyMechanic(DhuumsMessengerFixationBuff, new MechanicPlotlySetting(Symbols.CircleOpenDot, Colors.Brown), "Mess Fix", "Fixated by Messenger", "Messenger Fixation", 10)
                 .UsingChecker((bae, log) =>
@@ -123,8 +140,25 @@ internal class Dhuum : HallOfChains
         ];
     }
 
-    //TODO(Rennorb) @perf
-    private static void ComputeFightPhases(List<PhaseData> phases, SingleActor dhuum, IEnumerable<CastEvent> castLogs, ParsedEvtcLog log, long logEnd, long start, PhaseData mainFightPhase)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
+    {
+        var res = base.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID);
+        var etherealSealInteracts = combatData.GetGadgetInteractCastDataByGadgetSpeciesID((int)TargetID.EtherealSeal);
+        var interactSkill = skillData.Get(DhuumEtherealSealInteract);
+        foreach (var etherealSealInteract in etherealSealInteracts)
+        {
+            etherealSealInteract.OverrideSkill(interactSkill);
+        }
+        if (etherealSealInteracts.Count > 0)
+        {
+            animatedCastDataByID[ArcDPSGenericGadgetInteract] = animatedCastDataByID[ArcDPSGenericGadgetInteract].Where(x => x.SkillID == ArcDPSGenericGadgetInteract).ToList();
+            animatedCastDataByID[DhuumEtherealSealInteract] = etherealSealInteracts.OfType<AnimatedCastEvent>().ToList();
+        }
+        return res;
+    }
+
+    //TODO_PERF(Rennorb)
+    private static void ComputeFightPhases(List<SubPhasePhaseData> phases, SingleActor dhuum, IEnumerable<CastEvent> castLogs, ParsedEvtcLog log, long logEnd, long start, PhaseData mainFightPhase)
     {
         CastEvent? shield = castLogs.FirstOrDefault(x => x.SkillID == MajorSoulSplit);
         // Dhuum brought down to 10%
@@ -158,17 +192,17 @@ internal class Dhuum : HallOfChains
         }
     }
 
-    private static List<PhaseData> GetInBetweenSoulSplits(ParsedEvtcLog log, SingleActor dhuum, IEnumerable<SingleActor> enforcers, long mainStart, long mainEnd, bool hasRitual, PhaseData parentPhase)
+    private static List<SubPhasePhaseData> GetInBetweenSoulSplits(ParsedEvtcLog log, SingleActor dhuum, IEnumerable<SingleActor> enforcers, long mainStart, long mainEnd, bool hasRitual, PhaseData parentPhase)
     {
-        var cls = dhuum.GetCastEvents(log);
-        var cataCycles = cls.Where(x => x.SkillID == CataclysmicCycle);
+        var cls = dhuum.GetAnimatedCastEvents(log);
+        var cataCycles = cls.Where(x => x.SkillID == CataclysmicCycle).ToList();
         var gDeathmarks = cls.Where(x => x.SkillID == GreaterDeathMark).ToList();
-        if (gDeathmarks.Count < cataCycles.Count())
+        if (gDeathmarks.Count < cataCycles.Count)
         {
             // anomaly, don't do sub phases
             return [];
         }
-        var phases = new List<PhaseData>();
+        var phases = new List<SubPhasePhaseData>();
         long start = mainStart;
         long end = 0;
         int i = 0;
@@ -179,33 +213,36 @@ internal class Dhuum : HallOfChains
             long soulsplitEnd = Math.Min(cataCycle.EndTime, mainEnd);
             ++i;
 
-            var preSoulSplit = new SubPhasePhaseData(start, end, "Pre-Soulsplit " + i).WithParentPhase(parentPhase);
+            var preSoulSplit = new SubPhasePhaseData(start, end, "Pre-Soulsplit " + i);
+            preSoulSplit.AddParentPhase(parentPhase);
             preSoulSplit.AddTarget(dhuum, log);
             preSoulSplit.AddTargets(enforcers, log, PhaseData.TargetPriority.NonBlocking);
             phases.Add(preSoulSplit);
 
-            var soulSplit = new SubPhasePhaseData(end, soulsplitEnd, "Soulsplit " + i).WithParentPhase(parentPhase);
+            var soulSplit = new SubPhasePhaseData(end, soulsplitEnd, "Soulsplit " + i);
+            soulSplit.AddParentPhase(parentPhase);
             soulSplit.AddTarget(dhuum, log);
             phases.Add(soulSplit);
             start = cataCycle.EndTime;
         }
-        var final = new SubPhasePhaseData(start, mainEnd, hasRitual ? "Pre-Ritual" : "Pre-Wipe").WithParentPhase(parentPhase);
+        var final = new SubPhasePhaseData(start, mainEnd, hasRitual ? "Pre-Ritual" : "Pre-Wipe");
+        final.AddParentPhase(parentPhase);
         final.AddTarget(dhuum, log);
         phases.Add(final);
         return phases;
     }
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor dhuum, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor dhuum, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        bool hasPreEvent = encounterPhase.StartStatus == LogData.LogStartStatus.Normal;
+        bool hasPreEvent = encounterPhase.StartStatus == LogData.StartStatus.Normal;
         long end = encounterPhase.End;
         long start = encounterPhase.Start;
-        var phases = new List<PhaseData>(6);
-        var enforcers = targets.Where(x => x.IsSpecies(TargetID.Enforcer));
-        var castLogs = dhuum.GetCastEvents(log);
+        var phases = new List<SubPhasePhaseData>(6);
+        var enforcers = targets.Where(x => x.IsSpecies(TargetID.DhuumsEnforcer));
+        var castLogs = dhuum.GetAnimatedCastEvents(log);
         PhaseData? mainFight = null;
         // Sometimes the pre event is not in the evtc
         if (!hasPreEvent)
@@ -221,14 +258,16 @@ internal class Dhuum : HallOfChains
             if (invulDhuum != null)
             {
                 long preEventEnd = invulDhuum.Time;
-                var preEvent = new SubPhasePhaseData(start, preEventEnd, "Pre Event").WithParentPhase(encounterPhase);
+                var preEvent = new SubPhasePhaseData(start, preEventEnd, "Pre Event");
+                preEvent.AddParentPhase(encounterPhase);
                 preEvent.AddTarget(dhuum, log);
                 preEvent.AddTargets(enforcers, log, PhaseData.TargetPriority.NonBlocking);
                 phases.Add(preEvent);
 
                 mainFight = new SubPhasePhaseData(preEventEnd, end, "Main Fight");
+                mainFight.AddParentPhase(encounterPhase);
                 mainFight.AddTarget(dhuum, log);
-                phases.Add(mainFight.WithParentPhase(encounterPhase));
+                phases.Add((SubPhasePhaseData)mainFight);
                 ComputeFightPhases(phases, dhuum, castLogs, log, end, preEventEnd, mainFight);
             }
         }
@@ -258,13 +297,13 @@ internal class Dhuum : HallOfChains
         return phases;
     }
 
-    internal override IReadOnlyList<TargetID>  GetTargetsIDs()
+    internal override IReadOnlyList<TargetID> GetTargetsIDs()
     {
         return
         [
             TargetID.Dhuum,
-            TargetID.Echo,
-            TargetID.Enforcer,
+            TargetID.EndersEcho,
+            TargetID.DhuumsEnforcer,
             TargetID.UnderworldReaper,
         ];
     }
@@ -273,9 +312,10 @@ internal class Dhuum : HallOfChains
     {
         return
         [
-            TargetID.Messenger,
+            TargetID.DhuumsMessenger,
             TargetID.Deathling,
-            TargetID.DhuumDesmina
+            TargetID.DhuumDesmina,
+            TargetID.EtherealSeal,
         ];
     }
 
@@ -285,7 +325,7 @@ internal class Dhuum : HallOfChains
         CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
         if (logStartNPCUpdate != null)
         {
-            AgentItem messenger = agentData.GetNPCsByID(TargetID.Messenger).MinBy(x => x.FirstAware);
+            AgentItem messenger = agentData.GetNPCsByID(TargetID.DhuumsMessenger).MinBy(x => x.FirstAware);
             if (messenger != null)
             {
                 startToUse = messenger.FirstAware;
@@ -300,7 +340,7 @@ internal class Dhuum : HallOfChains
         var yourSoul = combatData.Where(x => MaxHealthUpdateEvent.GetMaxHealth(x) == 14940 && x.IsStateChange == StateChange.MaxHealthUpdate)
             .Select(x => agentData.GetAgent(x.SrcAgent, x.Time))
             .Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxHeight == 120 && x.HitboxWidth == 100);
-        var dhuumPlayerToSoulTrackBuffApplications = combatData.Where(x => x.IsBuffApply() && x.SkillID == DhuumPlayerToSoulTrackBuff)
+        var dhuumPlayerToSoulTrackBuffApplications = combatData.Where(x => x.IsBuffApplyEvent() && x.SkillID == DhuumPlayerToSoulTrackBuff)
             .Select(x => (agentData.GetAgent(x.SrcAgent, x.Time), agentData.GetAgent(x.DstAgent, x.Time)))
             .Where(x => x.Item1.IsPlayer)
             .GroupBy(x => x.Item2)
@@ -319,6 +359,30 @@ internal class Dhuum : HallOfChains
         }
     }
 
+    internal static void HandleEtherealSeals(AgentData agentData, List<CombatItem> combatData)
+    {
+        // There are other gadgets with MaxHP 0, Width 16 and Height 300.
+        var maxHPs = combatData.Where(x => x.IsStateChange == StateChange.MaxHealthUpdate && MaxHealthUpdateEvent.GetMaxHealth(x) == 0);
+        var positionEvents = combatData.Where(x => x.IsStateChange == StateChange.Position).ToList();
+        foreach (CombatItem maxHP in maxHPs)
+        {
+            AgentItem candidate = agentData.GetAgent(maxHP.SrcAgent, maxHP.Time);
+            if (candidate.Type == AgentItem.AgentType.Gadget && candidate.HitboxWidth == 16 && candidate.HitboxHeight == 300)
+            {
+                var positions = positionEvents.Where(x => x.SrcMatchesAgent(candidate)).Select(MovementEvent.GetPoint3D).ToList();
+                foreach (KeyValuePair<int, Vector3> position in EtherealSealsPositions)
+                {
+                    if (positions.Any(x => (x - position.Value).LengthSquared() < 1e-4))
+                    {
+                        candidate.OverrideType(AgentItem.AgentType.NPC, agentData);
+                        candidate.OverrideID(TargetID.EtherealSeal, agentData);
+                        candidate.OverrideName("Ethereal Seal " + position.Key);
+                    }
+                }
+            }
+        }
+    }
+
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         if (!agentData.TryGetFirstAgentItem(TargetID.Dhuum, out var dhuum))
@@ -326,11 +390,12 @@ internal class Dhuum : HallOfChains
             throw new MissingKeyActorsException("Dhuum not found");
         }
         HandleYourSouls(agentData, combatData);
+        HandleEtherealSeals(agentData, combatData);
 
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (!agentData.TryGetFirstAgentItem(TargetID.Dhuum, out var dhuum))
         {
@@ -339,28 +404,36 @@ internal class Dhuum : HallOfChains
         // We expect pre event in all logs
         if (combatData.GetAnimatedCastData(dhuum).Any(x => (x.SkillID != WeaponStow && x.SkillID != WeaponDraw) && x.Time >= 0 && x.Time <= 40000))
         {
-            return LogData.LogStartStatus.NoPreEvent;
+            return LogData.StartStatus.NoPreEvent;
         }
-        else
-        {
-            return base.GetLogStartStatus(combatData, agentData, logData);
-        }
+        return base.GetLogStartStatus(combatData, agentData, logData);
     }
 
-    private static readonly List<(Vector3 Position, int Index)> ReapersToGreen = new()
+    private static readonly List<(Vector3 Position, int Index)> ReapersToGreen =
+    [
+        (new(16897, 1225, -6215), 0),
+        (new(16853, 65, -6215), 1),
+        (new(15935, -614, -6215), 2),
+        (new(14830, -294, -6215), 3),
+        (new(14408, 764, -6215), 4),
+        (new(14929, 1762, -6215), 5),
+        (new(16062, 1991, -6215), 6),
+    ];
+
+    private static readonly Dictionary<int, Vector3> EtherealSealsPositions = new()
     {
-        { (new(16897, 1225, -6215), 0) },
-        { (new(16853, 65, -6215), 1) },
-        { (new(15935, -614, -6215), 2) },
-        { (new(14830, -294, -6215), 3) },
-        { (new(14408, 764, -6215), 4) },
-        { (new(14929, 1762, -6215), 5) },
-        { (new(16062, 1991, -6215), 6) },
+        { 1, new(16894.21f, 1212.2545f, -6209.89f) },
+        { 2, new(16844.303f, 78.949524f, -6211.9116f) },
+        { 3, new(15938.565f, -579.9974f, -6211.4263f) },
+        { 4, new(14871.911f, -256.8926f, -6211.333f) },
+        { 5, new(14406.419f, 766.09796f, -6211.3896f) },
+        { 6, new(14923.716f, 1766.715f, -6210.4927f) },
+        { 7, new(16053.133f, 1966.0598f, -6207.706f) },
     };
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -392,7 +465,7 @@ internal class Dhuum : HallOfChains
                                 // Get Dhuum's rotation with 200 ms delay and a 200ms forward time window.
                                 if (target.TryGetCurrentFacingDirection(log, lifespan.start + 200, out var facing, 200))
                                 {
-                                    replay.Decorations.Add(new PieDecoration(850, 60, lifespan, Colors.LightOrange, 0.5, new AgentConnector(target)).UsingRotationConnector(new AngleConnector(facing)));
+                                    replay.Decorations.Add(new PieDecoration(850, 60, lifespan, Colors.LightOrange, 0.5, new AgentConnector(target)).UsingRotationConnector(new AngleConnector(facing.Value)));
                                 }
                             }
                             else
@@ -466,9 +539,9 @@ internal class Dhuum : HallOfChains
                             && target.TryGetCurrentPosition(log, start + castDuration, out var targetPosition))
                         {
                             var position = new Vector3(
-                                targetPosition.X + (facing.X * spellCenterDistance),
-                                targetPosition.Y + (facing.Y * spellCenterDistance),
-                                targetPosition.Z
+                                targetPosition.Value.X + (facing.Value.X * spellCenterDistance),
+                                targetPosition.Value.Y + (facing.Value.Y * spellCenterDistance),
+                                targetPosition.Value.Z
                             );
                             var positionConnector = new PositionConnector(position);
 
@@ -539,10 +612,10 @@ internal class Dhuum : HallOfChains
             break;
             case (int)TargetID.DhuumDesmina:
                 break;
-            case (int)TargetID.Echo:
+            case (int)TargetID.EndersEcho:
                 replay.Decorations.Add(new CircleDecoration(120, lifespan, Colors.Red, 0.5, new AgentConnector(target)));
                 break;
-            case (int)TargetID.Enforcer:
+            case (int)TargetID.DhuumsEnforcer:
             {
                 foreach (CastEvent cast in target.GetAnimatedCastEvents(log))
                 {
@@ -554,7 +627,7 @@ internal class Dhuum : HallOfChains
                             if (target.TryGetCurrentFacingDirection(log, cast.Time, out var facing, 200))
                             {
                                 var agentConnector = new AgentConnector(target);
-                                var rotationConnector = new AngleConnector(facing);
+                                var rotationConnector = new AngleConnector(facing.Value);
                                 var cone = (PieDecoration)new PieDecoration(40, 90, lifespan, Colors.Orange, 0.2, agentConnector).UsingRotationConnector(rotationConnector);
                                 replay.Decorations.AddWithFilledWithGrowing(cone, true, lifespan.end);
                             }
@@ -565,11 +638,11 @@ internal class Dhuum : HallOfChains
                 }
             }
             break;
-            case (int)TargetID.Messenger:
+            case (int)TargetID.DhuumsMessenger:
                 replay.Decorations.Add(new CircleDecoration(180, lifespan, Colors.Orange, 0.5, new AgentConnector(target)));
                 // Fixation tether to player
                 var fixations = GetBuffApplyRemoveSequence(log.CombatData, DhuumsMessengerFixationBuff, target, true, true);
-                replay.Decorations.AddTether(fixations, Colors.Red, 0.4);
+                replay.Decorations.AddTethers(fixations, Colors.Red, 0.4);
                 break;
             case (int)TargetID.Deathling:
                 break;
@@ -617,7 +690,7 @@ internal class Dhuum : HallOfChains
                 } 
                 else
                 {
-                    BuffEvent? greenTaken = log.CombatData.GetBuffData(FracturedSpirit).Where(x => x is BuffApplyEvent).FirstOrDefault();
+                    BuffEvent? greenTaken = log.CombatData.GetBuffData(FracturedSpirit).FirstOrDefault(x => x is BuffApplyEvent);
                     if (greenTaken != null)
                     {
                         var greenStart = (int)greenTaken.Time - 5000;
@@ -630,7 +703,7 @@ internal class Dhuum : HallOfChains
 
                             foreach (var reaper in ReapersToGreen)
                             {
-                                if ((reaper.Position - greenTakerPosition).Length() < 250)
+                                if ((reaper.Position - greenTakerPosition.Value).Length() < 250)
                                 {
                                     firstReaperIndex = reaper.Index;
                                     break;
@@ -679,6 +752,16 @@ internal class Dhuum : HallOfChains
                     }
                 }
                 break;
+            case (int)TargetID.EtherealSeal:
+                long hideStart = target.FirstAware;
+                var majorSoulSplit = log.CombatData.GetAnimatedCastData(MajorSoulSplit);
+                foreach (var split in majorSoulSplit)
+                {
+                    replay.Hidden.Add(new(hideStart, split.Time));
+                    hideStart = split.Caster.LastAware;
+                }
+                replay.Hidden.Add(new(hideStart, target.LastAware));
+                break;
             default:
                 break;
         }
@@ -687,7 +770,7 @@ internal class Dhuum : HallOfChains
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -719,13 +802,13 @@ internal class Dhuum : HallOfChains
         }
         // shackles connection
         var shackles = GetBuffApplyRemoveSequence(log.CombatData, [DhuumShacklesBuff, DhuumShacklesBuff2], p, true, true);
-        replay.Decorations.AddTether(shackles, Colors.Teal, 0.5);
+        replay.Decorations.AddTethers(shackles, Colors.Teal, 0.5);
 
         // shackles damage (identical to the connection for now, not yet properly distinguishable from the pure connection, further investigation needed due to inconsistent behavior (triggering too early, not triggering the damaging skill though)
         // shackles start with buff 47335 applied from one player to the other, this is switched over to buff 48591 after mostly 2 seconds, sometimes later. This is switched to 48042 usually 4 seconds after initial application and the damaging skill 47164 starts to deal damage from that point on.
         // Before that point, 47164 is only logged when evaded/blocked, but doesn't deal damage. Further investigation needed.
         var shacklesDmg = GetBuffApplyRemoveSequence(log.CombatData, DhuumDamagingShacklesBuff, p, true, true);
-        replay.Decorations.AddTether(shacklesDmg, Colors.Yellow, 0.5);
+        replay.Decorations.AddTethers(shacklesDmg, Colors.Yellow, 0.5);
 
         // Soul split
         var hastenedDemise = p.GetBuffStatus(log, HastenedDemise).Where(x => x.Value == 1);
@@ -735,7 +818,7 @@ internal class Dhuum : HallOfChains
             Segment? curHastenedDemise = hastenedDemise.FirstOrNull((in Segment x) => x.Start >= soul.FirstAware - 100);
             if (curHastenedDemise != null && soul.TryGetCurrentPosition(log, soul.FirstAware, out var soulPosition, 1000))
             {
-                AddSoulSplitDecorations(p, replay, soul, curHastenedDemise.Value, soulPosition);
+                AddSoulSplitDecorations(p, replay, soul, curHastenedDemise.Value, soulPosition.Value);
             }
         }
         // show the death trigger even if we don't have the souls
@@ -745,11 +828,19 @@ internal class Dhuum : HallOfChains
             replay.Decorations.Add(new OverheadProgressBarDecoration(CombatReplayOverheadProgressBarMinorSizeInPixel, seg.TimeSpan, Colors.Red, 0.6, Colors.Black, 0.2, [(seg.Start, 0), (soulSplitDeathTime, 100)], new AgentConnector(p))
                 .UsingRotationConnector(new AngleConnector(90)));
         }
+        // Ethereal Seal
+        foreach (var gadgetInteract in log.CombatData.GetGadgetInteractCastData(p.AgentItem))
+        {
+            if (gadgetInteract.Gadget.IsSpecies(TargetID.EtherealSeal))
+            {
+                replay.Decorations.AddPlayerCastBar(p, gadgetInteract);
+            }
+        }
     }
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -759,7 +850,7 @@ internal class Dhuum : HallOfChains
         foreach (MissileEvent orb in orbs)
         {
             uint radius = 0;
-            EIData.Color color = Colors.Grey;
+            Color color = Colors.Grey;
 
             switch (orb.SkillID)
             {
@@ -880,16 +971,23 @@ internal class Dhuum : HallOfChains
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
     }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Dhuum)) ?? throw new MissingKeyActorsException("Dhuum not found");
-        return (target.GetHealth(combatData) > 35e6) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return (target.GetHealth(combatData) > 35e6) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 
     /// <summary>
@@ -918,5 +1016,23 @@ internal class Dhuum : HallOfChains
         replay.Decorations.Add(hitbox);
         replay.Decorations.Add(line);
         replay.Decorations.Add(icon);
+    }
+
+    /// <summary>
+    /// Check if the conditions applied or the breakbar damage dealt have happened while another player is picked up by the Echo.
+    /// </summary>
+    /// <remarks>
+    /// Conditions checked: Fear, Taunt, Immobile, Slow, Chilled, Blind, Weakness, Crippled.
+    /// </remarks>
+    private static bool EchoBreakbarMechanicChecker(ParsedEvtcLog log, long time)
+    {
+        foreach (Player player in log.PlayerList)
+        {
+            if (player.HasBuff(log, EchosPickup, time, ServerDelayConstant))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

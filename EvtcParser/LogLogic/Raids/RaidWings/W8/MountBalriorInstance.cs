@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -35,7 +36,7 @@ internal class MountBalriorInstance : MountBalrior
         MechanicList.Add(_ura.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Mount Balrior";
     }
@@ -47,17 +48,17 @@ internal class MountBalriorInstance : MountBalrior
         {
             subLogic.GetCombatMapInternal(log, arenaDecorations);
         }
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var chest = agentData.GetGadgetsByID(_ura.ChestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
             return;
         }
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
     private List<EncounterPhaseData> HandleGreerPhases(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, ParsedEvtcLog log, List<PhaseData> phases)
@@ -92,7 +93,7 @@ internal class MountBalriorInstance : MountBalrior
                 var encounterName = (isCM ? "Godspoil Greer" : "Greer, the Blightbringer");
                 var name = encounterName + (greers.Count > 0 ? " " + (offset) : "");
                 greer.OverrideName(name);
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [greer], [..greeAndRegs, ..protoGreelings], eregs, mainPhase, encounterName, start, end, success, _greer, isCM ? LogData.LogMode.CMNoName : LogData.LogMode.Normal);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [greer], [..greeAndRegs, ..protoGreelings], eregs, mainPhase, encounterName, start, end, success, _greer, isCM ? LogData.Mode.CMNoName : LogData.Mode.Normal);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -130,7 +131,7 @@ internal class MountBalriorInstance : MountBalrior
                 }
                 var isCM = decimaID == TargetID.DecimaCM;
                 var name = isCM ? "Godsqual Decima" : "Decima, the Stormsinger";
-                var mode = isCM ? LogData.LogMode.CMNoName : LogData.LogMode.Normal;
+                var mode = isCM ? LogData.Mode.CMNoName : LogData.Mode.Normal;
                 if (targetsByIDs.TryGetValue((int)TargetID.TranscendentBoulder, out var boulders))
                 {
                     AddInstanceEncounterPhase(log, phases, encounterPhases, [decima], boulders, [], mainPhase, name, start, end, success, _decima, mode);
@@ -195,7 +196,7 @@ internal class MountBalriorInstance : MountBalrior
                 var encounterName = (isCM ? "Godscream Ura" : "Ura, the Steamshrieker");
                 var name = encounterName  + (uras.Count > 0 ? " " + (offset) : "");
                 ura.OverrideName(name);
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [ura], [], [], mainPhase, encounterName, start, end, success, _ura, isCM ? (maxHP > 100e6 ? LogData.LogMode.LegendaryCM : LogData.LogMode.CMNoName) : LogData.LogMode.Normal);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [ura], [], [], mainPhase, encounterName, start, end, success, _ura, isCM ? (maxHP > 100e6 ? LogData.Mode.LegendaryCM : LogData.Mode.CMNoName) : LogData.Mode.Normal);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -306,12 +307,12 @@ internal class MountBalriorInstance : MountBalrior
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -361,6 +362,14 @@ internal class MountBalriorInstance : MountBalrior
             logic.SetInstanceBuffs(log, instanceBuffs);
         }
     }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
 
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()
     {
@@ -371,5 +380,15 @@ internal class MountBalriorInstance : MountBalrior
             offset = AddSortIDWithOffset(sortIDs, logic.GetTargetsSortIDs(), offset);
         }
         return sortIDs;
+    }
+
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    {
+        foreach (var ura in Targets.Where(x => x.IsSpecies(TargetID.Ura)))
+        {
+            UraTheSteamshrieker.AdjustUraHP(ura, ura.GetHealth(combatData), 
+                UraTheSteamshrieker.GetHealedPhaseStartEvent(combatData, ura, logData.LogStart, logData.LogEnd) != null, combatData.GetGW2BuildEvent().Build);
+        }
+        return base.GetLogMode(combatData, agentData, logData);
     }
 }

@@ -14,21 +14,21 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Gorseval : SpiritVale
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstHealthDamageHitMechanic(SpectralImpact, new MechanicPlotlySetting(Symbols.Hexagram,Colors.Red), "Slam", "Spectral Impact (KB Slam)","Slam", 4000)
                 .UsingBuffChecker(Stability, false),
             new PlayerDstBuffApplyMechanic(GhastlyPrison, new MechanicPlotlySetting(Symbols.Circle,Colors.LightOrange), "Egg", "Ghastly Prison (Egged)","Egged", 500),
             new PlayerDstBuffApplyMechanic(SpectralDarkness, new MechanicPlotlySetting(Symbols.Circle,Colors.Blue), "Orb Debuff", "Spectral Darkness (Stood in Orb AoE)","Orb Debuff", 100),
             new EnemyDstBuffApplyMechanic(SpiritedFusion, new MechanicPlotlySetting(Symbols.Square,Colors.LightOrange), "Spirit Buff", "Spirited Fusion (Consumed a Spirit)","Ate Spirit", 0),
-            new PlayerDstHealthDamageHitMechanic(SpiritKick, new MechanicPlotlySetting(Symbols.TriangleRight,Colors.Magenta), "Kick", "Kicked by small add","Spirit Kick", 0)
+            new PlayerDstHealthDamageHitMechanic(SpiritKick, new MechanicPlotlySetting(Symbols.TriangleRight,Colors.Magenta), "Kick.S", "Kicked by small add","Spirit Kick", 0)
                 .UsingBuffChecker(Stability, false),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(Vulnerability, new MechanicPlotlySetting(Symbols.Circle,Colors.Black), "Black", "Hit by Black Goo","Black Goo",3000)
                     .UsingChecker( (ba,log) => ba.AppliedDuration == 10000),
-                new EnemyCastStartMechanic(GhastlyRampage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC", "Ghastly Rampage (Breakbar)","Breakbar", 0),
-                new EnemyCastEndMechanic(GhastlyRampage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC End", "Ghastly Rampage (Full duration)","CC ran out", 0)
+                new EnemyCastStartMechanic(GhastlyRampage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC.G", "Ghastly Rampage (Breakbar)","Breakbar", 0),
+                new EnemyCastEndMechanic(GhastlyRampage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC.G End", "Ghastly Rampage (Full duration)","CC ran out", 0)
                     .UsingChecker( (ce,log) => ce.ActualDuration > 21985),
-                new EnemyCastEndMechanic(GhastlyRampage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed", "Ghastly Rampage (Breakbar broken)","CCed", 0)
+                new EnemyCastEndMechanic(GhastlyRampage, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed.G", "Ghastly Rampage (Breakbar broken)","CCed", 0)
                     .UsingChecker((ce, log) => ce.ActualDuration <= 21985),
             ]),
         ]);
@@ -58,23 +58,23 @@ internal class Gorseval : SpiritVale
         ];
     }
 
-    private static readonly List<TargetID> ChargedSoulIDs = new List<TargetID>
-    {
-        TargetID.ChargedSoul
-    };
+    private static readonly List<TargetID> ChargedSoulIDs = 
+    [
+        TargetID.ChargedSoul,
+    ];
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor gorseval, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor gorseval, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = GetPhasesByInvul(log, ProtectiveShadow, gorseval, true, true, encounterPhase.Start, encounterPhase.End);
+        var phases = GetSubPhasesByInvul(log, ProtectiveShadow, gorseval, true, true, encounterPhase.Start, encounterPhase.End);
         for (int i = 0; i < phases.Count; i++)
         {
             int index = i + 1;
             PhaseData phase = phases[i];
-            phase.AddParentPhase(phases[0]);
+            phase.AddParentPhase(encounterPhase);
             if (index % 2 == 1)
             {
                 phase.Name = "Phase " + (index + 1) / 2;
@@ -158,7 +158,7 @@ internal class Gorseval : SpiritVale
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -176,7 +176,7 @@ internal class Gorseval : SpiritVale
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -355,7 +355,7 @@ internal class Gorseval : SpiritVale
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -374,7 +374,7 @@ internal class Gorseval : SpiritVale
                 // for the explosion
                 lifespan.end += 500;
                 FormDecoration rampage;
-                var contentGUID = ghastlyRampage.GUIDEvent.ContentGUID;
+                var contentGUID = ghastlyRampage.GUIDEvent.GUID;
                 if (contentGUID == EffectGUIDs.GorsevalGhastlyRampageLayer0)
                 {
                     rampage = new CircleDecoration(360, lifespan, Colors.DarkPurpleBlue, 0.25, new PositionConnector(pos));
@@ -421,9 +421,16 @@ internal class Gorseval : SpiritVale
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

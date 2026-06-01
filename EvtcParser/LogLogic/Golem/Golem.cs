@@ -99,7 +99,7 @@ internal class Golem : LogLogic
         foreach (CombatItem c in combatData)
         {
             // redirect all attacks to the main golem
-            if (c.DstAgent == 0 && c.DstInstid == 0 && c.IsDamage(extensions))
+            if (c.DstAgent == 0 && c.DstInstid == 0 && c.IsDamageEvent(extensions))
             {
                 c.OverrideDstAgent(target);
             }
@@ -184,12 +184,12 @@ internal class Golem : LogLogic
         return GetGenericLogOffset(logData);
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return LogData.LogMode.NotApplicable;
+        return LogData.Mode.NotApplicable;
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         SingleActor mainTarget = Targets.FirstOrDefault(x => x.IsSpecies(GenericTriggerID)) ?? throw new MissingKeyActorsException("Golem not found");
         long encounterEndTime = mainTarget.LastAware;
@@ -213,7 +213,7 @@ internal class Golem : LogLogic
                 }
             }
         }
-        logData.SetSuccess(success, encounterEndTime);
+        successHandler.SetSuccess(success, encounterEndTime);
     }
 
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()

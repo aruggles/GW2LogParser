@@ -10,6 +10,8 @@ public class DefenseAllStatistics : DefensePerTargetStatistics
     public readonly long DeadDuration;
     public readonly int DcCount;
     public readonly long DcDuration;
+    public readonly int StunBreakCount;
+    public readonly double RemovedStunDuration;
 
     public DefenseAllStatistics(ParsedEvtcLog log, long start, long end, SingleActor actor) : base(log, start, end, actor, null)
     {
@@ -26,7 +28,7 @@ public class DefenseAllStatistics : DefensePerTargetStatistics
             }
             else
             {
-                DownCount = log.CombatData.GetBuffDataByIDByDst(SkillIDs.Downed, actor.AgentItem).Where(be => be.Time >= start && be.Time <= end && be is BuffApplyEvent).Count();
+                DownCount = log.CombatData.GetBuffDataByIDByDst(SkillIDs.Downed, actor.AgentItem).Count(be => be.Time >= start && be.Time <= end && be is BuffApplyEvent);
             }
         }
         else
@@ -39,5 +41,12 @@ public class DefenseAllStatistics : DefensePerTargetStatistics
         DownDuration = (long)down.Sum(x => x.IntersectingArea(start, end));
         DeadDuration = (long)dead.Sum(x => x.IntersectingArea(start, end));
         DcDuration = (long)dc.Sum(x => x.IntersectingArea(start, end));
+
+        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakReceivedData(actor.AgentItem))
+        {
+            StunBreakCount++;
+            RemovedStunDuration += sbe.RemainingDuration;
+        }
+        RemovedStunDuration = Math.Round(RemovedStunDuration / 1000, ParserHelper.TimeDigit);
     }
 }

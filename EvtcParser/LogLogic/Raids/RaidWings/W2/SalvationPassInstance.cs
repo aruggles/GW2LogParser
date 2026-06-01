@@ -3,6 +3,7 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -36,7 +37,7 @@ internal class SalvationPassInstance : SalvationPass
         MechanicList.Add(_matthias.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Salvation Pass";
     }
@@ -49,18 +50,18 @@ internal class SalvationPassInstance : SalvationPass
         {
             subLogic.GetCombatMapInternal(log, arenaDecorations);
         }
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var chest = agentData.GetGadgetsByID(_matthias.ChestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
             return;
         }
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
     private List<EncounterPhaseData> HandleTrioPhases(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, ParsedEvtcLog log, List<PhaseData> phases)
@@ -74,8 +75,10 @@ internal class SalvationPassInstance : SalvationPass
                 {
                     foreach (var narella in narellas)
                     {
-                        var pack = new List<SingleActor>(3);
-                        pack.Add(narella);
+                        var pack = new List<SingleActor>(3)
+                        {
+                            narella
+                        };
                         var curZane = zanes.FirstOrDefault(x => x.AgentItem.InAwareTimes(narella.AgentItem));
                         if (curZane != null)
                         {
@@ -94,12 +97,16 @@ internal class SalvationPassInstance : SalvationPass
                 }
             }
         }
+        if (packedTrios.Count == 0)
+        {
+            return [];
+        }
         // Thrash mob start check
         var boxStart = new Vector2(-2200, -11300);
         var boxEnd = new Vector2(1000, -7200);
         TargetID[] trashMobsToCheck =
-        {
-                TargetID.BanditAssassin,
+        [
+            TargetID.BanditAssassin,
                 TargetID.BanditAssassin2,
                 TargetID.BanditSapperTrio,
                 TargetID.BanditDeathsayer,
@@ -112,7 +119,7 @@ internal class SalvationPassInstance : SalvationPass
                 TargetID.BanditCleric2,
                 TargetID.BanditBombardier,
                 TargetID.BanditSniper,
-        };
+        ];
         var bandits = log.AgentData.GetNPCsByIDs(trashMobsToCheck);
         var banditPositions = new List<PositionEvent>();
         foreach (var bandit in bandits)
@@ -153,10 +160,12 @@ internal class SalvationPassInstance : SalvationPass
         {
 
             var slothasorPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Slothasor, [], "Slothasor", _slothasor);
+            var slublingTransforms = targetsByIDs.TryGetValue((int)TargetID.PlayerSlubling, out List<SingleActor>? value) ? value : [];
             foreach (var slothasorPhase in slothasorPhases)
             {
+                slothasorPhase.AddTargets(slublingTransforms, log, PhaseData.TargetPriority.NonBlocking);
                 var slothasor = slothasorPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.Slothasor));
-                phases.AddRange(Slothasor.ComputePhases(log, slothasor, slothasorPhase, requirePhases));
+                phases.AddRange(Slothasor.ComputePhases(log, slothasor, slublingTransforms, slothasorPhase, requirePhases));
             }
         }
         {
@@ -170,11 +179,13 @@ internal class SalvationPassInstance : SalvationPass
             }
         }
         {
-            var matthiasPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Matthias, Targets.Where(x => x.IsSpecies(TargetID.MatthiasSacrificeCrystal)), "Matthias", _matthias);
+            var matthiasPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Matthias, [], "Matthias", _matthias);
+            var sacrifices = targetsByIDs.TryGetValue((int)TargetID.MatthiasSacrificeCrystal, out List<SingleActor>? value) ? value : [];
             foreach (var matthiasPhase in matthiasPhases)
             {
+                matthiasPhase.AddTargets(sacrifices, log, PhaseData.TargetPriority.NonBlocking);
                 var matthias = matthiasPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.Matthias));
-                phases.AddRange(Matthias.ComputePhases(log, matthias, matthiasPhase, requirePhases));
+                phases.AddRange(Matthias.ComputePhases(log, matthias, sacrifices, matthiasPhase, requirePhases));
             }
         }
         return phases;
@@ -220,14 +231,24 @@ internal class SalvationPassInstance : SalvationPass
         ];
         return friendlies.Distinct().ToList();
     }
+    protected override HashSet<int> IgnoreForAutoNumericalRenaming()
+    {
+        return [
+            (int)TargetID.PlayerSlubling,
+            (int)TargetID.MatthiasSacrificeCrystal,
+        ];
+    }
 
 
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
-        Slothasor.FindMushrooms(logData, agentData, combatData, extensions);  
+        Slothasor.FindMushrooms(logData, agentData, combatData, extensions);
+        Slothasor.FindSlublingTransformations(logData, agentData, combatData, extensions);
+        var bees = BanditTrio.CreateCustomInsectSwarmMasterAgent(logData, agentData);
         BanditTrio.FindCageAndBombs(agentData, combatData);
         Matthias.FindSacrifices(logData, agentData, combatData, extensions);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
+        BanditTrio.RedirectInsectSwarmsToCustomMaster(bees, agentData);
         Matthias.ForceSacrificeHealth(Targets);
     }
 
@@ -241,12 +262,12 @@ internal class SalvationPassInstance : SalvationPass
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -294,6 +315,14 @@ internal class SalvationPassInstance : SalvationPass
         foreach (SalvationPass logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

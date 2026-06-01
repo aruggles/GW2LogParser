@@ -1,5 +1,6 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -17,7 +18,7 @@ internal class DeepstoneInstance : FractalLogic
         Extension = "deepstone";
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Deepstone";
     }
@@ -29,8 +30,8 @@ internal class DeepstoneInstance : FractalLogic
             TargetID.TheVoice,
         ];
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        logData.SetSuccess(true, logData.LogEnd);
+        successHandler.SetSuccess(true, logData.LogEnd);
     }
 }

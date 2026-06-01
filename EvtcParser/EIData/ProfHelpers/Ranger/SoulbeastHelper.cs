@@ -37,13 +37,28 @@ internal static class SoulbeastHelper
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers =
     [
+        // - Sic 'Em
+        new BuffOnActorDamageModifier(Mod_SicEm, SicEmBuff, "Sic 'Em!", "40%", DamageSource.NoPets, 40.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByPresence, SkillImages.SicEm, DamageModifierMode.PvE)
+            .WithBuffOnActorFromFoe()
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance),
+        new BuffOnActorDamageModifier(Mod_SicEm, SicEmBuff, "Sic 'Em!", "25%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByPresence, SkillImages.SicEm, DamageModifierMode.sPvPWvW)
+            .WithBuffOnActorFromFoe()
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance),
+        new BuffOnActorDamageModifier(Mod_SicEm, SicEmBuff, "Sic 'Em!", "25%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByPresence, SkillImages.SicEm, DamageModifierMode.All)
+            .WithBuffOnActorFromFoe()
+            .WithBuilds(GW2Builds.May2021Balance),
+        new BuffOnActorDamageModifier(Mod_LesserSicEm, LesserSicEm, "Lesser Sic 'Em!", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByPresence, SkillImages.SicEm, DamageModifierMode.All)
+            .WithBuffOnActorFromFoe()
+            .WithBuilds(GW2Builds.January2026Balance),
         // Twice as Vicious
         new BuffOnActorDamageModifier(Mod_TwiceAsVicious, TwiceAsVicious, "Twice as Vicious", "5% (4s) after disabling foe", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.TwiceAsVicious, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2019Balance),
         new BuffOnActorDamageModifier(Mod_TwiceAsVicious, TwiceAsVicious, "Twice as Vicious", "5% (10s) after disabling foe", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.TwiceAsVicious, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.July2019Balance, GW2Builds.February2020Balance),
         new BuffOnActorDamageModifier(Mod_TwiceAsVicious, TwiceAsVicious, "Twice as Vicious", "10% (10s) after disabling foe", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.TwiceAsVicious, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.February2020Balance),
+            .WithBuilds(GW2Builds.February2020Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_TwiceAsVicious, TwiceAsVicious, "Twice as Vicious", "7% (10s) after disabling foe", DamageSource.NoPets, 7.0, DamageType.StrikeAndCondition, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.TwiceAsVicious, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         new BuffOnActorDamageModifier(Mod_TwiceAsVicious, TwiceAsVicious, "Twice as Vicious", "5% (10s) after disabling foe", DamageSource.NoPets, 5.0, DamageType.StrikeAndCondition, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.TwiceAsVicious, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.February2020Balance),
         // Furious Strength
@@ -58,14 +73,15 @@ internal static class SoulbeastHelper
         new BuffOnActorDamageModifier(Mod_FuriousStrength, Fury, "Furious Strength", "10% under fury", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByStack, TraitImages.FuriousStrength, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.September2023Balance),
         // Loud Whistle
-        new BuffOnActorDamageModifier(Mod_LoudWhistle, [Stout, Deadly, Ferocious, Supportive, Versatile], "Loud Whistle", "10% while merged and hp >=90%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.LoudWhistle, DamageModifierMode.All)
+        new BuffOnActorDamageModifier(Mod_LoudWhistle, [Stout, Deadly, Ferocious, Supportive, Versatile], "Loud Whistle (Merged)", "10% while merged and hp >=90%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.LoudWhistle, DamageModifierMode.All)
             .UsingChecker((x,log) => x.IsOverNinety)
             .WithBuilds(GW2Builds.May2018Balance),
         // Oppressive Superiority
-        new DamageLogDamageModifier(Mod_OppressiveSuperiority, "Oppressive Superiority", "10% if target hp% lower than self hp%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Soulbeast, TraitImages.OppressiveSuperiority, SelfHigherHPChecker, DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_OppressiveSuperiority, "Oppressive Superiority", "10% if target hp% lower than self hp%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Soulbeast, TraitImages.OppressiveSuperiority, FromHigherThanToHPChecker, DamageModifierMode.All)
             .UsingApproximate(),
         // One Wolf Pack
-        new SkillDamageModifier(Mod_OneWolfPack,"One Wolf Pack", "per hit (max. once every 0.25s)", OneWolfPackDamage, DamageSource.NoPets, DamageType.Power, DamageType.All, Source.Common, SkillImages.OneWolfPack, DamageModifierMode.All),
+        new SkillDamageModifier(Mod_OneWolfPack,"One Wolf Pack", "per hit (max. once every 0.25s)", OneWolfPackDamage, DamageSource.NoPets, DamageType.Power, DamageType.All, Source.Soulbeast, SkillImages.OneWolfPack, DamageModifierMode.All)
+            .UsingSpecSpecificShared(),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -80,7 +96,8 @@ internal static class SoulbeastHelper
         new BuffOnActorDamageModifier(Mod_SecondSkin, Protection, "Second Skin", "-25% under protection", DamageSource.Incoming, -25.0, DamageType.Condition, DamageType.All, Source.Soulbeast, ByPresence, TraitImages.SecondSkin, DamageModifierMode.sPvP)
             .WithBuilds(GW2Builds.October2024Balance),
         // Dolyak Stance
-        new BuffOnActorDamageModifier(Mod_DolyakStance, DolyakStanceBuff, "Dolyak Stance", "-33%", DamageSource.Incoming, -33.0, DamageType.StrikeAndCondition, DamageType.All, Source.Common, ByPresence, SkillImages.DolyakStance, DamageModifierMode.All)
+        new BuffOnActorDamageModifier(Mod_DolyakStance, DolyakStanceBuff, "Dolyak Stance", "-33%", DamageSource.Incoming, -33.0, DamageType.StrikeAndCondition, DamageType.All, Source.Soulbeast, ByPresence, SkillImages.DolyakStance, DamageModifierMode.All)
+            .UsingSpecSpecificShared()
             .WithBuilds(GW2Builds.December2018Balance),
     ];
 

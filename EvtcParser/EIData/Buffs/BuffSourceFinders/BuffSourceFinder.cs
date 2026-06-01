@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.ParsedData;
+﻿using System.Security.Cryptography;
+using GW2EIEvtcParser.ParsedData;
 
 namespace GW2EIEvtcParser.EIData.BuffSourceFinders;
 
@@ -10,6 +11,7 @@ internal abstract class BuffSourceFinder
     protected Dictionary<long, HashSet<long>> DurationToIDs = [];
     // non trackable times
     protected long EssenceOfSpeed = int.MinValue;
+    protected long ResoundingTimbre = int.MinValue;
     protected long ImbuedMelodies = int.MinValue;
     protected long ImperialImpactExtension = int.MinValue;
 
@@ -23,6 +25,16 @@ internal abstract class BuffSourceFinder
     protected BuffSourceFinder(HashSet<long> boonIDs)
     {
         _boonIDs = boonIDs;
+    }
+
+    protected static bool IsSoulbeast(AgentItem agent, long time)
+    {
+        return agent.GetSpecAtTime(time) == ParserHelper.Spec.Soulbeast;
+    }
+
+    protected static bool IsRanger(AgentItem agent, long time)
+    {
+        return agent.GetBaseSpecAtTime(time) == ParserHelper.Spec.Ranger;
     }
 
     private IEnumerable<CastEvent> GetExtensionSkills(ParsedEvtcLog log, long time, HashSet<long> idsToKeep)
@@ -39,19 +51,30 @@ internal abstract class BuffSourceFinder
     }
     // Spec specific checks
 
-    protected virtual Certainty CouldBeEssenceOfSpeed(AgentItem dst, long buffID, long time, long extension, ParsedEvtcLog log)
+    private bool CouldBeUncertainDueToImbuedMelodies(long extension, ParsedEvtcLog log)
     {
-        if (dst.Spec == ParserHelper.Spec.Soulbeast && Math.Abs(extension - EssenceOfSpeed) <= ParserHelper.BuffSimulatorStackActiveDelayConstant)
+        return Math.Abs(extension - ImbuedMelodies) <= ParserHelper.BuffSimulatorStackActiveDelayConstant && log.FriendliesListBySpec.ContainsKey(ParserHelper.Spec.Tempest);
+    }
+
+    private bool CouldBeUncertainDueToImperialImpact(long extension, ParsedEvtcLog log)
+    {
+        return Math.Abs(extension - ImperialImpactExtension) <= ParserHelper.BuffSimulatorStackActiveDelayConstant && log.FriendliesListBySpec.ContainsKey(ParserHelper.Spec.Vindicator);
+    }
+
+    protected virtual Certainty CouldBeRangerTraits(AgentItem dst, long buffID, long time, long extension, ParsedEvtcLog log)
+    {
+        if ((IsSoulbeast(dst, time) && Math.Abs(extension - EssenceOfSpeed) <= ParserHelper.BuffSimulatorStackActiveDelayConstant) ||
+            (IsRanger(dst, time) && Math.Abs(extension - ResoundingTimbre) <= ParserHelper.BuffSimulatorStackActiveDelayConstant))
         {
             if (GetIDs(log, buffID, extension).Count != 0)
             {
                 return Certainty.Uncertain;
             }
-            if (ImbuedMelodies == EssenceOfSpeed && log.FriendliesListBySpec.ContainsKey(ParserHelper.Spec.Tempest))
+            if (CouldBeUncertainDueToImbuedMelodies(extension, log))
             {
                 return Certainty.Uncertain;
             }
-            if (EssenceOfSpeed == ImperialImpactExtension && log.FriendliesListBySpec.ContainsKey(ParserHelper.Spec.Vindicator))
+            if (CouldBeUncertainDueToImperialImpact(extension, log))
             {
                 return Certainty.Uncertain;
             }
@@ -64,10 +87,10 @@ internal abstract class BuffSourceFinder
     {
         if (log.FriendliesListBySpec.TryGetValue(ParserHelper.Spec.Tempest, out var tempests) && Math.Abs(extension - ImbuedMelodies) <= ParserHelper.BuffSimulatorStackActiveDelayConstant)
         {
-            var magAuraApplications = new HashSet<AgentItem>(log.CombatData.GetBuffData(SkillIDs.MagneticAura).Where(x => x is BuffApplyEvent && Math.Abs(x.Time - time) < ParserHelper.ServerDelayConstant && x.CreditedBy != agent).Select(x => x.CreditedBy));
+            var magAuraApplications = new HashSet<AgentItem>(log.CombatData.GetBuffData(SkillIDs.MagneticAura).Where(x => x is BuffApplyEvent && Math.Abs(x.Time - time) < ParserHelper.ServerDelayConstant && !x.CreditedBy.Is(agent)).Select(x => x.CreditedBy));
             foreach (SingleActor tempest in tempests)
             {
-                if (magAuraApplications.Contains(tempest.AgentItem))
+                if (magAuraApplications.Any(x => tempest.AgentItem.Is(x) && x.InAwareTimes(tempest)))
                 {
                     return true;
                 }
@@ -95,7 +118,7 @@ internal abstract class BuffSourceFinder
         return res;
     }
 
-    private AgentItem NoCastSrcFinder(AgentItem dst, long time, long extension, ParsedEvtcLog log, long buffID, Certainty essenceOfSpeedCheck, IEnumerable<AgentItem> impertialImpactAgents)
+    private AgentItem NoCastSrcFinder(AgentItem dst, long time, long extension, ParsedEvtcLog log, long buffID, Certainty rangerSpecificCheck, IEnumerable<AgentItem> imperialImpactAgents)
     {
         // If uncertainty due to imbued melodies, return unknown
         if (CouldBeImbuedMelodies(dst, buffID, time, extension, log))
@@ -103,16 +126,16 @@ internal abstract class BuffSourceFinder
             return ParserHelper._unknownAgent;
         }
         // uncertainty due to essence of speed but not due to imperial impact
-        if (essenceOfSpeedCheck == Certainty.Uncertain && !impertialImpactAgents.Any())
+        if (rangerSpecificCheck == Certainty.Uncertain && !imperialImpactAgents.Any())
         {
             // the soulbeast
             return dst;
         }
         // uncertainty due to imperial impact but not due to essence of speed
-        if (essenceOfSpeedCheck == Certainty.NotApplicable && impertialImpactAgents.Count() == 1)
+        if (rangerSpecificCheck == Certainty.NotApplicable && imperialImpactAgents.Count() == 1)
         {
             // the vindicator
-            return impertialImpactAgents.First();
+            return imperialImpactAgents.First();
         }
         return ParserHelper._unknownAgent;
     }
@@ -125,7 +148,7 @@ internal abstract class BuffSourceFinder
         {
             if (buffInstance > 0)
             {
-                BuffApplyEvent? seedApply = log.CombatData.GetBuffDataByInstanceID(buffID, buffInstance).OfType<BuffApplyEvent>().LastOrDefault(x => x.BuffInstance == buffInstance && x.Time <= time);
+                BuffApplyEvent? seedApply = log.CombatData.GetBuffDataByInstanceID(buffID, buffInstance).OfType<BuffApplyEvent>().LastOrDefault(x => x.Time <= time);
                 if (seedApply != null)
                 {
                     return seedApply.By;
@@ -140,9 +163,9 @@ internal abstract class BuffSourceFinder
         {
             return ParserHelper._unknownAgent;
         }
-        var essenceOfSpeedCheck = CouldBeEssenceOfSpeed(dst, buffID, time, extension, log);
+        var rangerSpecificCheck = CouldBeRangerTraits(dst, buffID, time, extension, log);
         // can only be the soulbeast
-        if (essenceOfSpeedCheck == Certainty.Certain)
+        if (rangerSpecificCheck == Certainty.Certain)
         {
             return dst;
         }
@@ -160,7 +183,7 @@ internal abstract class BuffSourceFinder
             {
                 CastEvent item = cls.First();
                 // If uncertainty due to essence of speed, imbued melodies or imperial impact, return unknown
-                if (essenceOfSpeedCheck == Certainty.Uncertain || CouldBeImbuedMelodies(item.Caster, buffID, time, extension, log) || impImpactCount != 0)
+                if (rangerSpecificCheck == Certainty.Uncertain || CouldBeImbuedMelodies(item.Caster, buffID, time, extension, log) || impImpactCount != 0)
                 {
                     return ParserHelper._unknownAgent;
                 }
@@ -170,11 +193,11 @@ internal abstract class BuffSourceFinder
             // If no cast item 
             else
             {
-                return NoCastSrcFinder(dst, time, extension, log, buffID, essenceOfSpeedCheck, imperialImpactAgents);
+                return NoCastSrcFinder(dst, time, extension, log, buffID, rangerSpecificCheck, imperialImpactAgents);
             }
         }
         // No known cast skill ID for given extension, same as no cast being present
-        return NoCastSrcFinder(dst, time, extension, log, buffID, essenceOfSpeedCheck, imperialImpactAgents);
+        return NoCastSrcFinder(dst, time, extension, log, buffID, rangerSpecificCheck, imperialImpactAgents);
     }
 
 }

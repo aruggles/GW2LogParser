@@ -12,22 +12,18 @@ function compileCRTemplates() {
 const noUpdateTime = -1;
 const updateText = -2;
 const deadIcon = new Image();
-deadIcon.crossOrigin = "Anonymous";
 deadIcon.onload = function () {
     animateCanvas(noUpdateTime);
 };
 const downEnemyIcon = new Image();
-downEnemyIcon.crossOrigin = "Anonymous";
 downEnemyIcon.onload = function () {
     animateCanvas(noUpdateTime);
 };
 const downAllyIcon = new Image();
-downAllyIcon.crossOrigin = "Anonymous";
 downAllyIcon.onload = function () {
     animateCanvas(noUpdateTime);
 };
 const dcIcon = new Image();
-dcIcon.crossOrigin = "Anonymous";
 dcIcon.onload = function () {
     animateCanvas(noUpdateTime);
 };
@@ -98,7 +94,8 @@ const reactiveAnimationData = {
     range: {
         min: 0,
         max: 1e12
-    }
+    },
+    selectedExtraDecorations: false,
 };
 
 var sliderDelimiter = {
@@ -239,6 +236,31 @@ class MappedRenderablesRoot extends RenderablesRoot {
 
 //
 
+class RangeControl {
+    constructor(radius) {
+        this.enabled = false;
+        this.radius = radius;
+    }
+}
+
+class RangeControls {
+    constructor() {
+        this.ranges = [];
+    }
+
+    addRangeControl(radius) {
+        this.ranges.push(new RangeControl(radius));
+    }
+}
+
+class ConeControl {
+    constructor(openingAngle, radius) {
+        this.enabled = false;
+        this.openingAngle = openingAngle;
+        this.radius = radius;
+    }
+}
+
 class Animator {
     constructor(options) {
         var _this = this;
@@ -250,7 +272,7 @@ class Animator {
         // simulation params
         this.speed = 1;
         this.backwards = false;
-        this.rangeControl = [{ enabled: false, radius: 180 }, { enabled: false, radius: 360 }, { enabled: false, radius: 720 }];
+        this.extraDecorationMap = new Map();
         this.displaySettings = {
             highlightSelectedGroup: true,
             displayAllMinions: false,
@@ -263,11 +285,7 @@ class Animator {
             useActorHitboxWidth: false,
             followSelected: false
         };
-        this.coneControl = {
-            enabled: false,
-            openingAngle: 90,
-            radius: 360,
-        };
+        this.selectedExtraDecorations = null;
         // actors
         const start = logData.phases[0].start * 1000;
         const end = logData.phases[0].end * 1000;
@@ -307,6 +325,12 @@ class Animator {
             }
             if (options.actors) {
                 this._initActors(options.actors, options.decorationRenderings, options.decorationMetadata);
+            }
+            if (!replaceImgur) {
+                downEnemyIcon.crossOrigin = "Anonymous";
+                downAllyIcon.crossOrigin = "Anonymous";
+                dcIcon.crossOrigin = "Anonymous";
+                deadIcon.crossOrigin = "Anonymous";
             }
             downEnemyIcon.src = UIIcons.DownedEnemy;
             downAllyIcon.src = UIIcons.DownedAlly;
@@ -517,9 +541,6 @@ class Animator {
                         }
                         DecorationClass = TextDrawable;
                         break;
-                    case Types.TextOverhead:
-                        this.overheadActorData.add(new TextOverheadDrawable(decorationRendering));
-                        continue;
                     case Types.Circle:
                         DecorationClass = CircleMechanicDrawable;
                         break;
@@ -544,6 +565,10 @@ class Animator {
                     case Types.Icon:
                         DecorationClass = IconMechanicDrawable;
                         break;
+                    // Special cases
+                    case Types.TextOverhead:
+                        this.overheadActorData.add(new TextOverheadDrawable(decorationRendering));
+                        continue;
                     case Types.IconOverhead:
                         this.overheadActorData.add(new IconOverheadMechanicDrawable(decorationRendering));
                         continue;
@@ -646,6 +671,44 @@ class Animator {
         }
     }
 
+    _hideExtraDecorations() {   
+        this.selectedExtraDecorations = null;
+        $('#circle1Text').val(180);
+        $('#circle1Check').prop('checked', false);
+        $('#circle2Text').val(360);
+        $('#circle2Check').prop('checked', false);
+        $('#circle3Text').val(720);
+        $('#circle3Check').prop('checked', false);
+        $('#coneRadiusText').val(360);
+        $('#coneAngleText').val(90);
+        $('#coneCheck').prop('checked', false);
+        this.reactiveDataStatus.selectedExtraDecorations = false;
+    }
+
+    _setCurrentExtraDecorations() {
+        this.selectedExtraDecorations = this.extraDecorationMap.get(this.reactiveDataStatus.selectedActorID);
+        if (!this.selectedExtraDecorations) {
+            this.selectedExtraDecorations = {
+                rangeControls: new RangeControls(),
+                coneControl: new ConeControl(90, 360),
+            };
+            this.selectedExtraDecorations.rangeControls.addRangeControl(180);
+            this.selectedExtraDecorations.rangeControls.addRangeControl(360);
+            this.selectedExtraDecorations.rangeControls.addRangeControl(720);
+            this.extraDecorationMap.set(this.reactiveDataStatus.selectedActorID, this.selectedExtraDecorations);
+        }
+        $('#circle1Text').val(this.selectedExtraDecorations.rangeControls.ranges[0].radius);
+        $('#circle1Check').prop('checked', this.selectedExtraDecorations.rangeControls.ranges[0].enabled);
+        $('#circle2Text').val(this.selectedExtraDecorations.rangeControls.ranges[1].radius);
+        $('#circle2Check').prop('checked', this.selectedExtraDecorations.rangeControls.ranges[1].enabled);
+        $('#circle3Text').val(this.selectedExtraDecorations.rangeControls.ranges[2].radius);
+        $('#circle3Check').prop('checked', this.selectedExtraDecorations.rangeControls.ranges[2].enabled);
+        $('#coneRadiusText').val(this.selectedExtraDecorations.coneControl.radius);
+        $('#coneAngleText').val(this.selectedExtraDecorations.coneControl.openingAngle);
+        $('#coneCheck').prop('checked', this.selectedExtraDecorations.coneControl.enabled);
+        this.reactiveDataStatus.selectedExtraDecorations = true;
+    }
+
     selectActor(actorId, keepIfEqual = false) {
         if (DEBUG) {
             const inLogActor = logData.players.filter(x => x.uniqueID === actorId)[0] || logData.targets.filter(x => x.uniqueID === actorId)[0];
@@ -659,9 +722,11 @@ class Animator {
         if (!actor || (!keepIfEqual && this.selectedActor === actor)) {
             this.selectedActor = null;
             this.reactiveDataStatus.selectedActorID = null;
+            this._hideExtraDecorations();
         } else {
             this.selectedActor = actor;
             this.reactiveDataStatus.selectedActorID = actorId;
+            this._setCurrentExtraDecorations();
         }
         if (this.animation === null) {
             animateCanvas(noUpdateTime);
@@ -774,18 +839,27 @@ class Animator {
         animateCanvas(noUpdateTime);
     }
 
-    toggleConeDisplay() {
-        this.coneControl.enabled = !this.coneControl.enabled;
+    toggleConeDisplay(iOnOff) {
+        if (!this.selectedExtraDecorations) {
+            return;
+        }
+        this.selectedExtraDecorations.coneControl.enabled = iOnOff;
         animateCanvas(noUpdateTime);
     }
 
     setConeRadius(value) {
-        this.coneControl.radius = value;
+        if (!this.selectedExtraDecorations) {
+            return;
+        }
+        this.selectedExtraDecorations.coneControl.radius = value;
         animateCanvas(noUpdateTime);
     }
 
     setConeAngle(value) {
-        this.coneControl.openingAngle = value;
+        if (!this.selectedExtraDecorations) {
+            return;
+        }
+        this.selectedExtraDecorations.openingAngle.radius = value;
         animateCanvas(noUpdateTime);
     }
 
@@ -908,13 +982,19 @@ class Animator {
         return this.backwards;
     }
 
-    toggleRange(index) {
-        this.rangeControl[index].enabled = !this.rangeControl[index].enabled;
+    toggleRange(index, iOnOff) {
+        if (!this.selectedExtraDecorations) {
+            return;
+        }
+        this.selectedExtraDecorations.rangeControls.ranges[index].enabled = iOnOff;
         animateCanvas(noUpdateTime);
     }
 
     setRangeRadius(index, value) {
-        this.rangeControl[index].radius = value;
+        if (!this.selectedExtraDecorations) {
+            return;
+        }
+        this.selectedExtraDecorations.rangeControls.ranges[index].radius = value;
         animateCanvas(noUpdateTime);
     }
 

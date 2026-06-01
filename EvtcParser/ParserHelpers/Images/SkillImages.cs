@@ -10,10 +10,10 @@ internal static class SkillImages
     public const string WeaponDraw = "https://i.imgur.com/7TAlNtd.png";
     public const string Dodge = "https://wiki.guildwars2.com/images/archive/b/b2/20150601155307%21Dodge.png";
     #region Down
-    public const string Anchor = "https://wiki.guildwars2.com/images/c/c0/Anchor.png";
+    public const string Anchor = "https://render.guildwars2.com/file/3C2B5C060DA920011A20ACDB96DB155D4BDE2A04/103434.png";
     public const string Resurrect = "https://wiki.guildwars2.com/images/3/3d/Downed_ally.png";
-    public const string Bandage = "https://wiki.guildwars2.com/images/0/0c/Bandage.png";
-    public const string RescueProtocol = "https://wiki.guildwars2.com/images/c/cd/Rescue_Protocol_%28skill%29.png";
+    public const string Bandage = "https://render.guildwars2.com/file/D2D7D11874060D68760BFD519CFC77B6DF14981F/102928.png";
+    public const string RescueProtocol = "https://render.guildwars2.com/file/B2010324C8091FC1C3D2956A55BD3263042EDCE5/2604806.png";
     #endregion Down
     #region Racial Skills
     // Sylvari
@@ -32,10 +32,11 @@ internal static class SkillImages
     public const string WhirlingAssault = "https://wiki.guildwars2.com/images/8/8b/Whirling_Assault.png";
     // Charr
     public const string Charrzooka = "https://render.guildwars2.com/file/AC98B4ECED0D0638751B4939CC3B021991CECDAB/103934.png";
+    public const string BattleRoar = "https://render.guildwars2.com/file/2B27E234B91FF71C4F20ED925CD9DBBA235771E6/103930.png";
     #endregion
     #region Elementalist
     public const string FireShield = "https://render.guildwars2.com/file/2AE8672D7A08BB4129B6F0F40C2BC10642D55C28/102884.png";
-    
+
     public const string WeaveSelf = "https://render.guildwars2.com/file/E656D3A8B1339603A70BBB7237F2BA004258ED55/1770326.png";
     // Attunements
     public const string FireAttunement = "https://render.guildwars2.com/file/1C91E9C799469ACC6EAF1ACD4B0AD8ACAB0C69A2/103035.png";
@@ -97,7 +98,7 @@ internal static class SkillImages
     public const string Tornado = "https://render.guildwars2.com/file/22EDF7A7D620040CE1520552F45DE962AA625DA6/103281.png";
     public const string Whirlpool = "https://render.guildwars2.com/file/D30CCEBC5B2A61039AFF0D691F46665B7E4F6B76/347235.png";
     public const string ChainLightning = "https://render.guildwars2.com/file/01D310FE65DBA378CBAFD13B2BFEDE59939C5153/102964.png";
-    public const string ArcanePower = "https://render.guildwars2.com/file/AD24BD1B231424D2A8F223A6F899AC34D6AAAB26/103356.png";
+    public const string ArcanePower_ArcaneEcho = "https://render.guildwars2.com/file/AD24BD1B231424D2A8F223A6F899AC34D6AAAB26/103356.png";
     public const string ArcaneShield = "https://render.guildwars2.com/file/A20219EB6F5FC52A0E537163B4A9051606C11B52/65735.png";
     public const string RockBarrier = "https://render.guildwars2.com/file/C5CB69247473AE2DEB35DB5F952A0C3832CC14F2/102858.png";
     public const string MagneticWave = "https://render.guildwars2.com/file/BBF16D6BF9CDA755420759F7D5F8D3FF6B2065DA/103343.png";
@@ -133,13 +134,26 @@ internal static class SkillImages
     public const string RingOfFire = "https://render.guildwars2.com/file/CD08FDC23B56EBB19C90B909C65D9EE4D9FFF8C8/103183.png";
     public const string DebrisTornado = "https://render.guildwars2.com/file/F20A7D6B7FB71D520B4643CF120AF6A50DF7A2B0/102914.png";
     public const string LavaFont = "https://render.guildwars2.com/file/CFA80DB42022C240001D249CED6235CEF70C9042/103135.png";
+    public const string ScorchingShot = "https://render.guildwars2.com/file/DA6E9962EC9966CDBBC776F23347D16298AF4ADE/3256325.png";
+    public const string SoothingSplash = "https://render.guildwars2.com/file/D2092BE1DA1F2D1D93F67E07EE010BB113794C44/3256326.png";
+    public const string ElectricExposure = "https://render.guildwars2.com/file/575D6048F7B2660A3BC0D3A93CECFD49EEB1C0D1/3256323.png";
+    public const string PiercingPebble = "https://render.guildwars2.com/file/4F217D25EBBFC017B4621C966BD26A7C4C6CD81C/3256324.png";
+    public const string FrostfireWard = "https://render.guildwars2.com/file/DD1B9616EB330DC50729663B497B31D40104290C/3379105.png";
+    public const string Galvanize = "https://render.guildwars2.com/file/14A70A6CE40336397DAA5C0F03940C08C7622376/3379106.png";
+    public const string FieryImpact = "https://render.guildwars2.com/file/69FB136A0D3615BBBE1B04DCBE09407D7E9297F3/3379107.png";
+    public const string Elutriate = "https://render.guildwars2.com/file/1EF742E5936B0D160F3869511D2EBEC6745EEA18/3379108.png";
+    public const string SoothingBurst = "https://render.guildwars2.com/file/110F9A310F3A6D0E999B36DAB4F5390F70727DEB/3379109.png";
+    public const string ShaleStorm = "https://render.guildwars2.com/file/53AD3D92123744A13D0D2434661EFA3608213D06/3379110.png";
+    public const string InvokeLightning = "https://render.guildwars2.com/file/F513D2445AB3499CCC4B6E28044571583291A66D/103141.png";
+    public const string MagmaOrb = "https://render.guildwars2.com/file/F0A8380340E1E64FAFAAE87053422136664528CC/103205.png";
+    public const string FrozenBurst = "https://render.guildwars2.com/file/C13AA7EC94200C0E7E24C4E47164183991107EA4/103243.png";
     // Evoker
     // - Fox
     public const string Ignite = "https://render.guildwars2.com/file/3C20D2FF75DA624828651AD5CEB463AC90A01207/3680117.png";
     // - Otter
     public const string Splash = "https://render.guildwars2.com/file/2C4C57C5B721422A66D3CEAB4ACE753E4FE69355/3680119.png";
     // - Hare
-    public const string Zap = "https://wiki.guildwars2.com/images/a/a0/Zap_%28skill%29.png";
+    public const string Zap = "https://render.guildwars2.com/file/234FFB056E376AEE0D6D150A3C23C669BEC0359A/3680120.png";
     public const string LightningBlitz = "https://render.guildwars2.com/file/CF99A0354E3667FDE3702CAEA4C3B6AFB2D6ACFD/3680113.png";
     // - Toad
     public const string Calcify = "https://render.guildwars2.com/file/C938A2442A5508F415AB72F70AA9A85AFA57FCDD/3680114.png";
@@ -179,7 +193,7 @@ internal static class SkillImages
     public const string LightningRod = "https://render.guildwars2.com/file/F3B4056D042BC2573D054F49ACF40FFA16014CB8/3379115.png";
     public const string ConduitSurge = "https://render.guildwars2.com/file/09D83A621D282D7E78C6E3502D9E91AC4AC6A2E9/3379114.png";
     public const string ElectricArtillery = "https://render.guildwars2.com/file/0CB823345DA0D01FB64C39485242D408C75C2E05/3379116.png";
-    public const string Focused = "https://wiki.guildwars2.com/images/5/51/Focused.png";
+    public const string Focused = "https://render.guildwars2.com/file/F3764E03FFEE05BB56BDE47B44027CB3A36FC67C/3378998.png";
     public const string NetShot = "https://render.guildwars2.com/file/A47830A4152F5F5DEC5D22975DE0449A57F2D570/102982.png";
     public const string HealingMistOrSoothingDetonation = "https://i.imgur.com/cS05J70.png";
     public const string RefractionCutter = "https://render.guildwars2.com/file/C571A742D055DCA81F6FD70D38C0409DDC9ABEE5/1770408.png";
@@ -200,7 +214,7 @@ internal static class SkillImages
     public const string CrashDown = "https://render.guildwars2.com/file/9156D3FECB94F8B27909B3EA904DAAE3C21043F9/2503677.png";
     public const string ThumperTurret = "https://render.guildwars2.com/file/EA2452FCE71C0F0B9755517324A47680BF45E79E/103201.png";
     public const string Overheat = "https://render.guildwars2.com/file/5DC4E10CE03E4D78EFACEEDB6F5FCF4F206BA7E3/1770392.png";
-    public const string GlueBomb = "https://wiki.guildwars2.com/images/4/42/Glue_Bomb.png";
+    public const string GlueBomb = "https://render.guildwars2.com/file/A7EDBB397B9CCE7D59B27AFD7E670CD740E3324C/103442.png";
     // Amalgam
     public const string DefensiveProtocolCleanse = "https://render.guildwars2.com/file/71A2EA9B60E691E61521C2B621E665146BF1D1DD/3680127.png";
     public const string DefensiveProtocolThorns = "https://render.guildwars2.com/file/5B565BA46C111902EE65AB4592590442A5A6E754/3680135.png";
@@ -233,6 +247,10 @@ internal static class SkillImages
     public const string RushingJustice = "https://render.guildwars2.com/file/2F3E006427F17D3EF747BF0F0B0E0A941964572F/2479367.png";
     public const string FlowingResolve = "https://render.guildwars2.com/file/E7DB54CE0FA25D3476405E083DBA25033C18FDA3/2479368.png";
     public const string CrashingCourage = "https://render.guildwars2.com/file/3AD50BA43AA00EA97C6152D5EC6092FE0F0979D0/2479369.png";
+    // Luminary F Skills
+    public const string RadiantJustice = "https://render.guildwars2.com/file/4AA777300AE7D0681907353CA69FBAFD7E649253/3713157.png";
+    public const string RadiantResolve = "https://render.guildwars2.com/file/FA9E0C3E1024084F9E0F5505DAD826E242580C58/3713158.png";
+    public const string RadiantCourage = "https://render.guildwars2.com/file/61FA2B39C018F8930B38D1FC0FE5CE9C49BA681A/3713156.png";
     // Firebrand Tome F1 Skills
     public const string Chapter1SearingSpell = "https://wiki.guildwars2.com/images/d/d3/Chapter_1-_Searing_Spell.png";
     public const string Chapter2IgnitingBurst = "https://wiki.guildwars2.com/images/5/53/Chapter_2-_Igniting_Burst.png";
@@ -269,6 +287,9 @@ internal static class SkillImages
     public const string MightyBlow = "https://render.guildwars2.com/file/7CF5FFD35624B6D243B97CE4344018C3F1E6ACB7/103682.png";
     public const string Repose = "https://render.guildwars2.com/file/3D9C99D66E6CD2B0529DED46AC38AA51F4E2A61E/2479374.png";
     public const string MercifulIntervention = "https://render.guildwars2.com/file/4B93D8CA0663ABD94BAF9FCE80D6280A56C01099/103706.png";
+    public const string SymbolOfBlades = "https://render.guildwars2.com/file/E7F5FFA84F0AE4EA0EC5AE54FA365C09925551A0/103641.png";
+    public const string SymbolOfProtection = "https://render.guildwars2.com/file/E56B3804B2F82E3256A82318E537D024DC57E271/103161.png";
+    public const string SymbolOfResolution = "https://render.guildwars2.com/file/B9FC18E67D7FEE5B64F60AB7700E5706CCB51DA6/103660.png";
     public const string SymbolOfLuminance = "https://render.guildwars2.com/file/0E1E2D69CBC3C0E36217506C6CCB710138035373/3379129.png";
     public const string FireJurisdiction = "https://render.guildwars2.com/file/61186008B920AADD9A0D47E1A10C63AFF28030A9/3256356.png";
     public const string ProtectorsStrike = "https://render.guildwars2.com/file/7C42A81ACFBFFE32A528DFCA8014E7C4476358C8/103202.png";
@@ -290,6 +311,7 @@ internal static class SkillImages
     public const string SpearOfLight = "https://render.guildwars2.com/file/77931F01AE91A00998BD286BA2930DCE1A354318/103677.png";
     public const string HuntersWard = "https://render.guildwars2.com/file/BA2C3116B20CF142F70D18394E377A043D3E0E96/1012873.png";
     public const string HammerOfWisdom = "https://render.guildwars2.com/file/99430A49F97BA45EF101E611A69193D57BF70A7D/103655.png";
+    public const string Brilliance = "https://render.guildwars2.com/file/0C2632BDBBEC0648A0F97196EF9A5106101FD339/103679.png";
     // Luminary
     public const string ResoluteStance = "https://render.guildwars2.com/file/C0267DCD064328C6C4CF33CF08714FB1DC1171BC/3680141.png";
     public const string StalwartStance = "https://render.guildwars2.com/file/4770DFB6241311A7969E587B0B02BD672875F934/3680153.png";
@@ -297,6 +319,7 @@ internal static class SkillImages
     public const string EffulgentStance = "https://render.guildwars2.com/file/59A7E145B5D6DC4CB9642F80007644791D302FA2/3680156.png";
     public const string PiercingStance = "https://render.guildwars2.com/file/E5805F3477ED5618E348043475FFA442C7C791E3/3680154.png";
     public const string DaringAdvance = "https://render.guildwars2.com/file/2E24D2089501C663801BF7CC567E1CC0F5714AD7/3680140.png";
+    public const string RestorativeGlow = "https://render.guildwars2.com/file/9B72587791FE50B415B94BE92AA9050F43F6A848/3680149.png";
     #endregion Guardian
     #region Mesmer
     // Signets
@@ -318,8 +341,8 @@ internal static class SkillImages
     public const string MirageCloak = "https://render.guildwars2.com/file/67FA6042C903766148F46373C47B037609C4D525/1770144.png";
     public const string FalseOasis = "https://render.guildwars2.com/file/CAF16BD2E1C1D1E263B46E702FD3AF9821C59FED/1770506.png";
     public const string BladeturnRequiem = "https://render.guildwars2.com/file/040192EDDE9D2492D2428027E50DFC12B9044D39/2479384.png";
-    public const string MorphedPolymorphMoa = "https://wiki.guildwars2.com/images/5/55/Morphed_%28Polymorph_Moa%29.png";
-    public const string MorphedPolymorphTuna = "https://wiki.guildwars2.com/images/2/24/Chomp_%28armorfish%29.png";
+    public const string MorphedPolymorphMoa = "https://render.guildwars2.com/file/2F16BCE7E9345968585D43CD2AC1593118370FDF/103727.png";
+    public const string MorphedPolymorphTuna = "https://render.guildwars2.com/file/395ED474E6F5E77D8036DD9222F95B66CCDC253C/103554.png";
     public const string DimensionalAperture = "https://render.guildwars2.com/file/4342CE56CCFF5669FE084891F377B95D1026AFA1/3256364.png";
     public const string PhantasmalWarlock = "https://render.guildwars2.com/file/095CB8FCE947F9D538CAD84839B475F2EEAC4A0C/103746.png";
     public const string BlinkOrPhaseRetreat = "https://i.imgur.com/yxMF7D1.png";
@@ -344,15 +367,19 @@ internal static class SkillImages
     public const string SplitSurge = "https://render.guildwars2.com/file/66067CFD182ED01761DC5992E679BFA2057B5954/1770507.png";
     public const string FriendlyFire = "https://render.guildwars2.com/file/BAAD0DF6B8C4AAF520B82BE3CEA7931BC2F52DCF/3256358.png";
     public const string PhantasmalSharpshooter = "https://render.guildwars2.com/file/3499040CA6182B68293313C1000C470828CE1532/3256362.png";
-    public const string PhantasmalLancher = "https://render.guildwars2.com/file/5E6C98FA3B942EE76808530B016FF5621A25764F/3379157.png";
+    public const string PhantasmalLancer = "https://render.guildwars2.com/file/5E6C98FA3B942EE76808530B016FF5621A25764F/3379157.png";
     public const string JabMesmerSpear = "https://render.guildwars2.com/file/BBEF48C50DEB9CD79747FD515958A6FC1129EE7D/103778.png";
     public const string StabMesmerSpear = "https://render.guildwars2.com/file/42066E7EE4A3770FE5D4550BD8EDA8237A0DB769/103777.png";
     public const string PhantasmalSwordsman = "https://render.guildwars2.com/file/755CAC115104F0AA0630DCEB472D0678B62A916E/103723.png";
+    public const string Psycut = "https://render.guildwars2.com/file/4BD3520A04710FE5C257CDED2F0C1971E02E0F5F/3379152.png";
+    public const string Psystrike = "https://render.guildwars2.com/file/0CBE4BCB69A5B2200980B4DC98BC0E6AC25675FC/3379153.png";
+    public const string MindPierce = "https://render.guildwars2.com/file/3C543ADB3D7EF49DE574040241F1B206B20CB7A0/3379154.png";
     // Troubadour
     public const string TaleOfTheSecondScion = "https://render.guildwars2.com/file/F12BF59E070FB12D2EAAA209596C52C4D76C4E97/3680158.png";
     public const string HarmoniousHarp = "https://render.guildwars2.com/file/C1BCF465DE1DAB00E00B0F1494ABDB2D7F57BECA/3680162.png";
     public const string DeafeningDrum = "https://render.guildwars2.com/file/E061ECE20A34DC281C0E3EB8FB90094549E87941/3680161.png";
     public const string FlusteringFlute = "https://render.guildwars2.com/file/CFE30B5052A2AA67D9A8AE5FC1FBA0A56C64584C/3680160.png";
+    public const string LivelyLute = "https://render.guildwars2.com/file/4CAA3750145A55B7E73D5EB9917590EC45657BE7/3680159.png";
     #endregion Mesmer
     #region Necromancer
     // Shrouds
@@ -410,6 +437,9 @@ internal static class SkillImages
     public const string WeaponOfWarding = "https://render.guildwars2.com/file/3D185FB008E701F359D3E5FCDE9477309C5C3530/3680183.png";
     public const string XinraesWeapon = "https://render.guildwars2.com/file/1AC290EA0B56F4B1141A53F062140F0AFB65D6CE/3680168.png";
     public const string Anguish = "https://render.guildwars2.com/file/9CA8D4479BEE9A28C810CCB0E234BAC7712104A0/3680170.png";
+    public const string Preservation = "https://render.guildwars2.com/file/473E92AE33757816B7205C4759F1F3065346E600/3680173.png";
+    public const string Wanderlust = "https://render.guildwars2.com/file/604BAC974ED4C76FE95E32BEE6BDB3DE594F9F6C/3680178.png";
+    public const string SummonSpirits = "https://render.guildwars2.com/file/CF9C5D79940CB74DAA650476DAE9DC012202B86C/3680177.png";
     #endregion Necromancer
     #region Ranger
     // Signets
@@ -425,12 +455,12 @@ internal static class SkillImages
     public const string StormSpirit = "https://render.guildwars2.com/file/42B863334A6F66D64BC0DDD798959EEB15650F02/103993.png";
     public const string SpiritOfNature = "https://render.guildwars2.com/file/E23D450D539B92FE0D36DEDF1B2D6010A961E612/104011.png";
     // Spirit Casts
-    public const string AquaSurge = "https://wiki.guildwars2.com/images/0/07/Aqua_Surge.png";
-    public const string ColdSnap = "https://wiki.guildwars2.com/images/f/f2/Cold_Snap.png";
-    public const string SolarFlare = "https://wiki.guildwars2.com/images/5/5c/Solar_Flare.png";
-    public const string Quicksand = "https://wiki.guildwars2.com/images/3/3b/Quicksand.png";
-    public const string CallLightning = "https://wiki.guildwars2.com/images/5/59/Call_Lightning_%28Ranger%29.png";
-    public const string NaturesRenewal = "https://wiki.guildwars2.com/images/c/c1/Nature%27s_Renewal.png";
+    public const string AquaSurge = "https://render.guildwars2.com/file/A996FC2C42535DDDD24B7DCC462403D7D79D5B07/699531.png";
+    public const string ColdSnap = "https://render.guildwars2.com/file/48CF08A0F6CC9C51B9ADC1EAF90963FC1849E7A6/104017.png";
+    public const string SolarFlare = "https://render.guildwars2.com/file/32E37AA095945F0EA0C31E29033A6D47013EE94E/104016.png";
+    public const string Quicksand = "https://render.guildwars2.com/file/05A61829954CCE5C0704E3263F793E6CC32906A1/104019.png";
+    public const string CallLightning = "https://render.guildwars2.com/file/AF47A8355C7FBF0AEFC2BE5555DAFA79A0E7A67D/104018.png";
+    public const string NaturesRenewal = "https://render.guildwars2.com/file/93600AABB9DA5C7E9401D01974B8DC289976B314/104020.png";
     // Glyphs
     public const string GlyphOfTheStars = "https://render.guildwars2.com/file/E04535E0710904BE9841BAC49922200E39B9B413/1128636.png";
     public const string GlyphOfTheStarsCelestialAvatar = "https://render.guildwars2.com/file/045471E55B24643A19C40B0D78593007AA1BE665/1128631.png";
@@ -452,7 +482,7 @@ internal static class SkillImages
     public const string CallOfTheWild = "https://render.guildwars2.com/file/2BBB18C54A01FF1D5FF9473EB1059AE491AA98FF/103310.png";
     public const string StrengthOfThePack = "https://render.guildwars2.com/file/B77111BD4468FB297D560A44EE5F023425915FBF/103606.png";
     public const string SharpeningStone = "https://render.guildwars2.com/file/662329DDE4D8C7DFB30DD3D1E8CAB807FACBF66A/104004.png";
-    public const string SharpenSpines = "https://wiki.guildwars2.com/images/9/95/Sharpen_Spines.png";
+    public const string SharpenSpines = "https://render.guildwars2.com/file/D99AA4CC69C7D510A6632D9FC87852A13524BA7F/1128607.png";
     public const string Guard = "https://render.guildwars2.com/file/CAF0C9FF0BAE4C32B3D01009A2ED0C063BDFD8AC/104024.png";
     public const string CelestialAvatar = "https://render.guildwars2.com/file/0C47C53B414ADB3DA62C47679A6C09B4FB0534D3/1128603.png";
     public const string AncestralGrace = "https://render.guildwars2.com/file/DF1223B769A504A6CC381A4A281C0130C9BF67A0/1128624.png";
@@ -467,7 +497,7 @@ internal static class SkillImages
     public const string Entangle = "https://render.guildwars2.com/file/F532ED0DCE2AC7F4D51137B346D2F17AD006EC11/103101.png";
     public const string ConsumingBite = "https://wiki.guildwars2.com/images/6/68/Consuming_Bite.png";
     public const string NarcoticSpores = "https://render.guildwars2.com/file/510AE44E0E0452005337386A66526522F817424E/1770581.png";
-    public const string CripplingAnguish = "https://wiki.guildwars2.com/images/c/c8/Crippling_Anguish.png";
+    public const string CripplingAnguish = "https://render.guildwars2.com/file/DF000038FF639A0601ECBC46222467D6FECE7046/1770580.png";
     public const string KickGazelle = "https://render.guildwars2.com/file/2ADAEF05DE5D0F031ACE310DB425E01CE7180416/1770575.png";
     public const string ChargeGazelle = "https://render.guildwars2.com/file/9E1718ECB696EBE63CF7EE700306D2090DD8084B/1770573.png";
     public const string HeadbuttGazelle = "https://wiki.guildwars2.com/images/8/82/Headbutt_%28gazelle%29.png";
@@ -484,13 +514,13 @@ internal static class SkillImages
     public const string MaulFeline = "https://render.guildwars2.com/file/D5420B910EE4DA1D2F63AEC71F4DF862E414D6E1/103515.png";
     public const string CallLightningJacaranda = "https://render.guildwars2.com/file/731C0827CBB7E4015F3C45B4C49C58B42416BFA8/1770576.png";
     public const string TwinDartsDevourer = "https://render.guildwars2.com/file/9D3C1CD36EAFF4F4F5E4EB7B41C318771E579C78/103583.png";
-    public const string RetreatDevourer = "https://wiki.guildwars2.com/images/2/21/Burrow.png";
+    public const string RetreatDevourer = "https://render.guildwars2.com/file/70BE910B2E6366126B9B9F9C91F227CF9D73E99A/103564.png";
     public const string JacarandasEmbrace = "https://render.guildwars2.com/file/62C42A056E3B30C8770D5BA3E4301C06069BE21E/1770562.png";
     public const string RootSlap = "https://wiki.guildwars2.com/images/7/7d/Root_Slap.png";
-    public const string Peck = "https://wiki.guildwars2.com/images/8/83/Peck.png";
+    public const string Peck = "https://render.guildwars2.com/file/21256E39B31EE59195E1FA61FE417A2FE434EFEB/103241.png";
     public const string FrenziedAttack = "https://render.guildwars2.com/file/E4C75BA1A9056A684EDDF0CBCB746B36D707A842/103007.png";
     public const string HeavyShotTurtle = "https://render.guildwars2.com/file/7D451452DD3DC3B6D1AF52B397F5AF91B7AEC24B/2565744.png";
-    public const string JadeCannonTurtle = "https://wiki.guildwars2.com/images/2/27/Jade_Cannon_%28turtle%29.png";
+    public const string JadeCannonTurtle = "https://render.guildwars2.com/file/D8CA0DDAD6EA97AD081FCCE403043F55DA65CF60/2604866.png";
     public const string SlamTurtle = "https://render.guildwars2.com/file/42093A336F337E45FD91B058E12864E738D83E42/2604868.png";
     public const string Swoop = "https://render.guildwars2.com/file/329E3C6524785BB37A3040AC4F362BEC23F8D625/103311.png";
     public const string TailSwipePet = "https://render.guildwars2.com/file/150DEE60799B04CF20A66DE020A81DA7D4D139A4/103596.png";
@@ -498,13 +528,13 @@ internal static class SkillImages
     public const string BrutalChargeCanine = "https://render.guildwars2.com/file/06614FF537DBD771DE67B341BA0CA565B24F0A67/103239.png";
     public const string BiteDrake = "https://wiki.guildwars2.com/images/e/e7/Bite_%28drake%29.png";
     public const string BiteBear = "https://render.guildwars2.com/file/227F40E05A02AAE91EFA01EC1C35E6465F56CE09/104037.png";
-    public const string BiteSmokescale = "https://wiki.guildwars2.com/images/c/c1/Bite_%28smokescale%29.png";
+    public const string BiteSmokescale = "https://render.guildwars2.com/file/F36127D50AEDFC642C0369D30861D345D5157D55/1128610.png";
     public const string MaulPorcine = "https://render.guildwars2.com/file/24073F5A0566ABE32DFB74204E9FA01025D85D71/104055.png";
     public const string JabPorcine = "https://wiki.guildwars2.com/images/d/d5/Jab_%28porcine%29.png";
     public const string BrutalChargePorcine = "https://render.guildwars2.com/file/D89C043113B1B24AE538C6F5DC297924459E3EBA/104054.png";
     public const string SlashBear = "https://wiki.guildwars2.com/images/5/52/Slash_%28bear%29.png";
     public const string SlashBird = "https://wiki.guildwars2.com/images/b/b6/Slash_%28bird%29.png";
-    public const string SwoopBird = "https://wiki.guildwars2.com/images/e/e3/Swoop_%28bird%29.png";
+    public const string SwoopBird = "https://render.guildwars2.com/file/FCCA3C61C308E1D625C70BD4CCB9F05051AE6F6F/104047.png";
     public const string BiteFeline = "https://render.guildwars2.com/file/520693759A79FD464CA7AD08947D10B4B50F7A96/103516.png";
     public const string TakedownSmokescale = "https://render.guildwars2.com/file/1B7A03496B93AEC937923F229E062F2AD14DFA24/1128611.png";
     public const string PhasePounceWhiteTiger = "https://render.guildwars2.com/file/F16B4742E83542D8406DDAEBD7BE06EEA8061E16/2604865.png";
@@ -520,19 +550,22 @@ internal static class SkillImages
     public const string RendingVines = "https://render.guildwars2.com/file/68D3A9D218CE4F19F0D1E1A2F20F953D103FE99A/2503726.png";
     public const string EnvelopingHaze = "https://render.guildwars2.com/file/39EFE795AEE7A670EAC0CC34C8526A2EB899ED4C/2503727.png";
     public const string CripplingLeap = "https://render.guildwars2.com/file/09990305A163E3BC2DF2E9D1D2BA93F2ECE8BA3E/103610.png";
-    public const string HornetSting = "https://wiki.guildwars2.com/images/5/5f/Hornet_Sting.png";
+    public const string HornetSting = "https://render.guildwars2.com/file/CB0E6BDEA0F6B545242BD3423AD742E8CDC8D9BC/103024.png";
     public const string LongRangeShot = "https://render.guildwars2.com/file/2A4CFDE1D6FC1B04D864E32190E7A6521C000104/102827.png";
     public const string PointBlankShot = "https://render.guildwars2.com/file/0C976CDCD10C3A7F4E54CABDC09ABEB6C1CB230D/103251.png";
     public const string RapidFire = "https://render.guildwars2.com/file/F74408EC9F2354940976E1E80D46E29C7C693C62/102828.png";
-    public const string ExplodingSpore = "https://wiki.guildwars2.com/images/2/21/Exploding_Spores.png";
+    public const string ExplodingSpore = "https://render.guildwars2.com/file/DF265CBF73C17E9C96EDE6035CAE9A381E1D11F1/2503730.png";
     public const string VenoumousOutburst = "https://render.guildwars2.com/file/DE977DE6D693A71B24AFCC01E6EBF8F30DD4669E/2503725.png";
     public const string BlackHole = "https://wiki.guildwars2.com/images/9/9d/Black_Hole.png";
     public const string SerpentsStrike = "https://render.guildwars2.com/file/26B3CC91C193FDC30873937B2FB735E1B7C6A83A/103126.png";
     public const string SpitGoopSkyChak = "https://wiki.guildwars2.com/images/d/dc/Spit_Goop.png";
     public const string UnleashEnergySkyChak = "https://wiki.guildwars2.com/images/2/26/Unleash_Energy.png";
-    public const string ChargingBiteShark = "https://wiki.guildwars2.com/images/d/d8/Charging_Bite.png";
+    public const string ChargingBiteShark = "https://render.guildwars2.com/file/A2B0341202E8155898A9B0E16B22600ACE071A29/104057.png";
     public const string StaringVoidSpinegazer = "https://wiki.guildwars2.com/images/9/9e/Staring_Void.png";
-    public const string CripplingThrow = "https://wiki.guildwars2.com/images/c/cd/Crippling_Throw.png";
+    public const string CripplingThrow = "https://render.guildwars2.com/file/BC735B3226FD6840C56A28571326CA00C55FB2A4/104022.png";
+    public const string LeylineVortexAetherHunter = "https://render.guildwars2.com/file/030E7AB1CB18A4B348FD17B54B2B68FDABDB1DBC/3124961.png";
+    public const string LungeVortexAetherHunter = "https://render.guildwars2.com/file/B65ECEBB72F4F10C4144510777E899E477DEE5B2/3124960.png";
+    public const string BumbleJanthiriBee = "https://render.guildwars2.com/file/DCA96000060D21F6E4A9600DB3D8A90CE8AB574B/3594073.png";
     // Galeshot
     public const string Mistral = "https://render.guildwars2.com/file/10E31F10E7D84CABF0963FEA12B77EE0BD950E42/3680194.png";
     #endregion Ranger
@@ -613,6 +646,8 @@ internal static class SkillImages
     // Sword
     public const string RiftSlash = "https://render.guildwars2.com/file/91913B6196F06B95EBC71FC3EE9B41004B1EDF09/1013002.png";
     public const string UnrelentingAssault = "https://render.guildwars2.com/file/A1E252A0C9F506B73465E09919D119D706702DD8/1013004.png";
+    // Mace
+    public const string ManifestToxin = "https://render.guildwars2.com/file/92803ED295CE684CF8235941E6A6AC1610F0F00F/961459.png";
     #endregion Revenant
     #region Thief
     // Signets
@@ -675,10 +710,19 @@ internal static class SkillImages
     public const string DebilitatingArc = "https://render.guildwars2.com/file/5AC578E641FC79E9B2F11F43EAF857140F937CF3/1058626.png";
     public const string ThousandNeedles = "https://render.guildwars2.com/file/2E9B1FD2687F76E4CDF00ADF04B6AB07CE7CD880/2175069.png";
     public const string ThrowLavaRock = "https://wiki.guildwars2.com/images/e/ed/Throw_Lava_Rock.png";
+    public const string EternalNight = "https://render.guildwars2.com/file/D6CB992E12F0BCB2984C3FEA066FA1B7A077752A/2503738.png";
     // Antiquary
     public const string MetalLegionGuitar = "https://render.guildwars2.com/file/02727B1807CF0FEF31037FD9E307BABB2055AE3C/3680214.png";
     public const string InquestPortalDevice = "https://render.guildwars2.com/file/99210D96EB449F7A975920410C4EAEEECB41BC06/3680221.png";
     public const string HoloDancerDecoy = "https://render.guildwars2.com/file/CEE6340604724A060D7C570709C4B05DFAD56617/3680212.png";
+    public const string UnstableSkrittBomb = "https://render.guildwars2.com/file/0FBFB6FA27C9BEBD1872DAACDB040AEA71A616A9/3680208.png";
+    public const string ForgedSurferDash = "https://render.guildwars2.com/file/696501BA136CA660BD22D0D0A3B19741D4A77529/3680211.png";
+    public const string ZephyriteSunCrystal = "https://render.guildwars2.com/file/3C1B2075B7B164EB2ABE4F6650F553D40F689E53/3680218.png";
+    public const string SummonKryptisTurret = "https://render.guildwars2.com/file/2DC92035E3A36CBCDB62C84E65BEF69BFA0BDD02/3680213.png";
+    public const string MistburnMortar = "https://render.guildwars2.com/file/4519AE3A9032E03F2F14AAA1B5EEE10F1AF1EEAE/3680215.png";
+    public const string ExaltedHammer = "https://render.guildwars2.com/file/57A193E75618661CE3F51DC44AC59F7BA72E6169/3680210.png";
+    public const string EmergencyJadeShield = "https://render.guildwars2.com/file/B719629A506EBA0444060E2D56A1DDB4183FCAD3/3680222.png";
+    public const string AntivenomDraught = "https://render.guildwars2.com/file/51322CD33E32D80B7B341167E6C8A294143264A2/3680207.png";
     #endregion Thief
     #region Warrior
     // Signets
@@ -737,7 +781,7 @@ internal static class SkillImages
     public const string BreakStep = "https://wiki.guildwars2.com/images/7/76/Break_Step.png";
     public const string Rush = "https://render.guildwars2.com/file/6A247111740A3B5C0E2FAF1D3591D105113D0308/103196.png";
     public const string DragonspikeMine = "https://render.guildwars2.com/file/7C079E38F9ABFFA4533E064965B8A1B3EE3FB743/2491654.png";
-    public const string AimedShot = "https://wiki.guildwars2.com/images/8/86/Aimed_Shot.png";
+    public const string AimedShot = "https://render.guildwars2.com/file/1B970371EFD9E75D5B6332A729D0710A49BD2EE7/103021.png";
     public const string ChargeWarhorn = "https://render.guildwars2.com/file/FF0803E0B7BF09691008FE205E2290E74D97CF04/2207786.png";
     public const string ShieldBash = "https://render.guildwars2.com/file/0DB2EBFB326833CE9654010A5915FB387B02BB4D/103002.png";
     public const string ThrowBolas = "https://render.guildwars2.com/file/0DC030D5DBE6B5C9ED157DBB1CF86ED6F6D6753E/103015.png";
@@ -751,11 +795,15 @@ internal static class SkillImages
     public const string SpearmarshalsSupport = "https://render.guildwars2.com/file/43132DEC934F072272F14B19FC03FB62111502FB/3379203.png";
     public const string Kick = "https://render.guildwars2.com/file/E578C9070BCA270818F56304CBE2800CD4691350/103001.png";
     public const string Counterblow = "https://render.guildwars2.com/file/92C19D3798F16AC716CAC7A5C044E4CFC251E4A2/102986.png";
+    public const string Backbreaker = "https://render.guildwars2.com/file/3FB1611D020DAE0C082558D346BBF91148E2E223/103086.png";
+    public const string HammerShock = "https://render.guildwars2.com/file/D378332B719ED07509EABBCDA3D96C5ABFC116D6/103256.png";
+    public const string HammerSwing = "https://render.guildwars2.com/file/C3BAD7D3D29FB64654985F0AB8FEA7713BE375E9/103178.png";
     // Paragon
     public const string ChantOfAction = "https://render.guildwars2.com/file/A4D0D740CF360E0840EF76282843109C759C63A8/3680225.png";
     public const string ChantOfRecuperation = "https://render.guildwars2.com/file/2D4B0C67FACAADD8612746BD6F5C6BE9A828C9A3/3680227.png";
     public const string ChantOfFreedom = "https://render.guildwars2.com/file/52720B9628A24FE1034815E10F0AFACF5365F3C4/3680226.png";
     public const string WeWillNeverYield = "https://render.guildwars2.com/file/C5740F0D6446CA01FCAA302D352D7F453E6A0709/3680223.png";
+    public const string OnYourKnees = "https://render.guildwars2.com/file/13DF51701AAAF9B150DEDABC5CB3901D3B430871/3680231.png";
     #endregion Warrior
     #region WvW
     public const string TurnLeft = "https://wiki.guildwars2.com/images/4/4c/Turn_Left.png";
@@ -815,6 +863,7 @@ internal static class SkillImages
     public const string CentaurDash = "https://wiki.guildwars2.com/images/6/6b/Centaur_Dash.png";
     public const string SpikeBarricade = "https://wiki.guildwars2.com/images/3/3f/Spike_Barricade.png";
     public const string OutrunACentaur = "https://wiki.guildwars2.com/images/7/7d/Outrun_a_Centaur.png";
+    public const string GatlingFists = "https://wiki.guildwars2.com/images/8/89/Gatling_Fists.png";
     #endregion WvW
     #region Mount
     // Mounts
@@ -824,7 +873,7 @@ internal static class SkillImages
     public const string StealthMount = "https://wiki.guildwars2.com/images/5/51/Stealth_%28mount%29.png";
     // Skyscale
     public const string Skyscale = "https://wiki.guildwars2.com/images/0/01/Skyscale_%28skill%29.png";
-    public const string SkyscaleFireball = "https://i.imgur.com/zPlzUia.png";
+    public const string SkyscaleFireball = "https://wiki.guildwars2.com/images/b/b7/Fireball_Skyscale.png";
     public const string SkyscaleBlast = "https://wiki.guildwars2.com/images/e/e7/Blast.png";
     // Raptor
     public const string RaptorTailSpin = "https://wiki.guildwars2.com/images/f/f2/Tail_Spin.png";
@@ -851,12 +900,13 @@ internal static class SkillImages
     #region Encounter Specific
     public const string CelestialDash = "https://wiki.guildwars2.com/images/5/56/Celestial_Dash.png";
     public const string CounterMagicSkill = "https://wiki.guildwars2.com/images/6/69/Counter_Magic_%28skill%29.png";
-    public const string TossSlubling = "https://assets.gw2dat.com/831481.png";
+    public const string TossSlubling = "https://render.guildwars2.com/file/E543F0ECE094EB95271E1138472B63B4E442A8B8/831481.png";
+    public const string ThrowLight = "https://wiki.guildwars2.com/images/8/8c/Throw_Light.png";
     // Convergences
     public const string EtherealHealing = "https://wiki.guildwars2.com/images/3/3c/Ethereal_Healing.png";
-    public const string PacifiedMagicalStorm = "https://wiki.guildwars2.com/images/f/f1/Pacified_Magical_Storm.png";
+    public const string PacifiedMagicalStorm = "https://render.guildwars2.com/file/E97BA745FF671D3AC1C3D5FA7CB12C002769185B/1466357.png";
     public const string WatchfulSpirit = "https://wiki.guildwars2.com/images/9/9f/Watchful_Spirit.png";
-    public const string RideTheLeyLine = "https://wiki.guildwars2.com/images/8/84/Ride_the_Ley_Line.png";
+    public const string RideTheLeyLine = "https://render.guildwars2.com/file/E5D97463D3AA00245845F5E0E421EFC454BCC37C/1466358.png";
     #endregion Encounter Specific
 }
 

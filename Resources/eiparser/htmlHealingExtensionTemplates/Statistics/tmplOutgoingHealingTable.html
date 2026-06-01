@@ -73,24 +73,25 @@
                         {{row.player.group}}
                     </td>
                     <td :class="getBodyClass('Prof')" :data-original-title="row.player.profession">
-                        <img :src="row.player.icon" :alt="row.player.profession" class="icon"><span
-                            style="display:none">
-                            {{row.player.profession}}
-                        </span>
+                        <img :src="row.player.icon" :alt="row.player.profession" class="icon"><span 
+                            style="display:none">{{row.player.profession}}</span>
                     </td>
                     <td :class="getBodyClass('Name')" class="text-left">
                         {{row.player.name}}
                     </td>
                     <td :class="getBodyClass('Account')" class="text-left">
                         {{row.player.acc}}
+                        <img v-if="playerIsRunningHealingExtension(row.player)"
+                            :src="UIIcons.GreenFlag" alt="Complete"
+                            class="icon" data-original-title="Complete Healing Data">
                     </td>
                     <td v-if="!showHealing" v-for="(value, index) in row.hps" :class="getBodyClass('Data', index)"
-                        :data-original-title="value + ' total' + '<br>' + computeTotalContribution(index, row.hps,tableData.sums)+ '<br>'+ computeGroupContribution(row.player.group, index, row.hps,tableData.sums)">
-                        {{round(value/phase.durationS)}}                
+                        :data-original-title="getPlayerTooltip(value, index, row, tableData.sums, index < 5, index === 6 || index === 1, index === 7 || index === 2)">
+                        {{round(value/phase.durationS)}}
                     </td>
                     <td v-if="showHealing" v-for="(value, index) in row.hps" :class="getBodyClass('Data', index)"
-                        :data-original-title="round(value/phase.durationS) + ' per second' + '<br>' + computeTotalContribution(index, row.hps,tableData.sums)+ '<br>'+ computeGroupContribution(row.player.group, index, row.hps,tableData.sums)">
-                        {{value}}               
+                        :data-original-title="getPlayerTooltip(value, index, row, tableData.sums, index < 5, index === 6 || index === 1, index === 7 || index === 2)">
+                        {{value}}
                     </td>
                 </tr>
             </tbody>
@@ -118,11 +119,11 @@
     Vue.component("outgoing-healing-stats-component", {
         props: ["activetargets", "playerindex", "phaseindex"],
         template: `${template}`,
-        mixins: [numberComponent, sortedTableComponent, encounterPhaseComponent],
+        mixins: [numberComponent, sortedTableComponent, encounterPhaseComponent, extensionPresentComponent, UIIconsComponent],
         data: function () {
             return {
                 showHealing: logData.wvw,
-                cacheTarget: new Map(),    
+                cacheTarget: new Map(),
                 sortdata: {
                     order: "desc",
                     index: 0,
@@ -131,34 +132,34 @@
             };
         },
         methods: {
-            sortBy: function(key, index) {
+            sortBy: function (key, index) {
                 this.sortByBase(this.sortdata, key, index);
             },
-            getHeaderClass: function(key, index) {
+            getHeaderClass: function (key, index) {
                 return this.getHeaderClassBase(this.sortdata, key, index);
             },
-            getBodyClass: function(key, index) {
+            getBodyClass: function (key, index) {
                 const classes = this.getBodyClassBase(this.sortdata, key, index);
                 return classes;
             },
-            sortData: function(rows) {
+            sortData: function (rows) {
                 const order = this.sortdata.order === "asc" ? 1 : -1;
                 switch (this.sortdata.key) {
                     case "Sub":
-                        rows.sort((x,y) => order * (x.player.group - y.player.group) || this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * (x.player.group - y.player.group) || this.sortByPlayerName(x, y));
                         break;
                     case "Prof":
-                        rows.sort((x,y) => order * this.sortByPlayerProfession(x, y) || this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * this.sortByPlayerProfession(x, y) || this.sortByPlayerName(x, y));
                         break;
                     case "Account":
-                        rows.sort((x,y) => order * this.sortByPlayerAccount(x, y));
+                        rows.sort((x, y) => order * this.sortByPlayerAccount(x, y));
                         break;
                     case "Name":
-                        rows.sort((x,y) => order * this.sortByPlayerName(x, y));
+                        rows.sort((x, y) => order * this.sortByPlayerName(x, y));
                         break;
                     case "Data":
-                    const index = this.sortdata.index;
-                        rows.sort((x,y) => order * (x.hps[index] - y.hps[index]) || this.sortByPlayerName(x, y));
+                        const index = this.sortdata.index;
+                        rows.sort((x, y) => order * (x.hps[index] - y.hps[index]) || this.sortByPlayerName(x, y));
                         break;
                     default:
                         return null;
@@ -177,10 +178,32 @@
                     }
                 }
                 return this.round2(row[index] * 100 / sums[sumId].hps[index]) + '% of group';
-            }
+            },          
+            computeSelfContribution: function (index, totalIndex, row, target) {
+                const playerTotal = row.hps[totalIndex] || 1; // If total == 0 divide by 1, 0/1 = 0%;
+
+                var selfContrib = this.round2(row.hps[index] * 100 / playerTotal) + '% of self';
+                return selfContrib + (target ? " target" : " all");
+            },
+            getPlayerTooltip: function (value, index, row, sums, target, showHealingPowerContribution = false, showConversionContribution = false) {
+                var base = this.showHealing ? this.round(value / this.phase.durationS) + ' per second' : value + ' total';
+                var total = this.computeTotalContribution(index, row.hps, sums);
+                var group = this.computeGroupContribution(row.player.group, index, row.hps, sums);
+
+                if (showHealingPowerContribution || showConversionContribution) {
+                    return base +
+                        '<br>' + this.computeSelfContribution(index, showHealingPowerContribution ? index - 1 : index - 2, row, target) +
+                        '<br>' + total +
+                        '<br>' + group;
+                } else {
+                    return base +
+                        '<br>' + total +
+                        '<br>' + group;
+                }
+            },
         },
         computed: {
-            tableid: function() {
+            tableid: function () {
                 return "hps-table";
             },
             phase: function () {
@@ -189,7 +212,7 @@
             hPhase: function () {
                 return healingStatsExtension.healingPhases[this.phaseindex];
             },
-            hasBarrier: function() {
+            hasBarrier: function () {
                 return !!barrierStatsExtension;
             },
             bPhase: function () {
@@ -238,7 +261,7 @@
                     if (!groups[player.group]) {
                         groups[player.group] = [0, 0, 0, 0, 0, 0, 0, 0];
                         if (this.hasBarrier) {
-                            groups[player.group] = groups[player.group].concat([0,0]);
+                            groups[player.group] = groups[player.group].concat([0, 0]);
                         }
                     }
                     for (let j = 0; j < hps.length; j++) {
@@ -269,9 +292,6 @@
                 this.cacheTarget.set(cacheID, res);
                 return res;
             },
-            UIIcons: function() {
-                return UIIcons;
-            }
         }
     });
 </script>

@@ -1,6 +1,6 @@
 <template>
     <div class="d-flex flex-row justify-content-center mt-1 mb-1">     
-        <ul class="nav nav-pills d-flex flex-wrap justify-content-center mr-3 scale85" :class="{'flex-row': !column, 'flex-column': column}">
+        <ul class="nav nav-pills d-flex flex-wrap justify-content-center mr-3 scale75" :class="{'flex-row': !column, 'flex-column': column}">
             <li class="nav-item d-flex flex-row justify-content-center align-items-center">
                 <a class="nav-link" @click="data.dpsmode = 0" :class="{active: data.dpsmode === 0}">Full</a>
             </li>
@@ -24,7 +24,7 @@
                                                    :placeholderValue="0"></custom-numberform-component>
             </li>        
         </ul>    
-        <ul class="nav nav-pills d-flex flex-wrap justify-content-center ml-3 scale85" :class="{'flex-row': !column, 'flex-column': column}">
+        <ul class="nav nav-pills d-flex flex-wrap justify-content-center ml-3 scale75" :class="{'flex-row': !column, 'flex-column': column}">
             <li class="nav-item d-flex flex-row justify-content-center align-items-center" data-original-title="Power + Condition">
                 <a class="nav-link" @click="data.damagemode = damageModeEnum.All" :class="{active: data.damagemode === damageModeEnum.All}">
                     <img :src="UIIcons.Damage" alt="All"
@@ -46,7 +46,7 @@
                     class="icon"></a>
             </li>
         </ul>
-        <ul class="nav nav-pills d-flex flex-wrap justify-content-center ml-3 scale85" :class="{'flex-row': !column, 'flex-column': column}">
+        <ul class="nav nav-pills d-flex flex-wrap justify-content-center ml-3 scale75" :class="{'flex-row': !column, 'flex-column': column}">
             <li class="nav-item d-flex flex-row justify-content-center align-items-center">
                 <a class="nav-link" @click="data.graphmode = graphModeEnum.DPS" :class="{active: data.graphmode === graphModeEnum.DPS}">PS</a>
             </li>    
@@ -64,6 +64,7 @@
     Vue.component("dps-graph-mode-selector-component", {
         props: ['data', 'phaseduration', 'phasehassubphases', 'ignorebreakbar', "column"],
         template: `${template}`,
+        mixins: [UIIconsComponent],
         mounted() {
             var _this = this;
             $('#customDPS').on("input ", function () {
@@ -83,9 +84,6 @@
             hasBreakbarDamage: function() {
                 return !this.ignorebreakbar && logData.hasBreakbarDamage;
             },
-            UIIcons: function() {
-                return UIIcons;
-            }
         }
     });
 </script>

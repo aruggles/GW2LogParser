@@ -78,7 +78,8 @@ public static class ProcessManager
         var SkillAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/SkillList.json";
         var SpecAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/SpecList.json";
         var TraitAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/TraitList.json";
-        var apiController = new GW2APIController(SkillAPICacheLocation, SpecAPICacheLocation, TraitAPICacheLocation);
+        var MapAPICacheLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/Content/MapList.json";
+        var apiController = new GW2APIController(SkillAPICacheLocation, SpecAPICacheLocation, TraitAPICacheLocation, MapAPICacheLocation);
         try
         {
             if (!fInfo.Exists)
@@ -91,6 +92,7 @@ public static class ProcessManager
                                             Properties.Settings.Default.ParseCombatReplay,
                                             Properties.Settings.Default.ComputeDamageModifiers,
                                             Properties.Settings.Default.CustomTooShort,
+                                            ProgramHelper.DefaultTooBigLimitMB,
                                             Properties.Settings.Default.DetailledWvW), apiController);
             //Process evtc here
             ParsedEvtcLog? parsedLog = parser.ParseLog(operation, fInfo, out var failureReason);
@@ -152,7 +154,7 @@ public static class ProcessManager
         {
             return;
         }
-        var uploadResults = new UploadResults("", "");
+        var uploadResults = new UploadResults();
         var htmlAssets = new HTMLAssets();
         string outputFile = Path.Combine(
             saveFolder.FullName,
@@ -176,7 +178,7 @@ public static class ProcessManager
     public static void GenerateFile(BackgroundWorker worker)
     {
         var report = new Report();
-        var uploadResults = new UploadResults("", "");
+        var uploadResults = new UploadResults();
         var count = 0;
         var total = CompletedLogs.Count;
         FileInfo? fileInfo = null;

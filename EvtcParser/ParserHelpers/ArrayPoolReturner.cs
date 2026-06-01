@@ -71,7 +71,7 @@ public sealed class ClearableSharedArrayPool<T> : ArrayPool<T> // where T : clas
     [ThreadStatic]
     private static SharedArrayPoolThreadLocalArray[]? t_tlsBuckets;
     /// <summary>Used to keep track of all thread local buckets for trimming if needed.</summary>
-    private readonly ConditionalWeakTable<SharedArrayPoolThreadLocalArray[], object?> _allTlsBuckets = new();
+    private readonly ConditionalWeakTable<SharedArrayPoolThreadLocalArray[], object?> _allTlsBuckets = [];
     /// <summary>
     /// An array of per-core partitions. The slots are lazily initialized to avoid creating
     /// lots of overhead for unused array sizes.
@@ -129,14 +129,14 @@ public sealed class ClearableSharedArrayPool<T> : ArrayPool<T> // where T : clas
             // as it's a valid length array, and we want the pool to be usable in general instead of using
             // `new`, even for computed lengths. But, there's no need to log the empty array.  Our pool is
             // effectively infinite for empty arrays and we'll never allocate for rents and never store for returns.
-            return Array.Empty<T>();
+            return [];
         }
         else if(minimumLength < 0)
         {
             throw new ArgumentException($"minimumLength should not be negative, was {minimumLength}");
         }
 
-        buffer = new T[minimumLength]; //TODO(Rennorb) @perf: skip initialization
+        buffer = new T[minimumLength]; //TODO_PERF(Rennorb): skip initialization
         return buffer;
     }
 

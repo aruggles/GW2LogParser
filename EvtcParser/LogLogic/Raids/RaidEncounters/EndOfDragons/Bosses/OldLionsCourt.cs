@@ -1,7 +1,10 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System.Numerics;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
+using static GW2EIEvtcParser.AchievementEligibilityIDs;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -20,7 +23,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             new PlayerDstHealthDamageHitMechanic([BoilingAetherRedBlueNM, BoilingAetherRedBlueCM], new MechanicPlotlySetting(Symbols.Circle, Colors.LightRed), "Red.VermIndi.H", "Hit by Boiling Aether (Vermilion & Indigo)", "Boiling Aether Hit (Vermilion & Indigo)", 0),
             // Vermilion
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(FixatedOldLionsCourt, new MechanicPlotlySetting(Symbols.Diamond, Colors.Red), "Fix.Verm.A", "Fixated Applied", "Fixated Applied", 0)
+                new PlayerDstBuffApplyMechanic(FixatedOldLionsCourt, new MechanicPlotlySetting(Symbols.Diamond, Colors.Red), "Fix.Verm.A", "Fixated Applied Vermilion", "Fixated Applied to Vermilion", 0)
                     .UsingChecker((bae, log) => bae.CreditedBy.IsAnySpecies([TargetID.PrototypeVermilion, TargetID.PrototypeVermilionCM])),
                 new MechanicGroup([
                     new MechanicGroup([
@@ -37,7 +40,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             ]),
             // Arsenite
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(FixatedOldLionsCourt, new MechanicPlotlySetting(Symbols.Diamond, Colors.Green), "Fix.Arse.A", "Fixated Applied", "Fixated Applied", 0)
+                new PlayerDstBuffApplyMechanic(FixatedOldLionsCourt, new MechanicPlotlySetting(Symbols.Diamond, Colors.Green), "Fix.Arse.A", "Fixated Applied Arsenite", "Fixated Applied to Arsenite", 0)
                     .UsingChecker((bae, log) => bae.CreditedBy.IsAnySpecies([TargetID.PrototypeArsenite, TargetID.PrototypeArseniteCM])),
                 new PlayerDstHealthDamageHitMechanic([BoilingAetherGreenNM, BoilingAetherGreenCM], new MechanicPlotlySetting(Symbols.Circle, Colors.DarkRed), "Red.Arse.H", "Hit by Boiling Aether (Arsenite)", "Boiling Aether Hit (Arsenite)", 0),
                 new MechanicGroup([
@@ -55,7 +58,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             ]),
             // Indigo
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(FixatedOldLionsCourt, new MechanicPlotlySetting(Symbols.Diamond, Colors.Blue), "Fix.Indi.A", "Fixated Applied", "Fixated Applied", 0)
+                new PlayerDstBuffApplyMechanic(FixatedOldLionsCourt, new MechanicPlotlySetting(Symbols.Diamond, Colors.Blue), "Fix.Indi.A", "Fixated Applied Indigo", "Fixated Applied to Indigo", 0)
                     .UsingChecker((bae, log) => bae.CreditedBy.IsAnySpecies([TargetID.PrototypeIndigo, TargetID.PrototypeIndigoCM])),
                 new PlayerDstHealthDamageHitMechanic([TriBolt, TriBoltCM], new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "TriBolt.H", "Hit by Tri Bolt (Spread AoEs)", "Tri Bolt Hit", 150),
                 new PlayerDstHealthDamageHitMechanic([Tribocharge, TribochargeCM], new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.LightOrange), "TriChg.H", "Hit by Tribocharge", "Tribocharge Hit", 150),
@@ -67,8 +70,12 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                 new PlayerDstHealthDamageMechanic(ExhaustPlume, new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Blue), "IndiFall.H", "Hit by Exhaust Plume (Indigo Fall)", "Exhaust Plume Hit (Indigo)", 150)
                     .UsingChecker((de, log) => de.CreditedFrom.IsAnySpecies(new List<TargetID> { TargetID.PrototypeIndigo, TargetID.PrototypeIndigoCM })),
             ]),
-            new PlayerDstHealthDamageHitMechanic([BoilingAetherRedBlueNM, BoilingAetherRedBlueCM, BoilingAetherGreenNM, BoilingAetherGreenCM], new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.Red), "AethAver.Achiv", "Achievement Eligibility: Aether Aversion", "Achiv Aether Aversion", 150)
-                .UsingAchievementEligibility(),
+            new MechanicGroup([
+                new AchievementEligibilityMechanic(Ach_AetherAversion, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.DarkRed), "AethAver.Achiv.L", "Achievement Eligibility: Aether Aversion Lost", "Achiv Aether Aversion Lost", 0)
+                        .UsingChecker((evt, log) => evt.Lost),
+                new AchievementEligibilityMechanic(Ach_AetherAversion, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.Red), "AethAver.Achiv.K", "Achievement Eligibility: Aether Aversion Kept", "Achiv Aether Aversion Kept", 0)
+                        .UsingChecker((evt, log) => !evt.Lost)
+            ]),
             new EnemyDstBuffApplyMechanic(EmpoweredWatchknightTriumverate, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.Blue), "Empowered.A", "Knight gained Empowered", "Empowered Applied", 0),
             new EnemyDstBuffApplyMechanic(PowerTransfer, new MechanicPlotlySetting(Symbols.TriangleRight, Colors.Blue), "PwrTrns.A", "Knight gained Power Transfer", "Power Transfer Applied", 0),
             new EnemyDstBuffApplyMechanic(LeyWovenShielding, new MechanicPlotlySetting(Symbols.Pentagon, Colors.Teal), "WovShld.A", "Knight gained Ley-Woven Shielding", "Ley-Woven Shielding Applied", 0),
@@ -91,7 +98,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayOldLionsCourt, crMap);
         return crMap;
     }
-    internal override IReadOnlyList<TargetID>  GetTargetsIDs()
+    internal override IReadOnlyList<TargetID> GetTargetsIDs()
     {
         return
         [
@@ -120,16 +127,16 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         return [ TargetID.Tribocharge ];
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         // Can be improved
-        if (logData.IsCM)
+        if (GetLogMode(combatData, agentData, logData) == LogData.Mode.CM)
         {
             if (TargetHPPercentUnderThreshold(TargetID.PrototypeVermilionCM, logData.LogStart, combatData, Targets) ||
                 TargetHPPercentUnderThreshold(TargetID.PrototypeIndigoCM, logData.LogStart, combatData, Targets) ||
                 TargetHPPercentUnderThreshold(TargetID.PrototypeArseniteCM, logData.LogStart, combatData, Targets))
             {
-                return LogData.LogStartStatus.Late;
+                return LogData.StartStatus.Late;
             }
 
         }
@@ -139,19 +146,19 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                 TargetHPPercentUnderThreshold(TargetID.PrototypeIndigo, logData.LogStart, combatData, Targets) ||
                 TargetHPPercentUnderThreshold(TargetID.PrototypeArsenite, logData.LogStart, combatData, Targets))
             {
-                return LogData.LogStartStatus.Late;
+                return LogData.StartStatus.Late;
             }
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
-        if (!logData.Success)
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
+        if (!successHandler.Success)
         {
             List<TargetID> idsToCheck;
-            if (logData.IsCM)
+            if (GetLogMode(combatData, agentData, logData) == LogData.Mode.CM)
             {
                 idsToCheck =
                 [
@@ -169,11 +176,11 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                     TargetID.PrototypeArsenite,
                 ];
             }
-            SetSuccessByDeath(Targets.Where(x => x.IsAnySpecies(idsToCheck)), combatData, logData, playerAgents, true);
+            SetSuccessByDeath(Targets.Where(x => x.IsAnySpecies(idsToCheck)), combatData, logData, playerAgents, successHandler, true);
         }
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Old Lion's Court";
     }
@@ -191,18 +198,18 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         return Targets.FirstOrDefault(x => x.IsSpecies(TargetID.PrototypeArseniteCM)) ?? Targets.FirstOrDefault(x => x.IsSpecies(TargetID.PrototypeArsenite));
     }
 
-    private static List<PhaseData> GetSubPhases(SingleActor target, ParsedEvtcLog log, string phaseName, PhaseData fullFightPhase)
+    private static IReadOnlyList<SubPhasePhaseData> GetSubPhases(SingleActor target, ParsedEvtcLog log, string phaseName, EncounterPhaseData fullFightPhase)
     {
         DeadEvent? dead = log.CombatData.GetDeadEvents(target.AgentItem).LastOrDefault();
-        long end = log.LogData.LogEnd;
-        long start = log.LogData.LogStart;
+        long end = fullFightPhase.End;
+        long start = fullFightPhase.Start;
         if (dead != null && dead.Time < end)
         {
             end = dead.Time;
         }
-        List<PhaseData> subPhases = GetPhasesByInvul(log, new[] { LeyWovenShielding, MalfunctioningLeyWovenShielding }, target, false, true, start, end);
+        var subPhases = GetSubPhasesByInvul(log, new[] { LeyWovenShielding, MalfunctioningLeyWovenShielding }, target, false, true, start, end);
         string[] phaseNames;
-        if (log.LogData.IsCM)
+        if (fullFightPhase.IsCM)
         {
             if (subPhases.Count > 3)
             {
@@ -278,7 +285,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             phases[0].AddTarget(vermilion, log);
             if (canComputePhases)
             {
-                phases.AddRange(GetSubPhases(vermilion, log, "Vermilion", phases[0]));
+                phases.AddRange(GetSubPhases(vermilion, log, "Vermilion", (EncounterPhaseData)phases[0]));
             }
         }
         SingleActor? indigo = Indigo();
@@ -287,7 +294,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             phases[0].AddTarget(indigo, log);
             if (canComputePhases)
             {
-                phases.AddRange(GetSubPhases(indigo, log, "Indigo", phases[0]));
+                phases.AddRange(GetSubPhases(indigo, log, "Indigo", (EncounterPhaseData)phases[0]));
             }
         }
         SingleActor? arsenite = Arsenite();
@@ -296,24 +303,27 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             phases[0].AddTarget(arsenite, log);
             if (canComputePhases)
             {
-                phases.AddRange(GetSubPhases(arsenite, log, "Arsenite", phases[0]));
+                phases.AddRange(GetSubPhases(arsenite, log, "Arsenite", (EncounterPhaseData)phases[0]));
             }
         }
         return phases;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor target = (Vermilion() ?? Indigo() ?? Arsenite()) ?? throw new MissingKeyActorsException("Main target not found");
-        return target.GetHealth(combatData) > 20e6 ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return target.GetHealth(combatData) > 18e6 ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        base.SetInstanceBuffs(log, instanceBuffs);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
         if (log.CombatData.GetBuffData(AchievementEligibilityFearNotThisKnight).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -326,7 +336,10 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        base.ComputePlayerCombatReplayActors(p, log, replay);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
         // Fixation
         IEnumerable<BuffEvent> fixations = log.CombatData.GetBuffDataByIDByDst(FixatedOldLionsCourt, p.AgentItem);
         IEnumerable<BuffEvent> fixatedVermillion = fixations.Where(bae => bae.CreditedBy.IsAnySpecies(new List<TargetID> { TargetID.PrototypeVermilion, TargetID.PrototypeVermilionCM }));
@@ -342,7 +355,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         // In game, the green tether lasts for the entire duration of the blade, meanwhile the buff on the player displays the green border overlay and is hidden.
         // In the log, the tether effect can't be found, so this decoration is only indicative of who has been targeted, the duration is not correct.
         var noxiousBlade = GetBuffApplyRemoveSequence(log.CombatData, NoxiousVaporBladeTargetBuff, p, true, true);
-        replay.Decorations.AddTether(noxiousBlade, Colors.Green, 0.5);
+        replay.Decorations.AddTethers(noxiousBlade, Colors.Green, 0.5);
 
         // Tri-Bolt
         if (log.CombatData.TryGetEffectEventsByDstWithGUID(p.AgentItem, EffectGUIDs.OldLionsCourtTriBoltSpread, out var tribolt))
@@ -357,6 +370,10 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
         switch (target.ID)
         {
             case (int)TargetID.PrototypeVermilion:
@@ -369,7 +386,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                     {
                         (long start, long end) lifespan = effect.HasDynamicEndTime ? effect.ComputeDynamicLifespan(log, 30000) : effect.ComputeLifespan(log, 1500);
                         FormDecoration decoration;
-                        if (effect.GUIDEvent.ContentGUID == EffectGUIDs.OldLionsCourtSpaghettificationDoughnutStart)
+                        if (effect.GUIDEvent.GUID == EffectGUIDs.OldLionsCourtSpaghettificationDoughnutStart)
                         {
                             decoration = new DoughnutDecoration(600, 2000, lifespan, Colors.LightOrange, 0.2, new PositionConnector(effect.Position));
                         } 
@@ -386,7 +403,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                     {
                         (long start, long end) lifespan = effect.ComputeLifespan(log, 1500); // Override 0 duration
                         FormDecoration decoration;
-                        if (effect.GUIDEvent.ContentGUID == EffectGUIDs.OldLionsCourtSpaghettificationDoughnutDetonation)
+                        if (effect.GUIDEvent.GUID == EffectGUIDs.OldLionsCourtSpaghettificationDoughnutDetonation)
                         {
                             decoration = new DoughnutDecoration(600, 2000, lifespan, Colors.Red, 0.2, new PositionConnector(effect.Position));
                         }
@@ -435,16 +452,8 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                         foreach (EffectEvent effect in horizonWhite)
                         {
                             (long start, long end) lifespan = effect.ComputeLifespan(log, 4000);
-                            FormDecoration white;
-                            if (effect.GUIDEvent.ContentGUID == EffectGUIDs.OldLionsCourtDualHorizonWhiteInner)
-                            {
-                                white = new DoughnutDecoration(300, 340, lifespan, Colors.White, 0.2, new PositionConnector(effect.Position));
-                            } 
-                            else
-                            {
-                                white = new DoughnutDecoration(440, 500, lifespan, Colors.White, 0.2, new PositionConnector(effect.Position));
-                            }
-                            replay.Decorations.Add(white);
+                            (uint inner, uint outer) = ((uint, uint))(effect.GUIDEvent.GUID == EffectGUIDs.OldLionsCourtDualHorizonWhiteInner ? (300, 340) : (440, 500));
+                            replay.Decorations.Add(new DoughnutDecoration(inner, outer, lifespan, Colors.White, 0.2, new PositionConnector(effect.Position)));
                         }
                     }
                 }
@@ -498,7 +507,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                         var rotation = new AngleConnector(effect.Rotation.Z + 90); // Position incorrect, get Arsenite's position
                         if (target.TryGetCurrentPosition(log, effect.Time, out var position))
                         {
-                            var pie = (PieDecoration)new PieDecoration(3000, 180, lifespan, Colors.LightOrange, 0.2, new PositionConnector(position)).UsingRotationConnector(rotation);
+                            var pie = (PieDecoration)new PieDecoration(3000, 180, lifespan, Colors.LightOrange, 0.2, new PositionConnector(position.Value)).UsingRotationConnector(rotation);
                             replay.Decorations.Add(pie);
                         }
                     }
@@ -572,7 +581,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                     hasUltimatumIndicators = true;
                     foreach (EffectEvent effect in ultimatumIndicators)
                     {
-                        var flipped = effect.GUIDEvent.ContentGUID == EffectGUIDs.OldLionsCourtThunderingUltimatumFlipCone;
+                        var flipped = effect.GUIDEvent.GUID == EffectGUIDs.OldLionsCourtThunderingUltimatumFlipCone;
                         (long start, long end) lifespan = effect.HasDynamicEndTime ? effect.ComputeDynamicLifespan(log, 30000) : effect.ComputeLifespan(log, 1500);
                         var rotation = new AngleConnector(effect.Rotation.Z - (flipped ? 270 : 90));
                         int openingAngle = flipped ? 120 : 240;
@@ -593,9 +602,9 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                         EffectEvent? previousIndicator = ultimatumIndicators.LastOrDefault(x => x.Time <= effect.Time);
                         if (target.TryGetCurrentFacingDirection(log, effect.Time, out var currentRotation) && previousIndicator != null)
                         {
-                            var flipped = previousIndicator.GUIDEvent.ContentGUID == EffectGUIDs.OldLionsCourtThunderingUltimatumFlipCone;
+                            var flipped = previousIndicator.GUIDEvent.GUID == EffectGUIDs.OldLionsCourtThunderingUltimatumFlipCone;
                             var rotationOffset = flipped ? 180 : 0;
-                            var rotation = new AngleConnector(currentRotation.GetRoundedZRotationDeg() + rotationOffset);
+                            var rotation = new AngleConnector(currentRotation.Value.GetRoundedZRotationDeg() + rotationOffset);
                             var openingAngle = flipped ? 120 : 240;
                             var pie = (PieDecoration)new PieDecoration(3000, openingAngle, lifespan, Colors.CobaltBlue, 0.2, new PositionConnector(effect.Position)).UsingRotationConnector(rotation);
                             replay.Decorations.Add(pie);
@@ -652,7 +661,10 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
 
         // Exhaust Plume - Knight Fall AoE
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.OldLionsCourtExhaustPlumeAoE, out var exhaustPlume))
@@ -665,7 +677,6 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                 environmentDecorations.Add(circle.Copy().UsingFilled(true).UsingGrowingEnd(lifespan.end));
             }
         }
-
         // Boiling Aether - Expanding AoE
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.OldLionsCourtBoilingAetherExpanding, out var boilingAetherExpanding))
         {
@@ -677,10 +688,10 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
             // Expansion Timer: 500ms
             uint initialRadius = 100;
             uint timeInterval = 500;
-            uint radiusIncreasePerInterval = (uint)(log.LogData.IsCM ? 15 : 11);
 
             foreach (EffectEvent effect in boilingAetherExpanding)
             {
+                uint radiusIncreasePerInterval = (uint)(log.LogData.EncounterIsCM(log, LogID, effect.Time) ? 15 : 11);
                 uint currentRadius = initialRadius;
                 long totalIntervals = effect.Duration / timeInterval;
                 (long start, long end) lifespan = (effect.Time, effect.Time + timeInterval);
@@ -700,12 +711,11 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         // Boiling Aether - Fully Expanded
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.OldLionsCourtBoilingAetherFullyExpanded1, out var boilingAetherExpanded))
         {
-            // Maximum Radius: 320 (Normal Mode)
-            // Maximum Radius: 400 (Challenge Mode)
-            uint radius = (uint)(log.LogData.IsCM ? 400 : 320);
-
             foreach (EffectEvent effect in boilingAetherExpanded)
             {
+                // Maximum Radius: 320 (Normal Mode)
+                // Maximum Radius: 400 (Challenge Mode)
+                uint radius = (uint)(log.LogData.EncounterIsCM(log, LogID, effect.Time) ? 400 : 320);
                 (long start, long end) lifespan = effect.ComputeDynamicLifespan(log, 590000);
                 var circle = new CircleDecoration(radius, lifespan, Colors.Red, 0.3, new PositionConnector(effect.Position));
                 environmentDecorations.Add(circle);
@@ -733,8 +743,36 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         {
             long start = bae.Time;
             var removal = removals.FirstOrDefault(x => x.Time > start);
-            long end = removal != null ? removal.Time : log.LogData.EvtcLogEnd;
+            long end = removal?.Time ?? log.LogData.EvtcLogEnd;
             replay.Decorations.Add(new IconOverheadDecoration(icon, 20, 1, ((int)start, (int)end), new AgentConnector(player)));
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+        {
+            var aetherAversionEligibilityEvents = new List<AchievementEligibilityEvent>();
+            var olcPhases = log.LogData.GetEncounterPhases(log, LogID).Where(x =>x.IntersectsWindow(p.FirstAware, p.LastAware)).ToHashSet();
+            List<HealthDamageEvent> damageData = [
+                ..log.CombatData.GetDamageData(BoilingAetherRedBlueNM),
+                ..log.CombatData.GetDamageData(BoilingAetherRedBlueCM),
+                ..log.CombatData.GetDamageData(BoilingAetherGreenNM),
+                ..log.CombatData.GetDamageData(BoilingAetherGreenCM)
+            ];
+            damageData.SortByTime();
+            foreach (var evt in damageData)
+            {
+                if (evt.HasHit && evt.To.Is(p.AgentItem) && p.InAwareTimes(evt.Time))
+                {
+                    InsertAchievementEligibityEventAndRemovePhase(olcPhases, aetherAversionEligibilityEvents, evt.Time, Ach_AetherAversion, p);
+                }
+            }
+            AddSuccessBasedAchievementEligibityEvents(olcPhases, aetherAversionEligibilityEvents, Ach_AetherAversion, p);
+            achievementEligibilityEvents.AddRange(aetherAversionEligibilityEvents);
         }
     }
 }

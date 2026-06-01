@@ -14,6 +14,10 @@ internal static class BerserkerHelper
     [
         new DamageCastFinder(KingOfFires, KingOfFires)
             .WithBuilds(GW2Builds.July2019Balance)
+            .UsingDisableWithEffectData()
+            .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
+        new EffectCastFinder(KingOfFires, EffectGUIDs.BerserkerKingOfFires)
+            .UsingSrcSpecChecker(Spec.Berserker)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
         new EffectCastFinder(Outrage, EffectGUIDs.BerserkerOutrage)
             .UsingSrcSpecChecker(Spec.Berserker),
@@ -39,12 +43,13 @@ internal static class BerserkerHelper
         new BuffOnActorDamageModifier(Mod_BloodyRoar, BerserkBuff, "Bloody Roar", "20% while in berserk", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Berserker, ByPresence, TraitImages.BloodyRoar, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.January2024Balance),
         new BuffOnActorDamageModifier(Mod_BloodyRoar, BerserkBuff, "Bloody Roar", "15% while in berserk", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Berserker, ByPresence, TraitImages.BloodyRoar, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.January2024Balance),
+            .WithBuilds(GW2Builds.January2024Balance, GW2Builds.April2026Balancepocalypse),
         new BuffOnActorDamageModifier(Mod_BloodyRoar, BerserkBuff, "Bloody Roar", "15% while in berserk", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Berserker, ByPresence, TraitImages.BloodyRoar, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.July2019Balance, GW2Builds.October2022Balance),
         new BuffOnActorDamageModifier(Mod_BloodyRoar, BerserkBuff, "Bloody Roar", "10% while in berserk", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Berserker, ByPresence, TraitImages.BloodyRoar, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.October2022Balance),
-
+            .WithBuilds(GW2Builds.October2022Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_BloodyRoar, BerserkBuff, "Bloody Roar", "10% while in berserk", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Berserker, ByPresence, TraitImages.BloodyRoar, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =

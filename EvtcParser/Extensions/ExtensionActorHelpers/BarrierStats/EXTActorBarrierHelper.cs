@@ -13,6 +13,8 @@ public abstract class EXTActorBarrierHelper
     {
     }
 
+    protected abstract AgentItem GetAgentItemForCachingSrc();
+
     #region INITIALIZERS
     [MemberNotNull(nameof(BarrierEventsByDst))]
     protected abstract void InitBarrierEvents(ParsedEvtcLog log);
@@ -25,7 +27,7 @@ public abstract class EXTActorBarrierHelper
     public IReadOnlyList<EXTBarrierEvent> GetOutgoingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitBarrierEvents(log);
-        BarrierEventByDstCache ??= new(log);
+        BarrierEventByDstCache ??= new(GetAgentItemForCachingSrc(), log);
         if (!BarrierEventByDstCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -59,7 +61,7 @@ public abstract class EXTActorBarrierHelper
     public IReadOnlyList<EXTBarrierEvent> GetIncomingBarrierEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitIncomingBarrierEvents(log);
-        BarrierReceivedEventBySrcCache ??= new(log);
+        BarrierReceivedEventBySrcCache ??= new(GetAgentItemForCachingSrc(), log);
         if (!BarrierReceivedEventBySrcCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)

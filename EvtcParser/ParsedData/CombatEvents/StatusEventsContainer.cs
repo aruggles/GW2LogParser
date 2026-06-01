@@ -18,6 +18,7 @@ internal class StatusEventsContainer
     public readonly Dictionary<AgentItem, List<HealthUpdateEvent>> HealthUpdateEvents = [];
     public readonly Dictionary<AgentItem, List<BarrierUpdateEvent>> BarrierUpdateEvents = [];
     public readonly Dictionary<AgentItem, List<MaxHealthUpdateEvent>> MaxHealthUpdateEvents = [];
+    public readonly Dictionary<long, List<MaxHealthUpdateEvent>> MaxHealthUpdateEventsByMaxHP = [];
 
     public readonly Dictionary<AgentItem, List<TeamChangeEvent>> TeamChangeEvents = [];
 
@@ -44,8 +45,6 @@ internal class StatusEventsContainer
     public readonly List<Last90BeforeDownEvent> Last90BeforeDownEvents = [];
 
     public readonly Dictionary<AgentItem, List<GliderEvent>> GliderEventsBySrc = [];
-
-    public readonly Dictionary<AgentItem, List<StunBreakEvent>> StunBreakEventsBySrc = [];
 
 
     public readonly List<MissileEvent> MissileEvents = [];

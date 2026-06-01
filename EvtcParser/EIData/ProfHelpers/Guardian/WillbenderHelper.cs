@@ -76,7 +76,12 @@ internal static class WillbenderHelper
             .UsingEarlyExit((a, log) => LethalTempoEarlyExit(a, log, 4000))
             .UsingChecker((x, log) => LethalTempoChecker(x, log, 4000))
             .UsingApproximate()
-            .WithBuilds(GW2Builds.April2025Balance),
+            .WithBuilds(GW2Builds.April2025Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_TyrantsLethalTempoCondition, LethalTempo, "Tyrant's Lethal Tempo (Condition)", "3% per stack", DamageSource.NoPets, 3.0, DamageType.Condition, DamageType.All, Source.Willbender, ByStack, TraitImages.TyrantsMomentum, DamageModifierMode.PvE)
+            .UsingEarlyExit((a, log) => LethalTempoEarlyExit(a, log, 4000))
+            .UsingChecker((x, log) => LethalTempoChecker(x, log, 4000))
+            .UsingApproximate()
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // Lethal Tempo Competitive modes
         new BuffOnActorDamageModifier(Mod_LethalTempo, LethalTempo, "Lethal Tempo", "2% per stack", DamageSource.NoPets, 2.0, DamageType.StrikeAndCondition, DamageType.All, Source.Willbender, ByStack, TraitImages.LethalTempo, DamageModifierMode.sPvPWvW)
             .UsingEarlyExit((a, log) => LethalTempoEarlyExit(a, log, 6000))

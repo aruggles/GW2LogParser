@@ -21,7 +21,7 @@ internal class IcebroodConstruct : Grothmar
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic(IceArmSwing, new MechanicPlotlySetting(Symbols.Star, Colors.Orange), "A.Swing", "Hit by Ice Arm Swing (Spin)", "Ice Arm Swing", 0)
                 .WithStabilitySubMechanic(
-                    new PlayerDstHealthDamageHitMechanic(IceArmSwing, new MechanicPlotlySetting(Symbols.Star, Colors.Yellow), "ArmSwing.CC", "Knocked by Ice Arm Swing (Spin)", "Ice Arm Swing", 0),
+                    new SubMechanic(new MechanicPlotlySetting(Symbols.Star, Colors.Yellow), "ArmSwing.CC", "Knocked by Ice Arm Swing (Spin)", "Ice Arm Swing", 0),
                     false
                 ),
                 new EnemyCastEndMechanic(IceArmSwing, new MechanicPlotlySetting(Symbols.Star, Colors.White), "Ice Arm Swing", "Cast Ice Arm Swing (Spin)", "Cast Ice Arm Swing", 0),
@@ -32,7 +32,7 @@ internal class IcebroodConstruct : Grothmar
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic([IceFrail1, IceFrail2], new MechanicPlotlySetting(Symbols.Square, Colors.Orange), "I.Flail", "Hit by Ice Flail (Arm Swipe)", "Ice Flail", 50)
                 .WithStabilitySubMechanic(
-                    new PlayerDstHealthDamageHitMechanic([IceFrail1, IceFrail2], new MechanicPlotlySetting(Symbols.Square, Colors.Yellow), "IceFlail.CC", "Knocked by Ice Flail (Arm Swipe)", "Ice Flail", 50),
+                    new SubMechanic(new MechanicPlotlySetting(Symbols.Square, Colors.Yellow), "IceFlail.CC", "Knocked by Ice Flail (Arm Swipe)", "Ice Flail", 50),
                     false
                 )
             ]),
@@ -76,7 +76,7 @@ internal class IcebroodConstruct : Grothmar
             return phases;
         }
         // Invul check
-        phases.AddRange(GetPhasesByInvul(log, Invulnerability757, mainTarget, false, true));
+        phases.AddRange(GetSubPhasesByInvul(log, Invulnerability757, mainTarget, false, true));
         for (int i = 1; i < phases.Count; i++)
         {
             PhaseData phase = phases[i];
@@ -86,10 +86,20 @@ internal class IcebroodConstruct : Grothmar
         }
         return phases;
     }
+    internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
+    }
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        base.ComputeNPCCombatReplayActors(target, log, replay);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
 
         //(long start, long end) lifespan;
 
@@ -130,7 +140,10 @@ internal class IcebroodConstruct : Grothmar
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
 
         (long start, long end) lifespan;
 
@@ -160,5 +173,20 @@ internal class IcebroodConstruct : Grothmar
 
         var iceShatter = log.CombatData.GetMissileEventsBySkillID(IceShatter);
         environmentDecorations.AddNonHomingMissiles(log, iceShatter, Colors.Ice, 0.5, 25);
+    }
+    internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
     }
 }

@@ -34,36 +34,36 @@ internal class MarkerCastFinder : CheckedCastFinder<MarkerEvent>
 
     internal MarkerCastFinder UsingSrcBaseSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.BaseSpec == spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.GetBaseSpecAtTime(evt.Time) == spec);
         return this;
     }
 
     internal MarkerCastFinder UsingSrcNotBaseSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.BaseSpec != spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.GetBaseSpecAtTime(evt.Time) != spec);
         return this;
     }
 
     internal MarkerCastFinder UsingSrcSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.Spec == spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.GetSpecAtTime(evt.Time) == spec);
         return this;
     }
 
     internal MarkerCastFinder UsingSrcNotSpecChecker(Spec spec)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.Spec != spec);
+        UsingChecker((evt, combatData, agentData, skillData) => evt.Src.GetSpecAtTime(evt.Time) != spec);
         return this;
     }
 
     internal MarkerCastFinder UsingSrcSpecsChecker(HashSet<Spec> specs)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => specs.Contains(evt.Src.Spec));
+        UsingChecker((evt, combatData, agentData, skillData) => specs.Contains(evt.Src.GetSpecAtTime(evt.Time)));
         return this;
     }
     internal MarkerCastFinder UsingSrcNotSpecsChecker(HashSet<Spec> specs)
     {
-        UsingChecker((evt, combatData, agentData, skillData) => !specs.Contains(evt.Src.Spec));
+        UsingChecker((evt, combatData, agentData, skillData) => !specs.Contains(evt.Src.GetSpecAtTime(evt.Time)));
         return this;
     }
 
@@ -76,8 +76,8 @@ internal class MarkerCastFinder : CheckedCastFinder<MarkerEvent>
     public override List<InstantCastEvent> ComputeInstantCast(CombatData combatData, SkillData skillData, AgentData agentData)
     {
         var res = new List<InstantCastEvent>();
-        var markerGUIDEvent = combatData.GetMarkerGUIDEvent(_markerGUID);
-        var markers = combatData.GetMarkerEventsByMarkerID(markerGUIDEvent.ContentID).GroupBy(GetAgent);
+        var markerGUIDEvent = combatData.GetMarkerGUIDEventByGUID(_markerGUID);
+        var markers = combatData.GetMarkerEventsByMarkerID(markerGUIDEvent.MarkerID).GroupBy(GetAgent);
         foreach (var group in markers)
         {
             if (group.Key.IsUnknown)

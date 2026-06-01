@@ -6,7 +6,7 @@ namespace GW2EIEvtcParser.EIData;
 internal class EnemyDstEffectMechanic : DstEffectMechanic
 {
 
-    public EnemyDstEffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([effect], plotlySetting, shortName, description, fullName, internalCoolDown)
+    public EnemyDstEffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([ effect ], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
     }
 

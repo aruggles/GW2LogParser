@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.LogLogic.LogCategories;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -45,11 +46,10 @@ internal class WvWLogic : LogLogic
                 {
                     return new List<HealthDamageEvent>();
                 }
-                return log.FindActor(a).GetDamageEvents(null, log); //TODO(Rennorb) @perf
+                return log.FindActor(a).GetDamageEvents(null, log); //TODO_PERF(Rennorb)
             }).UsingChecker((x, log) => x.HasKilled && (x.To.Type == AgentItem.AgentType.NonSquadPlayer || x.To.IsSpecies(TargetID.WorldVersusWorld))),
-            new EnemyDamageMechanic(new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Red), "Kllng.Blw.Enemy", "Killing Blows inflicted enemy Players by Squad Players", "Killing Blows received by enemies", 0, (log, a) => {
-                return log.FindActor(a).GetDamageTakenEvents(null, log); //TODO(Rennorb) @perf
-            }).UsingChecker((x, log) => x.HasKilled && x.CreditedFrom.Type == AgentItem.AgentType.Player),
+            new EnemyDamageMechanic(new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Red), "Kllng.Blw.Enemy", "Killing Blows inflicted enemy Players by Squad Players", "Killing Blows received by enemies", 0, (log, a) => log.FindActor(a).GetDamageTakenEvents(null, log)) //TODO_PERF(Rennorb)
+                .UsingChecker((x, log) => x.HasKilled && x.CreditedFrom.Type == AgentItem.AgentType.Player),
         ]));
     }
 
@@ -64,7 +64,7 @@ internal class WvWLogic : LogLogic
         }
         if (_detailed)
         {
-            PhaseData detailedPhase = _isFromInstance ? new InstancePhaseData(phases[0].Start, phases[0].End, "Detailed Full Instance", log) : new EncounterPhaseData(phases[0].Start, phases[0].End, "Detailed Full Fight", log);
+            PhaseData detailedPhase = _isFromInstance ? log.LogData.CreateInstancePhase(phases[0].Start, phases[0].End, "Detailed Full Instance") : log.LogData.CreateEncounterPhase(phases[0].Start, phases[0].End, "Detailed Full Fight");
             detailedPhase.AddTargets(Targets, log);
             if (detailedPhase.Targets.Any())
             {
@@ -77,7 +77,7 @@ internal class WvWLogic : LogLogic
         }
         if (_isFromInstance && log.CombatData.GetEvtcVersionEvent().Build >= ArcDPSEnums.ArcDPSBuilds.LogStartLogEndPerCombatSequenceOnInstanceLogs)
         {
-            var fightPhases = GetPhasesBySquadCombatStartEnd(log);
+            var fightPhases = GetEncounterPhasesBySquadCombatStartEnd(log);
             fightPhases.ForEach(x =>
             {
                 x.AddTargets(phases[0].Targets.Keys, log);
@@ -92,9 +92,9 @@ internal class WvWLogic : LogLogic
     {
         return GetGenericLogOffset(logData);
     }
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return LogData.LogMode.NotApplicable;
+        return LogData.Mode.NotApplicable;
     }
 
     internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
@@ -134,14 +134,14 @@ internal class WvWLogic : LogLogic
         }
         return crMap;
     }
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
-        MapIDEvent? mapID = combatData.GetMapIDEvents().LastOrDefault();
-        if (mapID == null)
+        MapIDEvent? mapEvent = combatData.GetMapIDEvents().LastOrDefault();
+        if (mapEvent == null)
         {
             return _defaultName;
         }
-        switch (mapID.MapID)
+        switch (mapEvent.MapID)
         {
             case EternalBattleground:
                 LogCategoryInformation.SubCategory = SubLogCategory.EternalBattlegrounds;
@@ -237,6 +237,13 @@ internal class WvWLogic : LogLogic
                 }
                 //Icon = InstanceIconEternalBattlegrounds;
                 return (_detailed ? "Detailed " : "") + "Isle of Reflection";
+            default:
+                var map = apiController.GetAPIMap(mapEvent.MapID);
+                if (map != null)
+                {
+                    return (_detailed ? "Detailed " : "") + map.Name;
+                }
+                break;
         }
         return _defaultName;
     }
@@ -246,7 +253,7 @@ internal class WvWLogic : LogLogic
         base.SetInstanceBuffs(log, instanceBuffs);
         if (_isGuildHall)
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>();
+            var encounterPhases = log.LogData.GetEncounterPhases(log);
             long[] usedModes = [GuildHallPvEMode, GuildHallsPvPMode, GuildHallWvWMode];
             foreach (var encounterPhase in encounterPhases)
             {
@@ -273,15 +280,15 @@ internal class WvWLogic : LogLogic
         }
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        logData.SetSuccess(true, logData.LogEnd);
+        successHandler.SetSuccess(true, logData.LogEnd);
     }
 
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         AgentItem dummyAgent = agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, _detailed ? "Dummy PvP Agent" : "Enemy Players", ParserHelper.Spec.NPC, TargetID.WorldVersusWorld, true);
-        CombatItem? modeEvent = combatData.FirstOrDefault(x => (x.IsBuffApply() || x.IsBuffRemoval()) && (x.SkillID == GuildHallPvEMode || x.SkillID == GuildHallsPvPMode || x.SkillID == GuildHallWvWMode));
+        CombatItem? modeEvent = combatData.FirstOrDefault(x => (x.IsBuffApplyEvent() || x.IsBuffRemoveEvent()) && (x.SkillID == GuildHallPvEMode || x.SkillID == GuildHallsPvPMode || x.SkillID == GuildHallWvWMode));
         if (modeEvent != null)
         {
             _foundSkillMode = true;
@@ -318,7 +325,7 @@ internal class WvWLogic : LogLogic
             var enemyPlayerDicts = enemyPlayerList.GroupBy(x => x.AgentItem.Agent).ToDictionary(x => x.Key, x => x.ToList());
             foreach (CombatItem c in combatData)
             {
-                if (c.IsDamage(extensions))
+                if (c.IsDamageEvent(extensions))
                 {
                     if (enemyPlayerDicts.TryGetValue(c.SrcAgent, out var srcs))
                     {

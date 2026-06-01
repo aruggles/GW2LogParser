@@ -40,7 +40,7 @@ internal static class LogLogicUtils
 
     internal static void AddArenaDecorationsPerEncounter(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, long logID, string image, CombatReplayMap crMap)
     {
-        var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == logID);
+        var encounterPhases = log.LogData.GetEncounterPhases(log, logID);
         foreach (var encounterPhase in encounterPhases)
         {
             arenaDecorations.Add(new ArenaDecoration((encounterPhase.Start - 5000, encounterPhase.End + 5000), image, crMap));
@@ -108,6 +108,48 @@ internal static class LogLogicUtils
         {
             BuffEvent last = filtered.Last();
             filtered.Add(new BuffRemoveAllEvent(_unknownAgent, last.To, target.LastAware, int.MaxValue, last.BuffSkill, IFF.Unknown, BuffRemoveAllEvent.FullRemoval, int.MaxValue));
+        }
+        return filtered;
+    }
+
+    internal static List<List<BuffEvent>> GetBuffApplyRemoveSequencePerInstanceID(CombatData combatData, long buffID, AgentItem target, bool addDummyRemoveAllEventAtEnd)
+    {
+        var main = combatData.GetBuffDataByIDByDst(buffID, target).Where(x => (x is BuffApplyEvent || x is BuffRemoveAllEvent || x is BuffRemoveSingleEvent)).ToList();
+        var applies = main.OfType<BuffApplyEvent>().GroupBy(x => x.BuffInstance).ToDictionary(x => x.Key, x => x.ToList());
+        var removeSingles = main.OfType<BuffRemoveSingleEvent>().GroupBy(x => x.BuffInstance).ToDictionary(x => x.Key, x => x.ToList());
+        var removeAlls = main.OfType<BuffRemoveAllEvent>().ToList();
+        var filtered = new List<List<BuffEvent>>();
+        foreach (var pair in applies)
+        {
+            var instanceApplies = pair.Value;
+            var instanceSequence = new List<BuffEvent>();
+            foreach (var apply in instanceApplies)
+            {
+                instanceSequence.Add(apply);
+                AbstractBuffRemoveEvent? remove = null;
+                if (removeSingles.TryGetValue(pair.Key, out var singleRemoves))
+                {
+                    remove = singleRemoves.FirstOrDefault(x => x.Time >= apply.Time);
+                }
+                if (remove == null)
+                {
+                    remove = removeAlls.FirstOrDefault(x => x.Time > apply.Time);
+                }
+                if (remove != null)
+                {
+                    instanceSequence.Add(remove);
+                }
+                else
+                {
+                    // Instance never removed
+                    if (addDummyRemoveAllEventAtEnd)
+                    {
+                        instanceSequence.Add(new BuffRemoveAllEvent(_unknownAgent, apply.To, target.LastAware, int.MaxValue, apply.BuffSkill, IFF.Unknown, BuffRemoveAllEvent.FullRemoval, int.MaxValue));
+                    }
+                    break;
+                }
+            }
+            filtered.Add(instanceSequence);
         }
         return filtered;
     }
@@ -225,16 +267,17 @@ internal static class LogLogicUtils
         var positionDict = movementData
             .Where(x => x.IsStateChange == StateChange.Position)
             .GroupBy(x => agentData.GetAgent(x.SrcAgent, x.Time))
+            .Where(x => x.Key.Type == AgentItem.AgentType.Gadget && x.Key.Master == null)
             .ToDictionary(x => x.Key, x => x.ToList());
         var gadgetPositions = positionDict.Where(entry => {
 
-            if (entry.Key.Type != AgentItem.AgentType.Gadget || nonZeroGadgetVelocities.ContainsKey(entry.Key))
+            if (nonZeroGadgetVelocities.ContainsKey(entry.Key))
             {
                 return false;
             }
             return entry.Value.Any(x => chestIDs.Any(y => (MovementEvent.GetPoint3D(x) - y.chestPosition).XY().Length() < InchDistanceThreshold));
-        });
-        if (!gadgetPositions.Any())
+        }).ToList();
+        if (gadgetPositions.Count == 0)
         {
             return;
         }
@@ -246,7 +289,7 @@ internal static class LogLogicUtils
 
     internal static string? AddNameSuffixBasedOnInitialPosition(SingleActor target, IReadOnlyList<CombatItem> combatData, IReadOnlyCollection<(string, Vector2)> positionData, float maxDiff = InchDistanceThreshold)
     {
-        var positionEvts = combatData.Where(x => x.SrcMatchesAgent(target.AgentItem) && x.IsStateChange == StateChange.Position).Take(5);
+        var positionEvts = combatData.Where(x => x.SrcMatchesAgent(target.AgentItem.EnglobingAgentItem) && x.IsStateChange == StateChange.Position).Take(5);
         foreach (var positionEvt in positionEvts)
         {
             var position = MovementEvent.GetPoint3D(positionEvt).XY();
@@ -343,13 +386,13 @@ internal static class LogLogicUtils
     /// <returns>Filtered list with matched <paramref name="startEffects"/>, <paramref name="endEffects"/> and distance between them.</returns>
     internal static List<(EffectEvent endEffect, EffectEvent startEffect, float distance)> MatchEffectToEffect(IEnumerable<EffectEvent> startEffects, IEnumerable<EffectEvent> endEffects)
     {
-        var matchedEffects = new List<(EffectEvent, EffectEvent, float)>(); //TODO(Rennorb) @perf
+        var matchedEffects = new List<(EffectEvent, EffectEvent, float)>(); //TODO_PERF(Rennorb)
         foreach (EffectEvent startEffect in startEffects)
         {
             var candidateEffectEvents = endEffects.Where(x => x.Time > startEffect.Time + 200 && Math.Abs(x.Time - startEffect.Time) < 10000);
             if (candidateEffectEvents.Any())
             {
-                EffectEvent matchedEffect = candidateEffectEvents.MinBy(x => (x.Position - startEffect.Position).LengthSquared()); //TODO(Rennorb) @perf
+                EffectEvent matchedEffect = candidateEffectEvents.MinBy(x => (x.Position - startEffect.Position).LengthSquared()); //TODO_PERF(Rennorb)
                 float minimalDistance = (matchedEffect.Position - startEffect.Position).Length();
                 matchedEffects.Add((matchedEffect, startEffect, minimalDistance));
             }
@@ -375,5 +418,38 @@ internal static class LogLogicUtils
             offset = pair.Value + inputOffset;
         }
         return offset;
+    }
+
+    internal static bool InsertAchievementEligibityEventAndRemovePhase(HashSet<EncounterPhaseData> encounterPhases, List<AchievementEligibilityEvent> achievementEligibilityEvents, long time, long achievementID, Player p)
+    {
+        var encounterPhase = encounterPhases.FirstOrDefault(x => x.InInterval(time));
+        if (encounterPhase != null)
+        {
+            encounterPhases.Remove(encounterPhase);
+            achievementEligibilityEvents.Add(new AchievementEligibilityEvent(time, achievementID, p, true));
+            return true;
+        }
+        return false;
+    }
+
+    internal static void AddSuccessBasedAchievementEligibityEvents(IEnumerable<EncounterPhaseData> encounterPhases, List<AchievementEligibilityEvent> achievementEligibilityEvents, long achievementID, Player p)
+    {
+        foreach (var encounterPhase in encounterPhases)
+        {
+            achievementEligibilityEvents.Add(new AchievementEligibilityEvent(encounterPhase.End, achievementID, p, !encounterPhase.Success));
+        }
+    }
+
+    /// <summary>
+    /// Some bosses may have a health update event at the end of the log that heals them back up to 100% HP.<br></br>
+    /// Override the last health event DstAgent (health %) to the previous one.
+    /// </summary>
+    internal static void SanitizeLastHealthUpdateEvents(SingleActor actor, List<CombatItem> combatData)
+    {
+        var hpUpdates = combatData.Where(x => x.SrcMatchesAgent(actor.AgentItem) && x.IsStateChange == StateChange.HealthUpdate).ToList();
+        if (hpUpdates.Count > 1 && HealthUpdateEvent.GetHealthPercent(hpUpdates.LastOrDefault()!) == 100)
+        {
+            hpUpdates.Last().OverrideDstAgent(hpUpdates[^2].DstAgent);
+        }
     }
 }

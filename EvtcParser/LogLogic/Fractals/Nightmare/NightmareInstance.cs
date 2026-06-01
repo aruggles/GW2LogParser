@@ -1,7 +1,9 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
+using static GW2EIEvtcParser.LogLogic.LogLogic;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
@@ -42,10 +44,10 @@ internal class NightmareInstance : Nightmare
         {
             subLogic.GetCombatMapInternal(log, arenaDecorations);
         }
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var lastEnsolyss = agentData.GetNPCsByID(TargetID.Ensolyss).LastOrDefault();
         if (lastEnsolyss != null)
@@ -53,12 +55,12 @@ internal class NightmareInstance : Nightmare
             var death = combatData.GetDeadEvents(lastEnsolyss).FirstOrDefault();
             if (death != null)
             {
-                logData.SetSuccess(true, death.Time);
+                successHandler.SetSuccess(true, death.Time);
             }
         }
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Nightmare";
     }
@@ -89,7 +91,7 @@ internal class NightmareInstance : Nightmare
                     success = true;
                     end = death.Time;
                 }
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [mama], knights, [], mainPhase, "MAMA", start, end, success, _mama, LogData.LogMode.CMNoName);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [mama], knights, [], mainPhase, "MAMA", start, end, success, _mama, LogData.Mode.CMNoName);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -128,7 +130,7 @@ internal class NightmareInstance : Nightmare
                     success = true;
                     end = death.Time;
                 }
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [siax], echoes, [], mainPhase, "Siax the Corrupted", start, end, success, _siax, LogData.LogMode.CMNoName);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [siax], echoes, [], mainPhase, "Siax the Corrupted", start, end, success, _siax, LogData.Mode.CMNoName);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -169,7 +171,7 @@ internal class NightmareInstance : Nightmare
                     success = true;
                     end = death.Time;
                 }
-                AddInstanceEncounterPhase(log, phases, encounterPhases, [ensolyss], [], [], mainPhase, "Ensolyss of the Endless Torment", start, end, success, _ensolyss, LogData.LogMode.CMNoName);
+                AddInstanceEncounterPhase(log, phases, encounterPhases, [ensolyss], [], [], mainPhase, "Ensolyss of the Endless Torment", start, end, success, _ensolyss, LogData.Mode.CMNoName);
             }
         }
         NumericallyRenameEncounterPhases(encounterPhases);
@@ -263,12 +265,12 @@ internal class NightmareInstance : Nightmare
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -327,6 +329,15 @@ internal class NightmareInstance : Nightmare
         foreach (var logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

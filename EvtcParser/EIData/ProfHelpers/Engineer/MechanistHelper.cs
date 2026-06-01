@@ -46,7 +46,7 @@ internal static class MechanistHelper
             .WithMinions(),
         new EffectCastFinderByDst(CrisisZone, EffectGUIDs.MechanistCrisisZone)
             .WithMinions()
-            .UsingSecondaryEffectChecker(EffectGUIDs.MechanistMechEyeGlow)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.MechanistMechEyeGlow)
             .UsingChecker((effect, combatData, agentData, skillData) => effect.Dst.IsSpecies(MinionID.JadeMech)),
         new MinionCastCastFinder(CoreReactorShot, CoreReactorShot),
         // Mech F3
@@ -111,7 +111,7 @@ internal static class MechanistHelper
     [
         (int)MinionID.JadeMech,
     ];
-
+    
     internal static bool IsKnownMinionID(int id)
     {
         return Minions.Contains(id);

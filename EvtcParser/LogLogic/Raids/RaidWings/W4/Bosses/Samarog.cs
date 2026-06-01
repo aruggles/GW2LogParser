@@ -14,7 +14,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Samarog : BastionOfThePenitent
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstHealthDamageHitMechanic(SamarogShockwave, new MechanicPlotlySetting(Symbols.Circle,Colors.Blue), "Schk.Wv", "Shockwave from Spears","Shockwave", 0)
                 .UsingBuffChecker(Stability, false),
             new PlayerDstHealthDamageHitMechanic(PrisonerSweep, new MechanicPlotlySetting(Symbols.Hexagon,Colors.Blue), "Swp", "Prisoner Sweep (horizontal)","Sweep", 0)
@@ -42,10 +42,10 @@ internal class Samarog : BastionOfThePenitent
             new PlayerDstHealthDamageHitMechanic([InevitableBetrayalFailSmall, InevitableBetrayalFailBig], new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Gr.Fl", "Inevitable Betrayal (failed Green)","Failed Green", 0),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(BrutalizeBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Magenta), "Brtlzd","Brutalized (jumped upon by Samarog->Breakbar)","Brutalized", 0),
-                new EnemyCastEndMechanic(BrutalizeCast, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC","Brutalize (Breakbar)","Breakbar", 0),
-                new PlayerDstHealthDamageMechanic(BrutalizeKill, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC Fail", "Brutalize (Failed CC)","CC Fail", 0)
+                new EnemyCastEndMechanic(BrutalizeCast, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC.Sam","Brutalize (Breakbar)","Breakbar", 0),
+                new PlayerDstHealthDamageMechanic(BrutalizeKill, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC.Sam Fail", "Brutalize (Failed CC)","CC Fail", 0)
                     .UsingChecker((de, log) => de.HasKilled),
-                new EnemyDstBuffRemoveMechanic(FanaticalResilience, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CC End", "Ended Brutalize","CC Ended", 0),
+                new EnemyDstBuffRemoveMechanic(FanaticalResilience, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CC.Sam End", "Ended Brutalize","CC Ended", 0),
             ]),
             //new PlayerBoonRemoveMechanic(BrutalizeEffect, "Brutalize", ParseEnum.BossIDS.Samarog, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed","Ended Brutalize (Breakbar broken)", "CCEnded",0),//(condition => condition.getCombatItem().IsBuffRemove == ParseEnum.BuffRemove.Manual)),
             //new Mechanic(BrutalizeEffect, "Brutalize", Mechanic.MechType.EnemyBoonStrip, ParseEnum.BossIDS.Samarog, new MechanicPlotlySetting(Symbols.DiamondTall,"rgb(110,160,0)"), "CCed1","Ended Brutalize (Breakbar broken)", "CCed1",0),//(condition => condition.getCombatItem().IsBuffRemove == ParseEnum.BuffRemove.All)),
@@ -112,24 +112,24 @@ internal class Samarog : BastionOfThePenitent
         return [];
     }
 
-    private static readonly List<TargetID> RigomAndGuldhemIDs = new List<TargetID>
-    {
+    private static readonly List<TargetID> RigomAndGuldhemIDs =
+    [
         TargetID.Rigom,
         TargetID.Guldhem
-    };
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor samarog, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    ];
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor samarog, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(5);
+        var phases = new List<SubPhasePhaseData>(5);
         // Determined check
-        phases.AddRange(GetPhasesByInvul(log, Determined762, samarog, true, true, encounterPhase.Start, encounterPhase.End));
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, samarog, true, true, encounterPhase.Start, encounterPhase.End));
         for (int i = 0; i < phases.Count; i++)
         {
             int phaseIndex = i + 1;
-            PhaseData phase = phases[i];
+            var phase = phases[i];
             phase.AddParentPhase(encounterPhase);
             if (phaseIndex % 2 == 0)
             {
@@ -185,7 +185,7 @@ internal class Samarog : BastionOfThePenitent
     }
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()
     {
-        return new Dictionary<TargetID, int>()
+        return new Dictionary<TargetID, int>
         {
             {TargetID.Samarog, 0 },
             {TargetID.Rigom, 1 },
@@ -195,7 +195,8 @@ internal class Samarog : BastionOfThePenitent
 
     internal override IReadOnlyList<TargetID> GetTrashMobsIDs()
     {
-        return [
+        return
+        [
             TargetID.SpearAggressionRevulsion
         ];
     }
@@ -203,7 +204,7 @@ internal class Samarog : BastionOfThePenitent
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -217,6 +218,8 @@ internal class Samarog : BastionOfThePenitent
                     replay.Decorations.Add(new OverheadProgressBarDecoration(ParserHelper.CombatReplayOverheadProgressBarMajorSizeInPixel, (seg.Start, seg.End), Colors.Red, 0.6, Colors.Black, 0.2, [(seg.Start, 0), (seg.Start + 15000, 100)], new AgentConnector(target))
                         .UsingRotationConnector(new AngleConnector(180)));
                 }
+                var spearMissiles = log.CombatData.GetMissileEventsBySkillID(SpearReturn);
+                replay.Decorations.AddNonHomingMissiles(log, spearMissiles, ParserIcons.TargetNPCIcons[TargetID.SpearAggressionRevulsion], 1.0f, 100);
                 break;
             case (int)TargetID.Rigom:
             case (int)TargetID.Guldhem:
@@ -240,7 +243,7 @@ internal class Samarog : BastionOfThePenitent
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -268,7 +271,7 @@ internal class Samarog : BastionOfThePenitent
             replay.Decorations.AddOverheadIcon(seg, p, ParserIcons.FixationPurpleOverhead);
         }
         var fixatedSamarog = GetBuffApplyRemoveSequence(log.CombatData, FixatedSamarog, p, true, true);
-        replay.Decorations.AddTether(fixatedSamarog, "rgba(255, 80, 255, 0.3)");
+        replay.Decorations.AddTethers(fixatedSamarog, Colors.FixationPurple.WithAlpha(0.3).ToString());
         //fixated Guldhem
         var fixatedGuldhem = p.GetBuffStatus(log, FixatedGuldhem).Where(x => x.Value > 0);
         foreach (Segment seg in fixatedGuldhem)
@@ -295,22 +298,29 @@ internal class Samarog : BastionOfThePenitent
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations (log, environmentDecorations);
         }
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
     }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Samarog)) ?? throw new MissingKeyActorsException("Samarog not found");
-        return (target.GetHealth(combatData) > 30e6) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return (target.GetHealth(combatData) > 30e6) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 }

@@ -15,18 +15,18 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Siax : Nightmare
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup(
+    internal readonly MechanicGroup Mechanics = new(
         [
             new PlayerDstHealthDamageHitMechanic(VileSpit, new MechanicPlotlySetting(Symbols.Circle,Colors.DarkGreen), "Spit", "Vile Spit (green goo)","Poison Spit", 0),
-            new PlayerDstHealthDamageHitMechanic(TailLashSiax, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Yellow), "Tail", "Tail Lash Siax (half circle Knockback)","Tail Lash (Siax)", 0),
+            new PlayerDstHealthDamageHitMechanic(TailLashSiax, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Yellow), "Tail.S", "Tail Lash Siax (half circle Knockback)","Tail Lash (Siax)", 0),
             new SpawnMechanic((int)TargetID.NightmareHallucinationSiax, new MechanicPlotlySetting(Symbols.StarOpen,Colors.Black), "Hallu", "Nightmare Hallucination Spawn","Hallucination", 0),
             new MechanicGroup(
                 [
                     new EnemyCastStartMechanic([CausticExplosionSiaxPhase66, CausticExplosionSiaxPhase33], new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Yellow), "Phase", "Phase Start","Phase", 0),
                     new EnemyCastEndMechanic([CausticExplosionSiaxPhase66, CausticExplosionSiaxPhase33], new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "Phase Fail", "Phase Fail (Failed to kill Echos in time)","Phase Fail", 0)
                         .UsingChecker((ce,log) => ce.ActualDuration >= 20649), //
-                    new EnemyCastStartMechanic(CausticExplosionSiaxBreakbar, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkTeal), "CC", "Breakbar Start","Breakbar", 0),
-                    new EnemyCastEndMechanic(CausticExplosionSiaxBreakbar, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.Red), "CC Fail", "Failed to CC in time","CC Fail", 0)
+                    new EnemyCastStartMechanic(CausticExplosionSiaxBreakbar, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkTeal), "CC.S", "Breakbar Start","Breakbar", 0),
+                    new EnemyCastEndMechanic(CausticExplosionSiaxBreakbar, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.Red), "CC.S Fail", "Failed to CC in time","CC Fail", 0)
                         .UsingChecker( (ce,log) => ce.ActualDuration >= 15232),
                 ]
             ),
@@ -67,21 +67,21 @@ internal class Siax : Nightmare
         ];
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return LogData.LogMode.CMNoName;
+        return LogData.Mode.CMNoName;
     }
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor siax, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor siax, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(5);
-        phases.AddRange(GetPhasesByInvul(log, Determined762, siax, true, true, encounterPhase.Start, encounterPhase.End));
+        var phases = new List<SubPhasePhaseData>(5);
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, siax, true, true, encounterPhase.Start, encounterPhase.End));
         for (int i = 0; i < phases.Count; i++)
         {
-            PhaseData phase = phases[i];
+            var phase = phases[i];
             var index = i + 1;
             phase.AddParentPhase(encounterPhase);
             if (index % 2 == 0)
@@ -153,7 +153,7 @@ internal class Siax : Nightmare
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -192,7 +192,7 @@ internal class Siax : Nightmare
                             lifespan = (cast.Time, cast.Time + castDuration);
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + castDuration, out var facing))
                             {
-                                var rotation = new AngleConnector(facing);
+                                var rotation = new AngleConnector(facing.Value);
                                 replay.Decorations.Add(new PieDecoration(600, 144, lifespan, Colors.LightOrange, 0.2, new AgentConnector(target)).UsingRotationConnector(rotation));
                             }
                             break;
@@ -238,7 +238,7 @@ internal class Siax : Nightmare
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -246,12 +246,12 @@ internal class Siax : Nightmare
         IEnumerable<Segment> fixations = p.GetBuffStatus(log, FixatedNightmare).Where(x => x.Value > 0);
         var fixationEvents = GetBuffApplyRemoveSequence(log.CombatData, FixatedNightmare, p, true, true);
         replay.Decorations.AddOverheadIcons(fixations, p, ParserIcons.FixationPurpleOverhead);
-        replay.Decorations.AddTether(fixationEvents, Colors.Magenta, 0.5);
+        replay.Decorations.AddTethers(fixationEvents, Colors.Magenta, 0.5);
     }
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -331,9 +331,16 @@ internal class Siax : Nightmare
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

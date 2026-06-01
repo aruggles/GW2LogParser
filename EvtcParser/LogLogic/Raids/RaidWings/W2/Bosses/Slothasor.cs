@@ -17,7 +17,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Slothasor : SalvationPass
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstHealthDamageHitMechanic(TantrumDamage, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Yellow), "Tantrum", "Tantrum (Triple Circles after Ground slamming)","Tantrum", 5000),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(VolatilePoisonBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Poison", "Volatile Poison Application (Special Action Key)","Poison (Action Key)", 0),
@@ -25,17 +25,18 @@ internal class Slothasor : SalvationPass
             ]),
             new PlayerDstHealthDamageHitMechanic(Halitosis, new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.LightOrange), "Breath", "Halitosis (Flame Breath)","Flame Breath", 0),
             new PlayerDstHealthDamageHitMechanic(SporeRelease, new MechanicPlotlySetting(Symbols.Pentagon,Colors.Red), "Shake", "Spore Release (Coconut Shake)","Shake", 0),
-            new PlayerDstBuffApplyMechanic(MagicTransformation, new MechanicPlotlySetting(Symbols.Hexagram,Colors.Teal), "Slub", "Magic Transformation (Ate Magic Mushroom)","Slub Transform", 0), 
+            new PlayerDstBuffApplyMechanic(MagicTransformation, new MechanicPlotlySetting(Symbols.Hexagram,Colors.Teal), "Slub", "Magic Transformation (Ate Magic Mushroom)","Slub Transform", 0)
+                    .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)), 
             //new Mechanic(Nauseated, "Nauseated", ParseEnum.BossIDS.Slothasor, new MechanicPlotlySetting("diamond-tall-open",Colors.LightPurple), "Slub CD",0), //can be skipped imho, identical person and timestamp as Slub Transform
             new PlayerDstBuffApplyMechanic(FixatedSlothasor, new MechanicPlotlySetting(Symbols.Star,Colors.Magenta), "Fixate", "Fixated by Slothasor","Fixated", 0),
             new PlayerDstHealthDamageHitMechanic([ToxicCloud1, ToxicCloud2], new MechanicPlotlySetting(Symbols.PentagonOpen,Colors.DarkGreen), "Floor", "Toxic Cloud (stood in green floor poison)","Toxic Floor", 0),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(Fear, new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Red), "Fear", "Hit by fear after breakbar","Feared", 0)
                     .UsingChecker((ba,log) => ba.AppliedDuration == 8000),
-                new EnemyDstBuffApplyMechanic(NarcolepsyBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC", "Narcolepsy (Breakbar)","Breakbar", 0),
-                new EnemyDstBuffRemoveMechanic(NarcolepsyBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC Fail", "Narcolepsy (Failed CC)","CC Fail", 0)
+                new EnemyDstBuffApplyMechanic(NarcolepsyBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC.Slth", "Narcolepsy (Breakbar)","Breakbar", 0),
+                new EnemyDstBuffRemoveMechanic(NarcolepsyBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC.Slth Fail", "Narcolepsy (Failed CC)","CC Fail", 0)
                     .UsingChecker((br,log) => br.RemovedDuration > 120000),
-                new EnemyDstBuffRemoveMechanic(NarcolepsyBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed", "Narcolepsy (Breakbar broken)","CCed", 0)
+                new EnemyDstBuffRemoveMechanic(NarcolepsyBuff, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed.Slth", "Narcolepsy (Breakbar broken)","CCed", 0)
                     .UsingChecker( (br,log) => br.RemovedDuration <= 120000),
             ]),
             new PlayerDstBuffApplyMechanic(SlipperySlubling, new MechanicPlotlySetting(Symbols.Star,Colors.Yellow), "Slppr.Slb", "Slippery Slubling","Slippery Slubling", 0),
@@ -62,7 +63,7 @@ internal class Slothasor : SalvationPass
     internal override void UpdatePlayersSpecAndGroup(IReadOnlyList<Player> players, CombatData combatData, LogData logData)
     {
         base.UpdatePlayersSpecAndGroup(players, combatData, logData);
-        var slubTransformApplyAtStart = combatData.GetBuffApplyData(MagicTransformation).Where(x => x.Time <= logData.LogStart + 5000).FirstOrDefault();
+        var slubTransformApplyAtStart = combatData.GetBuffApplyData(MagicTransformation).FirstOrDefault(x => x.Time <= logData.LogStart + 5000);
         if (slubTransformApplyAtStart != null)
         {
             var transformedPlayer = players.FirstOrDefault(x => x.AgentItem.Is(slubTransformApplyAtStart.To));
@@ -84,13 +85,13 @@ internal class Slothasor : SalvationPass
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
         if (log.CombatData.GetBuffData(SlipperySlubling).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -113,6 +114,19 @@ internal class Slothasor : SalvationPass
         ];
     }
 
+    internal override IReadOnlyList<TargetID> GetTargetsIDs()
+    {
+        return
+        [
+            TargetID.Slothasor,
+            TargetID.PlayerSlubling
+        ];
+    }
+    protected override HashSet<int> IgnoreForAutoNumericalRenaming()
+    {
+        return [(int)TargetID.PlayerSlubling];
+    }
+
     internal override List<InstantCastFinder> GetInstantCastFinders()
     {
         return
@@ -122,16 +136,16 @@ internal class Slothasor : SalvationPass
         ];
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor slothasor, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor slothasor, IEnumerable<SingleActor> slublings, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(5);
+        var phases = new List<SubPhasePhaseData>(5);
         long encounterStart = encounterPhase.Start;
         long encounterEnd = encounterPhase.End;
-        var sleepy = slothasor.GetCastEvents(log, encounterStart, encounterEnd).Where(x => x.SkillID == NarcolepsySkill);
+        var sleepy = slothasor.GetAnimatedCastEvents(log, encounterStart, encounterEnd).Where(x => x.SkillID == NarcolepsySkill);
         long start = encounterStart;
         int i = 1;
         foreach (CastEvent c in sleepy)
@@ -139,12 +153,14 @@ internal class Slothasor : SalvationPass
             var phase = new SubPhasePhaseData(start, Math.Min(c.Time, encounterEnd), "Phase " + i++);
             phase.AddParentPhase(encounterPhase);
             phase.AddTarget(slothasor, log);
+            phase.AddTargets(slublings, log, PhaseData.TargetPriority.NonBlocking);
             start = c.EndTime;
             phases.Add(phase);
         }
         var lastPhase = new SubPhasePhaseData(start, encounterEnd, "Phase " + i++);
         lastPhase.AddParentPhase(encounterPhase);
         lastPhase.AddTarget(slothasor, log);
+        lastPhase.AddTargets(slublings, log, PhaseData.TargetPriority.NonBlocking);
         phases.Add(lastPhase);
         return phases;
     }
@@ -153,8 +169,10 @@ internal class Slothasor : SalvationPass
     {
         List<PhaseData> phases = GetInitialPhase(log);
         SingleActor mainTarget = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Slothasor)) ?? throw new MissingKeyActorsException("Slothasor not found");
+        var slublings = Targets.Where(x => x.IsSpecies(TargetID.PlayerSlubling));
         phases[0].AddTarget(mainTarget, log);
-        phases.AddRange(ComputePhases(log, mainTarget, (EncounterPhaseData)phases[0], requirePhases));
+        phases[0].AddTargets(slublings, log, PhaseData.TargetPriority.NonBlocking);
+        phases.AddRange(ComputePhases(log, mainTarget, slublings, (EncounterPhaseData)phases[0], requirePhases));
         return phases;
     }
 
@@ -196,15 +214,45 @@ internal class Slothasor : SalvationPass
         }
     }
 
+    internal static void FindSlublingTransformations(LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
+    {
+        var slubTransformList = combatData.Where(x => x.SkillID == MagicTransformation && (x.IsBuffRemoveAllEvent() || x.IsBuffApplyEvent())).ToList();
+        var transformStart = slubTransformList.Where(x => !x.IsBuffRemoveAllEvent()).ToList();
+        var transformEnd = slubTransformList.Where(x => x.IsBuffRemoveAllEvent()).ToList();
+        var copies = new List<CombatItem>();
+        for (int i = 0; i < transformStart.Count; i++)
+        {
+            //
+            long transformStartTime = transformStart[i].Time;
+            long transformEndTime = i < transformEnd.Count ? transformEnd[i].Time : logData.LogEnd;
+            //
+            AgentItem? transformedPlayer = agentData.GetAgentByType(AgentItem.AgentType.Player).FirstOrDefault(x => x.Is(agentData.GetAgent(transformStart[i].DstAgent, transformStart[i].Time)));
+            if (transformedPlayer == null)
+            {
+                continue;
+            }
+            transformedPlayer = transformedPlayer.EnglobingAgentItem;
+            AgentItem slubling = agentData.AddCustomNPCAgent(transformStartTime, transformEndTime + 100, "Slubling " + (i + 1) + " " + transformedPlayer.Name.Split('\0')[0], Spec.NPC, TargetID.PlayerSlubling, false, 0, 0, 0, 0, transformedPlayer.HitboxWidth, transformedPlayer.HitboxHeight);
+            AgentManipulationHelper.RedirectDamageAndCopyRemainingFromSrcToDst(slubling, transformedPlayer, copies, combatData, extensions);
+        }
+        if (copies.Count != 0)
+        {
+            combatData.AddRange(copies);
+            combatData.SortByTime();
+        }
+    }
+
+
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         FindMushrooms(logData, agentData, combatData, extensions);
+        FindSlublingTransformations(logData, agentData, combatData, extensions);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
     }
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -228,7 +276,7 @@ internal class Slothasor : SalvationPass
                             if (target.TryGetCurrentFacingDirection(log, lifespanPrecast.start, out var facingHalitosis))
                             {
                                 var connector = new AgentConnector(target);
-                                var rotationConnector = new AngleConnector(facingHalitosis);
+                                var rotationConnector = new AngleConnector(facingHalitosis.Value);
                                 var openingAngle = 60;
                                 replay.Decorations.Add(new PieDecoration(range, openingAngle, lifespanPrecast, Colors.Orange, 0.1, connector).UsingRotationConnector(rotationConnector));
                                 replay.Decorations.Add(new PieDecoration(range, openingAngle, lifespan, Colors.Orange, 0.4, connector).UsingRotationConnector(rotationConnector));
@@ -288,7 +336,7 @@ internal class Slothasor : SalvationPass
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -302,7 +350,7 @@ internal class Slothasor : SalvationPass
             replay.Decorations.AddWithFilledWithGrowing(circle.UsingFilled(false), true, toDropStart + 8000);
             if (!log.CombatData.HasEffectData && p.TryGetCurrentInterpolatedPosition(log, toDropEnd, out var position))
             {
-                replay.Decorations.Add(new CircleDecoration(900, 180, (toDropEnd, toDropStart + 90000), Colors.GreenishYellow, 0.3, new PositionConnector(position)).UsingGrowingEnd(toDropEnd + 82000));
+                replay.Decorations.Add(new CircleDecoration(900, 180, (toDropEnd, toDropStart + 90000), Colors.GreenishYellow, 0.3, new PositionConnector(position.Value)).UsingGrowingEnd(toDropEnd + 82000));
             }
             replay.Decorations.AddOverheadIcon(seg, p, ParserIcons.VolatilePoisonOverhead);
         }
@@ -316,14 +364,14 @@ internal class Slothasor : SalvationPass
         var fixatedSloth = p.GetBuffStatus(log, FixatedSlothasor).Where(x => x.Value > 0);
         foreach (Segment seg in fixatedSloth)
         {
-            replay.Decorations.Add(new CircleDecoration(120, seg, "rgba(255, 80, 255, 0.3)", new AgentConnector(p)));
+            replay.Decorations.Add(new CircleDecoration(120, seg, Colors.FixationPurple.WithAlpha(0.3).ToString(), new AgentConnector(p)));
             replay.Decorations.AddOverheadIcon(seg, p, ParserIcons.FixationPurpleOverhead);
         }
     }
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -331,7 +379,6 @@ internal class Slothasor : SalvationPass
         {
             foreach (var sporeReleaseImpact in sporeReleaseImpacts)
             {
-                // TODO: confirm size
                 var lifespan = sporeReleaseImpact.ComputeLifespan(log, 1000);
                 var circle = new CircleDecoration(100, lifespan, Colors.Red, 0.2, new PositionConnector(sporeReleaseImpact.Position));
                 environmentDecorations.Add(circle);
@@ -349,6 +396,13 @@ internal class Slothasor : SalvationPass
                 }
                 
             }       
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

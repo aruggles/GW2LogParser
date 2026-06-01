@@ -63,7 +63,7 @@ internal abstract class FractalLogic : LogLogic
         {
             return phases;
         }
-        phases.AddRange(GetPhasesByInvul(log, Determined762, mainTarget, false, true));
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, mainTarget, false, true));
         for (int i = 1; i < phases.Count; i++)
         {
             phases[i].Name = "Phase " + i;
@@ -86,11 +86,11 @@ internal abstract class FractalLogic : LogLogic
         ];
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         if (IsInstance)
         {
-            logData.SetSuccess(true, GetFinalMapChangeTime(logData, combatData));
+            successHandler.SetSuccess(true, GetFinalMapChangeTime(logData, combatData));
             return;
         }
         // check reward
@@ -101,16 +101,16 @@ internal abstract class FractalLogic : LogLogic
         {
             if (reward != null && Math.Abs(lastDamageTaken.Time - reward.Time) < 1000)
             {
-                logData.SetSuccess(true, Math.Min(lastDamageTaken.Time, reward.Time));
+                successHandler.SetSuccess(true, Math.Min(lastDamageTaken.Time, reward.Time));
             }
             else
             {
-                NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents);
+                NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents, successHandler);
             }
         } 
         else
         {
-            logData.SetSuccess(false, mainTarget.LastAware);
+            successHandler.SetSuccess(false, mainTarget.LastAware);
         }
     }
 
@@ -144,7 +144,7 @@ internal abstract class FractalLogic : LogLogic
         }
     }
 
-    protected static void AddFractalScaleEvent(ulong gw2Build, List<CombatItem> combatData, IReadOnlyList<(ulong build, byte scale)> scales)
+    protected static void AddFractalScaleEvent(ulong gw2Build, EvtcVersionEvent evtcVersion, List<CombatItem> combatData, IReadOnlyList<(ulong build, byte scale)> scales)
     {
         if (combatData.Any(x => x.IsStateChange == StateChange.FractalScale))
         {
@@ -155,13 +155,13 @@ internal abstract class FractalLogic : LogLogic
         {
             if (gw2Build >= build)
             {
-                combatData.Add(new CombatItem(0, scale, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)StateChange.FractalScale, 0, 0, 0, 0));
+                combatData.Add(new CombatItem(0, scale, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)StateChange.FractalScale, 0, 0, 0, 0, evtcVersion));
                 break;
             }
         }
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (IsInstance)
         {
@@ -169,9 +169,9 @@ internal abstract class FractalLogic : LogLogic
         }
         if (TargetHPPercentUnderThreshold(GenericTriggerID, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
@@ -232,7 +232,7 @@ internal abstract class FractalLogic : LogLogic
                         continue;
                     }
 
-                    var distance = (effectEvent.Position - agentPos).Length();
+                    var distance = (effectEvent.Position - agentPos.Value).Length();
                     if (distance < distanceThreshold)
                     {
                         lifespan.end = effectEvent.Time + onDistanceSuccessDuration;

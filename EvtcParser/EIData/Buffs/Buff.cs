@@ -40,7 +40,7 @@ public class Buff : IVersionable
     public readonly string Name;
     public readonly long ID;
     public readonly BuffClassification Classification;
-    public readonly Source Source;
+    public readonly IReadOnlyCollection<Source> Sources;
     public readonly BuffStackType StackType;
     public BuffType Type => StackType switch
     {
@@ -67,29 +67,60 @@ public class Buff : IVersionable
     /// </summary>
     /// <param name="name">The name of the boon</param>
     /// <param name="id">The id of the buff</param>
-    /// <param name="source">Source of the buff <see cref="ParserHelper.Source"/></param>
     /// <param name="type">Stack Type of the buff<see cref="BuffStackType"/></param>
     /// <param name="capacity">Maximun amount of buff in stack</param>
     /// <param name="nature">Nature of the buff, dictates in which category the buff will appear <see cref="BuffClassification"/></param>
     /// <param name="link">URL to the icon of the buff</param>
-    internal Buff(string name, long id, Source source, BuffStackType type, int capacity, BuffClassification nature, string link)
+    private Buff(string name, long id, BuffStackType type, int capacity, BuffClassification nature, string link)
     {
         Name = name;
         ID = id;
-        Source = source;
         StackType = type;
         Capacity = capacity;
         Classification = nature;
 #if DEBUG
         if (Classification == BuffClassification.Hidden)
         {
+            Name += " Debug";
             Classification = BuffClassification.Other;
         }
 #endif
         Link = link;
     }
 
+    /// <summary>
+    /// Buff constructor
+    /// </summary>
+    /// <param name="name">The name of the boon</param>
+    /// <param name="id">The id of the buff</param>
+    /// <param name="source">Source of the buff <see cref="ParserHelper.Source"/></param>
+    /// <param name="type">Stack Type of the buff<see cref="BuffStackType"/></param>
+    /// <param name="capacity">Maximun amount of buff in stack</param>
+    /// <param name="nature">Nature of the buff, dictates in which category the buff will appear <see cref="BuffClassification"/></param>
+    /// <param name="link">URL to the icon of the buff</param>
+    internal Buff(string name, long id, Source source, BuffStackType type, int capacity, BuffClassification nature, string link) : this(name, id, type, capacity, nature, link)
+    {
+        Sources = new HashSet<Source> { source };
+    }
+    /// <summary>
+    /// Buff constructor
+    /// </summary>
+    /// <param name="name">The name of the boon</param>
+    /// <param name="id">The id of the buff</param>
+    /// <param name="sources">List of sources of the buff <see cref="ParserHelper.Source"/></param>
+    /// <param name="type">Stack Type of the buff<see cref="BuffStackType"/></param>
+    /// <param name="capacity">Maximun amount of buff in stack</param>
+    /// <param name="nature">Nature of the buff, dictates in which category the buff will appear <see cref="BuffClassification"/></param>
+    /// <param name="link">URL to the icon of the buff</param>
+    internal Buff(string name, long id, HashSet<Source> sources, BuffStackType type, int capacity, BuffClassification nature, string link) : this(name, id, type, capacity, nature, link)
+    {
+        Sources = sources;
+    }
+
     internal Buff(string name, long id, Source source, BuffClassification nature, string link) : this(name, id, source, BuffStackType.Force, 1, nature, link)
+    {
+    }
+    internal Buff(string name, long id, HashSet<Source> sources, BuffClassification nature, string link) : this(name, id, sources, BuffStackType.Force, 1, nature, link)
     {
     }
 
@@ -111,7 +142,7 @@ public class Buff : IVersionable
     {
         Name = name;
         ID = id;
-        Source = Source.Unknown;
+        Sources = [Source.Unknown];
         StackType = BuffStackType.Unknown;
         Capacity = 1;
         Classification = BuffClassification.Unknown;
@@ -150,14 +181,14 @@ public class Buff : IVersionable
         }
         if (buffInfoEvent.StackingType != StackType && buffInfoEvent.StackingType != BuffStackType.Unknown)
         {
-            var message = "Incoherent stack type for " + Name + ": is " + StackType + " but expected " + buffInfoEvent.StackingType;
-//#if DEBUG
-//            // I don't exactly remember when stack type on buff info event was fixed on arc's side
-//            if (versionEvent.Build > 20240600 && IsIncompatibleStackLogic(buffInfoEvent.StackingType))
-//            {
-//                throw new InvalidDataException(message);
-//            }
-//#endif
+            var message = "Incoherent stack type for " + Name + ": is " + StackType + " but expected " + buffInfoEvent.StackingType + " with stacks " + buffInfoEvent.MaxStacks;
+#if DEBUG
+            // I don't exactly remember when stack type on buff info event was fixed on arc's side
+            if (versionEvent.Build > 20240600)
+            {
+                throw new InvalidDataException(message);
+            }
+#endif
             operation.UpdateProgressWithCancellationCheck("Parsing: " + message);
         }
     }
@@ -194,6 +225,10 @@ public class Buff : IVersionable
     {
         ulong gw2Build = combatData.GetGW2BuildEvent().Build;
 
+        if (gw2Build >= GW2Builds.January2026Balance)
+        {
+            return new BuffSourceFinder20260113(boonIDs);
+        }
         if (gw2Build >= GW2Builds.March2024BalanceAndCerusLegendary)
         {
             return new BuffSourceFinder20240319(boonIDs);

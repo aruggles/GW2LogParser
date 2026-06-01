@@ -11,12 +11,12 @@ internal abstract class SrcEffectMechanic : EffectMechanic
     {
         if (effectEvt.Src.IsUnamedSpecies())
         {
-            return agentData.GetNPCsByID(TargetID.Environment).FirstOrDefault()!;
+            return agentData.GetNPCsByID(TargetID.Environment).First();
         }
         return effectEvt.Src;
     }
 
-    public SrcEffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([effect], plotlySetting, shortName, description, fullName, internalCoolDown)
+    public SrcEffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([ effect ], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
     }
 

@@ -50,9 +50,13 @@ internal static class CatalystHelper
         new BuffOnActorDamageModifier(Mod_RelentlessFire, RelentlessFire, "Relentless Fire", "15%", DamageSource.NoPets, 15.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByPresence, SkillImages.RelentlessFire, DamageModifierMode.All)
             .WithBuilds(GW2Builds.EODBeta2, GW2Builds.March2022Balance),
         new BuffOnActorDamageModifier(Mod_RelentlessFire, RelentlessFire, "Relentless Fire", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByPresence, SkillImages.RelentlessFire, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.March2022Balance),
+            .WithBuilds(GW2Builds.March2022Balance, GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
         new BuffOnActorDamageModifier(Mod_RelentlessFire, RelentlessFire, "Relentless Fire", "15%", DamageSource.NoPets, 15.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByPresence, SkillImages.RelentlessFire, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.March2022Balance),
+            .WithBuilds(GW2Builds.March2022Balance, GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
+        new BuffOnActorDamageModifier(Mod_RelentlessFire, RelentlessFire, "Relentless Fire", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByPresence, SkillImages.RelentlessFire, DamageModifierMode.PvEWvW)
+            .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
+        new BuffOnActorDamageModifier(Mod_RelentlessFire, RelentlessFire, "Relentless Fire", "15%", DamageSource.NoPets, 15.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByPresence, SkillImages.RelentlessFire, DamageModifierMode.sPvP)
+            .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
         // Empowering Auras
         new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "2% per stack", DamageSource.NoPets, 2.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.All)
             .WithBuilds(GW2Builds.EODBeta2, GW2Builds.November2022Balance),
@@ -61,7 +65,15 @@ internal static class CatalystHelper
         new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "3% per stack", DamageSource.NoPets, 3.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.November2022Balance, GW2Builds.September2023Balance),
         new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "2% per stack", DamageSource.NoPets, 2.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.September2023Balance),
+            .WithBuilds(GW2Builds.September2023Balance, GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
+        new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "2% per stack", DamageSource.NoPets, 2.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.PvEsPvP)
+            .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "1% per stack", DamageSource.NoPets, 1.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.WvW)
+            .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "1% per stack", DamageSource.NoPets, 1.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.PvEWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_EmpoweringAuras, EmpoweringAuras, "Empowering Auras", "2% per stack", DamageSource.NoPets, 2.0, DamageType.StrikeAndCondition, DamageType.All, Source.Catalyst, ByStack, TraitImages.EmpoweringAuras, DamageModifierMode.sPvP)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -117,7 +129,7 @@ internal static class CatalystHelper
                 if (sphereEffect.IsScaled)
                 {
                     replay.Decorations.Add(new CircleDecoration((uint)(240 * sphereEffect.Scale), lifespan, color, 0.5, connector).UsingFilled(false).UsingSkillMode(skillMode));
-                }
+                } 
                 else
                 {
                     replay.Decorations.Add(new CircleDecoration(240, lifespan, color, 0.5, connector).UsingFilled(false).UsingSkillMode(skillMode));

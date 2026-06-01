@@ -26,6 +26,10 @@ public class CombatReplayMap
     /// <param name="rectInMap">The map rectangle region corresponding to the image in map coordinates</param>
     internal CombatReplayMap((int width, int height) urlPixelSize, (double topX, double topY, double bottomX, double bottomY) rectInMap)
     {
+        if (urlPixelSize.width <= 0 || urlPixelSize.height <= 0)
+        {
+            throw new InvalidDataException("Width and height must be strictly positive in CombatReplay map");
+        }
         _pixelSize = urlPixelSize;
         _rectInMap = rectInMap;
     }
@@ -137,8 +141,12 @@ public class CombatReplayMap
         double scaleY = (double)height / _pixelSize.height;
         double x = (realX - _rectInMap.topX) / (_rectInMap.bottomX - _rectInMap.topX);
         double y = (realY - _rectInMap.topY) / (_rectInMap.bottomY - _rectInMap.topY);
+        if (Double.IsNaN(x) || Double.IsNaN(y) || Double.IsInfinity(x) || Double.IsInfinity(y))
+        {
+            throw new InvalidOperationException("Positions are NaN");
+        }
         return new(
-            (float)Math.Round(scaleX * _pixelSize.width * x, ParserHelper.CombatReplayDataDigit),
+            (float)Math.Round(scaleX * _pixelSize.width * x, ParserHelper.CombatReplayDataDigit), 
             (float)Math.Round(scaleY * (_pixelSize.height - _pixelSize.height * y), ParserHelper.CombatReplayDataDigit)
         );
     }
@@ -184,5 +192,31 @@ public class CombatReplayMap
         _rectInMap.topX = centerX - halfWidth;
         _rectInMap.topY = centerY - halfHeigth;
         return this;
+    }
+
+    internal static CombatReplayMap CreateSquareMapFrom(CombatReplayMap other)
+    {
+        if (other._pixelSize.width == other._pixelSize.height)
+        {
+            return other;
+        }
+        if (other._pixelSize.width > other._pixelSize.height)
+        {
+            var height = other._pixelSize.width;
+            var ratio = (double)other._pixelSize.width / other._pixelSize.height;
+            var centerY = (other._rectInMap.topY + other._rectInMap.bottomY) / 2.0;
+            var topY = (other._rectInMap.topY - centerY) * ratio + centerY;
+            var bottomY = (other._rectInMap.bottomY - centerY) * ratio + centerY;
+            return new CombatReplayMap((other._pixelSize.width, height), (other._rectInMap.topX, topY, other._rectInMap.bottomX, bottomY));
+        }
+        else
+        {
+            var width = other._pixelSize.height;
+            var ratio = (double)other._pixelSize.height / other._pixelSize.width;
+            var centerX = (other._rectInMap.topX + other._rectInMap.bottomX) / 2.0;
+            var topX = (other._rectInMap.topX - centerX) * ratio + centerX;
+            var bottomX = (other._rectInMap.bottomX - centerX) * ratio + centerX;
+            return new CombatReplayMap((width, other._pixelSize.height), (topX, other._rectInMap.topY, bottomX, other._rectInMap.bottomY));
+        }
     }
 }

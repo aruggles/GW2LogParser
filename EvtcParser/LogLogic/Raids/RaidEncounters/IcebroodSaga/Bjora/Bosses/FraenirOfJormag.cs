@@ -81,7 +81,7 @@ internal class FraenirOfJormag : Bjora
         {
             return phases;
         }
-        BuffEvent? invulApplyFraenir = log.CombatData.GetBuffDataByIDByDst(Determined762, fraenir.AgentItem).Where(x => x is BuffApplyEvent).FirstOrDefault();
+        BuffEvent? invulApplyFraenir = log.CombatData.GetBuffDataByIDByDst(Determined762, fraenir.AgentItem).FirstOrDefault(x => x is BuffApplyEvent);
         if (invulApplyFraenir != null)
         {
             // split happened
@@ -94,8 +94,8 @@ internal class FraenirOfJormag : Bjora
                 {
                     var icebroodPhases = new List<PhaseData>(2);
                     // icebrood phasing
-                    BuffEvent? invulApplyIce = log.CombatData.GetBuffDataByIDByDst(Invulnerability757, icebrood.AgentItem).Where(x => x is BuffApplyEvent).FirstOrDefault();
-                    BuffEvent? invulRemoveIce = log.CombatData.GetBuffDataByIDByDst(Invulnerability757, icebrood.AgentItem).Where(x => x is BuffRemoveAllEvent).FirstOrDefault();
+                    BuffEvent? invulApplyIce = log.CombatData.GetBuffDataByIDByDst(Invulnerability757, icebrood.AgentItem).FirstOrDefault(x => x is BuffApplyEvent);
+                    BuffEvent? invulRemoveIce = log.CombatData.GetBuffDataByIDByDst(Invulnerability757, icebrood.AgentItem).FirstOrDefault(x => x is BuffRemoveAllEvent);
                     long icebroodStart = enterCombatIce.Time;
                     long icebroodEnd = log.LogData.LogEnd;
                     if (invulApplyIce != null && invulRemoveIce != null)
@@ -103,7 +103,7 @@ internal class FraenirOfJormag : Bjora
                         long icebrood2Start = invulRemoveIce.Time;
                         phases.Add(new SubPhasePhaseData(icebroodStart + 1, invulApplyIce.Time, "Construct Intact"));
                         icebroodPhases.Add(phases[^1]);
-                        BuffEvent? invulRemoveFraenir = log.CombatData.GetBuffDataByIDByDst(Determined762, fraenir.AgentItem).Where(x => x is BuffRemoveAllEvent).FirstOrDefault();
+                        BuffEvent? invulRemoveFraenir = log.CombatData.GetBuffDataByIDByDst(Determined762, fraenir.AgentItem).FirstOrDefault(x => x is BuffRemoveAllEvent);
                         if (invulRemoveFraenir != null)
                         {
                             // fraenir came back
@@ -203,13 +203,47 @@ internal class FraenirOfJormag : Bjora
         }
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
     }
+    internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
+    }
+
+    internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
+    }
+
+    internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        base.SetInstanceBuffs(log, instanceBuffs);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
         if (log.CombatData.GetBuffData(AchievementEligibilityElementalElegy).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)

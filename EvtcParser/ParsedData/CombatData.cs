@@ -3,6 +3,7 @@ using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using Tracing;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.ParserHelper;
@@ -19,7 +20,6 @@ public partial class CombatData
     //private List<CombatItem> _healingReceivedData;
     private readonly StatusEventsContainer _statusEvents = new();
     private readonly MetaEventsContainer _metaDataEvents = new();
-    private readonly HashSet<long> _skillIDs;
 
     private readonly Dictionary<long, List<BuffEvent>> _buffData;
     private readonly Dictionary<AgentItem, List<BuffEvent>> _buffDataByDst;
@@ -37,6 +37,8 @@ public partial class CombatData
     private Dictionary<long, Dictionary<AgentItem, List<BuffRemoveAllEvent>>> _buffRemoveAllDataByIDByDst;
     private Dictionary<AgentItem, List<BuffRemoveAllEvent>> _buffRemoveAllDataBySrc;
     private Dictionary<AgentItem, List<BuffRemoveAllEvent>> _buffRemoveAllDataByDst;
+
+    private Dictionary<long, Dictionary<AgentItem, List<BuffRemoveSingleEvent>>> _buffRemoveSingleDataByIDByDst;
 
 
     private Dictionary<long, List<BuffExtensionEvent>> _buffExtensionData;
@@ -56,8 +58,18 @@ public partial class CombatData
     private readonly Dictionary<long, List<CrowdControlEvent>> _crowControlDataByID;
     private readonly Dictionary<AgentItem, List<CrowdControlEvent>> _crowControlTakenData;
 
+    public readonly Dictionary<AgentItem, List<StunBreakEvent>> _stunBreakReceivedData = [];
+    public readonly Dictionary<AgentItem, List<StunBreakEvent>> _stunBreakData = [];
+
     private readonly Dictionary<AgentItem, List<AnimatedCastEvent>> _animatedCastData;
     private readonly Dictionary<long, List<AnimatedCastEvent>> _animatedCastDataByID;
+
+    private readonly Dictionary<AgentItem, List<EmoteEvent>> _emoteCastData;
+    private readonly Dictionary<long, List<EmoteEvent>> _emoteCastDataByEmoteID;
+
+    private readonly Dictionary<AgentItem, List<GadgetInteractEvent>> _gadgetInteractCastData;
+    private readonly Dictionary<long, List<GadgetInteractEvent>> _gadgetInteractCastDataBySpeciesID;
+    private readonly Dictionary<AgentItem, List<GadgetInteractEvent>> _gadgetInteractCastDataByGadget;
 
     private readonly Dictionary<AgentItem, List<InstantCastEvent>> _instantCastData;
     private readonly Dictionary<long, List<InstantCastEvent>> _instantCastDataByID;
@@ -79,12 +91,14 @@ public partial class CombatData
     public readonly bool HasCrowdControlData = false;
     public readonly bool HasEffectData = false;
     public readonly bool HasMarkerData = false;
+    public readonly bool HasEmoteData = false;
+    public readonly bool HasGadgetInteractData = false;
     public readonly bool HasSpeciesAndSkillGUIDs = false;
     public readonly bool HasMissileData = false;
 
     private void EIBuffParse(IReadOnlyList<AgentItem> players, SkillData skillData, LogData logData, EvtcVersionEvent evtcVersion)
     {
-        //TODO(Rennorb) @perf @mem: find average complexity
+        //TODO_PERF(Rennorb) @find average complexity
         var toAdd = new List<BuffEvent>(players.Count * 10);
         foreach (AgentItem p in players)
         {
@@ -112,7 +126,7 @@ public partial class CombatData
         var buffSrcAgentsToSort = new HashSet<AgentItem>(toAdd.Count);
         foreach (BuffEvent bf in toAdd)
         {
-            //TODO(Rennorb) @perf @mem: find average complexity
+            //TODO_PERF(Rennorb) @find average complexity
             _buffDataByDst.AddToList(bf.To, bf, toAdd.Count / 4);
             buffDstAgentsToSort.Add(bf.To);
             if (bf is not BuffExtensionEvent)
@@ -121,7 +135,7 @@ public partial class CombatData
                 buffSrcAgentsToSort.Add(bf.By);
             }
 
-            //TODO(Rennorb) @perf @mem: find average complexity
+            //TODO_PERF(Rennorb) @find average complexity
             _buffData.AddToList(bf.BuffID, bf, toAdd.Count / 4);
             buffIDsToSort.Add(bf.BuffID);
         }
@@ -156,15 +170,15 @@ public partial class CombatData
         var srcToSort = new HashSet<AgentItem>(toAdd.Count);
         foreach (HealthDamageEvent de in toAdd)
         {
-            //TODO(Rennorb) @perf @mem: find average complexity
+            //TODO_PERF(Rennorb) @find average complexity
             _damageTakenData.AddToList(de.To, de, toAdd.Count / 4);
             dstToSort.Add(de.To);
 
-            //TODO(Rennorb) @perf @mem: find average complexity
+            //TODO_PERF(Rennorb) @find average complexity
             _damageData.AddToList(de.From, de, toAdd.Count / 4);
             srcToSort.Add(de.From);
 
-            //TODO(Rennorb) @perf @mem: find average complexity
+            //TODO_PERF(Rennorb) @find average complexity
             _damageDataByID.AddToList(de.SkillID, de);
             idsToSort.Add(de.SkillID);
         }
@@ -187,7 +201,7 @@ public partial class CombatData
 
     private List<InstantCastEvent> ComputeInstantCastEventsFromFinders(AgentData agentData, SkillData skillData, HashSet<InstantCastFinder> instantCastFinders)
     {
-        //TODO(Rennorb) @perf @mem: find average complexity
+        //TODO_PERF(Rennorb) @find average complexity
         var res = new List<InstantCastEvent>();
         foreach (InstantCastFinder icf in instantCastFinders)
         {
@@ -218,14 +232,22 @@ public partial class CombatData
         return res;
     }
 
-    private void EICastParse(IReadOnlyList<AgentItem> players, SkillData skillData, LogData logData, AgentData agentData)
+    private void EICastParse(IReadOnlyList<AgentItem> players, SkillData skillData, LogData logData, AgentData agentData, EvtcVersionEvent evtcVersion)
     {
-        List<CastEvent> toAdd = logData.Logic.SpecialCastEventProcess(this, skillData);
+        List<CastEvent> toAdd = logData.Logic.SpecialCastEventProcess(this, agentData, skillData, _animatedCastDataByID);
         ulong gw2Build = GetGW2BuildEvent().Build;
+        // Redirections
+        {
+            ConduitHelper.RedirectGladiatorsDefenseCastEvents(this, skillData, _animatedCastDataByID);
+        }
+
         foreach (AgentItem p in players)
         {
             switch (p.Spec)
             {
+                case Spec.Luminary:
+                    LuminaryHelper.FlagLuminaryRadiantForgeWeaponSwapEvents(GetAnimatedCastData(p), GetWeaponSwapData(p), evtcVersion);
+                    break;
                 case Spec.Willbender:
                     toAdd.AddRange(ProfHelper.ComputeEndWithBuffApplyCastEvents(p, this, skillData, FlowingResolveSkill, 440, 500, FlowingResolveBuff));
                     break;
@@ -278,29 +300,29 @@ public partial class CombatData
         {
             if (cast is AnimatedCastEvent ace)
             {
-                //TODO(Rennorb) @perf @mem: find average complexity
+                //TODO_PERF(Rennorb) @find average complexity
                 _animatedCastData.AddToList(ace.Caster, ace, toAdd.Count / (players.Count + 2));
                 castAgentsToSort.Add(ace.Caster);
 
-                //TODO(Rennorb) @perf @mem: find average complexity
+                //TODO_PERF(Rennorb) @find average complexity
                 _animatedCastDataByID.AddToList(ace.SkillID, ace, 10);
                 castIDsToSort.Add(ace.SkillID);
             }
 
             if (cast is WeaponSwapEvent wse)
             {
-                //TODO(Rennorb) @perf @mem: find average complexity
+                //TODO_PERF(Rennorb) @find average complexity
                 _weaponSwapData.AddToList(wse.Caster, wse, toAdd.Count / (players.Count + 2));
                 wepSwapAgentsToSort.Add(wse.Caster);
             }
 
             if (cast is InstantCastEvent ice)
             {
-                //TODO(Rennorb) @perf @mem: find average complexity
+                //TODO_PERF(Rennorb) @find average complexity
                 _instantCastData.AddToList(ice.Caster, ice, toAdd.Count / (players.Count + 2));
                 instantAgentsToSort.Add(ice.Caster);
 
-                //TODO(Rennorb) @perf @mem: find average complexity
+                //TODO_PERF(Rennorb) @find average complexity
                 _instantCastDataByID.AddToList(ice.SkillID, ice, 10);
                 instantIDsToSort.Add(ice.SkillID);
             }
@@ -422,7 +444,7 @@ public partial class CombatData
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating Custom Damage Events");
         EIDamageParse(skillData, agentData, logData);
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating Custom Cast Events");
-        EICastParse(players, skillData, logData, agentData);
+        EICastParse(players, skillData, logData, agentData, evtcVersion);
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating Custom Status Events");
         EIMetaAndStatusParse(logData, agentData, evtcVersion);
     }
@@ -442,7 +464,6 @@ public partial class CombatData
                 .GroupBy(x => x.BuffInstance);
             if (dictExtensions.Any())
             {
-                //TODO(Rennorb) @perf: wtf
                 var dictApply = events.OfType<BuffApplyEvent>()
                     .Where(x => x.BuffInstance != 0)
                     .GroupBy(x => x.BuffInstance)
@@ -491,7 +512,7 @@ public partial class CombatData
         }
     }
 
-    internal CombatData(IReadOnlyList<CombatItem> allCombatItems, LogData logData, AgentData agentData, SkillData skillData, IReadOnlyList<Player> players, ParserController operation, IReadOnlyDictionary<uint, ExtensionHandler> extensions, EvtcVersionEvent evtcVersion, EvtcParserSettings settings)
+    internal CombatData(IReadOnlyList<CombatItem> allCombatItems, LogData logData, AgentData agentData, SkillData skillData, IReadOnlyList<Player> players, ParserController operation, IReadOnlyDictionary<uint, ExtensionHandler> extensions, EvtcVersionEvent evtcVersion, EvtcParserSettings settings, GW2APIController apiController)
     {
         using var _t = new AutoTrace("CombatData");
         _metaDataEvents.EvtcVersionEvent = evtcVersion;
@@ -499,15 +520,15 @@ public partial class CombatData
         var combatEvents = allCombatItems.ToList();
         combatEvents.SortByTime();
 
-        //TODO(Rennorb) @perf: find average complexity
-        _skillIDs = new HashSet<long>(combatEvents.Count / 2);
-        var castCombatEvents = new Dictionary<ulong, List<CombatItem>>(combatEvents.Count / 5);
-        var buffEvents = new List<BuffEvent>(combatEvents.Count / 2);
-        var wepSwaps = new List<WeaponSwapEvent>(combatEvents.Count / 50);
-        var brkDamageData = new List<BreakbarDamageEvent>(combatEvents.Count / 25);
-        var brkRecoveredData = new List<BreakbarRecoveryEvent>(combatEvents.Count / 25);
-        var crowdControlData = new List<CrowdControlEvent>(combatEvents.Count / 10);
-        var damageData = new List<HealthDamageEvent>(combatEvents.Count / 2);
+        //TODO_PERF(Rennorb): find average complexity
+        var castCombatEvents = new Dictionary<ulong, List<CombatItem>>();
+        var buffEvents = new List<BuffEvent>();
+        var wepSwaps = new List<WeaponSwapEvent>();
+        var brkDamageData = new List<BreakbarDamageEvent>();
+        var brkRecoveredData = new List<BreakbarRecoveryEvent>();
+        var crowdControlData = new List<CrowdControlEvent>();
+        var stunBreakData = new List<StunBreakEvent>();
+        var damageData = new List<HealthDamageEvent>();
 
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating EI Combat Data");
         // First iteration to create necessary metadata events first
@@ -515,13 +536,41 @@ public partial class CombatData
         {
             if (combatItem.IsEssentialMetadata)
             {
-                CombatEventFactory.AddStateChangeEvent(logData.EvtcLogOffset, combatItem, agentData, skillData, _metaDataEvents, _statusEvents, _rewardEvents, wepSwaps, buffEvents, evtcVersion, settings);
+                CombatEventFactory.AddStateChangeEvent(logData.EvtcLogOffset, combatItem, agentData, 
+                    skillData, _metaDataEvents, _statusEvents, 
+                    _rewardEvents, wepSwaps, buffEvents, stunBreakData,
+                    evtcVersion, settings, apiController);
             }
         }
         foreach (CombatItem combatItem in combatEvents)
         {
-            bool insertToSkillIDs = false;
-            if (combatItem.IsStateChange != StateChange.None)
+            if (combatItem.IsCastEvent())
+            {
+                castCombatEvents.AddToList(combatItem.SrcAgent, combatItem);
+            }
+            else if (combatItem.IsBuffApplyOrRemoveEvent())
+            {
+                if (combatItem.IsBuffApplyEvent())
+                {
+                    CombatEventFactory.AddBuffApplyEvent(combatItem, buffEvents, agentData, skillData, evtcVersion);
+                }
+                else
+                {
+                    CombatEventFactory.AddBuffRemoveEvent(combatItem, buffEvents, agentData, skillData, evtcVersion);
+                }
+            }
+            else if (combatItem.IsDamageEvent())
+            {
+                if (combatItem.IsDirectDamageEvent())
+                {
+                    CombatEventFactory.AddDirectDamageEvent(combatItem, damageData, brkDamageData, brkRecoveredData, crowdControlData, stunBreakData, agentData, skillData);
+                }
+                else if (combatItem.IsBuffDamageEvent())
+                {
+                    CombatEventFactory.AddBuffDamageDamageEvent(combatItem, damageData, brkDamageData, brkRecoveredData, crowdControlData, stunBreakData, agentData, skillData, evtcVersion);
+                }
+            }
+            else if (combatItem.IsStateChange != StateChange.Combat)
             {
                 if (combatItem.IsEssentialMetadata)
                 {
@@ -531,51 +580,20 @@ public partial class CombatData
                 {
                     if (extensions.TryGetValue(combatItem.Pad, out var handler))
                     {
-                        insertToSkillIDs = handler.IsSkillID(combatItem);
                         handler.InsertEIExtensionEvent(combatItem, agentData, skillData);
                     }
                 }
                 else
                 {
-                    insertToSkillIDs = combatItem.IsStateChange == StateChange.BuffInitial;
-                    CombatEventFactory.AddStateChangeEvent(logData.EvtcLogOffset, combatItem, agentData, skillData, _metaDataEvents, _statusEvents, _rewardEvents, wepSwaps, buffEvents, evtcVersion, settings);
+                    CombatEventFactory.AddStateChangeEvent(logData.EvtcLogOffset, combatItem, agentData, skillData, 
+                        _metaDataEvents, _statusEvents, _rewardEvents, 
+                        wepSwaps, buffEvents, stunBreakData,
+                        evtcVersion, settings, apiController);
                 }
-
-            }
-            else if (combatItem.IsActivation != Activation.None)
-            {
-                insertToSkillIDs = true;
-                castCombatEvents.AddToList(combatItem.SrcAgent, combatItem);
-            }
-            else if (combatItem.IsBuffRemove != BuffRemove.None)
-            {
-                insertToSkillIDs = true;
-                CombatEventFactory.AddBuffRemoveEvent(combatItem, buffEvents, agentData, skillData);
-            }
-            else
-            {
-                insertToSkillIDs = true;
-                if (combatItem.IsBuff != 0 && combatItem.BuffDmg == 0 && combatItem.Value > 0)
-                {
-                    CombatEventFactory.AddBuffApplyEvent(combatItem, buffEvents, agentData, skillData, evtcVersion);
-                }
-                else if (combatItem.IsBuff == 0)
-                {
-                    CombatEventFactory.AddDirectDamageEvent(combatItem, damageData, brkDamageData, brkRecoveredData, crowdControlData, agentData, skillData);
-                }
-                else if (combatItem.IsBuff != 0 && combatItem.Value == 0)
-                {
-                    CombatEventFactory.AddIndirectDamageEvent(combatItem, damageData, agentData, skillData);
-                }
-            }
-
-            if (insertToSkillIDs)
-            {
-                _skillIDs.Add(combatItem.SkillID);
             }
         }
 
-        HasStackIDs = evtcVersion.Build > ArcDPSBuilds.ProperConfusionDamageSimulation && buffEvents.Any(x => x is BuffStackActiveEvent || x is BuffStackResetEvent);
+        HasStackIDs = evtcVersion.Build > ArcDPSBuilds.ProperConfusionDamageSimulation && buffEvents.Any(x => x is BuffStackActiveEvent || x is BuffStackDeactiveEvent);
         UseBuffInstanceSimulator = false;// evtcVersion.Build > ArcDPSBuilds.RemovedDurationForInfiniteDurationStacksChanged && HasStackIDs && (logData.Logic.ParseMode == EncounterLogic.FightLogic.ParseModeEnum.Instanced10 || logData.Logic.ParseMode == EncounterLogic.FightLogic.ParseModeEnum.Instanced5 || logData.Logic.ParseMode == EncounterLogic.FightLogic.ParseModeEnum.Benchmark);
         HasMovementData = _statusEvents.MovementEvents.Count > 1;
         HasBreakbarDamageData = brkDamageData.Count != 0 || brkRecoveredData.Count != 0;
@@ -589,17 +607,44 @@ public partial class CombatData
         skillData.CombineWithSkillInfo(_metaDataEvents.SkillInfoEvents);
         
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating Cast Events");
-        List<AnimatedCastEvent> animatedCastData = CombatEventFactory.CreateCastEvents(castCombatEvents, agentData, skillData, logData);
+        List<AnimatedCastEvent> animatedCastData = CombatEventFactory.CreateCastEvents(evtcVersion, castCombatEvents, agentData, skillData, logData, _metaDataEvents.EmoteGUIDEventsByEmoteID);
         _weaponSwapData = wepSwaps.GroupBy(x => x.Caster).ToDictionary(x => x.Key, x => x.ToList());
         _animatedCastData = animatedCastData.GroupBy(x => x.Caster).ToDictionary(x => x.Key, x => x.ToList());
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         _instantCastData = [];
         _instantCastDataByID = [];
         _animatedCastDataByID = animatedCastData.GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList());
-        
+        if (evtcVersion.Build >= ArcDPSBuilds.EmoteAndGadgetInteractionAdded && _animatedCastDataByID.TryGetValue(ArcDPSGenericEmote, out var emoteCasts))
+        {
+            operation.UpdateProgressWithCancellationCheck("Parsing: Creating Emote Events");
+            var emotes = emoteCasts.OfType<EmoteEvent>().ToList();
+            HasEmoteData = emotes.Count > 0;
+            _emoteCastData = emotes.GroupBy(x => x.Caster).ToDictionary(x => x.Key, x => x.ToList());
+            _emoteCastDataByEmoteID = emotes.GroupBy(x => x.EmoteID).ToDictionary(x => x.Key, x => x.ToList());
+        } 
+        else
+        {
+            _emoteCastData = [];
+            _emoteCastDataByEmoteID = [];
+        }
+        if (evtcVersion.Build >= ArcDPSBuilds.EmoteAndGadgetInteractionAdded && _animatedCastDataByID.TryGetValue(ArcDPSGenericGadgetInteract, out var gadgetInteractCasts))
+        {
+            operation.UpdateProgressWithCancellationCheck("Parsing: Creating Gadget Iteract Events");
+            var gadgetInteracts = gadgetInteractCasts.OfType<GadgetInteractEvent>().ToList();
+            HasGadgetInteractData = gadgetInteracts.Count > 0;
+            _gadgetInteractCastData = gadgetInteracts.GroupBy(x => x.Caster).ToDictionary(x => x.Key, x => x.ToList());
+            _gadgetInteractCastDataByGadget = gadgetInteracts.GroupBy(x => x.Gadget).ToDictionary(x => x.Key, x => x.ToList());
+            _gadgetInteractCastDataBySpeciesID = gadgetInteracts.GroupBy(x => (long)x.Gadget.ID).ToDictionary(x => x.Key, x => x.ToList());
+        }
+        else
+        {
+            _gadgetInteractCastData = [];
+            _gadgetInteractCastDataByGadget = [];
+            _gadgetInteractCastDataBySpeciesID = [];
+        }
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating Buff Events");
         _buffDataByDst = buffEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
-        _buffDataBySrc = buffEvents.Where(x => !(x is BuffExtensionEvent)).GroupBy(x => x.By).ToDictionary(x => x.Key, x => x.ToList());
+        _buffDataBySrc = buffEvents.Where(x => x is not BuffExtensionEvent).GroupBy(x => x.By).ToDictionary(x => x.Key, x => x.ToList());
         _buffData = buffEvents.GroupBy(x => x.BuffID).ToDictionary(x => x.Key, x => x.ToList());
         OffsetBuffExtensionEvents(evtcVersion);
         // damage events
@@ -615,6 +660,8 @@ public partial class CombatData
         _crowControlData = crowdControlData.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
         _crowControlDataByID = crowdControlData.GroupBy(x => x.SkillID).ToDictionary(x => x.Key, x => x.ToList());
         _crowControlTakenData = crowdControlData.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+        _stunBreakReceivedData = stunBreakData.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
+        _stunBreakData = stunBreakData.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
         // buff depend events
         operation.UpdateProgressWithCancellationCheck("Parsing: Creating Buff Dependent Events");
         BuildBuffDependentContainers();
@@ -664,6 +711,12 @@ public partial class CombatData
                 .GroupBy(y => y.To)
                 .ToDictionary(y => y.Key, y => y.ToList())
         );
+        _buffRemoveSingleDataByIDByDst = _buffData.ToDictionary(
+            x => x.Key,
+            x => x.Value.OfType<BuffRemoveSingleEvent>()
+                .GroupBy(y => y.To)
+                .ToDictionary(y => y.Key, y => y.ToList())
+        );
         _buffDataByIDByDst = _buffData.ToDictionary(x => x.Key, x => x.Value.GroupBy(y => y.To).ToDictionary(y => y.Key, y => y.ToList()));
         _buffApplyData = _buffData.ToDictionary(x => x.Key, x => x.Value.OfType<AbstractBuffApplyEvent>().ToList());
         _buffApplyDataByDst = _buffDataByDst.ToDictionary(x => x.Key, x => x.Value.OfType<AbstractBuffApplyEvent>().ToList());
@@ -682,7 +735,7 @@ public partial class CombatData
         );
         _buffRemoveAllDataBySrc = _buffDataBySrc.ToDictionary(x => x.Key, x => x.Value.OfType<BuffRemoveAllEvent>().ToList());
         _buffExtensionData = _buffData.ToDictionary(x => x.Key, x => x.Value.OfType<BuffExtensionEvent>().ToList());
-        //TODO(Rennorb) @perf @mem: find average complexity
+        //TODO_PERF(Rennorb) @find average complexity
         _buffDataByInstanceID = new(_buffData.Count / 10);
         foreach (var buffEvents in _buffData.Values)
         {
@@ -690,7 +743,7 @@ public partial class CombatData
             {
                 if (!_buffDataByInstanceID.TryGetValue(abe.BuffID, out var dict))
                 {
-                    //TODO(Rennorb) @perf @mem: find average complexity
+                    //TODO_PERF(Rennorb) @find average complexity
                     dict = new(10);
                     _buffDataByInstanceID[abe.BuffID] = dict;
                 }

@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
@@ -48,14 +49,14 @@ internal class SuperKodanBrothers : Bjora
         ];
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (TargetHPPercentUnderThreshold(TargetID.ClawOfTheFallen, logData.LogStart, combatData, Targets) ||
             TargetHPPercentUnderThreshold(TargetID.VoiceOfTheFallen, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
@@ -65,7 +66,7 @@ internal class SuperKodanBrothers : Bjora
         if (logStartNPCUpdate != null)
         {
             AgentItem mainTarget = (agentData.GetNPCsByID(TargetID.ClawOfTheFallen).FirstOrDefault() ?? agentData.GetNPCsByID(TargetID.VoiceOfTheFallen).FirstOrDefault()) ?? throw new MissingKeyActorsException("Main target not found");
-            CombatItem? firstCast = combatData.FirstOrDefault(x => x.SrcMatchesAgent(mainTarget) && x.IsActivation != Activation.None && x.Time <= logStartNPCUpdate.Time && x.SkillID != WeaponStow && x.SkillID != WeaponDraw);
+            CombatItem? firstCast = combatData.FirstOrDefault(x => x.SrcMatchesAgent(mainTarget) && x.IsCastEvent() && x.Time <= logStartNPCUpdate.Time && x.SkillID != WeaponStow && x.SkillID != WeaponDraw);
             if (firstCast != null && combatData.Any(x => x.SrcMatchesAgent(mainTarget) && x.Time > logStartNPCUpdate.Time + TimeThresholdConstant))
             {
                 startToUse = firstCast.Time;
@@ -92,7 +93,7 @@ internal class SuperKodanBrothers : Bjora
             return phases;
         }
         //
-        List<PhaseData> unmergedPhases = GetPhasesByInvul(log, Determined762, claw, false, true);
+        var unmergedPhases = GetSubPhasesByInvul(log, Determined762, claw, false, true);
         for (int i = 0; i < unmergedPhases.Count; i++)
         {
             unmergedPhases[i].Name = "Phase " + (i + 1);
@@ -126,7 +127,7 @@ internal class SuperKodanBrothers : Bjora
             phases.Add(phase);
         }
         //
-        var teleports = voice.GetCastEvents(log).Where(x => x.SkillID == KodanTeleport);
+        var teleports = voice.GetAnimatedCastEvents(log).Where(x => x.SkillID == KodanTeleport);
         long tpCount = 0;
         long preTPPhaseStart = 0;
         foreach (CastEvent teleport in teleports)
@@ -199,7 +200,7 @@ internal class SuperKodanBrothers : Bjora
         return phases;
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Super Kodan Brothers";
     }
@@ -221,5 +222,43 @@ internal class SuperKodanBrothers : Bjora
             TargetID.ClawOfTheFallen,
             TargetID.VoiceAndClaw,
         ];
+    }
+    internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
+    }
+
+    internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
+    }
+
+    internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
+    }
+    internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
     }
 }

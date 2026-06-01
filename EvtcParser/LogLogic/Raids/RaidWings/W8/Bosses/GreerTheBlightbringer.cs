@@ -12,6 +12,7 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
+using static GW2EIEvtcParser.AchievementEligibilityIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -23,7 +24,7 @@ internal class GreerTheBlightbringer : MountBalrior
         Aegis, Alacrity, Fury, Might, Protection, Quickness, Regeneration, Resistance, Resolution, Stability, Swiftness, Vigor
     ];
 
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
                 new PlayerSrcHealthDamageHitMechanic(ReflectableProjectiles, new MechanicPlotlySetting(Symbols.YDown, Colors.Pink), "ProjRefl.Greer.H", "Reflected projectiles have hit Greer", "Reflected Projectile Hit (Greer)", 0)
                     .UsingChecker((hde, log) => hde.To.IsSpecies(TargetID.Greer)).WithBuilds(GW2Builds.November2024MountBalriorRelease, GW2Builds.December2024MountBalriorNerfs),
@@ -45,8 +46,12 @@ internal class GreerTheBlightbringer : MountBalrior
                 ]),
                 new PlayerDstHealthDamageHitMechanic([RipplesOfRot, RipplesOfRot2, RipplesOfRotCM, RipplesOfRotCM2], new MechanicPlotlySetting(Symbols.StarSquareOpenDot, Colors.Chocolate), "RippRot.H", "Hit by Ripples of Rot", "Ripples of Rot Hit", 0),
                 new PlayerDstBuffApplyMechanic(PlagueRot, new MechanicPlotlySetting(Symbols.YDown, Colors.Red), "PlagueRot", "Received Plague Rot", "Plague Rot", 0),
-                new PlayerDstBuffApplyMechanic(PlagueRot, new MechanicPlotlySetting(Symbols.YDown, Colors.Yellow), "Unplagued.Achiv", "Achievement Eligibility: Guaranteed Plague Free", "Achiv Unplagued", 0)
-                    .UsingEnable(log => log.LogData.IsCM).UsingAchievementEligibility(),
+                new MechanicGroup([
+                    new AchievementEligibilityMechanic(Ach_Unplagued, new MechanicPlotlySetting(Symbols.YDown, Colors.DarkYellow), "Unplagued.Achiv.L", "Achievement Eligibility: Guaranteed Plague Free Lost", "Achiv Unplagued Lost", 0)
+                        .UsingChecker((evt, log) => evt.Lost),
+                    new AchievementEligibilityMechanic(Ach_Unplagued, new MechanicPlotlySetting(Symbols.YDown, Colors.Yellow), "Unplagued.Achiv.K", "Achievement Eligibility: Guaranteed Plague Free Kept", "Achiv Unplagued Kept", 0)
+                        .UsingChecker((evt, log) => !evt.Lost)
+                ]),
             ]),
             new PlayerDstHealthDamageHitMechanic(WaveOfCorruption, new MechanicPlotlySetting(Symbols.HourglassOpen, Colors.LightRed), "WaveCor.H", "Hit by Wave of Corruption", "Wave of Corruption Hit", 0),
             new MechanicGroup([
@@ -153,45 +158,29 @@ internal class GreerTheBlightbringer : MountBalrior
         RenameProtoGreerlings(Targets);
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor greer = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Greer)) ?? throw new MissingKeyActorsException("Greer not found");
         SingleActor? ereg = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Ereg));
         if (ereg != null)
         {
             greer.OverrideName("Godspoil Greer");
-            return LogData.LogMode.CMNoName;
+            return LogData.Mode.CMNoName;
         }
-        return LogData.LogMode.Normal;
+        return LogData.Mode.Normal;
     }
 
     private static void SetPhaseNameForHP(PhaseData damageImmunityPhase, double hpPercent)
     {
-        if (hpPercent > 81)
+        damageImmunityPhase.Name = hpPercent switch
         {
-            damageImmunityPhase.Name = "100% - 80%";
-        }
-        else if (hpPercent > 66)
-        {
-            damageImmunityPhase.Name = "80% - 65%";
-        }
-        else if (hpPercent > 51)
-        {
-            damageImmunityPhase.Name = "65% - 50%";
-        }
-        else if (hpPercent > 36)
-        {
-            damageImmunityPhase.Name = "50% - 35%";
-        }
-        else if (hpPercent > 21 )
-        {
-            damageImmunityPhase.Name = "35% - 20%";
-        }
-        else
-        {
-            damageImmunityPhase.Name = "20% - 0%";
-        }
-
+            > 81 => "100% - 80%",
+            > 66 => "80% - 65%",
+            > 51 => "65% - 50%",
+            > 36 => "50% - 35%",
+            > 21 => "35% - 20%",
+            _ => "20% - 0%"
+        };
     }
 
     private static void AddMainTitansToPhase(PhaseData phase, SingleActor? greer, IEnumerable<SingleActor> greeAndReg, SingleActor? ereg, ParsedEvtcLog log)
@@ -200,20 +189,20 @@ internal class GreerTheBlightbringer : MountBalrior
         phase.AddTargets(greeAndReg, log, PhaseData.TargetPriority.Blocking);
         phase.AddTarget(ereg, log, PhaseData.TargetPriority.NonBlocking);
     }
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor greer, IEnumerable<SingleActor> greeAndReeg, SingleActor? ereg, IEnumerable<SingleActor> protoGreerlings, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor greer, IEnumerable<SingleActor> greeAndReeg, SingleActor? ereg, IEnumerable<SingleActor> protoGreerlings, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(encounterPhase.IsCM ? 14 : 11);
+        var phases = new List<SubPhasePhaseData>(encounterPhase.IsCM ? 14 : 11);
         // In shield bubble phases
-        phases.AddRange(GetPhasesByCast(log, InvulnerableBarrier, greer, true, true, encounterPhase.Start, encounterPhase.End));
-        var mainPhases = new List<PhaseData>(3);
+        phases.AddRange(GetSubPhasesByCast(log, InvulnerableBarrier, greer, true, true, encounterPhase.Start, encounterPhase.End, 3000));
+        var mainPhases = new List<SubPhasePhaseData>(3);
         for (int i = 0; i < phases.Count; i++)
         {
             var phaseIndex = i + 1;
-            PhaseData phase = phases[i];
+            var phase = phases[i];
             if (phaseIndex % 2 == 0)
             {
                 phase.Name = "Split " + (phaseIndex) / 2;
@@ -230,7 +219,7 @@ internal class GreerTheBlightbringer : MountBalrior
             }
         }
         // Generic in between damage immunity phases handling
-        var damageImmunityPhases = GetPhasesByInvul(log, [DamageImmunity1, DamageImmunity2], greer, false, true, encounterPhase.Start, encounterPhase.End);
+        var damageImmunityPhases = GetSubPhasesByInvul(log, [DamageImmunity1, DamageImmunity2], greer, false, true, encounterPhase.Start, encounterPhase.End);
         foreach (var damageImmunityPhase in damageImmunityPhases)
         {
             damageImmunityPhase.AddParentPhases(mainPhases);
@@ -272,7 +261,7 @@ internal class GreerTheBlightbringer : MountBalrior
         // Below 20% CM phases handling
         if (encounterPhase.IsCM && greer.GetBuffStatus(log, DamageImmunity3).Any(x => x.Value > 0))
         {
-            var finalPhases = GetPhasesByInvul(log, DamageImmunity3, greer, true, true, encounterPhase.Start, encounterPhase.End);
+            var finalPhases = GetSubPhasesByInvul(log, DamageImmunity3, greer, true, true, encounterPhase.Start, encounterPhase.End);
             var finalHPPhase = phases.Last();
             if (finalPhases.Count > 0)
             {
@@ -292,14 +281,14 @@ internal class GreerTheBlightbringer : MountBalrior
                     {
                         phase.Name = "Proto Greer " + (++protoPhases);
                         phase.AddTargets(protoGreerlings, log);
-                        phases.Add(phase);
                     }
                     else
                     {
                         phase.Name = "Below 10% " + (++below10Phases);
                         AddMainTitansToPhase(phase, greer, greeAndReeg, ereg, log);
-                        phases.Add(phase);
                     }
+
+                    phases.Add(phase);
                     phase.OverrideEnd(Math.Min(phase.End, finalHPPhase.End));
                 }
             }
@@ -328,7 +317,7 @@ internal class GreerTheBlightbringer : MountBalrior
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -436,7 +425,7 @@ internal class GreerTheBlightbringer : MountBalrior
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor player, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(player, log, replay);
         }
@@ -448,10 +437,10 @@ internal class GreerTheBlightbringer : MountBalrior
         {
             foreach (EffectEvent effect in noxiousBlight)
             {
-                long duration = effect.GUIDEvent.ContentGUID == EffectGUIDs.GreerEruptionOfRotGreen ? 10000 : 8000;
+                long duration = effect.GUIDEvent.GUID == EffectGUIDs.GreerEruptionOfRotGreen ? 10000 : 8000;
                 string icon = 
-                    effect.GUIDEvent.ContentGUID == EffectGUIDs.GreerEruptionOfRotGreen 
-                    || effect.GUIDEvent.ContentGUID == EffectGUIDs.GreerEruptionOfRotGreen2 
+                    effect.GUIDEvent.GUID == EffectGUIDs.GreerEruptionOfRotGreen 
+                    || effect.GUIDEvent.GUID == EffectGUIDs.GreerEruptionOfRotGreen2 
                     ? ParserIcons.GreenMarkerSize2Overhead : ParserIcons.GreenMarkerSize3Overhead;
                 long growing = effect.Time + duration;
                 (long start, long end) lifespan = effect.ComputeLifespan(log, duration);
@@ -472,7 +461,7 @@ internal class GreerTheBlightbringer : MountBalrior
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -573,7 +562,7 @@ internal class GreerTheBlightbringer : MountBalrior
             {
                 foreach (EffectEvent cloud in miasmaClouds.Where(x => x.Time > animation.Time && x.Time < animation.Time + 6000))
                 {
-                    long duration = cloud.GUIDEvent.ContentGUID == EffectGUIDs.GreerEnfeeblingMiasmaGasClouds ? 12000 : 13000;
+                    long duration = cloud.GUIDEvent.GUID == EffectGUIDs.GreerEnfeeblingMiasmaGasClouds ? 12000 : 13000;
                     lifespan = cloud.ComputeLifespan(log, duration);
                     var circle = new CircleDecoration(150, lifespan, Colors.Purple, 0.2, new PositionConnector(cloud.Position));
                     replay.Decorations.AddWithBorder(circle, Colors.Red, 0.2);
@@ -823,12 +812,12 @@ internal class GreerTheBlightbringer : MountBalrior
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
 
-        var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+        var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
         foreach (var encounterPhase in encounterPhases)
         {
             if (encounterPhase.Success && encounterPhase.IsCM)
@@ -841,6 +830,25 @@ internal class GreerTheBlightbringer : MountBalrior
                 }
 
             }
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+        {
+            var unplaguedEligibilityEvents = new List<AchievementEligibilityEvent>();
+            var greerPhases = log.LogData.GetEncounterPhases(log, LogID).Where(x => x.IsCM && x.IntersectsWindow(p.FirstAware, p.LastAware)).ToHashSet();
+            var buffData = log.CombatData.GetBuffApplyDataByIDByDst(PlagueRot, p.AgentItem);
+            foreach (var evt in buffData)
+            {
+                InsertAchievementEligibityEventAndRemovePhase(greerPhases, unplaguedEligibilityEvents, evt.Time, Ach_Unplagued, p);
+            }
+            AddSuccessBasedAchievementEligibityEvents(greerPhases, unplaguedEligibilityEvents, Ach_Unplagued, p);
+            achievementEligibilityEvents.AddRange(unplaguedEligibilityEvents);
         }
     }
 }

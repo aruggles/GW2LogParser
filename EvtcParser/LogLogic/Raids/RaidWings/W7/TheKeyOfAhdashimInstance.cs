@@ -4,6 +4,7 @@ using System.Numerics;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -18,7 +19,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
 {
     private readonly Adina _adina;
     private readonly Sabir _sabir;
-    private readonly PeerlessQadim _peerlessQadim;
+    private readonly QadimThePeerless _qadimThePeerless;
 
     private readonly IReadOnlyList<TheKeyOfAhdashim> _subLogics;
     public TheKeyOfAhdashimInstance(int triggerID) : base(triggerID)
@@ -29,15 +30,15 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         
         _adina = new Adina((int)TargetID.Adina);
         _sabir = new Sabir((int)TargetID.Sabir);
-        _peerlessQadim = new PeerlessQadim((int)TargetID.PeerlessQadim);
-        _subLogics = [_adina, _sabir, _peerlessQadim];
+        _qadimThePeerless = new QadimThePeerless((int)TargetID.QadimThePeerless);
+        _subLogics = [_adina, _sabir, _qadimThePeerless];
 
         MechanicList.Add(_adina.Mechanics);
         MechanicList.Add(_sabir.Mechanics);
-        MechanicList.Add(_peerlessQadim.Mechanics);
+        MechanicList.Add(_qadimThePeerless.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "The Key Of Ahdashim";
     }
@@ -50,18 +51,18 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         {
             subLogic.GetCombatMapInternal(log, arenaDecorations);
         }
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        var chest = agentData.GetGadgetsByID(_peerlessQadim.ChestID).FirstOrDefault();
+        var chest = agentData.GetGadgetsByID(_qadimThePeerless.ChestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
             return;
         }
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
     internal override List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
@@ -70,7 +71,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         var targetsByIDs = Targets.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
         {
 
-            var adinaPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Adina, [], "Cardinal Adina", _adina, (log, adina) => adina.GetHealth(log.CombatData) > 23e6 ? LogData.LogMode.CM : LogData.LogMode.Normal);
+            var adinaPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Adina, [], "Cardinal Adina", _adina, (log, adina) => adina.GetHealth(log.CombatData) > 23e6 ? LogData.Mode.CM : LogData.Mode.Normal);
             foreach (var adinaPhase in adinaPhases)
             {
                 var adina = adinaPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.Adina));
@@ -81,7 +82,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
             }
         }
         {
-            var sabirPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Sabir, [], "Cardinal Sabir", _sabir, (log, sabir) => sabir.GetHealth(log.CombatData) > 32e6 ? LogData.LogMode.CM : LogData.LogMode.Normal);
+            var sabirPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.Sabir, [], "Cardinal Sabir", _sabir, (log, sabir) => sabir.GetHealth(log.CombatData) > 32e6 ? LogData.Mode.CM : LogData.Mode.Normal);
             foreach (var sabirPhase in sabirPhases)
             {
                 var sabir = sabirPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.Sabir));
@@ -89,11 +90,11 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
             }
         }
         {
-            var qtpPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.PeerlessQadim, [], "Qadim the Peerless", _peerlessQadim, (log, qtp) => qtp.GetHealth(log.CombatData) > 48e6 ? LogData.LogMode.CM : LogData.LogMode.Normal);
+            var qtpPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.QadimThePeerless, [], "Qadim the Peerless", _qadimThePeerless, (log, qtp) => qtp.GetHealth(log.CombatData) > 48e6 ? LogData.Mode.CM : LogData.Mode.Normal);
             foreach (var qtpPhase in qtpPhases)
             {
-                var qtp = qtpPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.PeerlessQadim));
-                phases.AddRange(PeerlessQadim.ComputePhases(log, qtp, qtpPhase, requirePhases));
+                var qtp = qtpPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.QadimThePeerless));
+                phases.AddRange(QadimThePeerless.ComputePhases(log, qtp, qtpPhase, requirePhases));
             }
         }
         
@@ -105,7 +106,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         List<InstantCastFinder> finders = [
             .. _adina.GetInstantCastFinders(),
             .. _sabir.GetInstantCastFinders(),
-            .. _peerlessQadim.GetInstantCastFinders()
+            .. _qadimThePeerless.GetInstantCastFinders()
         ];
         return finders;
     }
@@ -115,7 +116,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         List<TargetID> trashes = [
             .. _adina.GetTrashMobsIDs(),
             .. _sabir.GetTrashMobsIDs(),
-            .. _peerlessQadim.GetTrashMobsIDs()
+            .. _qadimThePeerless.GetTrashMobsIDs()
         ];
         return trashes.Distinct().ToList();
     }
@@ -124,7 +125,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         List<TargetID> targets = [
             .. _adina.GetTargetsIDs(),
             .. _sabir.GetTargetsIDs(),
-            .. _peerlessQadim.GetTargetsIDs()
+            .. _qadimThePeerless.GetTargetsIDs()
         ];
         return targets.Distinct().ToList();
     }
@@ -134,7 +135,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         List<TargetID> friendlies = [
             .. _adina.GetFriendlyNPCIDs(),
             .. _sabir.GetFriendlyNPCIDs(),
-            .. _peerlessQadim.GetFriendlyNPCIDs()
+            .. _qadimThePeerless.GetFriendlyNPCIDs()
         ];
         return friendlies.Distinct().ToList();
     }
@@ -143,7 +144,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         HashSet<TargetID> forbidBreakbarPhasesFor = [
             .. _adina.ForbidBreakbarPhasesFor(),
             .. _sabir.ForbidBreakbarPhasesFor(),
-            .. _peerlessQadim.ForbidBreakbarPhasesFor()
+            .. _qadimThePeerless.ForbidBreakbarPhasesFor()
         ];
         return forbidBreakbarPhasesFor;
     }
@@ -163,7 +164,7 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         Sabir.FindPlateforms(agentData);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
         Adina.RenameHands(Targets, combatData);
-        PeerlessQadim.RenamePylons(Targets, combatData);
+        QadimThePeerless.RenamePylons(Targets, combatData);
     }
 
     internal override List<BuffEvent> SpecialBuffEventProcess(CombatData combatData, SkillData skillData)
@@ -176,12 +177,12 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -228,6 +229,14 @@ internal class TheKeyOfAhdashimInstance : TheKeyOfAhdashim
         foreach (var logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

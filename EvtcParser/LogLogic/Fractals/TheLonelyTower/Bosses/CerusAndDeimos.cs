@@ -2,6 +2,7 @@
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -25,25 +26,24 @@ internal class CerusAndDeimos : LonelyTower
         LogID |= 0x000001;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor cerus = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.CerusLonelyTower)) ?? throw new MissingKeyActorsException("Cerus not found");
         SingleActor deimos = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.DeimosLonelyTower)) ?? throw new MissingKeyActorsException("Deimos not found");
         if (cerus.GetHealth(combatData) < 5e6 || deimos.GetHealth(combatData) < 5e6)
         {
-            return LogData.LogMode.Normal;
+            return LogData.Mode.Normal;
         }
-        return LogData.LogMode.CM;
+        return LogData.Mode.CM;
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Cerus and Deimos";
     }
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
     {
-        // TODO: verify this
         long startToUse = base.GetLogOffset(evtcVersion, logData, agentData, combatData);
         if (evtcVersion.Build >= ArcDPSBuilds.NewLogStart)
         {
@@ -56,8 +56,8 @@ internal class CerusAndDeimos : LonelyTower
                         GetEnterCombatTime(logData, agentData, combatData, logStartNPCUpdate.Time, (int)TargetID.DeimosLonelyTower, logStartNPCUpdate.DstAgent));
                 return startToUse;
             }
-            CombatItem? initialDamageToPlayers = combatData.Where(x => x.IsDamagingDamage() && agentData.GetAgent(x.DstAgent, x.Time).IsPlayer && (
-                  agentData.GetAgent(x.SrcAgent, x.Time).Is(cerus) || agentData.GetAgent(x.SrcAgent, x.Time).Is(deimos))).FirstOrDefault();
+            CombatItem? initialDamageToPlayers = combatData.FirstOrDefault(x => x.IsNonZeroDamageEvent() && agentData.GetAgent(x.DstAgent, x.Time).IsPlayer && (
+                agentData.GetAgent(x.SrcAgent, x.Time).Is(cerus) || agentData.GetAgent(x.SrcAgent, x.Time).Is(deimos)));
             long initialDamageTimeToTargets = Math.Min(GetFirstDamageEventTime(logData, agentData, combatData, cerus), GetFirstDamageEventTime(logData, agentData, combatData, deimos));
             if (initialDamageToPlayers != null)
             {
@@ -73,7 +73,7 @@ internal class CerusAndDeimos : LonelyTower
         return [TargetID.CerusLonelyTower, TargetID.DeimosLonelyTower];
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         SingleActor deimos = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.DeimosLonelyTower)) ?? throw new MissingKeyActorsException("Deimos not found");
         SingleActor cerus = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.CerusLonelyTower)) ?? throw new MissingKeyActorsException("Cerus not found");
@@ -81,25 +81,25 @@ internal class CerusAndDeimos : LonelyTower
         BuffApplyEvent? determinedApplyDeimos = combatData.GetBuffApplyDataByIDByDst(Determined762, deimos.AgentItem).OfType<BuffApplyEvent>().LastOrDefault();
         if (determinedApplyCerus != null && determinedApplyDeimos != null)
         {
-            logData.SetSuccess(true, Math.Max(determinedApplyCerus.Time, determinedApplyDeimos.Time));
+            successHandler.SetSuccess(true, Math.Max(determinedApplyCerus.Time, determinedApplyDeimos.Time));
         } 
         else
         {
-            logData.SetSuccess(false, Math.Max(deimos.LastAware, cerus.LastAware));
+            successHandler.SetSuccess(false, Math.Max(deimos.LastAware, cerus.LastAware));
         }
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (TargetHPPercentUnderThreshold(TargetID.CerusLonelyTower, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
         if (TargetHPPercentUnderThreshold(TargetID.DeimosLonelyTower, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     private static PhaseData GetBossPhase(ParsedEvtcLog log, SingleActor target, string phaseName)
@@ -145,7 +145,7 @@ internal class CerusAndDeimos : LonelyTower
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -164,7 +164,7 @@ internal class CerusAndDeimos : LonelyTower
         }
     }
 
-    private static void DoFixationTether(ParsedEvtcLog log, PlayerActor p, CombatReplay replay, SingleActor? target, long fixationID, EIData.Color color)
+    private static void DoFixationTether(ParsedEvtcLog log, PlayerActor p, CombatReplay replay, SingleActor? target, long fixationID, Color color)
     {
         if (target != null)
         {
@@ -179,7 +179,7 @@ internal class CerusAndDeimos : LonelyTower
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -187,6 +187,27 @@ internal class CerusAndDeimos : LonelyTower
         DoFixationTether(log, p, replay, cerus, CerussFocus, Colors.Orange);
         SingleActor? deimos = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.DeimosLonelyTower));
         DoFixationTether(log, p, replay, deimos, DeimossFocus, Colors.Red);
+    }
+    internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
+    }
+    internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
     }
 
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()

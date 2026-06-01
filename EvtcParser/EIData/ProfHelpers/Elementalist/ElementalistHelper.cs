@@ -18,36 +18,47 @@ internal static class ElementalistHelper
 
     internal static readonly List<InstantCastFinder> InstantCastFinder =
     [
+        // Attunements
         new BuffGainCastFinder(FireAttunementSkill, FireAttunementBuff),
         new BuffGainCastFinder(WaterAttunementSkill, WaterAttunementBuff),
         new BuffGainCastFinder(AirAttunementSkill, AirAttunementBuff),
         new BuffGainCastFinder(EarthAttunementSkill, EarthAttunementBuff),
-
+        // Glyphs
         new BuffGainCastFinder(GlyphOfElementalPowerFireSkill, GlyphOfElementalPowerFireBuff),
         new BuffGainCastFinder(GlyphOfElementalPowerWaterSkill, GlyphOfElementalPowerWaterBuff),
         new BuffGainCastFinder(GlyphOfElementalPowerAirSkill, GlyphOfElementalPowerAirBuff),
         new BuffGainCastFinder(GlyphOfElementalPowerEarthSkill, GlyphOfElementalPowerEarthBuff),
+        // Arcane
         new DamageCastFinder(ArcaneBlast, ArcaneBlast),
-        new BuffGiveCastFinder(ArcanePowerSkill, ArcanePowerBuff),
+        new BuffGiveCastFinder(ArcanePower_ArcaneEcho_Skill, ArcanePowerBuff)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.June2025Balance),
         new BuffGainCastFinder(ArcaneShieldSkill, ArcaneShieldBuff),
+        new BuffGainCastFinder(ArcanePower_ArcaneEcho_Skill, ArcaneEchoBuff)
+            .WithBuilds(GW2Builds.June2025Balance),
         new DamageCastFinder(ArcaneWave, ArcaneWave),
+        // Cantrips
+        new EffectCastFinderByDst(CleansingFire, EffectGUIDs.ElementalistCleansingFire1)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ElementalistCleansingFire2)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ElementalistCleansingFire3)
+            .UsingDstBaseSpecChecker(Spec.Elementalist),
         new BuffGainCastFinder(MistForm, MistForm),
+        new DamageCastFinder(LightningFlash, LightningFlash),
+        new EffectCastFinderByDst(ArmorOfEarth, EffectGUIDs.ElementalistArmorOfEarth1)
+            .UsingDstBaseSpecChecker(Spec.Elementalist),
+        // Signets
         new DamageCastFinder(SignetOfAirSkill, SignetOfAirSkill)
             .UsingDisableWithEffectData(),
+        new EffectCastFinderByDst(SignetOfAirSkill, EffectGUIDs.ElementalistSignetOfAir)
+            .UsingDstBaseSpecChecker(Spec.Elementalist),
+        // Traits
         new DamageCastFinder(Sunspot, Sunspot)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new DamageCastFinder(FlameExpulsion, FlameExpulsion)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new DamageCastFinder(EarthenBlast, EarthenBlast)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
-        new EffectCastFinderByDst(SignetOfAirSkill, EffectGUIDs.ElementalistSignetOfAir)
-            .UsingDstBaseSpecChecker(Spec.Elementalist),
         new DamageCastFinder(LightningRod, LightningRod)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
-        new DamageCastFinder(LightningFlash, LightningFlash),
-        new EffectCastFinderByDst(ArmorOfEarth, EffectGUIDs.ElementalistArmorOfEarth1)
-            .UsingDstBaseSpecChecker(Spec.Elementalist),
-        //new EffectCastFinderByDst(CleansingFire, EffectGUIDs.ElementalistCleansingFire).UsingChecker((evt, combatData, agentData, skillData) => evt.Dst.BaseSpec == Spec.Elementalist && evt.Src == evt.Dst),
         new EXTHealingCastFinder(HealingRipple, HealingRipple)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Unconditional),
         new EXTHealingCastFinder(HealingRippleWvW, HealingRippleWvW)
@@ -96,60 +107,91 @@ internal static class ElementalistHelper
         new BuffOnActorDamageModifier(Mod_PyromancersTraining, [FireAttunementBuff, FireWaterAttunement, FireAirAttunement, FireEarthAttunement, DualFireAttunement], "Pyromancer's Training", "10% while fire attuned", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PyromancersTraining, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2019Balance),
         new BuffOnFoeDamageModifier(Mod_PyromancersTraining, Burning, "Pyromancer's Training", "10% on burning target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PyromancersTraining, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.July2019Balance),
+            .WithBuilds(GW2Builds.July2019Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PyromancersTraining, Burning, "Pyromancer's Training", "7% on burning target", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PyromancersTraining, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PyromancersTraining, Burning, "Pyromancer's Training", "10% on burning target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PyromancersTraining, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // - Burning Rage
         new BuffOnFoeDamageModifier(Mod_BurningRage, Burning, "Burning Rage", "10% on burning target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.BurningRage, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2019Balance),
-        
+
         // Air
         // - Bolt to the Heart
         new DamageLogDamageModifier(Mod_BoltToTheHeart, "Bolt to the Heart", "20% if target <50% HP", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.BoltToTheHeart, (x, log) => x.AgainstUnderFifty, DamageModifierMode.All),
-        
+
         // Earth
         // - Serrated Stones
         new BuffOnFoeDamageModifier(Mod_SerratedStones, Bleeding, "Serrated Stones", "5% to bleeding target", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.SerratedStones, DamageModifierMode.All),
-        
+
         // Water
         // - Aquamancer's Training
         new DamageLogDamageModifier(Mod_AquamancersTraining, "Aquamancer's Training", "10% if hp >=90%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.AquamancersTraining, (x, log) => x.IsOverNinety, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2019Balance),
-        // - Piercing Shards
-        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards w/ Water", "20% on vuln target while on water", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.PvE)
-            .UsingSrcCheckerByPresence([ WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement ])
-            .WithBuilds(GW2Builds.July2019Balance),
+        // - Piercing Shards - Water
+        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards", "20% on vuln target while on water", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.All)
+            .UsingActorCheckerByPresence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.February2020Balance),
+        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards", "20% on vuln target while on water", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.PvE)
+            .UsingActorCheckerByPresence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.February2020Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards", "14% on vuln target while on water", DamageSource.NoPets, 14.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.PvE)
+            .UsingActorCheckerByPresence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards", "10% on vuln target while on water", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.sPvPWvW)
+            .UsingActorCheckerByPresence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.February2020Balance),
+        // - Piercing Shards - No Water
+        new BuffOnFoeDamageModifier(Mod_PiercingShardsNoWater, Vulnerability, "Piercing Shards", "10% on vuln target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.All)
+            .UsingActorCheckerByAbsence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.July2019Balance, GW2Builds.February2020Balance),
         new BuffOnFoeDamageModifier(Mod_PiercingShardsNoWater, Vulnerability, "Piercing Shards", "10% on vuln target", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.PvE)
-            .UsingSrcCheckerByAbsence([ WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement ])
-            .WithBuilds(GW2Builds.July2019Balance),
-        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards w/ Water", "10% on vuln target while on water", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.sPvPWvW)
-            .UsingSrcCheckerByPresence([ WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement ])
-            .WithBuilds(GW2Builds.July2019Balance),
+            .UsingActorCheckerByAbsence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.February2020Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_PiercingShardsNoWater, Vulnerability, "Piercing Shards", "7% on vuln target", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.PvE)
+            .UsingActorCheckerByAbsence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         new BuffOnFoeDamageModifier(Mod_PiercingShardsNoWater, Vulnerability, "Piercing Shards", "5% on vuln target", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.sPvPWvW)
-            .UsingSrcCheckerByAbsence([ WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement ])
-            .WithBuilds(GW2Builds.July2019Balance),
-        new BuffOnFoeDamageModifier(Mod_PiercingShardsWater, Vulnerability, "Piercing Shards", "20% on vuln target while on water", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.PiercingShards, DamageModifierMode.PvE)
-            .UsingSrcCheckerByPresence([ WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement ])
-            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.July2019Balance),
+            .UsingActorCheckerByAbsence([WaterAttunementBuff, WaterAirAttunement, WaterEarthAttunement, WaterFireAttunement, DualWaterAttunement])
+            .WithBuilds(GW2Builds.February2020Balance),
         // - Flow like Water
-        new DamageLogDamageModifier(Mod_FlowLikeWater, "Flow like Water", "10% if hp >=75%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 75.0, DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_FlowLikeWater, "Flow like Water", "10% if hp >=75%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, FromHPChecker(75), DamageModifierMode.All)
             .WithBuilds(GW2Builds.July2019Balance, GW2Builds.February2020Balance)
             .UsingApproximate(),
-        new DamageLogDamageModifier(Mod_FlowLikeWater, "Flow like Water", "10% if hp >=75%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 75.0, DamageModifierMode.PvE)
+        new DamageLogDamageModifier(Mod_FlowLikeWater, "Flow like Water", "10% if hp >=75%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, FromHPChecker(75), DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.February2020Balance, GW2Builds.June2024Balance)
             .UsingApproximate(),
-        new DamageLogDamageModifier(Mod_FlowLikeWater, "Flow like Water", "5% if hp >=75%", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 75.0, DamageModifierMode.sPvPWvW)
+        new DamageLogDamageModifier(Mod_FlowLikeWater, "Flow like Water", "5% if hp >=75%", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, FromHPChecker(75), DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.February2020Balance, GW2Builds.June2024Balance),
-        new DamageLogDamageModifier(Mod_FlowLikeWater10, "Flow like Water (>= 50%)", "10% if hp >=50%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) >= 50.0, DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_FlowLikeWater10, "Flow like Water (>= 50%)", "10% if hp >=50%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, FromHPChecker(50), DamageModifierMode.All)
             .WithBuilds(GW2Builds.June2024Balance),
-        new DamageLogDamageModifier(Mod_FlowLikeWater5, "Flow like Water (< 50%)", "5% if hp <50%", DamageSource.NoPets, 5, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, (x, log) => x.From.GetCurrentHealthPercent(log, x.Time) < 50, DamageModifierMode.All)
+        new DamageLogDamageModifier(Mod_FlowLikeWater5, "Flow like Water (< 50%)", "5% if hp <50%", DamageSource.NoPets, 5, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.FlowLikeWater, FromHPChecker(0, 50), DamageModifierMode.All)
             .WithBuilds(GW2Builds.June2024Balance)
             .UsingApproximate(),
 
         // Arcane
         // - Bountiful Power
-        new BuffOnActorDamageModifier(Mod_BountifulPower, NumberOfBoons, "Bountiful Power", "2% per boon", DamageSource.NoPets, 2.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByStack, TraitImages.BountifulPower, DamageModifierMode.All),
+        new BuffOnActorDamageModifier(Mod_BountifulPower, NumberOfBoons, "Bountiful Power", "2% per boon", DamageSource.NoPets, 2.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByStack, TraitImages.BountifulPower, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_BountifulPower, BountifulPower, "Bountiful Power", "20%", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.BountifulPower, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_BountifulPower, BountifulPower, "Bountiful Power", "15%", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.BountifulPower, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.January2026Balance),
         // - Storm Soul
         new BuffOnFoeDamageModifier(Mod_StormSoul, [Stun, Daze, Knockdown, Fear, Taunt], "Stormsoul", "10% to disabled foes", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Elementalist, ByPresence, TraitImages.Stormsoul, DamageModifierMode.All)
             .WithBuilds(GW2Builds.December2018Balance)
+            .UsingApproximate(),
+        new BuffOnFoeDamageModifier(Mod_StormSoulDefiant, [Stun, Daze, Knockdown, Fear, Taunt], "Stormsoul", "10% to defiant foes", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Elementalist, ByAbsence, TraitImages.Stormsoul, DamageModifierMode.All)
+            .UsingChecker((x, log) => x.To.GetCurrentBreakbarState(log, x.Time) != BreakbarState.None)
+            .WithBuilds(GW2Builds.November2022Balance, GW2Builds.April2026Balancepocalypse)
+            .UsingApproximate(),
+        new BuffOnFoeDamageModifier(Mod_StormSoulDefiant, [Stun, Daze, Knockdown, Fear, Taunt], "Stormsoul", "7% to defiant foes", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.Strike, Source.Elementalist, ByAbsence, TraitImages.Stormsoul, DamageModifierMode.PvE)
+            .UsingChecker((x, log) => x.To.GetCurrentBreakbarState(log, x.Time) != BreakbarState.None)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse)
+            .UsingApproximate(),
+        new BuffOnFoeDamageModifier(Mod_StormSoulDefiant, [Stun, Daze, Knockdown, Fear, Taunt], "Stormsoul", "10% to defiant foes", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.Strike, Source.Elementalist, ByAbsence, TraitImages.Stormsoul, DamageModifierMode.sPvPWvW)
+            .UsingChecker((x, log) => x.To.GetCurrentBreakbarState(log, x.Time) != BreakbarState.None)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse)
             .UsingApproximate(),
 
         // Hammer
@@ -164,7 +206,7 @@ internal static class ElementalistHelper
 
         // Pistol
         new BuffOnActorDamageModifier(Mod_RagingRicochet, RagingRichochetBuff, "Raging Ricochet", "5%", DamageSource.NoPets, 5.0, DamageType.Condition, DamageType.All, Source.Elementalist, ByPresence, SkillImages.RagingRicochet, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.February2024NewWeapons),
+            .WithBuilds(GW2Builds.February2024NewWeapons, GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -172,10 +214,12 @@ internal static class ElementalistHelper
         // Skills
         // - Signet of Earth
         new BuffOnActorDamageModifier(Mod_SignetOfEarth, SignetOfEarth, "Signet of Earth", "-10% damage", DamageSource.Incoming, -10, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, SkillImages.SignetOfEarth, DamageModifierMode.All),
-        
+
         // Earth
         // - Stone Flesh
         new BuffOnActorDamageModifier(Mod_StoneFlesh, [EarthAttunementBuff, FireEarthAttunement, WaterEarthAttunement, EarthAirAttunement, DualEarthAttunement], "Stone Flesh", "-7% damage while attuned to earth", DamageSource.Incoming, -7, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.StoneFlesh, DamageModifierMode.All),
+        // - Stone Heart
+        new BuffOnActorDamageModifier(Mod_StoneHeart, StoneHeart, "Stone Heart", "-40% damage", DamageSource.Incoming, -40, DamageType.Strike, DamageType.All, Source.Elementalist, ByPresence, TraitImages.StoneHeart, DamageModifierMode.All),
         // - Geomancer's Training
         new DamageLogDamageModifier(Mod_GeomancersTraining, "Geomancer's Training", "-10% damage from foes within 360 range", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Elementalist, TraitImages.GeomancersTraining, (x, log) => TargetWithinRangeChecker(x, log, 360), DamageModifierMode.All)
             .UsingApproximate()
@@ -190,13 +234,18 @@ internal static class ElementalistHelper
 
 
     internal static readonly IReadOnlyList<Buff> Buffs =
-    [       
+    [
         // Signets
         new Buff("Signet of Restoration", SignetOfRestoration, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfRestoration),
         new Buff("Signet of Air", SignetOfAirBuff, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfAir),
         new Buff("Signet of Earth", SignetOfEarth, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfEarth),
         new Buff("Signet of Fire", SignetOfFire, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfFire),
         new Buff("Signet of Water", SignetOfWater, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfWater),
+        new Buff("Aura of Restoration", AuraOfRestoration, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfRestoration),
+        new Buff("Signet of Air (Written in Stone)", SignetOfAirBuff_WrittenInStone, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfAir),
+        new Buff("Signet of Earth (Written in Stone)", SignetOfEarthBuff_WrittenInStone, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfEarth),
+        new Buff("Signet of Fire (Written in Stone)", SignetOfFireBuff_WrittenInStone, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfFire),
+        new Buff("Signet of Water (Written in Stone)", SignetOfWaterBuff_WrittenInStone, Source.Elementalist, BuffClassification.Other, SkillImages.SignetOfWater),
         // Attunements
         new Buff("Fire Attunement", FireAttunementBuff, Source.Elementalist, BuffClassification.Other, SkillImages.FireAttunement),
         new Buff("Water Attunement", WaterAttunementBuff, Source.Elementalist, BuffClassification.Other, SkillImages.WaterAttunement),
@@ -229,8 +278,10 @@ internal static class ElementalistHelper
         new Buff("Lesser Earth Elemental Summoned", LesserEarthElementalSummoned, Source.Elementalist, BuffStackType.StackingConditionalLoss, 5, BuffClassification.Other, SkillImages.GlyphOfLesserElementalsEarth),
         new Buff("Earth Elemental Summoned", EarthElementalSummoned, Source.Elementalist, BuffClassification.Other, SkillImages.GlyphOfElementalsEarth),
         // Skills
-        new Buff("Arcane Power", ArcanePowerBuff, Source.Elementalist, BuffStackType.Stacking, 6, BuffClassification.Other, SkillImages.ArcanePower),
-        new Buff("Arcane Power (Ferocity)", ArcanePowerFerocityBuff, Source.Elementalist, BuffClassification.Other, SkillImages.ArcanePower),
+        new Buff("Arcane Power", ArcanePowerBuff, Source.Elementalist, BuffStackType.Stacking, 6, BuffClassification.Other, SkillImages.ArcanePower_ArcaneEcho)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.June2025Balance),
+        new Buff("Arcane Echo", ArcaneEchoBuff, Source.Elementalist, BuffClassification.Other, SkillImages.ArcanePower_ArcaneEcho),
+        new Buff("Arcane Power (Ferocity)", ArcanePowerFerocityBuff, Source.Elementalist, BuffClassification.Other, SkillImages.ArcanePower_ArcaneEcho),
         new Buff("Arcane Shield", ArcaneShieldBuff, Source.Elementalist, BuffStackType.Stacking, 25, BuffClassification.Other, SkillImages.ArcaneShield),
         new Buff("Renewal of Fire", RenewalOfFire, Source.Elementalist, BuffClassification.Other, SkillImages.RenewalOfFire),
         new Buff("Rock Barrier", RockBarrier, Source.Elementalist, BuffClassification.Other, SkillImages.RockBarrier),
@@ -239,6 +290,8 @@ internal static class ElementalistHelper
         new Buff("Persisting Flames", PersistingFlames, Source.Elementalist, BuffStackType.Stacking, 10, BuffClassification.Other, TraitImages.PersistingFlames)
             .WithBuilds(GW2Builds.July2020Balance),
         new Buff("Fresh Air", FreshAir, Source.Elementalist, BuffClassification.Other, TraitImages.FreshAir),
+        new Buff("Bountiful Power", BountifulPower, Source.Elementalist, BuffClassification.Other, TraitImages.BountifulPower),
+        new Buff("Bountiful Power (Charge)", BountifulPowerCharge, Source.Elementalist, BuffStackType.Stacking, 5, BuffClassification.Other, TraitImages.BountifulPower),
         new Buff("Soothing Mist", SoothingMist, Source.Elementalist, BuffClassification.Defensive, TraitImages.SoothingMist)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2023Balance),
         new Buff("Soothing Mist", SoothingMist, Source.Elementalist, BuffStackType.Queue, 9, BuffClassification.Defensive, TraitImages.SoothingMist)
@@ -258,13 +311,13 @@ internal static class ElementalistHelper
         new Buff("Rocky Loop", RockyLoopBuff, Source.Elementalist, BuffClassification.Other, SkillImages.RockyLoop)
             .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
         // Pistol
-        new Buff("Fire Bullet", FireBullet, Source.Elementalist, BuffClassification.Other, BuffImages.Unknown)
+        new Buff("Fire Bullet", FireBullet, Source.Elementalist, BuffClassification.Other, SkillImages.ScorchingShot)
             .WithBuilds(GW2Builds.February2024NewWeapons),
-        new Buff("Ice Bullet", IceBullet, Source.Elementalist, BuffClassification.Other, BuffImages.Unknown)
+        new Buff("Ice Bullet", IceBullet, Source.Elementalist, BuffClassification.Other, SkillImages.SoothingSplash)
             .WithBuilds( GW2Builds.February2024NewWeapons),
-        new Buff("Air Bullet", AirBullet, Source.Elementalist, BuffClassification.Other, BuffImages.Unknown)
+        new Buff("Air Bullet", AirBullet, Source.Elementalist, BuffClassification.Other, SkillImages.ElectricExposure)
             .WithBuilds(GW2Builds.February2024NewWeapons),
-        new Buff("Earth Bullet", EarthBullet, Source.Elementalist, BuffClassification.Other, BuffImages.Unknown)
+        new Buff("Earth Bullet", EarthBullet, Source.Elementalist, BuffClassification.Other, SkillImages.PiercingPebble)
             .WithBuilds(GW2Builds.February2024NewWeapons),
         new Buff("Raging Ricochet", RagingRichochetBuff, Source.Elementalist, BuffStackType.Queue, 9, BuffClassification.Other, SkillImages.RagingRicochet)
             .WithBuilds( GW2Builds.February2024NewWeapons),
@@ -293,14 +346,14 @@ internal static class ElementalistHelper
 
     public static void RemoveDualBuffs(IReadOnlyList<BuffEvent> buffsPerDst, Dictionary<long, List<BuffEvent>> buffsByID, SkillData skillData)
     {
-        var duals = new HashSet<long>
-        {
+        HashSet<long> duals =
+        [
             DualFireAttunement,
             DualWaterAttunement,
             DualAirAttunement,
-            DualEarthAttunement,
-        };
-        var toClean = new HashSet<long>();
+            DualEarthAttunement
+        ];
+        HashSet<long> toClean = [];
         foreach (BuffEvent c in buffsPerDst.Where(x => duals.Contains(x.BuffID)))
         {
             toClean.Add(c.BuffID);
@@ -399,10 +452,10 @@ internal static class ElementalistHelper
             {
                 SkillModeDescriptor skill;
                 string icon;
-                var firestormCastsOnEffect = firestormCasts.Where(x => effect.Time - ServerDelayConstant > x.Time && x.EndTime > effect.Time + ServerDelayConstant);
-                if (firestormCastsOnEffect.Count() == 1)
+                var firestormCastsOnEffect = firestormCasts.Where(x => x.IntersectsExpectedCastWindow(effect.Time)).ToList();
+                if (firestormCastsOnEffect.Count == 1)
                 {
-                    skill = new SkillModeDescriptor(player, Spec.Necromancer, firestormCastsOnEffect.First().SkillID);
+                    skill = new SkillModeDescriptor(player, Spec.Elementalist, firestormCastsOnEffect.First().SkillID);
                     icon = skill.SkillID == FirestormGlyphOfStorms ? EffectImages.EffectFirestormGlyph : EffectImages.EffectFirestormFieryGreatsword;
                 }
                 else

@@ -12,12 +12,13 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
+using static GW2EIEvtcParser.AchievementEligibilityIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class Sabir : TheKeyOfAhdashim
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
                 new PlayerDstHealthDamageMechanic(DireDrafts, new MechanicPlotlySetting(Symbols.Circle,Colors.Orange), "B.Tornado", "Hit by big tornado", "Big Tornado Hit", 500)
                     .UsingChecker((de, log) => de.HasDowned || de.HasKilled),
@@ -27,7 +28,7 @@ internal class Sabir : TheKeyOfAhdashim
                     .UsingChecker( (de, log) => de.HasDowned || de.HasKilled ),
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], new MechanicPlotlySetting(Symbols.YUpOpen,Colors.Pink), "Pushed", "Pushed by rotating breakbar", "Pushed", 0)
+                new PlayerDstHealthDamageHitMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], new MechanicPlotlySetting(Symbols.YUpOpen,Colors.Pink), "Rot.KB", "Pushed by rotating breakbar", "Pushed", 0)
                     .UsingBuffChecker(Stability, false),
                 new EnemyCastStartMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], new MechanicPlotlySetting(Symbols.Star, Colors.Yellow), "Dynamic Deterrent", "Casted Dynamic Deterrent", "Cast Dynamic Deterrent", 0),
             ]),
@@ -35,8 +36,12 @@ internal class Sabir : TheKeyOfAhdashim
             new PlayerDstHealthDamageHitMechanic(ChainLightning, new MechanicPlotlySetting(Symbols.HexagonOpen, Colors.White), "Chain Lightning", "Hit by Chain Lightning", "Chain Lightning Hit", 0),
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic(Electrospark, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Orange), "Electrospark", "Hit by Electrospark", "Electrospark", 0),
-                new PlayerDstHealthDamageHitMechanic(Electrospark, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.Orange), "Charged Winds", "Achievement Elegibility: Charged Winds", "Charged Winds", 0)
-                    .UsingAchievementEligibility(),
+                new MechanicGroup([
+                    new AchievementEligibilityMechanic(Ach_ChargedWinds, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.Orange), "Charged Winds L", "Achievement Elegibility: Charged Winds Lost", "Charged Winds Lost", 0)
+                        .UsingChecker((evt, log) => evt.Lost),
+                    new AchievementEligibilityMechanic(Ach_ChargedWinds, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.LightOrange), "Charged Winds K", "Achievement Elegibility: Charged Winds Kept", "Charged Winds Kept", 0)
+                        .UsingChecker((evt, log) => !evt.Lost)
+                ]),
             ]),
             new MechanicGroup([
                 new MechanicGroup([
@@ -81,7 +86,7 @@ internal class Sabir : TheKeyOfAhdashim
         // Handle potentially wrongly associated logs
         if (logStartNPCUpdate != null)
         {
-            if (agentData.GetNPCsByID(TargetID.Adina).Any(adina => combatData.Any(evt => evt.IsDamagingDamage() && evt.DstMatchesAgent(adina) && agentData.GetAgent(evt.SrcAgent, evt.Time).GetFinalMaster().IsPlayer)))
+            if (agentData.GetNPCsByID(TargetID.Adina).Any(adina => combatData.Any(evt => evt.IsNonZeroDamageEvent() && evt.DstMatchesAgent(adina) && agentData.GetAgent(evt.SrcAgent, evt.Time).GetFinalMaster().IsPlayer)))
             {
                 return new Adina((int)TargetID.Adina);
             }
@@ -97,9 +102,9 @@ internal class Sabir : TheKeyOfAhdashim
             new EffectCastFinder(FlashDischargeSAK, EffectGUIDs.SabirFlashDischarge)
                 .UsingChecker((effect, combatData, agentData, skillData) =>
                 {
-                    BuffRemoveAllEvent? buffRemove = combatData.GetBuffRemoveAllDataByIDByDst(ViolentCurrents, effect.Src)
-                        .Where(x => Math.Abs(effect.Time - x.Time) < ServerDelayConstant)
-                        .FirstOrDefault();
+                    BuffRemoveAllEvent? buffRemove = combatData
+                        .GetBuffRemoveAllDataByIDByDst(ViolentCurrents, effect.Src)
+                        .FirstOrDefault(x => Math.Abs(effect.Time - x.Time) < ServerDelayConstant);
                     return buffRemove != null;
                 }),
         ];
@@ -110,15 +115,14 @@ internal class Sabir : TheKeyOfAhdashim
         NegateDamageAgainstBarrier(combatData, agentData, [TargetID.Sabir]);
         return [];
     }
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor sabir, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor sabir, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(3);
-
-        var casts = sabir.GetCastEvents(log);
+        var phases = new List<SubPhasePhaseData>(3);
+        var casts = sabir.GetAnimatedCastEvents(log);
         var wallopingWinds = casts.Where(x => x.SkillID == WallopingWind);
         long start = encounterPhase.Start;
         int i = 0;
@@ -171,7 +175,7 @@ internal class Sabir : TheKeyOfAhdashim
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -186,7 +190,7 @@ internal class Sabir : TheKeyOfAhdashim
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -260,7 +264,7 @@ internal class Sabir : TheKeyOfAhdashim
                         }
                     }
                 }
-                var successSabirPhase = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().LastOrDefault(x => x.LogID == LogID && x.Success);
+                var successSabirPhase = log.LogData.GetEncounterPhases(log, LogID).LastOrDefault(x => x.Success);
                 if (successSabirPhase != null)
                 {
                     mainPlateformOpacities.Add(new(1, successSabirPhase.End));
@@ -283,14 +287,14 @@ internal class Sabir : TheKeyOfAhdashim
     }
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations (log, environmentDecorations);
         }
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
@@ -362,7 +366,7 @@ internal class Sabir : TheKeyOfAhdashim
             }
             else
             {
-                CombatItem? firstDamageEvent = combatData.FirstOrDefault(x => x.DstMatchesAgent(sabir) && x.IsDamagingDamage());
+                CombatItem? firstDamageEvent = combatData.FirstOrDefault(x => x.DstMatchesAgent(sabir) && x.IsNonZeroDamageEvent());
                 if (firstDamageEvent != null)
                 {
                     return firstDamageEvent.Time;
@@ -376,9 +380,31 @@ internal class Sabir : TheKeyOfAhdashim
         return enterCombat.Time;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Sabir)) ?? throw new MissingKeyActorsException("Sabir not found");
-        return (target.GetHealth(combatData) > 32e6) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return (target.GetHealth(combatData) > 32e6) ? LogData.Mode.CM : LogData.Mode.Normal;
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+        {
+            var chargedWindsEligibilityEvents = new List<AchievementEligibilityEvent>();
+            var sabirPhases = log.LogData.GetEncounterPhases(log, LogID).Where(x => x.IntersectsWindow(p.FirstAware, p.LastAware)).ToHashSet();
+            var damageData = log.CombatData.GetDamageData(Electrospark);
+            foreach (var evt in damageData)
+            {
+                if (evt.HasHit && evt.To.Is(p.AgentItem) && p.InAwareTimes(evt.Time))
+                {
+                    InsertAchievementEligibityEventAndRemovePhase(sabirPhases, chargedWindsEligibilityEvents, evt.Time, Ach_ChargedWinds, p);
+                }
+            }
+            AddSuccessBasedAchievementEligibityEvents(sabirPhases, chargedWindsEligibilityEvents, Ach_ChargedWinds, p);
+            achievementEligibilityEvents.AddRange(chargedWindsEligibilityEvents);
+        }
     }
 }

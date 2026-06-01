@@ -18,14 +18,15 @@ internal static class ChronomancerHelper
         new BuffGainCastFinder(ContinuumSplit, TimeAnchored),
         new BuffLossCastFinder(ContinuumShift, TimeAnchored),
         new EffectCastFinder(SplitSecond, EffectGUIDs.ChronomancerSplitSecond)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ChronomancerSeizeTheMomentShatter)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ChronomancerSeizeTheMomentShatter)
             .UsingSrcSpecChecker(Spec.Chronomancer),
         new EffectCastFinder(Rewinder, EffectGUIDs.ChronomancerRewinder)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ChronomancerSeizeTheMomentShatter)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ChronomancerSeizeTheMomentShatter)
             .UsingSrcSpecChecker(Spec.Chronomancer),
         new EffectCastFinder(TimeSink, EffectGUIDs.ChronomancerTimeSink)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ChronomancerSeizeTheMomentShatter)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ChronomancerSeizeTheMomentShatter)
             .UsingSrcSpecChecker(Spec.Chronomancer),
+        new DamageCastFinder(TimeBombDamage, TimeBombDamage),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers =
@@ -37,14 +38,63 @@ internal static class ChronomancerHelper
         new BuffOnFoeDamageModifier(Mod_DangerTime, Slow, "Danger Time", "10% crit damage on slowed target", DamageSource.All, 10.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.DangerTime, DamageModifierMode.All)
             .UsingChecker((x, log) => x.HasCrit)
             .WithBuilds(GW2Builds.December2018Balance, GW2Builds.May2021Balance),
-        new BuffOnFoeDamageModifier(Mod_DangerTime, Slow, "Danger Time", "15% crit damage on slowed target", DamageSource.All, 15.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.ImprovedAlacrity, DamageModifierMode.All)
+        new BuffOnFoeDamageModifier(Mod_DangerTime, Slow, "Danger Time", "15% crit damage on slowed target", DamageSource.All, 15.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.DangerTime, DamageModifierMode.All)
             .UsingChecker((x, log) => x.HasCrit)
             .UsingChecker(MesmerHelper.IllusionsWithMesmerChecker)
-            .WithBuilds(GW2Builds.June2025Balance),
+            .WithBuilds(GW2Builds.June2025Balance, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_DangerTime, DangerTime, "Danger Time", "10%", DamageSource.All, 10.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.DangerTime, DamageModifierMode.All)
+            .UsingChecker((x, log) => x.HasCrit)
+            .UsingChecker(MesmerHelper.IllusionsWithMesmerChecker)
+            .UsingActorFetchIsAlwaysMaster()
+            .WithBuilds(GW2Builds.January2026Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_DangerTime, DangerTime, "Danger Time", "10%", DamageSource.All, 10.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.DangerTime, DamageModifierMode.sPvPWvW)
+            .UsingChecker((x, log) => x.HasCrit)
+            .UsingChecker(MesmerHelper.IllusionsWithMesmerChecker)
+            .UsingActorFetchIsAlwaysMaster()
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_DangerTime, DangerTime, "Danger Time", "5%", DamageSource.All, 5.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.DangerTime, DamageModifierMode.PvE)
+            .UsingChecker((x, log) => x.HasCrit)
+            .UsingChecker(MesmerHelper.IllusionsWithMesmerChecker)
+            .UsingActorFetchIsAlwaysMaster()
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        // Time Bomb
+        new BuffOnFoeDamageModifier(Mod_TimeBomb, TimeBombBuff, "Time Bomb", "15%", DamageSource.All, 15.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.TimeBomb, DamageModifierMode.All)
+            .WithBuffOnFoeFromActor()
+            .UsingEarlyExit((a, log) => log.CombatData.GetBuffApplyDataByIDBySrc(TimeBombBuff, a.AgentItem).Count == 0)
+            .WithBuilds(GW2Builds.January2026Balance),
         // Improved Alacrity
         new BuffOnActorDamageModifier(Mod_ImprovedAlacrity, Alacrity, "Improved Alacrity", "10% crit under alacrity", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.ImprovedAlacrity, DamageModifierMode.All)
             .UsingChecker((x, log) => x.HasCrit)
             .WithBuilds(GW2Builds.August2022BalanceHotFix, GW2Builds.June2025Balance),
+        // Chronophantasma
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (100%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.All)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.February2018Balance, GW2Builds.May2018Balance),
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (50%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.sPvPWvW)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.May2018Balance),
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (100%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.PvE)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.May2018Balance, GW2Builds.May2021Balance),
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (75%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.PvE)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.May2021Balance, GW2Builds.November2022Balance),
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (100%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.PvE)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.November2022Balance, GW2Builds.April2025Balance),
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (115%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.PvE)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.April2025Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_Chronophantasma, ChronophantasmaResummonBuff, "Chronophantasma", "Phantasm resummon (105%)", DamageSource.PetsOnly, 100.0, DamageType.Strike, DamageType.All, Source.Chronomancer, ByPresence, TraitImages.Chronophantasma, DamageModifierMode.PvE)
+            .UsingEarlyExit((a, log) => !a.GetMinions(log).Any(x => MesmerHelper.IsPhantasm(x.ReferenceAgentItem)))
+            .UsingChecker(MesmerHelper.PhantasmsChecker)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers = [];
@@ -55,7 +105,11 @@ internal static class ChronomancerHelper
         new Buff("Time Echo", TimeEcho, Source.Chronomancer, BuffClassification.Other, SkillImages.DejaVu)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
         new Buff("Time Anchored", TimeAnchored, Source.Chronomancer, BuffStackType.Queue, 25, BuffClassification.Other, SkillImages.ContinuumSplit),
+        new Buff("Danger Time", DangerTime, Source.Chronomancer, BuffClassification.Other, TraitImages.DangerTime),
+        new Buff("Time Bomb", TimeBombBuff, Source.Chronomancer, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Other, TraitImages.TimeBomb),
         new Buff("Temporal Stasis", TemporalStasis, Source.Chronomancer, BuffClassification.Other, BuffImages.Stun),
+        new Buff("Chronophantasma", ChronophantasmaBuff, Source.Chronomancer, BuffClassification.Other, TraitImages.Chronophantasma),
+        new Buff("Chronophantasma Resummon", ChronophantasmaResummonBuff, Source.Chronomancer, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Other, TraitImages.Chronophantasma),
     ];
 
     private static readonly HashSet<int> NonCloneMinions = [];
@@ -79,7 +133,7 @@ internal static class ChronomancerHelper
             }
         }
         // Well of Eternity - Pulses
-        if (log.CombatData.TryGetEffectEventsBySrcWithGUIDs(player.AgentItem, [EffectGUIDs.ChronomancerWellOfEternityPulse, EffectGUIDs.ChronomancerWellOfEternityExplosion], out var wellsOfEternityPulses))
+        if (log.CombatData.TryGetEffectEventsBySrcWithGUIDs(player.AgentItem, [ EffectGUIDs.ChronomancerWellOfEternityPulse, EffectGUIDs.ChronomancerWellOfEternityExplosion ], out var wellsOfEternityPulses))
         {
             var skill = new SkillModeDescriptor(player, Spec.Chronomancer, WellOfEternity, SkillModeCategory.Heal);
             foreach (EffectEvent effect in wellsOfEternityPulses)

@@ -1,0 +1,136 @@
+<template>
+    <div class="d-flex flex-row flex-wrap justify-content-center align-items-start mb-2">
+        <div class="d-flex flex-row justify-content-center mb-1">
+            <ul class="nav nav-pills d-flex flex-row scale85">
+                <li class="nav-item">
+                    <a class="nav-link" :class="{active: buffs}" @click="buffs = !buffs">
+                        Buffs
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{active: rotation}" @click="rotation = !rotation">Rotation</a>
+                </li>
+            </ul>                    
+            <ul class="nav nav-pills d-flex flex-row justify-content-center scale65" style="width: 250px;">
+                <li v-for="(buffType, index) in possibleBuffs" class="ml-1 mr-1">
+                    <input :id="'crpl-possibleBuffs-' + index" type="checkbox" :value="buffType" v-model="buffsToShow" />
+                    <label :for="'crpl-possibleBuffs-' + index">{{buffType}}</label>
+                </li>
+            </ul>
+        </div>
+        <div class="d-flex flex-column combat-actor-status-container scrollable-y ml-1" :style="!singleGroup ? {'transform': 'translate(-24px,0);'} : null">
+            <div v-for="(group,id) in groups" v-if="group" class="d-flex flex-row align-items-center" style="width:220px;">
+                <fieldset class="d-flex flex-row flex-wrap align-items-left" style="width:220px; border: 2px solid #888; margin: 0;">
+                    <legend v-if="!singleGroup" style="font-size: 0.80rem; width: auto; padding: 0 5px; margin-left: 5px;">Group {{id}}</legend>
+                    <div class="d-flex flex-row flex-wrap align-items-center">
+                        <div v-for="(playerData, index) in group" :style="getPlayerDataStyle(index, group)"
+                            class="player-data ml-1 mr-1" :class="{active: selectedactorid === playerData.player.uniqueID}">
+                            <combat-replay-player-stats-component :time="time" :buffs="buffs" :rotation="rotation" :playerindex="playerData.player.id" :buffstoshow="buffsToShow"></combat-replay-player-stats-component>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        </div>    
+        <div class="mt-1 combat-actor-status-container scrollable-y">
+            <div class="d-flex flex-column justify-content-center align-items-center">
+                <div class="ml-2" style="width:220px; height:1px;"></div>
+                <div v-for="targetData in targets" v-if="render(targetData)" style="width:220px;" class="target-data ml-2" :class="{active: selectedactorid === targetData.target.uniqueID}">
+                    <combat-replay-target-stats-component :time="time" :targetindex="targetData.target.id" :buffstoshow="buffsToShowTarget"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    Vue.component("combat-replay-actors-stats-component", {
+        props: ["time", "selectedactorid"],
+        mixins: [encounterPhaseComponent],
+        template: `${template}`,
+        data: function () {
+            return {
+                buffs: false,
+                rotation: true,
+                buffsToShow: ["Boons", "Encounter Specifics", "Conditions"]
+            };
+        },
+        methods: {
+            render: function (targetData) {
+                var crTarget = targetData.crTarget;
+                return crTarget.canDraw() && ((crTarget.start === -1 && crTarget.end === -1) || crTarget.start <= this.time && crTarget.end >= this.time);
+            },
+            getPlayerDataStyle: function(index, group) {
+                if (index < group.length - 1) {
+                    return {
+                        width: '100%',
+                        'border-bottom': '1px solid #888'
+                    };
+                }
+                return {
+                    width: "100%",
+                };
+            }
+        },
+        computed: {
+            buffsToShowTarget: function() {
+                let res = [];
+                for (let i = 0; i< this.buffsToShow.length; i++) {
+                    let cat = this.buffsToShow[i];
+                    if (cat === "Shared" || cat === "Consumables") {
+                        continue;
+                    }
+                    res.push(cat);
+                }
+                return res;
+            },
+            singleGroup: function () {
+                return logData.singleGroup;
+            },
+            possibleBuffs: function() {
+                return [ "Boons", "Conditions", "Encounter Specifics","Shared", "Consumables", "Others"];
+            },
+            targets: function () {
+                if (logData.targetless) {
+                    return [];
+                }
+                var res = [];
+                for (var i = 0; i < logData.targets.length; i++) {
+                    var target = logData.targets[i];
+                    var crTarget = animator.getActorData(target.uniqueID);
+                    if (crTarget) {
+                        res.push({
+                            target: target,
+                            crTarget: crTarget,
+                        });
+                    }
+                }
+                return res;
+            },
+            groups: function () {
+                var res = [];
+                var i = 0;
+                const encounterPlayers = getActiveNonFakePlayersForPhase(this.encounterPhase);
+                const players = getActiveNonFakePlayers(this.time * 0.001);
+                for (i = 0; i < players.length; i++) {
+                    var playerData = players[i];
+                    if (!playerData || !encounterPlayers[i]) {
+                        continue;
+                    }
+                    var crPlayer = animator.getActorData(playerData.uniqueID);
+                    if (!crPlayer) {
+                        continue;
+                    }
+                    if (!res[playerData.group]) {
+                        res[playerData.group] = [];
+                    }
+                    res[playerData.group].push({
+                            player: playerData,
+                            crPlayer: crPlayer,
+                        }
+                    );
+                }
+                return res;
+            }
+        }
+    });
+</script>

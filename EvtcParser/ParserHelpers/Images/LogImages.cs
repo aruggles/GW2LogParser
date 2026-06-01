@@ -5,8 +5,8 @@ internal static class LogImages
 {
     #region GENERICS
 
-    internal const string EncounterIconGeneric = "https://wiki.guildwars2.com/images/d/d2/Guild_emblem_004.png";
-    internal const string InstanceIconGeneric = "https://wiki.guildwars2.com/images/d/d2/Guild_emblem_004.png";
+    internal const string EncounterIconGeneric = "https://render.guildwars2.com/file/9B0EB7A549B94C3BAC0B5918D6CD6314324234B9/59661.png";
+    internal const string InstanceIconGeneric = "https://render.guildwars2.com/file/9B0EB7A549B94C3BAC0B5918D6CD6314324234B9/59661.png";
 
     #endregion GENERICS
 
@@ -14,17 +14,17 @@ internal static class LogImages
 
     // Encounters Icons
     internal const string EncounterIconMAMA = "https://i.imgur.com/PEAobId.png";
-    internal const string EncounterIconSiax = "https://assets.gw2dat.com/665772.png";
-    internal const string EncounterIconEnsolyss = "https://assets.gw2dat.com/665770.png";
+    internal const string EncounterIconSiax = "https://render.guildwars2.com/file/9DA3485C5FDAB0041E192A0A693A26C203350C53/665772.png";
+    internal const string EncounterIconEnsolyss = "https://render.guildwars2.com/file/0B18DC4908C424B43F36DCB3F019AE5CC090470C/665770.png";
     internal const string EncounterIconSkorvald = "https://i.imgur.com/DImBzpy.png";
     internal const string EncounterIconArtsariiv = "https://i.imgur.com/eYYQWEJ.png";
     internal const string EncounterIconArkk = "https://i.imgur.com/XkLP4U8.png";
     internal const string EncounterIconAi = "https://i.imgur.com/kbp444q.png";
-    internal const string EncounterIconAiDark = "https://i.imgur.com/rCgZTIl.png";
+    internal const string EncounterIconAiDark = "https://render.guildwars2.com/file/959E7AFBACA7951D1104C8C56F63A5BF0566C408/619595.png";
     internal const string EncounterIconAiElemental = "https://i.imgur.com/8RsfyPJ.png";
-    internal const string EncounterIconKanaxai = "https://i.imgur.com/Q0qgy0t.png";
+    internal const string EncounterIconKanaxai = "https://render.guildwars2.com/file/05807AF80CB34EC04D46F1F2A9387BE501FE6F40/3098412.png";
     internal const string EncounterIconCerusAndDeimos = "https://i.imgur.com/fzqnnCR.png";
-    internal const string EncounterIconEparch = "https://wiki.guildwars2.com/images/5/5a/Mini_Eparch.png";
+    internal const string EncounterIconEparch = "https://render.guildwars2.com/file/FD77A5D3AFB8B00A27A94FC73B7A213B6E0CC66C/3301393.png";
     internal const string EncounterIconWhisperingShadow = "https://i.imgur.com/4Xtgr4D.jpeg";
 
     // Instances
@@ -58,33 +58,33 @@ internal static class LogImages
     #region RAID WINGS
 
     // Encounters Icons
-    internal const string EncounterIconValeGuardian = "https://assets.gw2dat.com/1301792.png";
-    internal const string EncounterIconSpiritRace = "https://assets.gw2dat.com/1302753.png";
-    internal const string EncounterIconGorseval = "https://assets.gw2dat.com/1301787.png";
-    internal const string EncounterIconSabetha = "https://assets.gw2dat.com/1301795.png";
-    internal const string EncounterIconSlothasor = "https://assets.gw2dat.com/1377393.png";
+    internal const string EncounterIconValeGuardian = "https://render.guildwars2.com/file/1CCB9B3880B062465F9F5834F04739289AF27BBA/1301792.png";
+    internal const string EncounterIconSpiritRace = "https://render.guildwars2.com/file/B2D729C5944B38FF9C22C4CDC02616471644BA0C/1302753.png";
+    internal const string EncounterIconGorseval = "https://render.guildwars2.com/file/E5074A6E5CE552A9231195202B45D5DA2C1A585E/1301787.png";
+    internal const string EncounterIconSabetha = "https://render.guildwars2.com/file/1C96C03C385529A818E9E14ED7BB7E47F10154F5/1301795.png";
+    internal const string EncounterIconSlothasor = "https://render.guildwars2.com/file/2370FE955AC49D38B99F2592F629D2B544BABBD2/1377392.png";
     internal const string EncounterIconBanditTrio = "https://i.imgur.com/UZZQUdf.png";
-    internal const string EncounterIconMatthias = "https://assets.gw2dat.com/1377391.png";
-    internal const string EncounterIconEscort = "https://assets.gw2dat.com/1451172.png";
-    internal const string EncounterIconKeepConstruct = "https://assets.gw2dat.com/1451173.png";
+    internal const string EncounterIconMatthias = "https://render.guildwars2.com/file/EBAFC4EA9C80F6D66AD9A427E15918E0172A476F/1377391.png";
+    internal const string EncounterIconEscort = "https://render.guildwars2.com/file/433A4E66794240AD463941F868754BB46D245020/1451172.png";
+    internal const string EncounterIconKeepConstruct = "https://render.guildwars2.com/file/E87C6B0BB4C1D93231A4DB7CBE91157516580A3E/1451173.png";
     internal const string EncounterIconTwistedCastle = "https://i.imgur.com/BFFxArc.png";
-    internal const string EncounterIconXera = "https://assets.gw2dat.com/1451174.png";
-    internal const string EncounterIconCairn = "https://assets.gw2dat.com/1633961.png";
-    internal const string EncounterIconMursaatOverseer = "https://assets.gw2dat.com/1633963.png";
-    internal const string EncounterIconSamarog = "https://assets.gw2dat.com/1633967.png";
+    internal const string EncounterIconXera = "https://render.guildwars2.com/file/551509B3B91270BFF016C020D2F9D99B550F93AA/1451174.png";
+    internal const string EncounterIconCairn = "https://render.guildwars2.com/file/0863ADC609086A5E5F6C031DDC1766033432250C/1633961.png";
+    internal const string EncounterIconMursaatOverseer = "https://render.guildwars2.com/file/05FCD9D1B4959A051EEC3B160F0802FAB40C2619/1633963.png";
+    internal const string EncounterIconSamarog = "https://render.guildwars2.com/file/9645BE1925D1AC3E7177C99B740078F09EA5A739/1633967.png";
     internal const string EncounterIconDeimos = "https://i.imgur.com/KbTRa5F.png";
-    internal const string EncounterIconSoullessHorror = "https://assets.gw2dat.com/1894936.png";
+    internal const string EncounterIconSoullessHorror = "https://render.guildwars2.com/file/4FE00D4F52D0D8340CCCBAE824B7FD0109BE7E33/1894936.png";
     internal const string EncounterIconRiver = "https://i.imgur.com/Am73toQ.png";
-    internal const string EncounterIconStatueOfDarkness = "https://i.imgur.com/SMW6jZo.png";
-    internal const string EncounterIconStatueOfDeath = "https://i.imgur.com/3QJU2GV.png";
-    internal const string EncounterIconStatueOfIce = "https://assets.gw2dat.com/1894935.png";
-    internal const string EncounterIconDhuum = "https://assets.gw2dat.com/1894937.png";
+    internal const string EncounterIconStatueOfDarkness = "https://render.guildwars2.com/file/2094E50F965FD25042C69748D1087133EE7DBEA3/3744712.png";
+    internal const string EncounterIconStatueOfDeath = "https://render.guildwars2.com/file/7790B113606EB92F21AF747D600544745FDB0D50/3744713.png";
+    internal const string EncounterIconStatueOfIce = "https://render.guildwars2.com/file/712E5629410C91E6C0F95602F6621FDD000E7A34/1894935.png";
+    internal const string EncounterIconDhuum = "https://render.guildwars2.com/file/5C4FEBC890B4D9D2D6A96E4837CD4C0CFA605AB7/1894937.png";
     internal const string EncounterIconConjuredAmalgamate = "https://i.imgur.com/oMb2kNC.png";
     internal const string EncounterIconTwinLargos = "https://i.imgur.com/6O5MT7v.png";
-    internal const string EncounterIconQadim = "https://assets.gw2dat.com/2038618.png";
-    internal const string EncounterIconAdina = "https://assets.gw2dat.com/1766806.png";
-    internal const string EncounterIconSabir = "https://assets.gw2dat.com/1766790.png";
-    internal const string EncounterIconPeerlessQadim = "https://assets.gw2dat.com/2155914.png";
+    internal const string EncounterIconQadim = "https://render.guildwars2.com/file/64ED38CE4F549E573DA3CE641A15BCB3C4FB48B3/2038618.png";
+    internal const string EncounterIconAdina = "https://render.guildwars2.com/file/EAF501CC3C05CAD8C1BB474133B9F89925400EF3/1766806.png";
+    internal const string EncounterIconSabir = "https://render.guildwars2.com/file/9B52A257E0ED4B3F1992ADE60D6A071ED4D5BBAB/1766790.png";
+    internal const string EncounterIconPeerlessQadim = "https://render.guildwars2.com/file/640241E807BF6D14447406C934F5D6FE144A0A4E/2155914.png";
     internal const string EncounterIconDecima = "https://i.imgur.com/EJJRx02.png";
     internal const string EncounterIconGreer = "https://i.imgur.com/19lr7VM.png";
     internal const string EncounterIconUra = "https://i.imgur.com/hUdfF7h.png";
@@ -114,6 +114,7 @@ internal static class LogImages
     internal const string CombatReplayKeepConstruct = "https://i.imgur.com/dEwDsOJ.png";
     internal const string CombatReplayTwistedCastle = "https://i.imgur.com/txFtRNN.png";
     internal const string CombatReplayXera = "https://i.imgur.com/mGOHGwN.png";
+    internal const string CombatReplayBastionOfThePenitent = "https://wiki.guildwars2.com/images/6/6c/Bastion_of_the_Penitent_map.jpg";
     internal const string CombatReplayCairn = "https://i.imgur.com/NlpsLZa.png";
     internal const string CombatReplayMursaatOverseer = "https://i.imgur.com/lT1FW2r.png";
     internal const string CombatReplaySamarog = "https://i.imgur.com/znpsqsI.png";
@@ -143,7 +144,7 @@ internal static class LogImages
     internal const string CombatReplayMountBalriorRaid = "https://wiki.guildwars2.com/images/e/eb/Mount_Balrior_map.jpg";
     internal const string CombatReplayGreerTheBlightbringer = "https://i.imgur.com/yH1yulA.png";
     internal const string CombatReplayDecimaTheStormsinger = "https://i.imgur.com/4cJAW7r.png";
-    internal const string CombatReplayUratheSteamshrieker = "https://i.imgur.com/Vn1JQ3p.png";
+    internal const string CombatReplayUraTheSteamshrieker = "https://i.imgur.com/Vn1JQ3p.png";
 
     #endregion RAID WINGS
 
@@ -164,6 +165,7 @@ internal static class LogImages
     internal const string EncounterIconOldLionsCourt = "https://i.imgur.com/Q2g9aLD.png";
     internal const string EncounterIconCosmicObservatory = "https://i.imgur.com/v6vjRsH.png";
     internal const string EncounterIconTempleOfFebe = "https://i.imgur.com/1cGN1UT.png";
+    internal const string EncounterIconGuardiansGlade = "https://i.imgur.com/7O8666G.png";
 
     // Combat Replay Maps
     internal const string CombatReplayFreezie = "";
@@ -182,18 +184,19 @@ internal static class LogImages
     internal const string CombatReplayCosmicObservatory_old = "https://i.imgur.com/47tKhXG.png";
     internal const string CombatReplayCosmicObservatory = "https://i.imgur.com/mODYp42.png";
     internal const string CombatReplayTempleOfFebe = "https://i.imgur.com/bgiL46C.png";
+    internal const string CombatReplayGuardiansGlade = "https://i.imgur.com/Eg0LxdA.png";
 
     #endregion RAID ENCOUNTERS
 
     #region GOLEM
 
     // Encounters Icons
-    internal const string EncounterIconMassiveGolem = "https://assets.gw2dat.com/1203250.png";
-    internal const string EncounterIconVitalGolem = "https://assets.gw2dat.com/1203254.png";
-    internal const string EncounterIconAvgGolem = "https://assets.gw2dat.com/1203241.png";
-    internal const string EncounterIconStdGolem = "https://assets.gw2dat.com//1203237.png";
-    internal const string EncounterIconCondiPowerMedGolem = "https://assets.gw2dat.com/1203241.png";
-    internal const string EncounterIconLGolem = "https://assets.gw2dat.com/1203254.png";
+    internal const string EncounterIconMassiveGolem = "https://render.guildwars2.com/file/3B4464CA1F751915C4ABAC3D33FEAF3CD50C3C9A/1203250.png";
+    internal const string EncounterIconVitalGolem = "https://render.guildwars2.com/file/0C28F6CFE1EDA99775ED6F05DA2A3175ED04C8EE/1203254.png";
+    internal const string EncounterIconAvgGolem = "https://render.guildwars2.com/file/D6C1619EB921909DC10B08545626AF9FA33C92D5/1203241.png";
+    internal const string EncounterIconStdGolem = "https://render.guildwars2.com/file/BAF43C0425BA631B9C49E771F9EB16E32C1E57E1/1203237.png";
+    internal const string EncounterIconCondiPowerMedGolem = "https://render.guildwars2.com/file/7528B3F792056D4DB1CF2F6817F691504761BD4F/1203240.png";
+    internal const string EncounterIconLGolem = "https://render.guildwars2.com/file/0C28F6CFE1EDA99775ED6F05DA2A3175ED04C8EE/1203254.png";
 
     // Combat Replay Maps
     internal const string CombatReplayGolem = "https://i.imgur.com/gmnSuz7.png";

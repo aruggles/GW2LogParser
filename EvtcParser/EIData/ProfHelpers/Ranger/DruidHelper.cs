@@ -47,7 +47,11 @@ internal static class DruidHelper
     [
         // Natural Balance
         new BuffOnActorDamageModifier(Mod_NaturalBalance, NaturalBalance, "Natural Balance", "10% after leaving or entering Celestial Avatar", DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, Source.Druid, ByPresence, TraitImages.NaturalBalance, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
+            .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_NaturalBalance, NaturalBalance, "Natural Balance", "10% after leaving or entering Celestial Avatar", DamageSource.NoPets, 10.0, DamageType.Condition, DamageType.All, Source.Druid, ByPresence, TraitImages.NaturalBalance, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_NaturalBalance, NaturalBalance, "Natural Balance", "5% after leaving or entering Celestial Avatar", DamageSource.NoPets, 5.0, DamageType.Condition, DamageType.All, Source.Druid, ByPresence, TraitImages.NaturalBalance, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =

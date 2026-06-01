@@ -1,7 +1,9 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
+using static GW2EIEvtcParser.LogLogic.LogLogic;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
@@ -26,7 +28,7 @@ internal class KinfallInstance : Kinfall
         MechanicList.Add(_whisperingShadow.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Kinfall Fractal";
     }
@@ -36,9 +38,9 @@ internal class KinfallInstance : Kinfall
         var crMap = new CombatReplayMap((800, 800), (-18432, -18432, 21504, 21504));
         arenaDecorations.Add(new ArenaDecoration((log.LogData.LogStart, log.LogData.LogEnd), CombatReplayKinfall, crMap));
         _whisperingShadow.GetCombatMapInternal(log, arenaDecorations);
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var lastWhisperingShadow = agentData.GetNPCsByID(TargetID.WhisperingShadow).LastOrDefault();
         if (lastWhisperingShadow != null)
@@ -46,7 +48,7 @@ internal class KinfallInstance : Kinfall
             var death = combatData.GetDeadEvents(lastWhisperingShadow).FirstOrDefault();
             if (death != null)
             {
-                logData.SetSuccess(true, death.Time);
+                successHandler.SetSuccess(true, death.Time);
             }
         }
     }
@@ -58,7 +60,7 @@ internal class KinfallInstance : Kinfall
         {
             var whisperingShadowPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.WhisperingShadow, [], "Whispering Shadow", _whisperingShadow, (log, whisperingShadow) =>
             {
-                return log.CombatData.GetBuffApplyData(SkillIDs.LifeFireCircleCM).Any(x => whisperingShadow.InAwareTimes(x.Time)) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+                return log.CombatData.GetBuffApplyData(SkillIDs.LifeFireCircleCM).Any(x => whisperingShadow.InAwareTimes(x.Time)) ? LogData.Mode.CM : LogData.Mode.Normal;
             });
             foreach (var whisperingShadowPhase in whisperingShadowPhases)
             {
@@ -111,9 +113,9 @@ internal class KinfallInstance : Kinfall
         return _whisperingShadow.SpecialBuffEventProcess(combatData, skillData);
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
-        return _whisperingShadow.SpecialCastEventProcess(combatData, skillData);
+        return _whisperingShadow.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID);
     }
 
     internal override List<HealthDamageEvent> SpecialDamageEventProcess(CombatData combatData, AgentData agentData, SkillData skillData)
@@ -147,5 +149,11 @@ internal class KinfallInstance : Kinfall
     {
         base.SetInstanceBuffs(log, instanceBuffs);
         _whisperingShadow.SetInstanceBuffs(log, instanceBuffs);
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        _whisperingShadow.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
     }
 }

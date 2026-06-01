@@ -108,6 +108,14 @@ public abstract class Actor
     {
         return AgentItem.IsAnySpecies(ids);
     }
+    internal AgentItem GetMainAgentWhenAttackTarget(ParsedEvtcLog log)
+    {
+        return AgentItem.GetMainAgentWhenAttackTarget(log);
+    }
+    internal SingleActor GetMainSingleActorWhenAttackTarget(ParsedEvtcLog log)
+    {
+        return AgentItem.GetMainSingleActorWhenAttackTarget(log);
+    }
     #endregion Species
 
     #region Damage
@@ -115,7 +123,7 @@ public abstract class Actor
     public IReadOnlyList<HealthDamageEvent> GetDamageEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitDamageEvents(log);
-        DamageEventByDstCache ??= new(log);
+        DamageEventByDstCache ??= new(AgentItem, log);
         if (!DamageEventByDstCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -149,7 +157,7 @@ public abstract class Actor
     {
         if (!_typedHitDamageEvents.TryGetValue(damageType, out var hitDamageEventsPerPhasePerTarget))
         {
-            hitDamageEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<HealthDamageEvent>>(log);
+            hitDamageEventsPerPhasePerTarget = new (AgentItem, log);
             _typedHitDamageEvents[damageType] = hitDamageEventsPerPhasePerTarget;
         }
 
@@ -167,7 +175,7 @@ public abstract class Actor
     {
         if (!_typedHitDamageTakenEvents.TryGetValue(damageType, out var hitDamageTakenEventsPerPhasePerTarget))
         {
-            hitDamageTakenEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<HealthDamageEvent>>(log);
+            hitDamageTakenEventsPerPhasePerTarget = new (AgentItem, log);
             _typedHitDamageTakenEvents[damageType] = hitDamageTakenEventsPerPhasePerTarget;
         }
         if (!hitDamageTakenEventsPerPhasePerTarget.TryGetValue(start, end, target, out var dls))
@@ -183,7 +191,7 @@ public abstract class Actor
     public IReadOnlyList<HealthDamageEvent> GetDamageTakenEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitDamageTakenEvents(log);
-        DamageTakenEventsBySrcCache ??= new(log);
+        DamageTakenEventsBySrcCache ??= new(AgentItem, log);
         if (!DamageTakenEventsBySrcCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -219,7 +227,7 @@ public abstract class Actor
     public IReadOnlyList<BreakbarDamageEvent> GetBreakbarDamageEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitBreakbarDamageEvents(log);
-        BreakbarDamageEventByDstCache ??= new(log);
+        BreakbarDamageEventByDstCache ??= new(AgentItem, log);
         if (!BreakbarDamageEventByDstCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -252,7 +260,7 @@ public abstract class Actor
     public IReadOnlyList<BreakbarDamageEvent> GetBreakbarDamageTakenEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitBreakbarDamageTakenEvents(log);
-        BreakbarDamageTakenEventBySrcCache ??= new(log);
+        BreakbarDamageTakenEventBySrcCache ??= new(AgentItem, log);
         if (!BreakbarDamageTakenEventBySrcCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -287,7 +295,7 @@ public abstract class Actor
     public IReadOnlyList<CrowdControlEvent> GetOutgoingCrowdControlEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitOutgoingCrowdControlEvents(log);
-        OutgoingCrowdControlEventByDstCache ??= new(log);
+        OutgoingCrowdControlEventByDstCache ??= new(AgentItem, log);
         if (!OutgoingCrowdControlEventByDstCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -320,7 +328,7 @@ public abstract class Actor
     public IReadOnlyList<CrowdControlEvent> GetIncomingCrowdControlEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitIncomingCrowdControlEvents(log);
-        IncomingCrowdControlEventBySrcCache ??= new(log);
+        IncomingCrowdControlEventBySrcCache ??= new(AgentItem, log);
         if (!IncomingCrowdControlEventBySrcCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)

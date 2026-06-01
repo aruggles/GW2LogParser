@@ -13,7 +13,7 @@ internal static class FoodBuffs
         new Buff("Plate of Truffle Steak", PlateOfTruffleSteak, Source.Item, BuffClassification.Nourishment, ItemImages.PlateOfTruffleSteak),
         new Buff("Bowl of Sweet and Spicy Butternut Squash Soup", BowlOfSweetAndSpicyButternutSquashSoup, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfSweetAndSpicyButternutSquashSoup),
         new Buff("Bowl of Curry Butternut Squash Soup", BowlOfCurryButternutSquashSoup, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfCurryButternutSquashSoup),
-        new Buff("Bowl of Fancy Potatoe and Leek Soup", BowlOfFancyPotatoeAndLeekSoup, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfFancyPotatoeAndLeekSoup),
+        new Buff("Bowl of Fancy Potatoe and Leek Soup", BowlOfFancyPotatoAndLeekSoup, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfFancyPotatoAndLeekSoup),
         new Buff("Red-Lentil Saobosa", RedLentilSaobosa, Source.Item, BuffClassification.Nourishment, ItemImages.RedLentilSaobosa),
         new Buff("Super Veggie Pizza", SuperVeggiePizza, Source.Item, BuffClassification.Nourishment, ItemImages.SuperVeggiePizza),
         new Buff("Rare Veggie Pizza", RareVeggiePizza, Source.Item, BuffClassification.Nourishment, ItemImages.RareVeggiePizza),
@@ -296,7 +296,7 @@ internal static class FoodBuffs
         new Buff("Bowl of Poultry and Leek Soup", BowlOfPoultryAndLeekSoup, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfPoultryAndLeekSoup),
         new Buff("Can of Poultry and Leek Soup", CanOfPoultryAndLeekSoup, Source.Item, BuffClassification.Nourishment, ItemImages.CanOfPoultryAndLeekSoup),
         new Buff("Mashed Potato", MashedPotato, Source.Item, BuffClassification.Nourishment, ItemImages.MashedPotato),
-        new Buff("Bowl of Outrider Stew", BowlOfOutriderStew, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfOutriderStew),
+        new Buff("Bowl of Outrider Stew", BowlOfOutriderStew, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfColdWurmStew),
         new Buff("Bowl of Mashed Yams", BowlOfMashedYams, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfMashedYams),
         new Buff("Roasted Rutabaga", RoastedRutabaga, Source.Item, BuffClassification.Nourishment, ItemImages.RoastedRutabaga),
         new Buff("Roasted Parsnip", RoastedParsnip, Source.Item, BuffClassification.Nourishment, ItemImages.RoastedParsnip),
@@ -373,12 +373,13 @@ internal static class FoodBuffs
         new Buff("Bowl of Chickpea Salad", BowlOfChickpeaSalad, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfChickpeaSalad),
         new Buff("Bowl of Mango Salsa", BowlOfMangoSalsa, Source.Item, BuffClassification.Nourishment, ItemImages.BowlOfMangoSalsa),
         new Buff("Can of Mango Salsa", CanOfMangoSalsa, Source.Item, BuffClassification.Nourishment, ItemImages.CanOfMangoSalsa),
-        new Buff("Bloodstone Pot Pie", BloodstonePotPie, Source.Item, BuffClassification.Nourishment, ItemImages.BloodstonePotPie),
+        new Buff("Bloodstone Pot Pie", BloodstonePotPie, Source.Item, BuffClassification.Nourishment, ItemImages.MeatPie),
         new Buff("Poor Nourishment", PoorNourishment, Source.Item, BuffClassification.Nourishment, ItemImages.NourishmentEffect),
         new Buff("Nourishment (Guild Banquet Table)", NourishmentGuildBanquetTable, Source.Item, BuffClassification.Nourishment, ItemImages.NourishmentBirthdayBlaster),
         new Buff("Weight of the World", WeightOfTheWorld, Source.Item, BuffClassification.Nourishment, ItemImages.NourishmentEffect),
         new Buff("Cooking Golem", CookingGolem, Source.Item, BuffClassification.Nourishment, ItemImages.NourishmentEffect),
         new Buff("Bag of Popped Candy Corn", BagOfPoppedCandyCorn, Source.Item, BuffClassification.Nourishment, ItemImages.BagOfPoppedCandyCorn), // If they update this to be an enchancement, it was introduced in build 188,794
+        new Buff("New Year Rice Cake", NewYearRiceCake, Source.Item, BuffClassification.Nourishment, ItemImages.NewYearRiceCake),
     ];
 
     internal static readonly IReadOnlyList<Buff> AscendedFood =

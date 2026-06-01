@@ -24,9 +24,9 @@
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <ManifestCertificateThumbprint>A2D0E6772E3E560A6B4EE0E6C7C910F94A1CE7A9</ManifestCertificateThumbprint>
     <ManifestKeyFile>Gw2LogParser_TemporaryKey.pfx</ManifestKeyFile>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
     <SignManifests>false</SignManifests>
-    <TargetZone>LocalIntranet</TargetZone>
+    <GenerateTrustInfo>false</GenerateTrustInfo>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
@@ -37,35 +37,125 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="GW2EIEvtcParser.EIData.Color" Alias="Color" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Gw2LogParser_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Content\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayActorBuffStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayActorRotation.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Player\tmplCombatReplayPlayerStats.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Player\tmplCombatReplayPlayerStatus.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Target\tmplCombatReplayTargetStats.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Target\tmplCombatReplayTargetStatus.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorBuffStats.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorRotation.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorsStats.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageData.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageTable.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayAnimationControl.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayDamageData.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayDamageTable.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayExtraDecorations.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayMechanicsList.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerSelect.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayersStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerStatus.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayStatusData.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetsStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetStatus.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayUI.html" />
+    <Content Include="Resources\eiparser\compressionUtils.html" />
     <Content Include="Resources\eiparser\ei.css" />
     <Content Include="Resources\eiparser\ei.js" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierDistPlayer.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierDistTable.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierTakenDistPlayer.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingDistPlayer.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingDistTable.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingTakenDistPlayer.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHealingGraphStats.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHPSGraph.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHPSGraphModeSelector.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplPlayerHealingTabGraph.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Headers\tmplTargetPlayers.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplHealingStatTables.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplIncomingHealingTable.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplOutgoingHealingTable.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingExtensionView.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingStats.html" />
+    <Content Include="Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingTab.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplBuffStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplBuffStatsPlayer.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplBuffStatsTarget.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplBuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplBuffTables.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplConditionsTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplDebuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplEnhancementBuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplGearBuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplNourishmentBuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplOtherConsumableBuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Buffs\tmplPersonalBuffTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStatsPlayer.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStatsTarget.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeTables.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplConditionsVolumeTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplDebuffVolumeTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplGearBuffVolumeTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\BuffVolumes\tmplPersonalBuffVolumeTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierPersStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierStatsContainer.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistPlayer.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistTarget.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageTakenDistPlayer.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageTakenDistTarget.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplDPSGraph.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplDPSGraphModeSelector.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplGraph.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplGraphStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplPlayerTabGraph.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplTargetTabGraph.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Graphs\tmplTargetTabPerPlayerGraph.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplEncounter.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplPhase.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplPlayers.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplTargets.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplDamageTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplDefenseTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplGameplayTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplMechanicsTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplOffensiveTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplStatTables.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplSupportTable.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplAdvancedRotation.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplBuffTab.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplDeathRecap.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplFood.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplMainView.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplMechanicsStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerBuffTab.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplPlayersRotation.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplPlayersRotationTab.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerTab.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplRotationLegend.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplSimpleRotation.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplTargetBuffTab.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplTargetData.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplTargetStats.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\tmplTargetTab.html" />
+    <Content Include="Resources\eiparser\JS\CR-JS\actors.js" />
+    <Content Include="Resources\eiparser\JS\CR-JS\animator.js" />
+    <Content Include="Resources\eiparser\JS\CR-JS\decorations.js" />
     <Content Include="Resources\eiparser\JS\functions.js" />
     <Content Include="Resources\eiparser\JS\global.js" />
+    <Content Include="Resources\eiparser\JS\HealingExt-JS\healingExtFunctions.js" />
+    <Content Include="Resources\eiparser\JS\HealingExt-JS\healingExtGlobals.js" />
     <Content Include="Resources\eiparser\JS\mixins.js" />
     <Content Include="Resources\eiparser\template.html" />
     <Content Include="Resources\player_summary.html" />
+    <Content Include="Resources\template.html" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.8">
@@ -107,3 +197,5 @@
     </None>
   </ItemGroup>
 </Project>
+
+

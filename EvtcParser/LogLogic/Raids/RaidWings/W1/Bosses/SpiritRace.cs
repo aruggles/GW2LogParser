@@ -9,14 +9,21 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
+using static GW2EIEvtcParser.AchievementEligibilityIDs;
+using GW2EIGW2API;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class SpiritRace : SpiritVale
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstHealthDamageHitMechanic(SpiritFog, new MechanicPlotlySetting(Symbols.CircleOpen, Colors.Red), "SpiritFog.H", "Hit by Spirit Fog", "Spirit Fog Hit", 0),
-            new PlayerDstBuffApplyMechanic(Crippled, new MechanicPlotlySetting(Symbols.Diamond, Colors.Pink), "Outrun.Achiv", "Achievement Eligibility: I Can Outrun A...Ghost", "I Can Outrun A...Ghost", 0).UsingAchievementEligibility(),
+            new MechanicGroup([
+                new AchievementEligibilityMechanic(Ach_OutrunGhost, new MechanicPlotlySetting(Symbols.Diamond, Colors.DarkPink), "Outrun.Achiv.L", "Achievement Eligibility: I Can Outrun A...Ghost Lost", "I Can Outrun A...Ghost Lost", 0)
+                        .UsingChecker((evt, log) => evt.Lost),
+                new AchievementEligibilityMechanic(Ach_OutrunGhost, new MechanicPlotlySetting(Symbols.Diamond, Colors.Pink), "Outrun.Achiv.K", "Achievement Eligibility: I Can Outrun A...Ghost Kept", "I Can Outrun A...Ghost Kept", 0)
+                        .UsingChecker((evt, log) => !evt.Lost)
+            ]),
         ]);
     public SpiritRace(int triggerID) : base(triggerID)
     {
@@ -65,12 +72,12 @@ internal class SpiritRace : SpiritVale
         return (int)TargetID.WallOfGhosts;
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         RewardEvent? reward = GetOldRaidReward2Event(combatData, logData.LogStart, logData.EvtcLogEnd);
         if (reward != null)
         {
-            logData.SetSuccess(true, reward.Time);
+            successHandler.SetSuccess(true, reward.Time);
         }
     }
 
@@ -85,22 +92,22 @@ internal class SpiritRace : SpiritVale
         return phases;
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
 
         AgentItem? wallOfGhosts = agentData.GetNPCsByID(TargetID.WallOfGhosts).FirstOrDefault();
         if (wallOfGhosts == null)
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
-        var position = combatData.GetMovementData(wallOfGhosts).Where(x => x is PositionEvent positionEvt).FirstOrDefault();
+        var position = combatData.GetMovementData(wallOfGhosts).FirstOrDefault(x => x is PositionEvent positionEvt);
         if (position != null)
         {
             var initialPosition = new Vector3(-5669.139f, -7814.589f, -1138.749f);
-            return (position.GetPoint3D() - initialPosition).Length() > 10 ? LogData.LogStartStatus.Late : LogData.LogStartStatus.Normal;
+            return (position.GetPoint3D() - initialPosition).Length() > 10 ? LogData.StartStatus.Late : LogData.StartStatus.Normal;
         }
         // To investigate
-        return LogData.LogStartStatus.Late;
+        return LogData.StartStatus.Late;
     }
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
@@ -135,7 +142,7 @@ internal class SpiritRace : SpiritVale
             if (candidate.Type == AgentItem.AgentType.Gadget)
             {
                 needsDummy = false;
-                var positions = combatData.Where(x => x.IsStateChange == StateChange.Position && x.SrcMatchesAgent(candidate)).Select(MovementEvent.GetPointXY);
+                var positions = combatData.Where(x => x.IsStateChange == StateChange.Position && x.SrcMatchesAgent(candidate)).Select(MovementEvent.GetPointXY).ToList();
                 if (positions.Any(x => (x - position1).Length() < 10))
                 {
                     candidate.OverrideID(TargetID._EtherealBarrier1, agentData);
@@ -201,14 +208,14 @@ internal class SpiritRace : SpiritVale
         RenameEtherealBarriersAndOverrideID(Targets, agentData);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Spirit Race";
     }
 
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()
     {
-        return new Dictionary<TargetID, int>()
+        return new Dictionary<TargetID, int>
         {
             {TargetID._EtherealBarrier1, 0 },
             {TargetID._EtherealBarrier2, 1 },
@@ -238,7 +245,7 @@ internal class SpiritRace : SpiritVale
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -246,7 +253,7 @@ internal class SpiritRace : SpiritVale
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -258,6 +265,9 @@ internal class SpiritRace : SpiritVale
                 {
                     encounterOffset = AddHideForBarrier(target, log, replay, encounterOffset);
                 }
+                var spiritRaceEncounters = log.LogData.GetEncounterPhases(log, LogID);
+                replay.AddHideByEncounterPhases(spiritRaceEncounters, log);
+                replay.Hidden.Sort((x, y) => x.Start.CompareTo(y.Start));
                 break;
             case (int)TargetID.WallOfGhosts:
                 (long, long) lifespan = (target.FirstAware, target.LastAware);
@@ -271,16 +281,34 @@ internal class SpiritRace : SpiritVale
     }
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+        {
+            var outrunGhostEligibilityEvents = new List<AchievementEligibilityEvent>();
+            var spiritRacePhases = log.LogData.GetEncounterPhases(log, LogID).Where(x => x.IntersectsWindow(p.FirstAware, p.LastAware)).ToHashSet();
+            var crippleds = log.CombatData.GetBuffApplyDataByIDByDst(Crippled, p.AgentItem);
+            foreach (var evt in crippleds)
+            {
+                InsertAchievementEligibityEventAndRemovePhase(spiritRacePhases, outrunGhostEligibilityEvents, evt.Time, Ach_OutrunGhost, p);
+            }
+            AddSuccessBasedAchievementEligibityEvents(spiritRacePhases, outrunGhostEligibilityEvents, Ach_OutrunGhost, p);
+            achievementEligibilityEvents.AddRange(outrunGhostEligibilityEvents);
         }
     }
 }

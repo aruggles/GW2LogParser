@@ -17,14 +17,19 @@ internal static class ScourgeHelper
 {
     internal static readonly List<InstantCastFinder> InstantCastFinder =
     [
+        // Utilities
         new BuffGainCastFinder(TrailOfAnguish, TrailOfAnguishBuff),
+        // Shades
         new DamageCastFinder(NefariousFavorSkill, NefariousFavorShadeHit),
+        new EffectCastFinder(SandCascadeSkill, EffectGUIDs.ScourgeSandCascade),
+        new EXTBarrierCastFinder(SandCascadeSkill, SandCascadeBarrier)
+            .UsingDisableWithEffectData(),
         new DamageCastFinder(GarishPillarSkill, GarishPillarHit),
         new BuffGainCastFinder(DesertShroud, DesertShroudBuff)
             .UsingDurationChecker(6000),
         new BuffGainCastFinder(SandstormShroudSkill, DesertShroudBuff)
             .UsingDurationChecker(3500),
-        new EXTBarrierCastFinder(SandCascadeSkill, SandCascadeBarrier),
+        // Traits
         new BuffGainCastFinder(SadisticSearing, SadisticSearing)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
         new BuffLossCastFinder(SadisticSearingActivation, SadisticSearing)
@@ -42,7 +47,7 @@ internal static class ScourgeHelper
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers = [];
 
-    internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
+    internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers = 
     [
         // Blood as Sand
         new BuffOnActorDamageModifier(Mod_BloodAsSand, [SandShadeBuff, SandSavantSandShadeBuff], "Blood As Sand", "-15% while shade is active", DamageSource.Incoming, -15.0, DamageType.StrikeAndCondition, DamageType.All, Source.Necromancer, ByPresence, TraitImages.BloodAsSand, DamageModifierMode.All)
@@ -61,7 +66,7 @@ internal static class ScourgeHelper
                 // unreliable for early ends
                 continue;
             }
-            SkillItem skill = shade.GUIDEvent.ContentGUID == EffectGUIDs.ScourgeShadeSandSavant ? skillData.Get(SandSavantSandShadeBuff) : skillData.Get(SandShadeBuff);
+            SkillItem skill = shade.GUIDEvent.GUID == EffectGUIDs.ScourgeShadeSandSavant ? skillData.Get(SandSavantSandShadeBuff) : skillData.Get(SandShadeBuff);
             int expectedDuration;
             if (logData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.WvW || logData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.sPvP)
             {
@@ -124,7 +129,7 @@ internal static class ScourgeHelper
             var skill = new SkillModeDescriptor(player, Spec.Scourge, ManifestSandShadeSkill);
             foreach (EffectEvent effect in scourgeShades)
             {
-                uint radius = (uint)(effect.GUIDEvent.ContentGUID == EffectGUIDs.ScourgeShadeSandSavant ? 300 : 180);
+                uint radius = (uint)(effect.GUIDEvent.GUID == EffectGUIDs.ScourgeShadeSandSavant ? 300 : 180);
                 long duration;
                 if (log.LogData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.WvW || log.LogData.Logic.SkillMode == LogLogic.LogLogic.SkillModeEnum.sPvP)
                 {

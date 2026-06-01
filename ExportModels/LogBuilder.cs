@@ -27,7 +27,7 @@ namespace Gw2LogParser.ExportModels
         {
             bool combatReplay = true;
             bool lightTheme = true;
-            return LogDataDto.BuildLogData(log, combatReplay, lightTheme, parserVersion, uploadResults.ToArray());
+            return LogDataDto.BuildLogData(log, combatReplay, lightTheme, parserVersion, uploadResults);
         }
 
         public SummaryItem BuildSummary(object[] item, LogDataDto data)

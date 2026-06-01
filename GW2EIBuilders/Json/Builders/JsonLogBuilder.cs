@@ -120,7 +120,16 @@ internal static class JsonLogBuilder
         return damageModDesc;
     }
 
-    public static JsonLog BuildJsonLog(ParsedEvtcLog log, RawFormatSettings settings, Version parserVersion, string[] uploadLinks)
+    private static TeamDesc BuildTeamDesc(TeamGUIDEvent teamGUID)
+    {
+        var teamDesc = new TeamDesc
+        {
+            GUID = teamGUID.GUID.ToHex(),
+        };
+        return teamDesc;
+    }
+
+    public static JsonLog BuildJsonLog(ParsedEvtcLog log, RawFormatSettings settings, Version parserVersion, UploadResults uploadLinks)
     {
         var jsonLog = new JsonLog();
         //
@@ -150,11 +159,11 @@ internal static class JsonLogBuilder
         jsonLog.Duration = log.LogData.DurationString;
         jsonLog.DurationMS = log.LogData.LogDuration;
         jsonLog.LogStartOffset = log.LogData.LogStartOffset;
-        if (log.LogMetadata.DateInstanceStartStd != null)
+        if (log.LogMetadata.DateInstanceStartStd != null )
         {
             jsonLog.InstanceTimeStartStd = log.LogMetadata.DateInstanceStartStd;
             jsonLog.InstanceIP = log.LogMetadata.LogInstanceIP;
-        }
+        } 
         else
         {
             jsonLog.InstanceTimeStartStd = null;
@@ -175,32 +184,44 @@ internal static class JsonLogBuilder
                 jsonLog.InstancePrivacy = "Unknown";
                 break;
         }
-        jsonLog.Success = log.LogData.Success;
+        var mainPhase = log.LogData.GetMainPhase(log);
+        jsonLog.Success = mainPhase.Success;
         jsonLog.Targetless = log.LogData.Logic.Targetless;
         jsonLog.GW2Build = log.LogMetadata.GW2Build;
-        jsonLog.UploadLinks = uploadLinks;
+        jsonLog.UploadLinks = [uploadLinks.DPSReportEILink];
         jsonLog.Language = log.LogMetadata.Language;
         jsonLog.LanguageID = (byte)log.LogMetadata.LanguageID;
         jsonLog.FractalScale = log.CombatData.GetFractalScaleEvent() != null ? log.CombatData.GetFractalScaleEvent()!.Scale : 0;
-        jsonLog.IsCM = log.LogData.IsCM || log.LogData.IsLegendaryCM;
-        jsonLog.IsLegendaryCM = log.LogData.IsLegendaryCM;
-        jsonLog.IsLateStart = log.LogData.IsLateStart;
-        jsonLog.MissingPreEvent = log.LogData.MissingPreEvent;
+        var shardEvent = log.CombatData.GetShardEvents().FirstOrDefault();
+        if (shardEvent != null)
+        {
+            var region = shardEvent.RegionToString();
+            if (region != null)
+            {
+                jsonLog.Region = region;
+            }
+        }
+        jsonLog.IsCM = mainPhase.IsCM || mainPhase.IsLegendaryCM;
+        jsonLog.IsLegendaryCM = mainPhase.IsLegendaryCM;
+        jsonLog.IsLateStart = mainPhase.IsLateStart;
+        jsonLog.MissingPreEvent = mainPhase.MissingPreEvent;
         jsonLog.Anonymous = log.ParserSettings.AnonymousPlayers;
         jsonLog.DetailedWvW = log.ParserSettings.DetailedWvWParse && log.LogData.Logic.ParseMode == LogLogic.ParseModeEnum.WvW;
-        var personalBuffs = new Dictionary<string, HashSet<long>>(20); //TODO(Rennorb) @perf
-        var personalDamageMods = new Dictionary<string, HashSet<long>>(20); //TODO(Rennorb) @perf
-        var skillMap = new Dictionary<long, SkillItem>(200); //TODO(Rennorb) @perf
-        var skillDescs = new Dictionary<string, SkillDesc>(200); //TODO(Rennorb) @perf
-        var buffMap = new Dictionary<long, Buff>(100); //TODO(Rennorb) @perf
-        var buffDescs = new Dictionary<string, BuffDesc>(100); //TODO(Rennorb) @perf
-        var damageModMap = new Dictionary<int, DamageModifier>(50); //TODO(Rennorb) @perf
-        var damageModDesc = new Dictionary<string, DamageModDesc>(50); //TODO(Rennorb) @perf
+        var personalBuffs = new Dictionary<string, HashSet<long>>(20); //TODO_PERF(Rennorb)
+        var personalDamageMods = new Dictionary<string, HashSet<long>>(20); //TODO_PERF(Rennorb)
+        var skillMap = new Dictionary<long, SkillItem>(200); //TODO_PERF(Rennorb)
+        var skillDescs = new Dictionary<string, SkillDesc>(200); //TODO_PERF(Rennorb)
+        var buffMap = new Dictionary<long, Buff>(100); //TODO_PERF(Rennorb)
+        var buffDescs = new Dictionary<string, BuffDesc>(100); //TODO_PERF(Rennorb)
+        var damageModMap = new Dictionary<int, DamageModifier>(50); //TODO_PERF(Rennorb)
+        var damageModDesc = new Dictionary<string, DamageModDesc>(50); //TODO_PERF(Rennorb)
+        var teamMap = new HashSet<ulong>(5);
+        var teamDesc = new Dictionary<string, TeamDesc>(5);
 
         var instanceBuffs = log.LogData.Logic.GetInstanceBuffs(log);
         if (instanceBuffs.Any())
         {
-            var presentFractalInstabilities = new List<long>(3); //TODO(Rennorb) @perf
+            var presentFractalInstabilities = new List<long>(3);
             var presentInstanceBuffs = new List<IReadOnlyList<long>>(instanceBuffs.Count);
             foreach (var instanceBuff in instanceBuffs)
             {
@@ -209,11 +230,18 @@ internal static class JsonLogBuilder
                 {
                     buffMap[buff.ID] = buff;
                 }
-                if (buff.Source == ParserHelper.Source.FractalInstability)
+                if (buff.Sources.Contains(ParserHelper.Source.FractalInstability))
                 {
                     presentFractalInstabilities.Add(buff.ID);
                 }
-                presentInstanceBuffs.Add([buff.ID, instanceBuff.Stack, log.LogData.GetPhases(log).IndexOf(instanceBuff.AttachedPhase)]);
+                if (instanceBuff.RemainingDuration > 0)
+                {
+                    presentInstanceBuffs.Add([buff.ID, instanceBuff.Stack, log.LogData.GetPhases(log).IndexOf(instanceBuff.AttachedPhase), instanceBuff.RemainingDuration]);
+                } 
+                else
+                {
+                    presentInstanceBuffs.Add([buff.ID, instanceBuff.Stack, log.LogData.GetPhases(log).IndexOf(instanceBuff.AttachedPhase)]);
+                }
             }
             jsonLog.PresentFractalInstabilities = presentFractalInstabilities;
             jsonLog.PresentInstanceBuffs = presentInstanceBuffs;
@@ -231,10 +259,10 @@ internal static class JsonLogBuilder
         jsonLog.Phases = log.LogData.GetPhases(log).Select(x => JsonPhaseBuilder.BuildJsonPhase(x, log)).ToList();
         //
         log.UpdateProgressWithCancellationCheck("Raw Format: Building Targets");
-        jsonLog.Targets = log.LogData.Logic.Targets.Select(x => JsonNPCBuilder.BuildJsonNPC(x, log, settings, skillMap, buffMap)).ToList();
+        jsonLog.Targets = log.LogData.Logic.Targets.Select(x => JsonNPCBuilder.BuildJsonNPC(x, log, settings, skillMap, buffMap, teamMap)).ToList();
         //
         log.UpdateProgressWithCancellationCheck("Raw Format: Building Players");
-        jsonLog.Players = log.Friendlies.Select(x => JsonPlayerBuilder.BuildJsonPlayer(x, log, settings, skillMap, buffMap, damageModMap, personalBuffs, personalDamageMods)).ToList();
+        jsonLog.Players = log.Friendlies.Select(x => JsonPlayerBuilder.BuildJsonPlayer(x, log, settings, skillMap, buffMap, damageModMap, personalBuffs, personalDamageMods, teamMap)).ToList();
         //
         if (log.LogMetadata.LogErrors.Any())
         {
@@ -283,6 +311,18 @@ internal static class JsonLogBuilder
             damageModDesc["d" + pair.Key] = BuildDamageModDesc(pair.Value);
         }
         jsonLog.DamageModMap = damageModDesc;
+        foreach (var teamID in teamMap)
+        {
+            var teamGUIDEvent = log.CombatData.GetTeamGUIDEventByTeamID(teamID);
+            if (teamGUIDEvent != null)
+            {
+                teamDesc["t" + teamID] = BuildTeamDesc(teamGUIDEvent);
+            }
+        }
+        if (teamDesc.Count > 0)
+        {
+            jsonLog.TeamMap = teamDesc;
+        }
         //
         if (log.CanCombatReplay)
         {

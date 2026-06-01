@@ -15,7 +15,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Ensolyss : Nightmare
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup(
                 [
                     new PlayerDstHealthDamageHitMechanic([ LungeEnsolyss, LungeNightmareHallucination ], new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.LightOrange), "Charge", "Lunge (KB charge over arena)","Charge", 150),
@@ -27,19 +27,19 @@ internal class Ensolyss : Nightmare
                     new PlayerDstHealthDamageHitMechanic(UpswingHallucination, new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Hall.AoE", "Hit by Hallucination Explosion", "Hallu Explosion", 0),
                 ]
             ),
-            new PlayerDstHealthDamageHitMechanic([ NigthmareMiasmaEnsolyss1, NigthmareMiasmaEnsolyss2, NigthmareMiasmaEnsolyss3 ], new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Magenta), "Goo", "Nightmare Miasma (Goo)","Miasma", 0),
+            new PlayerDstHealthDamageHitMechanic([ NigthmareMiasmaEnsolyss1, NigthmareMiasmaEnsolyss2, NigthmareMiasmaEnsolyss3 ], new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Magenta), "Goo.E", "Nightmare Miasma (Goo)","Miasma", 0),
             new MechanicGroup(
                 [
-                    new EnemyCastStartMechanic(CausticExplosionEnsolyss, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC", "After Phase CC","Breakbar", 0),
-                    new EnemyCastEndMechanic(CausticExplosionEnsolyss, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC Fail", "After Phase CC Failed","CC Fail", 0).UsingChecker( (ce,log) => ce.ActualDuration >= 15260),
+                    new EnemyCastStartMechanic(CausticExplosionEnsolyss, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC.E", "After Phase CC","Breakbar", 0),
+                    new EnemyCastEndMechanic(CausticExplosionEnsolyss, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC.E Fail", "After Phase CC Failed","CC Fail", 0).UsingChecker( (ce,log) => ce.ActualDuration >= 15260),
                     new EnemyCastEndMechanic(CausticExplosionEnsolyss, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed", "After Phase CC Success","CCed", 0).UsingChecker( (ce, log) => ce.ActualDuration < 15260),
                     new PlayerDstHealthDamageHitMechanic(CausticExplosionEnsolyss, new MechanicPlotlySetting(Symbols.Bowtie,Colors.Yellow), "CC KB", "Knockback hourglass during CC","CC KB", 0),
                 ]
             ),
-            new EnemyCastStartMechanic([ NightmareDevastation1, NightmareDevastation2 ], new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Blue), "Bubble", "Nightmare Devastation (bubble attack)","Bubble", 0),
-            new PlayerDstHealthDamageHitMechanic(TailLashEnsolyss, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Yellow), "Tail", "Tail Lash Ensolyss (half circle Knockback)","Tail Lash (Ensolyss)", 0),
+            new EnemyCastStartMechanic([ NightmareDevastation1, NightmareDevastation2 ], new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Blue), "Bubble.E", "Nightmare Devastation (bubble attack)","Bubble", 0),
+            new PlayerDstHealthDamageHitMechanic(TailLashEnsolyss, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Yellow), "Tail.E", "Tail Lash Ensolyss (half circle Knockback)","Tail Lash (Ensolyss)", 0),
             new PlayerDstHealthDamageHitMechanic(RampageEnsolyss, new MechanicPlotlySetting(Symbols.BowtieOpen,Colors.Red), "Rampage", "Rampage (asterisk shaped Arrow attack)","Rampage", 150),
-            new PlayerDstHealthDamageHitMechanic(CausticGrasp, new MechanicPlotlySetting(Symbols.StarDiamond,Colors.LightOrange), "Pull", "Caustic Grasp (Arena Wide Pull)","Pull", 0),
+            new PlayerDstHealthDamageHitMechanic(CausticGrasp, new MechanicPlotlySetting(Symbols.StarDiamond,Colors.LightOrange), "Pull.E", "Caustic Grasp (Arena Wide Pull)","Pull", 0),
             new PlayerDstHealthDamageHitMechanic(TormentingBlast, new MechanicPlotlySetting(Symbols.Diamond,Colors.Yellow), "Quarter", "Tormenting Blast (Two Quarter Circle attacks)","Quarter circle", 0),
         ]);
     public Ensolyss(int triggerID) : base(triggerID)
@@ -59,9 +59,9 @@ internal class Ensolyss : Nightmare
         return crMap;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return LogData.LogMode.CMNoName;
+        return LogData.Mode.CMNoName;
     }
 
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()
@@ -108,21 +108,21 @@ internal class Ensolyss : Nightmare
 
         // ensolyss exits combat during split phases and reenters after
         // make sure we dont have a late start via caustic explosion, expected to happen 2s after invuln remove in later phases
-        var causticExplosion = combatData.FirstOrDefault(x => x.SkillID == CausticExplosionEnsolyss && x.StartCasting() && x.SrcMatchesAgent(ensolyss) && x.Time > start);
+        var causticExplosion = combatData.FirstOrDefault(x => x.SkillID == CausticExplosionEnsolyss && x.IsStartCastEvent() && x.SrcMatchesAgent(ensolyss) && x.Time > start);
         if (causticExplosion != null && causticExplosion.Time <= start + 3000)
         {
             return GetGenericLogOffset(logData);
         }
         return start;
     }
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor ensolyss, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor ensolyss, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(5);
-        phases.AddRange(GetPhasesByInvul(log, Determined762, ensolyss, true, true, encounterPhase.Start, encounterPhase.End));
+        var phases = new List<SubPhasePhaseData>(5);
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, ensolyss, true, true, encounterPhase.Start, encounterPhase.End));
         for (int i = 0; i < phases.Count; i++)
         {
             PhaseData phase = phases[i];
@@ -190,7 +190,7 @@ internal class Ensolyss : Nightmare
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -311,7 +311,7 @@ internal class Ensolyss : Nightmare
                             lifespan = (cast.Time, ComputeEndCastTimeByBuffApplication(log, target, Stun, cast.Time, castDuration));
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + castDuration, out var facing))
                             {
-                                var rotation = new AngleConnector(facing);
+                                var rotation = new AngleConnector(facing.Value);
                                 var cone = (PieDecoration)new PieDecoration(530, 160, lifespan, Colors.LightOrange, 0.2, new AgentConnector(target)).UsingRotationConnector(rotation);
                                 replay.Decorations.AddWithGrowing(cone, growing);
                             }
@@ -329,8 +329,8 @@ internal class Ensolyss : Nightmare
                             if (target.TryGetCurrentFacingDirection(log, cast.Time, out var facingDirection, castDuration))
                             {
                                 // Calculated points
-                                var frontalPoint = new Vector3(facingDirection.X, facingDirection.Y, 0);
-                                var leftPoint = new Vector3(facingDirection.Y * -1, facingDirection.X, 0);
+                                var frontalPoint = new Vector3(facingDirection.Value.X, facingDirection.Value.Y, 0);
+                                var leftPoint = new Vector3(facingDirection.Value.Y * -1, facingDirection.Value.X, 0);
 
                                 AddTormentingBlastDecoration(replay, target, lifespan, frontalPoint, firstQuarterAoe, firstQuarterHit); // Frontal
                                 AddTormentingBlastDecoration(replay, target, lifespan, leftPoint, secondQuarterAoe, secondQuarterHit); // Left of frontal
@@ -374,8 +374,8 @@ internal class Ensolyss : Nightmare
                             if (target.TryGetCurrentFacingDirection(log, cast.Time, out var facingCausticExplosion, castDuration))
                             {
                                 // Calculated other quarters from initial point
-                                var frontalPoint = new Vector3(facingCausticExplosion.X, facingCausticExplosion.Y, 0);
-                                var leftPoint = new Vector3(facingCausticExplosion.Y * -1, facingCausticExplosion.X, 0);
+                                var frontalPoint = new Vector3(facingCausticExplosion.Value.X, facingCausticExplosion.Value.Y, 0);
+                                var leftPoint = new Vector3(facingCausticExplosion.Value.Y * -1, facingCausticExplosion.Value.X, 0);
                                 int initialDelay = 1500;
 
                                 // First quarters
@@ -401,7 +401,7 @@ internal class Ensolyss : Nightmare
                             castDuration = 1000;
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + castDuration, out var facingLunge))
                             {
-                                var rotation = new AngleConnector(facingLunge);
+                                var rotation = new AngleConnector(facingLunge.Value);
                                 lifespan = (cast.Time, cast.Time + castDuration);
                                 replay.Decorations.Add(new RectangleDecoration(1700, target.HitboxWidth, lifespan, Colors.LightOrange, 0.2, new AgentConnector(target).WithOffset(new Vector3(850, 0, 0), true)).UsingRotationConnector(rotation));
                             }
@@ -454,7 +454,7 @@ internal class Ensolyss : Nightmare
                             castDuration = 1000;
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + castDuration, out var facingLunge))
                             {
-                                var rotation = new AngleConnector(facingLunge);
+                                var rotation = new AngleConnector(facingLunge.Value);
                                 lifespan = (cast.Time, cast.Time + castDuration);
                                 replay.Decorations.Add(new RectangleDecoration(1700, target.HitboxWidth, lifespan, Colors.LightOrange, 0.2, new AgentConnector(target).WithOffset(new(850, 0, 0), true)).UsingRotationConnector(rotation));
                             }
@@ -479,7 +479,7 @@ internal class Ensolyss : Nightmare
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -487,7 +487,7 @@ internal class Ensolyss : Nightmare
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -545,7 +545,7 @@ internal class Ensolyss : Nightmare
                 lifespan = (effect.Time, effect.Time + effect.Duration);
                 uint radius = 0;
 
-                switch (effect.GUIDEvent.ContentGUID)
+                switch (effect.GUIDEvent.GUID)
                 {
                     case var small when small == EffectGUIDs.EnsolyssTailLashSmallCircleAoE:
                         lifespan = effect.ComputeLifespan(log, 1850);
@@ -615,9 +615,16 @@ internal class Ensolyss : Nightmare
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using GW2EIEvtcParser.EIData;
+﻿using System.Numerics;
+using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
@@ -16,7 +17,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Skorvald : ShatteredObservatory
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup(
+    internal readonly MechanicGroup Mechanics = new(
         [
             new PlayerDstHealthDamageHitMechanic([CombustionRush1, CombustionRush2, CombustionRush3], new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Magenta), "Charge", "Combustion Rush","Charge", 0),
             new PlayerDstHealthDamageHitMechanic([PunishingKickAnomaly, PunishingKickSkorvald], new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.Magenta), "Add Kick", "Punishing Kick (Single purple Line, Add)","Kick (Add)", 0),
@@ -25,8 +26,8 @@ internal class Skorvald : ShatteredObservatory
             new PlayerDstHealthDamageHitMechanic(FocusedAnger, new MechanicPlotlySetting(Symbols.TriangleDown,Colors.Orange), "Large Cone KB", "Focused Anger (Large Cone Overhead Crosshair Knockback)","Large Cone Knockback", 0),
             new MechanicGroup(
                 [
-                    new PlayerDstHealthDamageHitMechanic([HorizonStrikeSkorvald1, HorizonStrikeSkorvald2], new MechanicPlotlySetting(Symbols.Circle,Colors.LightOrange), "Horizon Strike", "Horizon Strike (turning pizza slices during Skorvald)","Horizon Strike (Skorvald)", 0), // 
-                    new PlayerDstHealthDamageHitMechanic(CrimsonDawn, new MechanicPlotlySetting(Symbols.Circle,Colors.DarkRed), "Horizon Strike End", "Crimson Dawn (almost Full platform attack after Horizon Strike)","Horizon Strike (last)", 0),
+                    new PlayerDstHealthDamageHitMechanic([HorizonStrikeSkorvald1, HorizonStrikeSkorvald2], new MechanicPlotlySetting(Symbols.Circle,Colors.LightOrange), "Horizon Strike.S", "Horizon Strike (turning pizza slices during Skorvald)","Horizon Strike (Skorvald)", 0), // 
+                    new PlayerDstHealthDamageHitMechanic(CrimsonDawn, new MechanicPlotlySetting(Symbols.Circle,Colors.DarkRed), "Horizon Strike.S End", "Crimson Dawn (almost Full platform attack after Horizon Strike)","Horizon Strike (last)", 0),
                 ]
             ),
             new PlayerDstHealthDamageHitMechanic(SolarCyclone, new MechanicPlotlySetting(Symbols.BowtieOpen,Colors.DarkMagenta), "Cyclone", "Solar Cyclone (Circling Knockback)","KB Cyclone", 0),
@@ -48,23 +49,23 @@ internal class Skorvald : ShatteredObservatory
     {
         var crMap = new CombatReplayMap(
                         (987, 1000),
-                        (-22267, 14955, -17227, 20735));
+                        (-22267, 15295, -17227, 20275));
         AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplaySkorvald, crMap);
         return crMap;
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor skorvald, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor skorvald, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(5);
-        phases.AddRange(GetPhasesByInvul(log, Determined762, skorvald, true, true, encounterPhase.Start, encounterPhase.End));
+        var phases = new List<SubPhasePhaseData>(5);
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, skorvald, true, true, encounterPhase.Start, encounterPhase.End));
         for (int i = 0; i < phases.Count; i++)
         {
             int phaseIndex = i + 1;
-            PhaseData phase = phases[i];
+            var phase = phases[i];
             phase.AddParentPhase(encounterPhase);
             if (phaseIndex % 2 == 0)
             {
@@ -115,36 +116,51 @@ internal class Skorvald : ShatteredObservatory
         }
         foreach (AgentItem fluxAnomaly in fluxAnomalies)
         {
-            if (combatData.Any(x => x.SkillID == Determined762 && x.IsBuffApply() && x.DstMatchesAgent(fluxAnomaly)))
+            if (combatData.Any(x => x.SkillID == Determined762 && x.IsBuffApplyEvent() && x.DstMatchesAgent(fluxAnomaly)))
             {
                 fluxAnomaly.OverrideID(TargetID.UnknownAnomaly, agentData);
             }
         }
     }
 
-    internal static void RenameAnomalies(IReadOnlyList<SingleActor> targets)
+    internal override Dictionary<TargetID, int> GetTargetsSortIDs()
     {
-        int[] nameCount = [0, 0, 0, 0];
+        return new Dictionary<TargetID, int>()
+        {
+            {TargetID.Skorvald, 0 },
+            {TargetID.FluxAnomaly1, 1 },
+            {TargetID.FluxAnomalyCM1, 1 },
+            {TargetID.FluxAnomaly2, 1 },
+            {TargetID.FluxAnomalyCM2, 1 },
+            {TargetID.FluxAnomaly3, 1 },
+            {TargetID.FluxAnomalyCM3, 1 },
+            {TargetID.FluxAnomaly4, 1 },
+            {TargetID.FluxAnomalyCM4, 1 },
+        };
+    }
+
+    static readonly List<(string, Vector2)> AnomalyLocations =
+    [
+        ("NW", new(-21216.896f, 16050.098f)), // NE
+        ("NE", new(-17991.695f, 16026.498f)), // NW
+        ("SW", new(-21327.797f, 19302.596f)), // SW
+        ("SE", new(-17718.096f, 19303.496f)), // SE
+
+    ];
+
+    internal static void RenameAnomalies(IReadOnlyList<SingleActor> targets, List<CombatItem> combatData)
+    {
+        var nameCount = new Dictionary<string, int> { { "NE", 1 }, { "NW", 1 }, { "SW", 1 }, { "SE", 1 } };
         foreach (SingleActor target in targets)
         {
-            switch (target.ID)
+            if (target.IsAnySpecies(FluxAnomalies))
             {
-                case (int)TargetID.FluxAnomaly1:
-                case (int)TargetID.FluxAnomalyCM1:
-                    target.OverrideName(target.Character + " " + (1 + 4 * nameCount[0]++));
-                    break;
-                case (int)TargetID.FluxAnomaly2:
-                case (int)TargetID.FluxAnomalyCM2:
-                    target.OverrideName(target.Character + " " + (2 + 4 * nameCount[1]++));
-                    break;
-                case (int)TargetID.FluxAnomaly3:
-                case (int)TargetID.FluxAnomalyCM3:
-                    target.OverrideName(target.Character + " " + (3 + 4 * nameCount[2]++));
-                    break;
-                case (int)TargetID.FluxAnomaly4:
-                case (int)TargetID.FluxAnomalyCM4:
-                    target.OverrideName(target.Character + " " + (4 + 4 * nameCount[3]++));
-                    break;
+                string? suffix = AddNameSuffixBasedOnInitialPosition(target, combatData, AnomalyLocations, 100);
+                if (suffix != null && nameCount.ContainsKey(suffix))
+                {
+                    // deduplicate name
+                    target.OverrideName(target.Character + " " + (nameCount[suffix]++));
+                }
             }
         }
     }
@@ -166,7 +182,7 @@ internal class Skorvald : ShatteredObservatory
             combatData.FirstOrDefault(x => x.IsStateChange == StateChange.FractalScale)!.OverrideSrcAgent(0);
             // Once we have the hp thresholds, simply apply -75, -50, -25 to the srcAgent of existing event
         }
-        RenameAnomalies(Targets);
+        RenameAnomalies(Targets, combatData);
     }
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
@@ -184,7 +200,7 @@ internal class Skorvald : ShatteredObservatory
         return GetGenericLogOffset(logData);
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Skorvald)) ?? throw new MissingKeyActorsException("Skorvald not found");
         if (combatData.GetGW2BuildEvent().Build >= GW2Builds.September2020SunquaPeakRelease)
@@ -201,19 +217,19 @@ internal class Skorvald : ShatteredObservatory
                 SolarBoltCM,
                 //SupernovaCM,
             };
-            if (combatData.GetSkills().Intersect(cmSkills).Any() ||
+            if (cmSkills.Any(x => combatData.GetAnimatedCastData(x).Count > 0 || combatData.GetDamageData(x).Count > 0) ||
                 agentData.GetNPCsByID(TargetID.FluxAnomalyCM1).Any(x => x.FirstAware >= target.FirstAware) ||
                 agentData.GetNPCsByID(TargetID.FluxAnomalyCM2).Any(x => x.FirstAware >= target.FirstAware) ||
                 agentData.GetNPCsByID(TargetID.FluxAnomalyCM3).Any(x => x.FirstAware >= target.FirstAware) ||
                 agentData.GetNPCsByID(TargetID.FluxAnomalyCM4).Any(x => x.FirstAware >= target.FirstAware))
             {
-                return LogData.LogMode.CM;
+                return LogData.Mode.CM;
             }
-            return LogData.LogMode.Normal;
+            return LogData.Mode.Normal;
         }
         else
         {
-            return (target.GetHealth(combatData) == 5551340) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+            return (target.GetHealth(combatData) == 5551340) ? LogData.Mode.CM : LogData.Mode.Normal;
         }
     }
 
@@ -237,11 +253,11 @@ internal class Skorvald : ShatteredObservatory
             TargetID.FluxAnomalyCM4,
         ];
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
         // reward or death worked
-        if (logData.Success)
+        if (successHandler.Success)
         {
             return;
         }
@@ -249,10 +265,10 @@ internal class Skorvald : ShatteredObservatory
         HealthDamageEvent? lastDamageTaken = combatData.GetDamageTakenData(skorvald.AgentItem).LastOrDefault(x => (x.HealthDamage > 0) && playerAgents.Any(x.From.IsMasterOrSelf));
         if (lastDamageTaken != null)
         {
-            var invul895Apply = combatData.GetBuffApplyDataByIDByDst(Determined895, skorvald.AgentItem).Where(x => x.Time > lastDamageTaken.Time - 500).LastOrDefault();
+            var invul895Apply = combatData.GetBuffApplyDataByIDByDst(Determined895, skorvald.AgentItem).LastOrDefault(x => x.Time > lastDamageTaken.Time - 500);
             if (invul895Apply != null)
             {
-                logData.SetSuccess(true, Math.Min(invul895Apply.Time, lastDamageTaken.Time));
+                successHandler.SetSuccess(true, Math.Min(invul895Apply.Time, lastDamageTaken.Time));
             }
         }
     }
@@ -267,7 +283,7 @@ internal class Skorvald : ShatteredObservatory
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -293,7 +309,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var facingHorizonStrike, castDuration))
                             {
-                                float degree = facingHorizonStrike.GetRoundedZRotationDeg();
+                                float degree = facingHorizonStrike.Value.GetRoundedZRotationDeg();
 
                                 // Horizon Strike starting at Skorvald's facing point
                                 if (cast.SkillID == HorizonStrikeSkorvald4)
@@ -333,7 +349,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var facingCrimsonDawn, castDuration))
                             {
-                                float degree = facingCrimsonDawn.GetRoundedZRotationDeg();
+                                float degree = facingCrimsonDawn.Value.GetRoundedZRotationDeg();
 
                                 if (cast.SkillID == CrimsonDawnSkorvaldCM2)
                                 {
@@ -358,7 +374,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var frontalPoint, castDuration))
                             {
-                                float rotation = frontalPoint.GetRoundedZRotationDeg();
+                                float rotation = frontalPoint.Value.GetRoundedZRotationDeg();
                                 // Frontal
                                 AddKickIndicatorDecoration(replay, target, lifespan, expectedEndCast, rotation);
                             }
@@ -394,7 +410,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var facingCranialCascade, castDuration))
                             {
-                                float rotation = facingCranialCascade.GetRoundedZRotationDeg();
+                                float rotation = facingCranialCascade.Value.GetRoundedZRotationDeg();
 
                                 // Frontal
                                 AddKickIndicatorDecoration(replay, target, lifespan, growing, rotation);
@@ -437,7 +453,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var frontalPoint, castDuration))
                             {
-                                float rotation = frontalPoint.GetRoundedZRotationDeg();
+                                float rotation = frontalPoint.Value.GetRoundedZRotationDeg();
                                 // Frontal
                                 AddKickIndicatorDecoration(replay, target, lifespan, growing, rotation);
                             }
@@ -451,7 +467,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var facingCranialCascade, castDuration))
                             {
-                                float rotation = facingCranialCascade.GetRoundedZRotationDeg();
+                                float rotation = facingCranialCascade.Value.GetRoundedZRotationDeg();
 
                                 // Left
                                 AddKickIndicatorDecoration(replay, target, lifespan, growing, rotation - angleCranialCascade);
@@ -478,7 +494,7 @@ internal class Skorvald : ShatteredObservatory
 
                             if (target.TryGetCurrentFacingDirection(log, cast.Time + 100, out var facingWaveOfMutilation, castDuration))
                             {
-                                float rotation = facingWaveOfMutilation.GetRoundedZRotationDeg();
+                                float rotation = facingWaveOfMutilation.Value.GetRoundedZRotationDeg();
 
                                 float startingDegree = rotation - angleWaveOfMutilation * 2;
                                 for (int i = 0; i < 5; i++)
@@ -502,7 +518,7 @@ internal class Skorvald : ShatteredObservatory
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -547,7 +563,7 @@ internal class Skorvald : ShatteredObservatory
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -558,7 +574,7 @@ internal class Skorvald : ShatteredObservatory
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
@@ -608,6 +624,13 @@ internal class Skorvald : ShatteredObservatory
             replay.Decorations.Add(new RectangleDecoration(300, target.HitboxWidth, (lifespan.end, lifespan.end + 300), Colors.Red, 0.2, positionConnector).UsingRotationConnector(rotationConnector));
             lifespan.end += 300;
             translation += 300;
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

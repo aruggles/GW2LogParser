@@ -13,7 +13,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class MursaatOverseer : BastionOfThePenitent
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic(JadeSoldierAura, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Red), "Jade", "Jade Soldier's Aura hit","Jade Aura", 0),
                 new PlayerDstHealthDamageHitMechanic(JadeSoldierExplosion, new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Jade Expl", "Jade Soldier's Death Explosion","Jade Explosion", 0),
@@ -24,11 +24,11 @@ internal class MursaatOverseer : BastionOfThePenitent
             new PlayerDstBuffApplyMechanic(Invulnerability757, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Teal), "Protect", "Protected by the Protect Shield","Protect Shield",0).UsingChecker((ba, log) => ba.AppliedDuration == 1000),
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(ProtectBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Blue), "Protect (SAK)", "Took protect","Protect (SAK)",0)
-                    .UsingTimeClamper((time, log) => Math.Max(log.LogData.LogStart, time)),
+                    .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)),
                 new PlayerDstBuffApplyMechanic(DispelBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Purple), "Dispel (SAK)", "Took dispel","Dispel (SAK)",0)
-                    .UsingTimeClamper((time, log) => Math.Max(log.LogData.LogStart, time)),
+                    .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)),
                 new PlayerDstBuffApplyMechanic(ClaimBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Yellow), "Claim (SAK)", "Took claim","Claim (SAK)",0)
-                    .UsingTimeClamper((time, log) => Math.Max(log.LogData.LogStart, time)),
+                    .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)),
             ]),
             new MechanicGroup([
                 new EnemyDstBuffApplyMechanic(MursaatOverseersShield, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Yellow), "Shield", "Jade Soldier Shield","Soldier Shield", 0),
@@ -71,13 +71,13 @@ internal class MursaatOverseer : BastionOfThePenitent
         ];
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor mursaatOverseer, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor mursaatOverseer, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(4);
+        var phases = new List<SubPhasePhaseData>(4);
         phases.AddRange(GetPhasesByHealthPercent(log, mursaatOverseer, new List<double> { 75, 50, 25, 0 }, encounterPhase.Start, encounterPhase.End));
         foreach (var phase in phases)
         {
@@ -103,7 +103,7 @@ internal class MursaatOverseer : BastionOfThePenitent
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -141,7 +141,7 @@ internal class MursaatOverseer : BastionOfThePenitent
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor player, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(player, log, replay);
         }
@@ -170,28 +170,35 @@ internal class MursaatOverseer : BastionOfThePenitent
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations (log, environmentDecorations);
         }
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
     }
-
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
     {
-        SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.MursaatOverseer)) ?? throw new MissingKeyActorsException("Mursaat Overseer not found");
-        return (target.GetHealth(combatData) > 25e6) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        List<CastEvent> res = base.SpecialCastEventProcess(combatData, skillData);
+        SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.MursaatOverseer)) ?? throw new MissingKeyActorsException("Mursaat Overseer not found");
+        return (target.GetHealth(combatData) > 25e6) ? LogData.Mode.CM : LogData.Mode.Normal;
+    }
+
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
+    {
+        List<CastEvent> res = base.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID);
 
         var claimApply = combatData.GetBuffApplyData(ClaimBuff).OfType<BuffApplyEvent>();
         var dispelApply = combatData.GetBuffApplyData(DispelBuff).OfType<BuffApplyEvent>();

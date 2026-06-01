@@ -17,7 +17,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Adina : TheKeyOfAhdashim
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(RadiantBlindness, new MechanicPlotlySetting(Symbols.Circle,Colors.Magenta), "R.Blind", "Unremovable blindness", "Radiant Blindness", 0),
                 new PlayerDstHealthDamageHitMechanic(DiamondPalisadeEye, new MechanicPlotlySetting(Symbols.StarDiamond,Colors.Pink), "Eye", "Looked at Eye", "Looked at Eye", 0),
@@ -50,7 +50,7 @@ internal class Adina : TheKeyOfAhdashim
     {
         return
         [
-            new DamageCastFinder(SeismicSuffering, SeismicSuffering), // Seismic Suffering
+            new DamageCastFinder(SeismicSuffering, SeismicSuffering),
         ];
     }
 
@@ -60,7 +60,7 @@ internal class Adina : TheKeyOfAhdashim
         // Handle potentially wrongly associated logs
         if (logStartNPCUpdate != null)
         {
-            if (agentData.GetNPCsByID(TargetID.Sabir).Any(sabir => combatData.Any(evt => evt.IsDamagingDamage() && evt.DstMatchesAgent(sabir) && agentData.GetAgent(evt.SrcAgent, evt.Time).GetFinalMaster().IsPlayer)))
+            if (agentData.GetNPCsByID(TargetID.Sabir).Any(sabir => combatData.Any(evt => evt.IsNonZeroDamageEvent() && evt.DstMatchesAgent(sabir) && agentData.GetAgent(evt.SrcAgent, evt.Time).GetFinalMaster().IsPlayer)))
             {
                 return new Sabir((int)TargetID.Sabir);
             }
@@ -68,13 +68,14 @@ internal class Adina : TheKeyOfAhdashim
         return base.AdjustLogic(agentData, combatData, parserSettings);
     }
 
-    // note: these are the attack target not gadget locations
+    // Gadget Locations
     static readonly List<(string, Vector2)> HandLocations =
     [
-        ("NW", new(14359.6f, -789.288f)), // erosion
-        ("NE", new(15502.5f, -841.978f)), // eruption
-        ("SW", new(14316.6f, -2080.17f)), // eruption
-        ("SE", new(15478.0f, -2156.67f)), // erosion
+        ("NW", new(14303.9f, -720.807f)), // erosion
+        ("NE", new(15570.5f, -693.111f)), // eruption
+        ("SW", new(14277.2f, -2202.52f)), // eruption
+        ("SE", new(15541.6f, -2226.77f)), // erosion
+
     ];
     protected override HashSet<int> IgnoreForAutoNumericalRenaming()
     {
@@ -115,7 +116,7 @@ internal class Adina : TheKeyOfAhdashim
 
             processedAttackTargets.Add(atAgent);
             AgentItem hand = attackTargetEvent.Src;
-            var copyEventsFrom = new List<AgentItem>() { hand };
+            hand.PositionAttachTo(atAgent);
             var attackOns = targetables.Where(x => x.Targetable);
             var attackOffs = targetables.Where(x => !x.Targetable);
             CombatItem? posEvt = combatData.FirstOrDefault(x => x.SrcMatchesAgent(hand) && x.IsStateChange == StateChange.Position);
@@ -202,7 +203,7 @@ internal class Adina : TheKeyOfAhdashim
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -274,7 +275,7 @@ internal class Adina : TheKeyOfAhdashim
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -350,7 +351,7 @@ internal class Adina : TheKeyOfAhdashim
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -425,16 +426,16 @@ internal class Adina : TheKeyOfAhdashim
 
     internal static readonly List<TargetID> HandIDs = [ TargetID.HandOfErosion, TargetID.HandOfEruption];
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor adina, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor adina, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
         var invuls = adina.GetBuffStatus(log, Determined762);
-        var phases = new List<PhaseData>(7);
+        var phases = new List<SubPhasePhaseData>(7);
         // Split phases
-        var splitPhases = new List<PhaseData>();
+        var splitPhases = new List<SubPhasePhaseData>();
         var splitPhaseEnds = new List<long>();
         for (int i = 0; i < invuls.Count; i++)
         {
@@ -449,7 +450,7 @@ internal class Adina : TheKeyOfAhdashim
             }
         }
         // Main phases
-        var mainPhases = new List<PhaseData>();
+        var mainPhases = new List<SubPhasePhaseData>();
         var pillarApplies = log.CombatData.GetBuffApplyDataByIDByDst(PillarPandemonium, adina.AgentItem).OfType<BuffApplyEvent>();
         Dictionary<long, List<BuffApplyEvent>> pillarAppliesGroupByTime = GroupByTime(pillarApplies);
         var mainPhaseEnds = new List<long>();
@@ -460,7 +461,7 @@ internal class Adina : TheKeyOfAhdashim
                 mainPhaseEnds.Add(pair.Key);
             }
         }
-        CastEvent? boulderBarrage = adina.GetCastEvents(log).FirstOrDefault(x => x.SkillID == BoulderBarrage && x.Time < encounterPhase.Start + 6000);
+        CastEvent? boulderBarrage = adina.GetAnimatedCastEvents(log).FirstOrDefault(x => x.SkillID == BoulderBarrage && x.Time < encounterPhase.Start + 6000);
         long start = boulderBarrage == null ? encounterPhase.Start : boulderBarrage.EndTime;
         if (mainPhaseEnds.Count != 0)
         {
@@ -532,7 +533,7 @@ internal class Adina : TheKeyOfAhdashim
         try
         {
             var allPhases = log.LogData.GetPhases(log);
-            var adinaPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var adinaPhases = log.LogData.GetEncounterPhases(log, LogID);
             var splitPhasesMap = new List<string>()
             {
                     CombatReplayAdinaSplitPhase1,
@@ -604,21 +605,21 @@ internal class Adina : TheKeyOfAhdashim
         return crMap;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Adina)) ?? throw new MissingKeyActorsException("Adina not found");
-        return (target.GetHealth(combatData) > 23e6) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        return (target.GetHealth(combatData) > 23e6) ? LogData.Mode.CM : LogData.Mode.Normal;
     }
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
         if (log.CombatData.GetBuffData(AchievementEligibilityConserveTheLand).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -626,6 +627,13 @@ internal class Adina : TheKeyOfAhdashim
                     instanceBuffs.MaybeAdd(GetOnPlayerCustomInstanceBuff(log, encounterPhase, AchievementEligibilityConserveTheLand));
                 }
             }
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

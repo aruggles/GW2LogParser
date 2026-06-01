@@ -10,6 +10,8 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
+using static GW2EIEvtcParser.AchievementEligibilityIDs;
+using GW2EIGW2API;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -20,9 +22,12 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         MechanicList.Add( new MechanicGroup([
         
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], new MechanicPlotlySetting(Symbols.TriangleDownOpen, Colors.DarkBlue), "DancStars.Achiv", "Achievement Eligibility: Danced with the Stars", "Danced with the Stars", 0)
-                    .UsingEnable(x => x.LogData.IsCM)
-                    .UsingAchievementEligibility(),
+                new MechanicGroup([
+                    new AchievementEligibilityMechanic(Ach_DancedStars, new MechanicPlotlySetting(Symbols.TriangleDownOpen, Colors.DarkBlue), "DancStars.Achiv.L", "Achievement Eligibility: Danced with the Stars Lost", "Danced with the Stars Lost", 0)
+                            .UsingChecker((evt, log) => evt.Lost),
+                    new AchievementEligibilityMechanic(Ach_DancedStars, new MechanicPlotlySetting(Symbols.TriangleDownOpen, Colors.Blue), "DancStars.Achiv.K", "Achievement Eligibility: Danced with the Stars Kept", "Danced with the Stars Kept", 0)
+                            .UsingChecker((evt, log) => !evt.Lost)
+                ]),
                 new PlayerDstHealthDamageHitMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], new MechanicPlotlySetting(Symbols.TriangleDown, Colors.DarkBlue), "Spin.Neb.H", "Spining Nebula Hit (Spin Projectiles)", "Spinning Nebula Hit", 0),
                 new EnemyCastStartMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], new MechanicPlotlySetting(Symbols.CircleCross, Colors.LightRed), "Spinning Nebula", "Spinning Nebula Cast", "Cast Spinning Nebula", 0),
             ]),
@@ -62,8 +67,7 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
                 new PlayerSrcHealthDamageHitMechanic(PurifyingLight, new MechanicPlotlySetting(Symbols.HourglassOpen, Colors.LightBlue), "PurLight.Soul.C", "Casted Purifying Light (Hit Soul Feast)", "Purifying Light Hit Soul Feast", 0)
                     .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.SoulFeast)),
                 new PlayerSrcHealthDamageHitMechanic(PurifyingLight, new MechanicPlotlySetting(Symbols.HourglassOpen, Colors.Blue), "PurLight.Dagda.C", "Casted Purifying Light (Hit Dagda)", "Purifying Light Hit Dagda", 0)
-                    .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.Dagda))
-                    .UsingEnable(x => x.LogData.IsCM),
+                    .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.Dagda)),
             ]),
             new PlayerDstEffectMechanic(EffectGUIDs.CosmicObservatoryDemonicFever, new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "DemFev.T", "Targeted by Demonic Fever (Orange Spread AoEs)", "Demonic Fever Target", 0),
         ])
@@ -85,6 +89,10 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
         (long start, long end) lifespan;
         var casts = target.GetAnimatedCastEvents(log).ToList();
 
@@ -167,7 +175,10 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        base.ComputePlayerCombatReplayActors(p, log, replay);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
 
         // Lost Control
         var lostControls = p.GetBuffStatus(log, CosmicObservatoryLostControlBuff).Where(x => x.Value > 0);
@@ -242,7 +253,10 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
 
         // Demonic Blast - 8 Slices
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.CosmicObservatoryDemonicBlastSliceIndicator, out var demonicBlasts))
@@ -324,9 +338,9 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         environmentDecorations.AddNonHomingMissiles(log, chargingConstellation, Colors.Blue, 0.4, 30);
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
         // Special check since CM release, normal mode broke too, but we always trust reward events
         if (combatData.GetGW2BuildEvent().Build >= GW2Builds.DagdaNMHPChangedAndCMRelease && combatData.GetRewardEvents().FirstOrDefault(x => x.RewardType == RewardTypes.PostEoDRaidEncounterReward && x.Time > logData.LogStart) == null)
         {
@@ -337,14 +351,7 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
                 HealthDamageEvent? lastDamageEvent = combatData.GetDamageTakenData(dagda.AgentItem).LastOrDefault(x => x.HealthDamage > 0 && x.Time <= hpUpdate.Time + ServerDelayConstant);
                 if (lastDamageEvent != null)
                 {
-                    if (logData.Success)
-                    {
-                        logData.SetSuccess(true, Math.Min(lastDamageEvent.Time, logData.LogEnd));
-                    }
-                    else
-                    {
-                        logData.SetSuccess(true, lastDamageEvent.Time);
-                    }
+                    successHandler.SetSuccess(true, successHandler.Success ? Math.Min(lastDamageEvent.Time, logData.LogEnd) : lastDamageEvent.Time);
                 }
             }
         }
@@ -475,12 +482,7 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
             }
         }
         SingleActor dagda = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Dagda)) ?? throw new MissingKeyActorsException("Dagda not found");
-        // Security check to stop dagda from going back to 100%
-        var dagdaHPUpdates = combatData.Where(x => x.SrcMatchesAgent(dagda.AgentItem) && x.IsStateChange == StateChange.HealthUpdate).ToList();
-        if (dagdaHPUpdates.Count > 1 && HealthUpdateEvent.GetHealthPercent(dagdaHPUpdates.LastOrDefault()!) == 100)
-        {
-            dagdaHPUpdates.Last().OverrideDstAgent(dagdaHPUpdates[^2].DstAgent);
-        }
+        SanitizeLastHealthUpdateEvents(dagda, combatData);
     }
 
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()
@@ -513,25 +515,38 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         ];
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (combatData.GetGW2BuildEvent().Build < GW2Builds.DagdaNMHPChangedAndCMRelease)
         {
-            return LogData.LogMode.Normal;
+            return LogData.Mode.Normal;
         }
         SingleActor dagda = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Dagda)) ?? throw new MissingKeyActorsException("Dagda not found");
-        return (dagda.GetHealth(combatData) > 56e6) ? LogData.LogMode.CM : LogData.LogMode.Normal;
+        if (dagda.GetHealth(combatData) > 50e6)
+        {
+            // Demonic Aura removed but Timer never applied, not a true CM
+            if (combatData.GetBuffRemoveAllDataByIDByDst(DagdaDemonicAura, dagda.AgentItem).Count > 0 
+                && combatData.GetBuffApplyDataByIDByDst(DagdaDemonicAuraTimer, dagda.AgentItem).Count == 0)
+            {
+                return LogData.Mode.Normal;
+            }
+            return LogData.Mode.CM;
+        }
+        return LogData.Mode.Normal;
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Cosmic Observatory";
     }
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        base.SetInstanceBuffs(log, instanceBuffs);
-        var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
+        var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
         foreach (var encounterPhase in encounterPhases)
         {
             if (encounterPhase.Success && encounterPhase.IsCM)
@@ -546,12 +561,9 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
                     {
                         playerCounter++;
                         IReadOnlyDictionary<long, BuffGraph> bgms = player.GetBuffGraphs(log);
-                        if (bgms != null && bgms.TryGetValue(AchievementEligibilityPrecisionAnxiety, out var bgm))
+                        if (player.HasBuff(log, AchievementEligibilityPrecisionAnxiety, encounterPhase.End - ServerDelayConstant))
                         {
-                            if (bgm.Values.Any(x => x.Value == 1))
-                            {
-                                buffCounter++;
-                            }
+                            buffCounter++;
                         }
                         IReadOnlyList<DeadEvent> deaths = log.CombatData.GetDeadEvents(player.AgentItem);
                         if (deaths.Count == 0)
@@ -560,11 +572,37 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
                         }
                     }
                 }
-                if (buffCounter == playerCounter && aliveCounter == playerCounter)
+                if (playerCounter == 10 && buffCounter == playerCounter && aliveCounter == playerCounter)
                 {
-                    instanceBuffs.MaybeAdd(GetOnPlayerCustomInstanceBuff(log, encounterPhase, AchievementEligibilityPrecisionAnxiety));
+                    instanceBuffs.Add(new(log.Buffs.BuffsByIDs[AchievementEligibilityPrecisionAnxiety], 1, encounterPhase));
                 }
             }
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+        {
+            var dancedStarsEligibilityEvents = new List<AchievementEligibilityEvent>();
+            var coCMPhases = log.LogData.GetEncounterPhases(log, LogID).Where(x => x.IsCM && x.IntersectsWindow(p.FirstAware, p.LastAware)).ToHashSet();
+            List<HealthDamageEvent> damageData = [
+                ..log.CombatData.GetDamageData(SpinningNebulaCentral),
+                ..log.CombatData.GetDamageData(SpinningNebulaWithTeleport)
+            ];
+            damageData.SortByTime();
+            foreach (var evt in damageData)
+            {
+                if (evt.HasHit && evt.To.Is(p.AgentItem) && p.InAwareTimes(evt.Time))
+                {
+                    InsertAchievementEligibityEventAndRemovePhase(coCMPhases, dancedStarsEligibilityEvents, evt.Time, Ach_DancedStars, p);
+                }
+            }
+            AddSuccessBasedAchievementEligibityEvents(coCMPhases, dancedStarsEligibilityEvents, Ach_DancedStars, p);
+            achievementEligibilityEvents.AddRange(dancedStarsEligibilityEvents);
         }
     }
 }

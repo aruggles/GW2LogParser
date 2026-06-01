@@ -64,6 +64,14 @@
                         Max <img :src="UIIcons.Damage" alt="Damage"
                         class="icon">
                     </th>
+                    <th class="damage-dist-cell" v-if="wvw && actor !== null" :class="getHeaderClass('Data', 22)" @click="sortBy('Data', 22, x => getDownContribution(x))"
+                        data-original-title="Down Contribution">
+                         <img :src="UIIcons.Damage" alt="Damage"
+                            class="icon">
+                        /
+                        <img :src="UIIcons.DownedEnemy" alt="Down"
+                            class="icon">
+                    </th> 
                     <th v-if="hasBreakbarDamage" class="damage-dist-cell"  
                         :class="getHeaderClass('Data', 6)" @click="sortBy('Data', 6, x => getBreakbarDamage(x))"    
                         data-original-title="% Breakbar Damage">
@@ -111,7 +119,7 @@
                     </th>        
                     <th class="damage-dist-cell" v-if="actor !== null" 
                         :class="getHeaderClass('Data', 19)" @click="sortBy('Data', 19, x => round3(0.001 * getCastDurationNoInterrupt(x) / getCastNoInterrupt(x) ))" 
-                        data-original-title="Average Casting Time (No interrupted skills) <br>Min and Max on hover"">
+                        data-original-title="Average Casting Time (No interrupted skills) <br>Min and Max on hover">
                         Avg <img :src="UIIcons.Activation" alt="Activation Time"
                         class="icon">
                     </th>
@@ -141,16 +149,16 @@
                     </th>
                     <th class="damage-dist-cell" v-if="actor !== null" 
                         :class="getHeaderClass('Data', 16)" @click="sortBy('Data', 16, x => getCastTimeWasted(x))"
-                        data-original-title="Time wasted interupting skill casts">
+                        data-original-title="Time wasted interrupting skill casts">
                         <img :src="UIIcons.TimeWasted" alt="Wasted"
                             class="icon icon-hover">
                     </th>
                     <th class="damage-dist-cell" v-if="actor !== null" 
                         :class="getHeaderClass('Data', 17)" @click="sortBy('Data', 17, x => getCastTimeSaved(x))"
-                        data-original-title="Time saved(in seconds) interupting skill casts">
+                        data-original-title="Time saved(in seconds) interrupting skill casts">
                         <img :src="UIIcons.TimeSaved" alt="Saved"
                             class="icon icon-hover">
-                    </th>
+                    </th> 
                 </tr>
             </thead>
             <tbody>
@@ -179,6 +187,9 @@
                     </td>
                     <td :class="getBodyClass('Data', 5)">
                         {{ getMaxDamage(row) }}
+                    </td>
+                    <td v-if="wvw && actor !== null" :class="getBodyClass('Data', 22)">
+                        {{getDownContribution(row) < 0 ? 'N/A' : getDownContribution(row)}}
                     </td>
                     <td :class="getBodyClass('Data', 6)" v-if="hasBreakbarDamage">
                         {{ round3(100*getBreakbarDamage(row)/dmgdist.contributedBreakbarDamage) }}%
@@ -252,12 +263,17 @@
                     <td></td>
                     <td></td>
                     <td></td>   
+                    <td v-if="wvw && actor !== null">
+                        {{dmgdist.contributedDownContribution >= 0 ? dmgdist.contributedDownContribution : ''}}
+                    </td>
                     <td v-if="hasBreakbarDamage"></td>
                     <td v-if="hasBreakbarDamage" :data-original-title="Math.round(dmgdist.contributedBreakbarDamage/phase.durationS) +' bps'">
                         {{dmgdist.contributedBreakbarDamage}}
                     </td>
                     <td v-if="actor !== null"></td>           
-                    <td></td>
+                    <td :data-original-title="totalHits.notConnected + ' hit(s) not connected'">
+                        {{ totalHits.connected }}
+                    </td>
                     <td v-if="actor !== null"></td>
                     <td v-if="actor !== null">
                         {{round2(dmgdist.contributedDamage/(0.001 * dmgdist.totalCasting))}}
@@ -281,6 +297,7 @@
         template: `${template}`,
         data: function () {
             return {
+                wvw: logData.wvw,
                 sortdata: {
                     order: "desc",
                     index: 1,
@@ -289,7 +306,7 @@
                 }
             };
         },
-        mixins: [numberComponent, sortedTableComponent, sortedDistributionComponent],
+        mixins: [numberComponent, sortedTableComponent, sortedDistributionComponent, UIIconsComponent],
         methods: {      
             getSkillID: function (data) {
                 return data[1];
@@ -362,6 +379,9 @@
             },
             getCastTimeSaved: function(data) {
                 return data[11];
+            },
+            getDownContribution: function(data) {
+                return data[22];
             }
         },
         computed: {
@@ -390,8 +410,21 @@
             hasBreakbarDamage: function() {
                 return logData.hasBreakbarDamage;
             },
-            UIIcons: function() {
-                return UIIcons;
+            totalHits() {
+                var totals = {
+                    connected: 0,
+                    notConnected: 0
+                };
+
+                for (const row of this.dmgdist.distribution) {
+                    var connected = this.getConnectedHits(row);
+                    var all = this.getAllHits(row);
+
+                    totals.connected += connected;
+                    totals.notConnected += (all - connected);
+                }
+
+                return totals;
             }
         }
     });

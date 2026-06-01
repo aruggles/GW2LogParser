@@ -6,7 +6,7 @@ namespace GW2EIEvtcParser.EIData;
 internal class PlayerSrcEffectMechanic : SrcEffectMechanic
 {
 
-    public PlayerSrcEffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([effect], plotlySetting, shortName, description, fullName, internalCoolDown)
+    public PlayerSrcEffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([ effect ], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
     }
 

@@ -12,7 +12,7 @@ namespace GW2EIJSON;
     ]
 )]
 [JsonSerializable(typeof(JsonLog))]
-public partial class JsonLogSerializerContext : JsonSerializerContext { }
+public partial class JsonLogSerializerContext : JsonSerializerContext {  }
 
 /// <summary>
 /// The root of the JSON.
@@ -208,6 +208,12 @@ public class JsonLog
         public bool Incoming;
     }
 
+    public class TeamDesc
+    {
+        // Stable ID of the corresponding team ID in HEX format
+        public string? GUID;
+    }
+
     /// <summary>
     /// The used EI version.
     /// </summary>
@@ -285,6 +291,14 @@ public class JsonLog
     /// Valued at 0 if missing.
     /// </summary>
     public int FractalScale;
+
+    /// <summary>
+    /// Region on which the PoV is located. \n
+    /// Unknown if missing. \n
+    /// China is not currently tested.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Region;
 
     /// <summary>
     /// ID of the language
@@ -448,6 +462,11 @@ public class JsonLog
     /// </summary>
     /// <seealso cref="DamageModDesc"/>
     public IReadOnlyDictionary<string, DamageModDesc>? DamageModMap;
+    /// <summary>
+    /// Dictionary of team id description, the key is in "'t' + id" format
+    /// </summary>
+    /// <seealso cref="TeamDesc"/>
+    public IReadOnlyDictionary<string, TeamDesc>? TeamMap;
 
     /// <summary>
     /// Dictionary of personal buffs. The key is the profession, the value is a list of buff ids
@@ -467,7 +486,8 @@ public class JsonLog
     /// <seealso cref="BuffMap"/>
     public IReadOnlyList<long>? PresentFractalInstabilities;
     /// <summary>
-    /// List of present instance buffs, values are arrays of 3 elements, value[0] is buff id, value[1] is number of stacks, value[2] the index in <see cref="JsonLog.Phases"/> where the buffs are relevant. \n
+    /// List of present instance buffs, values are arrays of 3 elements, value[0] is buff id, value[1] is number of stacks, \n
+    /// value[2] the index in <see cref="JsonLog.Phases"/> where the buffs are relevant, value[3], if present, indicates remaining duration (Only relevant for down and out achievements). \n
     /// value[2] is mainly relevant in instance logs, it can either point towards a specific Encounter phase for encounter specific buffs or to the Instance phase for buffs covering the whole instance, for example fractal instabilities. \n
     /// In boss logs, value[2] will always be the "Full Fight" phase.
     /// </summary>

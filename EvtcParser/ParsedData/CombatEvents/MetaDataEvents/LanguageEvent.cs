@@ -1,17 +1,9 @@
-﻿namespace GW2EIEvtcParser.ParsedData;
+﻿using static GW2EIEvtcParser.ArcDPSEnums;
+
+namespace GW2EIEvtcParser.ParsedData;
 
 public class LanguageEvent : MetaDataEvent
 {
-    public enum LanguageEnum : byte
-    {
-        English = 0,
-        Missing = 1,
-        French = 2,
-        German = 3,
-        Spanish = 4,
-        Chinese = 5,
-        Unknown = 6
-    }
 
     public readonly LanguageEnum Language;
 
@@ -22,8 +14,7 @@ public class LanguageEvent : MetaDataEvent
 
     internal static LanguageEnum GetLanguage(CombatItem evtcItem)
     {
-        return evtcItem.SrcAgent < (byte)LanguageEnum.Unknown ? (LanguageEnum)evtcItem.SrcAgent
-            : LanguageEnum.Unknown;
+        return ArcDPSEnums.GetLanguage((byte)evtcItem.SrcAgent);
     }
 
     public override string ToString()

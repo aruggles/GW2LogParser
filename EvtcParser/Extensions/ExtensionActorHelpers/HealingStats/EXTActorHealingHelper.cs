@@ -10,13 +10,14 @@ public abstract class EXTActorHealingHelper
     protected Dictionary<AgentItem, List<EXTHealingEvent>>? HealEventsByDst;
     protected Dictionary<AgentItem, List<EXTHealingEvent>>? HealReceivedEventsBySrc;
 
-    //TODO(Rennorb) @perf
+    //TODO_PERF(Rennorb)
     private readonly Dictionary<EXTHealingType, CachingCollectionWithTarget<List<EXTHealingEvent>>> _typedHealEvents = [];
     private readonly Dictionary<EXTHealingType, CachingCollectionWithTarget<List<EXTHealingEvent>>> _typedIncomingHealEvents = [];
 
     internal EXTActorHealingHelper()
     {
     }
+    protected abstract AgentItem GetAgentItemForCachingSrc();
 
     #region INITIALIZERS
     [MemberNotNull(nameof(HealEventsByDst))]
@@ -30,7 +31,7 @@ public abstract class EXTActorHealingHelper
     public IReadOnlyList<EXTHealingEvent> GetOutgoingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitHealEvents(log);
-        HealEventByDstCache ??= new(log);
+        HealEventByDstCache ??= new(GetAgentItemForCachingSrc(), log);
         if (!HealEventByDstCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -63,7 +64,7 @@ public abstract class EXTActorHealingHelper
     public IReadOnlyList<EXTHealingEvent> GetIncomingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
         InitIncomingHealEvents(log);
-        HealReceivedEventBySrcCache ??= new(log);
+        HealReceivedEventBySrcCache ??= new(GetAgentItemForCachingSrc(), log);
         if (!HealReceivedEventBySrcCache.TryGetValue(start, end, target, out var list))
         {
             if (target != null)
@@ -116,7 +117,7 @@ public abstract class EXTActorHealingHelper
     {
         if (!_typedHealEvents.TryGetValue(healingType, out var healEventsPerPhasePerTarget))
         {
-            healEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<EXTHealingEvent>>(log);
+            healEventsPerPhasePerTarget = new (GetAgentItemForCachingSrc(), log);
             _typedHealEvents[healingType] = healEventsPerPhasePerTarget;
         }
         if (!healEventsPerPhasePerTarget.TryGetValue(start, end, target, out var dls))
@@ -132,7 +133,7 @@ public abstract class EXTActorHealingHelper
     {
         if (!_typedIncomingHealEvents.TryGetValue(healingType, out var healEventsPerPhasePerTarget))
         {
-            healEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<EXTHealingEvent>>(log);
+            healEventsPerPhasePerTarget = new (GetAgentItemForCachingSrc(), log);
             _typedIncomingHealEvents[healingType] = healEventsPerPhasePerTarget;
         }
         if (!healEventsPerPhasePerTarget.TryGetValue(start, end, target, out var dls))

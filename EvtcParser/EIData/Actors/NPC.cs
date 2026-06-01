@@ -4,7 +4,9 @@ namespace GW2EIEvtcParser.EIData;
 
 public class NPC : SingleActor
 {
-    private IReadOnlyList<(long hpValue, double percent)>? HpDistribution;
+    private IReadOnlyList<(int hpValue, double percent)>? HpDistribution;
+
+    private IReadOnlyList<(double maxPercent, double minPercent, int hpValue, bool active)>? HpBars;
     // Constructors
     internal NPC(AgentItem agent) : base(agent)
     {
@@ -18,7 +20,7 @@ public class NPC : SingleActor
     {
         Character = name;
     }
-    internal override void SetManualHealth(int health, IReadOnlyList<(long hpValue, double percent)>? hpDistribution = null)
+    internal override void SetManualHealth(int health, IReadOnlyList<(int hpValue, double percent)>? hpDistribution = null)
     {
         Health = health;
         HpDistribution = hpDistribution;
@@ -28,9 +30,19 @@ public class NPC : SingleActor
         }
     }
 
-    public override IReadOnlyList<(long hpValue, double percent)>? GetHealthDistribution()
+    public override IReadOnlyList<(int hpValue, double percent)>? GetHealthDistribution()
     {
         return HpDistribution;
+    }
+
+    internal override void SetHealthBars(IReadOnlyList<(double maxPercent, double minPercent, int hpValue, bool active)> hpBars)
+    {
+        HpBars = hpBars;
+    }
+
+    public override IReadOnlyList<(double maxPercent, double minPercent, int hpValue, bool active)>? GetHealthBars()
+    {
+        return HpBars;
     }
 
     public override int GetCurrentHealth(ParsedEvtcLog log, double currentHealthPercent)
@@ -65,7 +77,7 @@ public class NPC : SingleActor
     }
     public override int GetCurrentBarrier(ParsedEvtcLog log, double currentBarrierPercent, long time)
     {
-        MaxHealthUpdateEvent? currentMaxHealth = log.CombatData.GetMaxHealthUpdateEvents(EnglobingAgentItem).LastOrDefault(x => x.Time <= time);
+        MaxHealthUpdateEvent? currentMaxHealth = log.CombatData.GetMaxHealthUpdateEventsBySrc(EnglobingAgentItem).LastOrDefault(x => x.Time <= time);
         if (currentMaxHealth == null || currentBarrierPercent < 0)
         {
             return -1;
@@ -103,6 +115,6 @@ public class NPC : SingleActor
 
     public override SingleActorCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
     {
-        return new NPCCombatReplayDescription(this, log, map, InitCombatReplay(log));
+        return new NPCCombatReplayDescription(this, log, map, GetCombatReplay(log));
     }
 }

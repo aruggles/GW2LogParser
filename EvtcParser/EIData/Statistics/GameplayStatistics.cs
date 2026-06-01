@@ -51,7 +51,7 @@ public class GameplayStatistics
                         if (curReferencePoint.Time < curPosition.Value.Time)
                         {
                             continue;
-                        }
+                        } 
                         else if (curReferencePoint.Time == curPosition.Value.Time)
                         {
                             distances.Add((curPosition.Value.XYZ - curReferencePoint.XYZ).XY().Length());

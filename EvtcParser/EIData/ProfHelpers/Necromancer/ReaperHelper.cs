@@ -22,14 +22,14 @@ internal static class ReaperHelper
             .UsingDisableWithEffectData(),
         new EffectCastFinder(YouAreAllWeaklings, EffectGUIDs.ReaperYouAreAllWeaklings1)
             .UsingSrcSpecChecker(Spec.Reaper)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ReaperYouAreAllWeaklings2)
-            .UsingSecondaryEffectChecker(EffectGUIDs.ReaperYouAreAllWeaklings3),
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ReaperYouAreAllWeaklings2)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.ReaperYouAreAllWeaklings3),
         new DamageCastFinder(Suffer, Suffer)
             .UsingDisableWithEffectData(),
         new EffectCastFinder(Suffer, EffectGUIDs.ReaperSuffer)
             .UsingSrcSpecChecker(Spec.Reaper),
         new MinionSpawnCastFinder(Rise, (int)MinionID.ShamblingHorror)
-            .UsingChecker((evt, combatData, agentData, skillData) => evt.Src.GetFinalMaster().Spec == Spec.Reaper),
+            .UsingChecker((evt, combatData, agentData, skillData) => evt.Src.GetFinalMaster().GetSpecAtTime(evt.Time) == Spec.Reaper),
         new DamageCastFinder(ChillingNova, ChillingNova)
             .UsingOrigin(EIData.InstantCastFinder.InstantCastOrigin.Trait),
     ];

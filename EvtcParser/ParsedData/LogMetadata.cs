@@ -1,5 +1,6 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
+using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.ParsedData;
 
@@ -13,7 +14,7 @@ public class LogMetadata
     public readonly int EvtcBuild;
     public readonly int EvtcRevision;
     public readonly string Language = "N/A";
-    public readonly LanguageEvent.LanguageEnum LanguageID;
+    public readonly LanguageEnum LanguageID;
     public ulong GW2Build { get; private set; } = 0;
     public AgentItem? PoV { get; private set; } = null;
     public string PoVAccount { get; private set; } = "N/A";

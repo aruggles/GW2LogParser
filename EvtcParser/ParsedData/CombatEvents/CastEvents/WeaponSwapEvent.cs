@@ -7,6 +7,8 @@ public class WeaponSwapEvent : CastEvent
     public int SwappedTo { get; protected set; }
     public int SwappedFrom { get; protected set; }
 
+    public bool IsSpecialBundleSwap { get; protected set; }
+
     internal WeaponSwapEvent(CombatItem evtcItem, AgentData agentData, SkillData skillData, EvtcVersionEvent evtcVersion) : base(evtcItem, agentData, skillData)
     {
         Status = AnimationStatus.Instant;
@@ -19,5 +21,14 @@ public class WeaponSwapEvent : CastEvent
         Skill = skillData.Get(SkillIDs.WeaponSwap);
         ActualDuration = 0;
         ExpectedDuration = 0;
+    }
+    public override bool IgnoreOnRotationRender()
+    {
+        return IsSpecialBundleSwap;
+    }
+
+    internal void FlagAsSpecialBundleSwap()
+    {
+        IsSpecialBundleSwap = true;
     }
 }

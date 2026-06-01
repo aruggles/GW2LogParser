@@ -1,5 +1,6 @@
 ﻿using GW2EIEvtcParser.LogLogic;
 using GW2EIEvtcParser.ParsedData;
+using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -13,7 +14,7 @@ public class DamageModifiersContainer
 
     internal DamageModifiersContainer(CombatData combatData, LogLogic.LogLogic.ParseModeEnum parseMode, LogLogic.LogLogic.SkillModeEnum skillMode, EvtcParserSettings parserSettings)
     {
-        IEnumerable<IReadOnlyList<DamageModifierDescriptor>> allOutgoingDamageModifiers =
+        IEnumerable<IReadOnlyList<DamageModifierDescriptor>> allOutgoingDamageModifiers = 
         [
             ItemDamageModifiers.OutgoingDamageModifiers,
             EncounterDamageModifiers.OutgoingDamageModifiers,
@@ -79,7 +80,40 @@ public class DamageModifiersContainer
         {
             currentOutgoingDamageMods.AddRange(modifierDescriptor.Where(x => x.Available(combatData) && x.Keep(parseMode, skillMode, parserSettings)).Select(x => new OutgoingDamageModifier(x)));
         }
-        OutgoingDamageModifiersPerSource = currentOutgoingDamageMods.GroupBy(x => x.Src).ToDictionary(x => x.Key, x => (IReadOnlyList<OutgoingDamageModifier>)x.ToList());
+        var outDamageModsPerSource = new Dictionary<ParserHelper.Source, List<OutgoingDamageModifier>>();
+        foreach (var outDamageMod in currentOutgoingDamageMods)
+        {
+            if (outDamageMod.DmgSrc == DamageModifiersUtils.DamageSource.Incoming)
+            {
+                throw new InvalidDataException("Outgoing damage mods must not have DmgSrc as Incoming");
+            }
+            if (outDamageMod.SpecSpecificShared)
+            {
+                if (outDamageModsPerSource.TryGetValue(Source.Common, out var list))
+                {
+                    list.Add(outDamageMod);
+                }
+                else
+                {
+                    outDamageModsPerSource[Source.Common] = [outDamageMod];
+                }
+            } 
+            else
+            {
+                foreach (var source in outDamageMod.Srcs)
+                {
+                    if (outDamageModsPerSource.TryGetValue(source, out var list))
+                    {
+                        list.Add(outDamageMod);
+                    }
+                    else
+                    {
+                        outDamageModsPerSource[source] = [outDamageMod];
+                    }
+                }
+            }
+        }
+        OutgoingDamageModifiersPerSource = outDamageModsPerSource.ToDictionary(x => x.Key, x => (IReadOnlyList<OutgoingDamageModifier>)x.Value);
         OutgoingDamageModifiersByID = currentOutgoingDamageMods.GroupBy(x => x.ID).ToDictionary(x => x.Key, x =>
         {
             var e = x.GetEnumerator(); e.MoveNext();
@@ -154,7 +188,40 @@ public class DamageModifiersContainer
         {
             currentIncomingDamageMods.AddRange(boons.Where(x => x.Available(combatData) && x.Keep(parseMode, skillMode, parserSettings)).Select(x => new IncomingDamageModifier(x)));
         }
-        IncomingDamageModifiersPerSource = currentIncomingDamageMods.GroupBy(x => x.Src).ToDictionary(x => x.Key, x => (IReadOnlyList<IncomingDamageModifier>)x.ToList());
+        var incDamageModsPerSource = new Dictionary<ParserHelper.Source, List<IncomingDamageModifier>>();
+        foreach (var incDamageMod in currentIncomingDamageMods)
+        {
+            if (incDamageMod.DmgSrc != DamageModifiersUtils.DamageSource.Incoming)
+            {
+                throw new InvalidDataException("Incoming damage mods must have DmgSrc as Incoming");
+            }
+            if (incDamageMod.SpecSpecificShared)
+            {
+                if (incDamageModsPerSource.TryGetValue(Source.Common, out var list))
+                {
+                    list.Add(incDamageMod);
+                }
+                else
+                {
+                    incDamageModsPerSource[Source.Common] = [incDamageMod];
+                }
+            }
+            else
+            {
+                foreach (var source in incDamageMod.Srcs)
+                {
+                    if (incDamageModsPerSource.TryGetValue(source, out var list))
+                    {
+                        list.Add(incDamageMod);
+                    }
+                    else
+                    {
+                        incDamageModsPerSource[source] = [incDamageMod];
+                    }
+                }
+            }
+        }
+        IncomingDamageModifiersPerSource = incDamageModsPerSource.ToDictionary(x => x.Key, x => (IReadOnlyList<IncomingDamageModifier>)x.Value);
         IncomingDamageModifiersByID = currentIncomingDamageMods.GroupBy(x => x.ID).ToDictionary(x => x.Key, x =>
         {
             var e = x.GetEnumerator(); e.MoveNext();
@@ -164,10 +231,10 @@ public class DamageModifiersContainer
         });
     }
 
-    public List<OutgoingDamageModifier> GetOutgoingModifiersPerSpec(ParserHelper.Spec spec)
+    public List<OutgoingDamageModifier> GetPersonalOutgoingModifiersPerSpec(ParserHelper.Spec spec)
     {
         var srcs = ParserHelper.SpecToSources(spec);
-        var res = new List<OutgoingDamageModifier>(srcs.Count); //TODO(Rennorb) @perf: find average complexity
+        var res = new List<OutgoingDamageModifier>(srcs.Count); //TODO_PERF(Rennorb) @find average complexity
         foreach (ParserHelper.Source src in srcs)
         {
             if (OutgoingDamageModifiersPerSource.TryGetValue(src, out var damageMods))
@@ -178,10 +245,10 @@ public class DamageModifiersContainer
         return res;
     }
 
-    public List<IncomingDamageModifier> GetIncomingModifiersPerSpec(ParserHelper.Spec spec)
+    public List<IncomingDamageModifier> GetPersonalIncomingModifiersPerSpec(ParserHelper.Spec spec)
     {
         var srcs = ParserHelper.SpecToSources(spec);
-        var res = new List<IncomingDamageModifier>(srcs.Count); //TODO(Rennorb) @perf: find average complexity
+        var res = new List<IncomingDamageModifier>(srcs.Count); //TODO_PERF(Rennorb) @find average complexity
         foreach (ParserHelper.Source src in srcs)
         {
             if (IncomingDamageModifiersPerSource.TryGetValue(src, out var damageMods))

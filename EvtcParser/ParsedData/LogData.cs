@@ -2,7 +2,9 @@
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.LogLogic;
 using GW2EIEvtcParser.LogLogic.OpenWorld;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
+using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParsedData.AgentItem;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
@@ -13,10 +15,15 @@ public class LogData
 {
     // Fields
     private List<PhaseData> _phases = [];
+    private Dictionary<long, IReadOnlyList<EncounterPhaseData>> _encounterPhasesByID = [];
+    private List<EncounterPhaseData> _encounterPhases = [];
     public readonly int TriggerID;
     public readonly LogLogic.LogLogic Logic;
 
     public bool IsInstance => Logic.IsInstance;
+    public bool AllowDuplicateMechanicPlotlyConfigs => Logic.IsInstance;
+
+    internal bool IgnoreBaseCallsForCRAndInstanceBuffs => Logic.IsInstance;
     public long LogEnd { get; private set; } = long.MaxValue;
     public readonly long LogStart = 0;
     public long LogDuration => LogEnd;
@@ -35,9 +42,26 @@ public class LogData
             return ParserHelper.ToDurationString(LogDuration);
         }
     }
-    public bool Success { get; private set; }
+    private bool Success;
 
-    public enum LogMode
+    public class LogSuccessHandler
+    {
+        public bool Success => _logData.Success;
+        public long Time => _logData.LogEnd;
+        private readonly LogData _logData;
+
+        internal LogSuccessHandler(LogData logData)
+        {
+            _logData = logData;
+        }
+
+        public void SetSuccess(bool success, long time)
+        {
+            _logData.SetSuccess(success, time);
+        }
+    }
+
+    public enum Mode
     {
         NotSet,
         Story,
@@ -48,21 +72,18 @@ public class LogData
         NotApplicable,
         Unknown,
     }
+    private Mode LogMode = Mode.NotSet;
 
-    public LogMode Mode { get; private set; } = LogMode.NotSet;
-    public bool IsCM => Mode == LogMode.CMNoName || Mode == LogMode.CM;
-    public bool IsLegendaryCM => Mode == LogMode.LegendaryCM;
-
-    public enum LogStartStatus
+    public enum StartStatus
     {
         NotSet,
         Normal,
         Late,
         NoPreEvent
     }
-    public LogStartStatus StartStatus { get; private set; } = LogStartStatus.NotSet;
-    public bool IsLateStart => StartStatus == LogStartStatus.Late || MissingPreEvent;
-    public bool MissingPreEvent => StartStatus == LogStartStatus.NoPreEvent;
+    private StartStatus LogStartStatus  = StartStatus.NotSet;
+    private bool LogIsLateStart => LogStartStatus == StartStatus.Late || LogMissingPreEvent;
+    private bool LogMissingPreEvent => LogStartStatus == StartStatus.NoPreEvent;
 
     private PhaseDataWithMetaData? _phaseDataWithMetaData = null;
 
@@ -89,7 +110,7 @@ public class LogData
         TriggerID = Logic.GetTriggerID();
     }
 
-    static internal LogLogic.LogLogic DetectLogic(int id, AgentData agentData, EvtcParserSettings parserSettings, EvtcVersionEvent evtcVersion)
+    internal static LogLogic.LogLogic DetectLogic(int id, AgentData agentData, EvtcParserSettings parserSettings, EvtcVersionEvent evtcVersion)
     {
         var targetID = GetTargetID(id);
         // Special cases
@@ -100,10 +121,7 @@ public class LogData
                 {
                     return new River((int)TargetID.DummyTarget);
                 }
-                else
-                {
-                    return new WvWLogic(id, parserSettings.DetailedWvWParse);
-                }
+                return new WvWLogic(id, parserSettings.DetailedWvWParse);
             case TargetID.Instance:
                 return new UnknownInstanceLogic(id);
         }
@@ -190,8 +208,8 @@ public class LogData
                         return new Adina(id);
                     case TargetID.Sabir:
                         return new Sabir(id);
-                    case TargetID.PeerlessQadim:
-                        return new PeerlessQadim(id);
+                    case TargetID.QadimThePeerless:
+                        return new QadimThePeerless(id);
                     case TargetID.Greer:
                         return new GreerTheBlightbringer(id);
                     case TargetID.Decima:
@@ -231,6 +249,8 @@ public class LogData
                         return new CosmicObservatory(id);
                     case TargetID.Cerus:
                         return new TempleOfFebe(id);
+                    case TargetID.KelaSeneschalOfWaves:
+                        return new GuardiansGlade(id);
                     // Fractals
                     case TargetID.MAMA:
                         return new MAMA(id);
@@ -315,15 +335,15 @@ public class LogData
         return new UnknownBossLogic(id);
     }
 
-    internal void CompleteLogName(CombatData combatData, AgentData agentData)
+    internal void CompleteLogName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
-        LogNameNoMode = Logic.GetLogicName(combatData, agentData);
+        LogNameNoMode = Logic.GetLogicName(combatData, agentData, apiController);
         LogName = LogNameNoMode
-            + (Mode == LogMode.CM ? " CM" : "")
-            + (Mode == LogMode.LegendaryCM ? " LCM" : "")
-            + (Mode == LogMode.Story ? " Story" : "")
-            + (IsLateStart && !MissingPreEvent ? " (Late Start)" : "")
-            + (MissingPreEvent ? " (No Pre-Event)" : "");
+            + (LogMode == Mode.CM ? " CM" : "")
+            + (LogMode == Mode.LegendaryCM ? " LCM" : "")
+            + (LogMode == Mode.Story ? " Story" : "")
+            + (LogIsLateStart && !LogMissingPreEvent ? " (Late Start)" : "")
+            + (LogMissingPreEvent ? " (No Pre-Event)" : "");
     }
 
     public PhaseDataWithMetaData GetMainPhase(ParsedEvtcLog log)
@@ -340,11 +360,8 @@ public class LogData
             {
                 mainPhase = phases.OfType<EncounterPhaseData>().FirstOrDefault();
             }
-            if (mainPhase == null)
-            {
-                throw new InvalidOperationException("A log must have a main phase");
-            }
-            _phaseDataWithMetaData = mainPhase;
+
+            _phaseDataWithMetaData = mainPhase ?? throw new InvalidOperationException("A log must have a main phase");
         }
         return _phaseDataWithMetaData;
     }
@@ -369,7 +386,7 @@ public class LogData
             } 
             else if (!IsInstance)
             {
-                if (_phases.Where(x => x.Type == PhaseData.PhaseType.Encounter).Count() != 1)
+                if (_phases.Count(x => x.Type == PhaseData.PhaseType.Encounter) != 1)
                 {
                     throw new InvalidDataException("Boss logs must have only one encounter phase");
                 }
@@ -389,10 +406,6 @@ public class LogData
             if (_phases.Any(phase => phase.Targets.Keys.Any(target => !Logic.Targets.Contains(target))))
             {
                 throw new InvalidDataException("Phases can only have targets");
-            }
-            if (_phases.Any(x => x.BreakbarPhase && x.Targets.Count != 1))
-            {
-                throw new InvalidDataException("Breakbar phases can only have one target");
             }
             _phases.RemoveAll(x => x.DurationInMS < ParserHelper.PhaseTimeLimit);
             var badPhases = _phases.Where(x => x.Start < LogStart || x.End > LogEnd);
@@ -433,8 +446,86 @@ public class LogData
                     }
                 }
             }
+            _encounterPhases = encounterPhases;
+            _encounterPhasesByID = _encounterPhases.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => (IReadOnlyList<EncounterPhaseData>)x.ToList());
         }
         return _phases;
+    }
+
+    internal InstancePhaseData CreateInstancePhase(long start, long end, string name)
+    {
+        return new InstancePhaseData(start, end, name, Success, LogMode, LogStartStatus, this);
+    }
+
+    internal EncounterPhaseData CreateEncounterPhase(long start, long end, string name, string? icon = null)
+    {
+        if (icon != null)
+        {
+            return new EncounterPhaseData(start, end, name, Success, icon, LogMode, LogStartStatus, this);
+        }
+        return new EncounterPhaseData(start, end, name, Success, LogMode, LogStartStatus, this);
+    }
+
+    public IReadOnlyList<EncounterPhaseData> GetEncounterPhases(ParsedEvtcLog log)
+    {
+        if (_phases.Count == 0)
+        {
+            GetPhases(log);
+        }
+        return _encounterPhases;
+    }
+
+    public IReadOnlyList<EncounterPhaseData> GetEncounterPhases(ParsedEvtcLog log, long logID)
+    {
+        if (_phases.Count == 0)
+        {
+            GetPhases(log);
+        }
+        if (_encounterPhasesByID.TryGetValue(logID, out var encounterPhases))
+        {
+            return encounterPhases;
+        }
+        return [];
+    }
+
+    public Mode GetEncounterMode(ParsedEvtcLog log, long logID, long time)
+    {
+        var encounterPhase = GetEncounterPhases(log, logID).FirstOrDefault(x => x.InInterval(time));
+        if (encounterPhase != null)
+        {
+            return encounterPhase.Mode;
+        }
+        return Mode.NotApplicable;
+    }
+
+    public bool EncounterIsNM(ParsedEvtcLog log, long logID, long time)
+    {
+        var encounterPhase = GetEncounterPhases(log, logID).FirstOrDefault(x => x.InInterval(time));
+        if (encounterPhase != null)
+        {
+            return !encounterPhase.IsCM && !encounterPhase.IsLegendaryCM;
+        }
+        return false;
+    }
+
+    public bool EncounterIsCM(ParsedEvtcLog log, long logID, long time)
+    {
+        var encounterPhase = GetEncounterPhases(log, logID).FirstOrDefault(x => x.InInterval(time));
+        if (encounterPhase != null)
+        {
+            return encounterPhase.IsCM;
+        }
+        return false;
+    }
+
+    public bool EncounterIsLegendaryCM(ParsedEvtcLog log, long logID, long time)
+    {
+        var encounterPhase = GetEncounterPhases(log, logID).FirstOrDefault(x => x.InInterval(time));
+        if (encounterPhase != null)
+        {
+            return encounterPhase.IsLegendaryCM;
+        }
+        return false;
     }
 
     public IReadOnlyList<SingleActor> GetMainTargets(ParsedEvtcLog log)
@@ -445,19 +536,19 @@ public class LogData
     // Setters
     internal void ProcessLogStatus(CombatData combatData, AgentData agentData)
     {
-        if (Mode == LogMode.NotSet)
+        if (LogMode == Mode.NotSet)
         {
-            Mode = Logic.GetLogMode(combatData, agentData, this);
-            if (Mode == LogMode.Story)
+            LogMode = Logic.GetLogMode(combatData, agentData, this);
+            if (LogMode == Mode.Story)
             {
                 Logic.InvalidateLogID();
             }
-            StartStatus = Logic.GetLogStartStatus(combatData, agentData, this);
+            LogStartStatus = Logic.GetLogStartStatus(combatData, agentData, this);
             InstancePrivacy = Logic.GetInstancePrivacyMode(combatData, agentData, this);
         }
     }
 
-    internal void SetSuccess(bool success, long logEnd)
+    private void SetSuccess(bool success, long logEnd)
     {
         Success = success;
         LogEnd = Success ? Math.Min( logEnd + ParserHelper.ServerDelayConstant, EvtcLogEnd) : logEnd;

@@ -83,10 +83,10 @@ partial class SingleActor
     {
         if (stateCount == 0)
         {
-            return [];
+            return [ ];
         }
 
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         var res = new List<Segment>(stateCount);
         double lastValue = states.First().State;
         foreach ((long start, double state) in states)
@@ -94,7 +94,7 @@ partial class SingleActor
             long end = Math.Min(Math.Max(start, logStart), logEnd);
             if (res.Count == 0)
             {
-                res.Add(new Segment(0, end, lastValue));
+                res.Add(new Segment(logStart, end, lastValue));
             }
             else
             {
@@ -104,7 +104,7 @@ partial class SingleActor
         }
         res.Add(new Segment(res.Last().End, logEnd, lastValue));
 
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         res.RemoveAll(x => x.Start >= x.End);
         res.FuseConsecutive();
 
@@ -143,7 +143,7 @@ partial class SingleActor
     {
         if (!_damageList1S.TryGetValue(damageType, out var graphs))
         {
-            graphs = new CachingCollectionWithTarget<InterpolatedGraph<int>>(log);
+            graphs = new (AgentItem, log);
             _damageList1S[damageType] = graphs;
         }
 
@@ -161,7 +161,7 @@ partial class SingleActor
     {
         if (!_damageTakenList1S.TryGetValue(damageType, out var graphs))
         {
-            graphs = new CachingCollectionWithTarget<InterpolatedGraph<int>>(log);
+            graphs = new (AgentItem, log);
             _damageTakenList1S[damageType] = graphs;
         }
 
@@ -210,7 +210,7 @@ partial class SingleActor
             return null;
         }
 
-        _breakbarDamageList1S ??= new CachingCollectionWithTarget<InterpolatedGraph<double>>(log);
+        _breakbarDamageList1S ??= new (AgentItem, log);
 
         if (_breakbarDamageList1S.TryGetValue(start, end, target, out var res))
         {
@@ -229,7 +229,7 @@ partial class SingleActor
             return null;
         }
 
-        _breakbarDamageTakenList1S ??= new CachingCollectionWithTarget<InterpolatedGraph<double>>(log);
+        _breakbarDamageTakenList1S ??= new (AgentItem, log);
 
         if (_breakbarDamageTakenList1S.TryGetValue(start, end, target, out var res))
         {

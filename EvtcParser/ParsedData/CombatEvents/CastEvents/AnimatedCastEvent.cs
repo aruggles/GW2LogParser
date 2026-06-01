@@ -7,29 +7,10 @@ public class AnimatedCastEvent : CastEvent
 {
     private readonly int _scaledActualDuration;
     //private readonly int _effectHappenedDuration;
+    public AgentItem EffectTarget { get; protected set; } = ParserHelper._unknownAgent;
 
-    public readonly Vector3? EffectPosition;
-
-    public bool HasEffectPosition => EffectPosition != null;
-
-    private AnimatedCastEvent(CombatItem startItem, AgentData agentData, SkillData skillData) : base(startItem, agentData, skillData)
-    {
-        ExpectedDuration = startItem.BuffDmg > 0 ? startItem.BuffDmg : startItem.Value;
-        if (startItem.IsActivation == Activation.Quickness)
-        {
-            Acceleration = 1;
-        }
-        if (startItem.DstAgent != 0 || startItem.OverstackValue != 0) { unsafe 
-        {
-            //NOTE(Rennorb): Cannot directly take the address of the field, because its a property.
-            var xyBits = startItem.DstAgent;
-            var x = *(float*)&xyBits;
-            var y = *((float*)&xyBits + 1);
-            var z = BitConverter.Int32BitsToSingle(unchecked((int)startItem.OverstackValue));
-            EffectPosition = new(x, y, z);
-        }}
-        //_effectHappenedDuration = startItem.Value;
-    }
+    public readonly AnimationStart AnimStart;
+    public readonly AnimationStop AnimStop;
 
     private void SetAcceleration(CombatItem endItem)
     {
@@ -52,70 +33,99 @@ public class AnimatedCastEvent : CastEvent
         {
             switch (endItem.IsActivation)
             {
-                case Activation.CancelCancel:
+                case Activation.Cancel:
                     Status = AnimationStatus.Interrupted;
                     SavedDuration = -ActualDuration;
                     break;
                 case Activation.Reset:
                     Status = AnimationStatus.Full;
                     break;
-                case Activation.CancelFire:
+                case Activation.Minimum:
+                case Activation.NoData:
                     int scaledExpectedDuration = (int)Math.Round(ExpectedDuration / nonScaledToScaledRatio);
                     SavedDuration = Math.Max(scaledExpectedDuration - ActualDuration, 0);
                     Status = AnimationStatus.Reduced;
                     break;
             }
         }
+        AcceleratedToNonAcceleratedRatio = 1.0 / nonScaledToScaledRatio;
         Acceleration = Math.Round(Acceleration, ParserHelper.AccelerationDigit);
     }
 
-    // Start missing
-    internal AnimatedCastEvent(AgentData agentData, SkillData skillData, CombatItem endItem) : base(endItem, agentData, skillData)
+    protected const float PositionConvertConstant = 10.0f;
+    internal AnimatedCastEvent(CombatItem? startItem, AgentData agentData, SkillData skillData, CombatItem? endItem, long maxEnd) : base(startItem ?? endItem ?? throw new InvalidOperationException("Either start or end item must be non null"), agentData, skillData)
     {
-        ActualDuration = endItem.Value;
-        ExpectedDuration = ActualDuration;
-        _scaledActualDuration = endItem.BuffDmg;
-        if (Skill.IsAnimatedDodge(skillData))
+        // Start is present
+        if (startItem != null)
         {
-            // dodge animation start item has always 0 as expected duration
-            ExpectedDuration = ActualDuration;
-            _scaledActualDuration = 0;
-        }
-        Time -= ActualDuration;
-        SetAcceleration(endItem);
-    }
+            ExpectedDuration = startItem.BuffDmg > 0 ? startItem.BuffDmg : startItem.Value;
+            if (startItem.IsStateChange == StateChange.AnimationStart)
+            {
 
-    // Start and End both present
-    internal AnimatedCastEvent(CombatItem startItem, AgentData agentData, SkillData skillData, CombatItem endItem) : this(startItem, agentData, skillData)
-    {
-        ActualDuration = endItem.Value;
-        _scaledActualDuration = endItem.BuffDmg;
-        int expectedActualDuration = (int)(endItem.Time - startItem.Time);
-        // Sanity check, sometimes the difference is massive
-        if (Math.Abs(ActualDuration - expectedActualDuration) > ParserHelper.ServerDelayConstant)
-        {
-            ActualDuration = expectedActualDuration;
-            _scaledActualDuration = 0;
-        }
-        if (Skill.IsAnimatedDodge(skillData))
-        {
-            // dodge animation start item has always 0 as expected duration
-            ExpectedDuration = ActualDuration;
-            _scaledActualDuration = 0;
-        }
-        SetAcceleration(endItem);
-    }
+                if (startItem.DstAgent != 0)
+                {
+                    EffectTarget = agentData.GetAgent(startItem.DstAgent, startItem.Time);
+                }
+            } 
+            else
+            {
+                if (startItem.IsActivation == Activation.Quickness)
+                {
+                    Acceleration = 1;
+                }
+            }
+            //_effectHappenedDuration = startItem.Value;
 
-    // End missing
-    internal AnimatedCastEvent(CombatItem startItem, AgentData agentData, SkillData skillData, long maxEnd) : this(startItem, agentData, skillData)
-    {
-        if (Skill.ID == skillData.DodgeID)
-        {
-            // TODO: vindicator dodge duration
-            ExpectedDuration = 750;
+            // End item missing
+            if (endItem == null)
+            {
+                if (Skill.ID == skillData.DodgeID)
+                {
+                    ExpectedDuration = 750;
+                }
+                ActualDuration = ExpectedDuration;
+                CutAt(maxEnd);
+            }
+            AnimStart = GetAnimationStart(startItem.Result);
         }
-        ActualDuration = ExpectedDuration;
-        CutAt(maxEnd);
+        // End is present
+        if (endItem != null)
+        {
+            ActualDuration = endItem.Value;
+            _scaledActualDuration = endItem.BuffDmg;
+            // Start missing
+            if (startItem == null)
+            {
+                ExpectedDuration = ActualDuration;
+                if (Skill.IsAnimatedDodge(skillData))
+                {
+                    // dodge animation start item has always 0 as expected duration
+                    ExpectedDuration = ActualDuration;
+                    _scaledActualDuration = 0;
+                }
+                Time -= ActualDuration;
+                SetAcceleration(endItem);
+            } 
+            else
+            {
+                int expectedActualDuration = (int)(endItem.Time - startItem.Time);
+                // Sanity check, sometimes the difference is massive
+                if (Math.Abs(ActualDuration - expectedActualDuration) > ParserHelper.ServerDelayConstant)
+                {
+                    ActualDuration = expectedActualDuration;
+                    _scaledActualDuration = 0;
+                }
+                if (Skill.IsAnimatedDodge(skillData))
+                {
+                    // dodge animation start item has always 0 as expected duration
+                    ExpectedDuration = ActualDuration;
+                    _scaledActualDuration = 0;
+                }
+                SetAcceleration(endItem);
+            }
+            AnimStop = GetAnimationStop(endItem.Result);
+
+        }
     }
 
     internal void CutAt(long maxEnd)
@@ -136,6 +146,11 @@ public class AnimatedCastEvent : CastEvent
         SavedDuration = 0;
     }
 
+    internal AnimatedCastEvent(AgentItem caster, SkillItem skill, long start, long dur, AgentItem effectTarget) : this(caster, skill, start, dur)
+    {
+        EffectTarget = effectTarget;
+    }
+
     public override long GetInterruptedByBuffTime(ParsedEvtcLog log, long buffID)
     {
         var buffStatus = log.FindActor(Caster).GetBuffStatus(log, buffID, Time, ExpectedEndTime).FirstOrNull((in Segment x) => x.Value > 0);
@@ -144,5 +159,19 @@ public class AnimatedCastEvent : CastEvent
             return Math.Max(buffStatus.Value.Start, Time);
         }
         return EndTime;
+    }
+
+    public override bool IgnoreOnRotationRender()
+    {
+        return false;
+    }
+
+    public bool IntersectsExpectedCastWindow(long time, long threshold = ParserHelper.ServerDelayConstant)
+    {
+        return time >= Time - threshold && ExpectedEndTime + threshold >= time;
+    }
+    public bool IntersectsActualCastWindow(long time, long threshold = ParserHelper.ServerDelayConstant)
+    {
+        return time >= Time - threshold && EndTime + threshold >= time;
     }
 }

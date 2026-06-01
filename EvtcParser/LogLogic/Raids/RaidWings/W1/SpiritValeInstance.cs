@@ -1,6 +1,7 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -38,7 +39,7 @@ internal class SpiritValeInstance : SpiritVale
         MechanicList.Add(_sabetha.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Spirit Vale";
     }
@@ -51,17 +52,17 @@ internal class SpiritValeInstance : SpiritVale
         {
             subLogic.GetCombatMapInternal(log, arenaDecorations);
         }
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var chest = agentData.GetGadgetsByID(_sabetha.ChestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
             return;
         }
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
     private List<EncounterPhaseData> ProcessSpiritRacePhases_SingleGadgetInstances(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, ParsedEvtcLog log, List<PhaseData> phases)
@@ -129,7 +130,7 @@ internal class SpiritValeInstance : SpiritVale
                     var firstOfPack = currentPack.First();
                     if (!(firstOfPack.FirstAware <= etherealBarrier.FirstAware && firstOfPack.LastAware >= etherealBarrier.FirstAware))
                     {
-                        currentPack = new List<SingleActor>();
+                        currentPack = [];
                         packedEtherealBarriers.Add(currentPack);
                     }
                     currentPack.Add(etherealBarrier);
@@ -219,7 +220,8 @@ internal class SpiritValeInstance : SpiritVale
     protected override HashSet<int> IgnoreForAutoNumericalRenaming()
     {
         return [
-            (int)TargetID.ChargedSoul
+            (int)TargetID.ChargedSoul,
+            (int)TargetID.Cannon
         ];
     }
 
@@ -259,7 +261,7 @@ internal class SpiritValeInstance : SpiritVale
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         SpiritRace.FindEtherealBarriers(agentData, combatData);
-        Sabetha.FindCannonsAndHeavyBombs(agentData, combatData);
+        Sabetha.FindArenaGadgets(agentData, combatData);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
         SpiritRace.RenameEtherealBarriersAndOverrideID(Targets, agentData);
         Gorseval.RenameChargedSouls(Targets, combatData);
@@ -275,12 +277,12 @@ internal class SpiritValeInstance : SpiritVale
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -327,6 +329,14 @@ internal class SpiritValeInstance : SpiritVale
         foreach (SpiritVale logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

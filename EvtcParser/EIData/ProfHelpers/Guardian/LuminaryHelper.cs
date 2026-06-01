@@ -1,10 +1,16 @@
-﻿using GW2EIEvtcParser.ParserHelpers;
+﻿using GW2EIEvtcParser.Extensions;
+using GW2EIEvtcParser.ParsedData;
+using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.DamageModifierIDs;
 using static GW2EIEvtcParser.EIData.Buff;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
+using static GW2EIEvtcParser.EIData.InstantCastFinder;
+using static GW2EIEvtcParser.EIData.ProfHelper;
+using static GW2EIEvtcParser.EIData.SkillModeDescriptor;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SkillIDs;
+using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.EIData;
 
@@ -12,9 +18,22 @@ internal static class LuminaryHelper
 {
     internal static readonly List<InstantCastFinder> InstantCastFinder =
     [
-        new BuffGainCastFinder(EnterRadiantShroud, RadiantShroud)
+        // Virtues
+        new EffectCastFinder(RadiantJusticeSkill, EffectGUIDs.LuminaryRadiantJustice1)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.LuminaryRadiantJustice2),
+        new EffectCastFinder(RadiantResolveSkill, EffectGUIDs.LuminaryRadiantResolve1)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.LuminaryRadiantResolve2),
+        new EffectCastFinder(RadiantCourageSkill, EffectGUIDs.LuminaryRadiantCourage1)
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.LuminaryRadiantCourage2),
+        new EffectCastFinder(SovereignOfLight, EffectGUIDs.LuminarySovereignOfLightModel)
+            // Collision if left alone
+            .UsingSecondaryEffectSameSrcChecker(EffectGUIDs.LuminarySovereignOfLightAudio)
+            .UsingSrcSpecChecker(Spec.Luminary)
+            .UsingOrigin(InstantCastOrigin.Trait),
+        // Radiant Forge
+        new BuffGainCastFinder(EnterRadiantForge, RadiantForge)
             .UsingBeforeWeaponSwap(),
-        new BuffLossCastFinder(ExitRadiantShroud, RadiantShroud)
+        new BuffLossCastFinder(ExitRadiantForge, RadiantForge)
             .UsingBeforeWeaponSwap(),
         // Stances
         new BuffGainCastFinder(StalwartStanceSkill, StalwartStanceBuff),
@@ -25,33 +44,69 @@ internal static class LuminaryHelper
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> OutgoingDamageModifiers =
     [
+        // Daring Advance   
+        new BuffOnActorDamageModifier(Mod_DaringAdvance, DaringAdvanceBuff, "Daring Advance", "15%", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, SkillImages.DaringAdvance, DamageModifierMode.All)
+            .WithBuffOnActorFromFoe()
+            .WithBuilds(GW2Builds.August2025VoEBeta),
         // Empowered Armaments
-        new BuffOnActorDamageModifier(Mod_EmpoweredArmaments, EmpoweredArmaments, "Empowered Armaments", "15% strike damage", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.PvE),
-        new BuffOnActorDamageModifier(Mod_EmpoweredArmaments, EmpoweredArmaments, "Empowered Armaments", "10% strike damage", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.sPvPWvW),
+        new BuffOnActorDamageModifier(Mod_EmpoweredArmaments, EmpoweredArmaments, "Empowered Armaments", "15%", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_EmpoweredArmaments, EmpoweredArmaments, "Empowered Armaments", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_EmpoweredArmaments, EmpoweredArmaments, "Empowered Armaments", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.All)
+            .WithBuilds( GW2Builds.January2026Balance),
         // Radiant Armaments
-        new BuffOnFoeDamageModifier(Mod_RadiantArmamentsHammer, [Stun, Daze, Knockdown, Fear, Taunt, Immobile], "Radiant Armaments (Hammer)", "15%", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsHammer, DamageModifierMode.All)
-        .UsingChecker((hde, log) =>
-        {
-            if (hde.From.HasAnyBuff(log, [RadiantArmamentsHammer, RadiantArmamentsHammerLingering], hde.Time))
-            {
-                return true;
-            }
-            return false;
-        }),
+        new BuffOnFoeDamageModifier(Mod_RadiantArmamentsHammer, [Stun, Daze, Knockdown, Fear, Taunt, Immobile], "Radiant Armaments (Hammer)", "15% against controlled or immobilized foes", DamageSource.NoPets, 15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsHammer, DamageModifierMode.All)
+            .UsingActorCheckerByPresence([RadiantArmamentsHammer, RadiantArmamentsHammerLingering])
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_RadiantArmamentsHammer, [RadiantArmamentsHammer, RadiantArmamentsHammerLingering], "Radiant Armaments (Hammer)", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.OctoberVoERelease, GW2Builds.December2025Balance),
+        new BuffOnActorDamageModifier(Mod_RadiantArmamentsHammer, [RadiantArmamentsHammer, RadiantArmamentsHammerLingering], "Radiant Armaments (Hammer)", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.December2025Balance),
+        new BuffOnActorDamageModifier(Mod_RadiantArmamentsHammer, [RadiantArmamentsHammer, RadiantArmamentsHammerLingering], "Radiant Armaments (Hammer)", "7%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.EmpoweredArmaments, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.December2025Balance),
+        // Piercing Stance   
+        new BuffOnActorDamageModifier(Mod_PiercingStance, PiercingStanceBuff, "Piercing Stance", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, SkillImages.PiercingStance, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
     [
         // Luminary's Blessing
-        new BuffOnActorDamageModifier(Mod_LuminarysBlessing, LuminarysBlessing, "Luminary's Blessing", "-10%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.LightsGift, DamageModifierMode.All),
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessing, LuminarysBlessing, "Luminary's Blessing", "-10%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.LightsGift, DamageModifierMode.All)
+            .UsingSpecSpecificShared()
+            .WithBuilds(GW2Builds.August2025VoEBeta, GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessing, LuminarysBlessing, "Luminary's Blessing", "-10%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.LightsGift, DamageModifierMode.PvE)
+            .UsingSpecSpecificShared()
+            .WithBuilds(GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessing, LuminarysBlessing, "Luminary's Blessing", "-7%", DamageSource.Incoming, -7.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.LightsGift, DamageModifierMode.WvW)
+            .UsingSpecSpecificShared()
+            .WithBuilds(GW2Builds.OctoberVoERelease, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessing, LuminarysBlessing, "Luminary's Blessing", "-5%", DamageSource.Incoming, -5.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.LightsGift, DamageModifierMode.sPvP)
+            .UsingSpecSpecificShared()
+            .WithBuilds(GW2Builds.OctoberVoERelease, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessing, LuminarysBlessing, "Luminary's Blessing", "-5%", DamageSource.Incoming, -5.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, TraitImages.LightsGift, DamageModifierMode.sPvPWvW)
+            .UsingSpecSpecificShared()
+            .WithBuilds(GW2Builds.January2026Balance),
+        // Luminary's Blessing Traited
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessingResoluteBlessing, LuminarysBlessing, "Resolute Blessing", "-10% under Luminary's Blessing while traited", DamageSource.Incoming, -10.0, DamageType.Condition, DamageType.All, Source.Luminary, ByPresence, TraitImages.ResoluteBlessing, DamageModifierMode.PvEWvW)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
+        new BuffOnActorDamageModifier(Mod_LuminarysBlessingResoluteBlessing, LuminarysBlessing, "Resolute Blessing", "-7% under Luminary's Blessing while traited", DamageSource.Incoming, -7.0, DamageType.Condition, DamageType.All, Source.Luminary, ByPresence, TraitImages.ResoluteBlessing, DamageModifierMode.sPvP)
+            .WithBuilds(GW2Builds.OctoberVoERelease),
         // Radiant Armaments
-        new BuffOnActorDamageModifier(Mod_RadiantArmamentsShield, RadiantArmamentsShield, "Radiant Armaments (Shield)", "-15% strike damage", DamageSource.Incoming, -15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsShield, DamageModifierMode.PvE),
-        new BuffOnActorDamageModifier(Mod_RadiantArmamentsShield, RadiantArmamentsShield, "Radiant Armaments (Shield)", "-10% strike damage", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsShield, DamageModifierMode.sPvPWvW),
-        new BuffOnActorDamageModifier(Mod_RadiantArmamentsShieldLingering, RadiantArmamentsHammerLingering, "Radiant Armaments (Shield Lingering)", "-10% strike damage", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsShield, DamageModifierMode.All),
+        new BuffOnActorDamageModifier(Mod_RadiantArmamentsShield, RadiantArmamentsShield, "Radiant Armaments (Shield)", "-15%", DamageSource.Incoming, -15.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsShield, DamageModifierMode.PvE),
+        new BuffOnActorDamageModifier(Mod_RadiantArmamentsShield, RadiantArmamentsShield, "Radiant Armaments (Shield)", "-10%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsShield, DamageModifierMode.sPvPWvW),
+        new BuffOnActorDamageModifier(Mod_RadiantArmamentsShieldLingering, RadiantArmamentsHammerLingering, "Radiant Armaments (Shield Lingering)", "-10%", DamageSource.Incoming, -10.0, DamageType.Strike, DamageType.All, Source.Luminary, ByPresence, BuffImages.RadiantArmamentsShield, DamageModifierMode.All),
     ];
 
     internal static readonly IReadOnlyList<Buff> Buffs =
     [
+        // Forge
+        new Buff("Radiant Forge", RadiantForge, Source.Luminary, BuffClassification.Other, BuffImages.RadiantForge),
+        // Virtues
+        new Buff("Radiant Justice", RadiantJusticeBuff, Source.Luminary, BuffClassification.Other, SkillImages.RadiantJustice),
+        new Buff("Radiant Resolve", RadiantResolveBuff, Source.Luminary, BuffClassification.Other, SkillImages.RadiantResolve),
+        new Buff("Radiant Courage", RadiantCourageBuff, Source.Luminary, BuffClassification.Other, SkillImages.RadiantCourage),
         // Radiant Armaments
         new Buff("Radiant Armaments (Hammer)", RadiantArmamentsHammer, Source.Luminary, BuffClassification.Other, BuffImages.RadiantArmamentsHammer),
         new Buff("Radiant Armaments (Hammer Lingering)", RadiantArmamentsHammerLingering, Source.Luminary, BuffClassification.Other, BuffImages.RadiantArmamentsHammer),
@@ -70,9 +125,138 @@ internal static class LuminaryHelper
         new Buff("Piercing Stance", PiercingStanceBuff, Source.Luminary, BuffStackType.Queue, 9, BuffClassification.Other, SkillImages.PiercingStance),
         new Buff("Daring Stance", DaringAdvanceBuff, Source.Luminary, BuffStackType.Stacking, 25, BuffClassification.Other, SkillImages.DaringAdvance),
         // Traits
-        new Buff("Luminary's Blessing", LuminarysBlessing, Source.Luminary, BuffClassification.Other, TraitImages.LightsGift),
+        new Buff("Luminary's Blessing", LuminarysBlessing, Source.Luminary, BuffClassification.Defensive, TraitImages.LightsGift),
         new Buff("Empowered Armaments", EmpoweredArmaments, Source.Luminary, BuffStackType.Queue, 9, BuffClassification.Other, TraitImages.EmpoweredArmaments),
         // Others
         new Buff("Counterattack (Luminary Shield)", CounterattackLuminary, Source.Luminary, BuffClassification.Other, SkillImages.Counterblow),
+        new Buff("Restorative Glow (Personal)", RestorativeGlowPersonalBuff, Source.Luminary, BuffClassification.Other, SkillImages.RestorativeGlow),
+        new Buff("Restorative Glow (Shared)", RestorativeGlowSharedBuff, Source.Luminary, BuffClassification.Defensive, SkillImages.RestorativeGlow),
     ];
+
+    internal static void FlagLuminaryRadiantForgeWeaponSwapEvents(IReadOnlyList<AnimatedCastEvent> castEvents, IReadOnlyList<WeaponSwapEvent> weaponSwaps, EvtcVersionEvent evtcVersion)
+    {
+        var radiantForgeWeaponCasts = castEvents.Where(x => x.SkillID == DazzlingHammer || x.SkillID == LuminousStaff || x.SkillID == GleamingBlade || x.SkillID == RadiantBulwark).ToList();
+        var weaponSwapIndex = 0;
+        var relevantSwaps = weaponSwaps.Where(x => x.SwappedTo == WeaponSetIDs.TransformSet || x.SwappedFrom == WeaponSetIDs.TransformSet).ToList();
+        foreach (var radiantForgeWeaponCast in radiantForgeWeaponCasts)
+        {
+            for (var i = weaponSwapIndex; i < relevantSwaps.Count; i++)
+            {
+                var weaponSwap = relevantSwaps[i];
+                if (radiantForgeWeaponCast.Time <= weaponSwap.Time + ServerDelayConstant)
+                {
+                    if (weaponSwap.Time - radiantForgeWeaponCast.Time < ServerDelayConstant)
+                    {
+                        weaponSwap.FlagAsSpecialBundleSwap();
+                    } 
+                    else
+                    {
+                        weaponSwapIndex = i;
+                        break;
+                    }
+                }
+            }
+
+        }
+    }
+
+    internal static void ComputeProfessionCombatReplayActors(PlayerActor player, ParsedEvtcLog log, CombatReplay replay)
+    {
+        {
+            var duration = 4000;
+            var durationLarge = duration + 2000;
+            uint radius = 180;
+            uint radiusLarge = 240;
+
+            var symbolOfResolutionAndLuminousStaffCasts = player.GetAnimatedCastEvents(log).Where(x => (x.SkillID == SymbolOfWrath_SymbolOfResolution || x.SkillID == LuminousStaff) && !x.IsInterrupted).ToList();
+            var symbolOfResolutionCasts = symbolOfResolutionAndLuminousStaffCasts.Where(x => x.SkillID == SymbolOfWrath_SymbolOfResolution).ToList();
+
+            var symbolOfResolutionSkill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfWrath_SymbolOfResolution);
+            var lesserSymbolfOfResolutionSkill = new SkillModeDescriptor(player, Spec.Guardian, LesserSymbolOfResolution);
+            
+            var luminousStaffSkill = new SkillModeDescriptor(player, Spec.Guardian, LuminousStaff);
+            
+            var luminousStaffOrSymbolOfResolutionOrLesserSkill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfResolutionOrLesserOrLuminousStaff);
+            var symbolOfResolutionOrLesserSkill = new SkillModeDescriptor(player, Spec.Guardian, SymbolOfResolutionOrLesser);
+
+            // Small, collision
+            if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.GuardianSymbolOfResolution_LuminaryLuminousStaffSymbol, out var symbols))
+            {
+                var symbolIndex = 0;
+                var candidateMainSymbols = new Dictionary<AnimatedCastEvent, List<EffectEvent>>(symbolOfResolutionAndLuminousStaffCasts.Count);
+                foreach (var cast in symbolOfResolutionAndLuminousStaffCasts)
+                {
+                    for (; symbolIndex < symbols.Count; symbolIndex++)
+                    {
+                        var symbolEffect = symbols[symbolIndex];
+                        if (cast.IntersectsExpectedCastWindow(symbolEffect.Time))
+                        {
+                            if (candidateMainSymbols.TryGetValue(cast, out var candidates))
+                            {
+                                candidates.Add(symbolEffect);
+                            }
+                            else
+                            {
+                                candidateMainSymbols[cast] = [symbolEffect];
+                            }
+                        }
+                        // Effect after cast
+                        else if (cast.ExpectedEndTime <= symbolEffect.Time + ServerDelayConstant)
+                        {
+                            break;
+                        }
+                        // Effect before cast
+                        else
+                        {
+                            var skill = lesserSymbolfOfResolutionSkill;
+                            var lifespan = symbolEffect.ComputeLifespan(log, duration);
+                            AddCircleSkillDecoration(replay, symbolEffect, Colors.Guardian, skill, lifespan, radius, EffectImages.EffectSymbolOfResolution);
+                        }
+                    }
+                }
+                // All remaining effects are without cast
+                for (; symbolIndex < symbols.Count; ++symbolIndex)
+                {
+                    var symbolEffect = symbols[symbolIndex];
+                    var skill = lesserSymbolfOfResolutionSkill;
+                    var lifespan = symbolEffect.ComputeLifespan(log, duration);
+                    AddCircleSkillDecoration(replay, symbolEffect, Colors.Guardian, skill, lifespan, radius, EffectImages.EffectSymbolOfResolution);
+                }
+                foreach (var pair in candidateMainSymbols)
+                {
+                    SkillModeDescriptor skill = pair.Value.Count == 1 ? 
+                        (pair.Key.SkillID == SymbolOfWrath_SymbolOfResolution ? symbolOfResolutionSkill : luminousStaffSkill) 
+                        : 
+                        luminousStaffOrSymbolOfResolutionOrLesserSkill
+                    ;
+                    var icon = skill.SkillID == SymbolOfWrath_SymbolOfResolution ?
+                        EffectImages.EffectSymbolOfResolution 
+                        : (skill.SkillID == LuminousStaff ? 
+                            EffectImages.EffectLuminousStaff
+                            :
+                            EffectImages.EffectSymbolOfResolutionOrLuminousStaff
+                       )
+                    ;
+                    foreach (EffectEvent effect in pair.Value)
+                    {
+                        var lifespan = effect.ComputeLifespan(log, duration);
+                        AddCircleSkillDecoration(replay, effect, Colors.Guardian, skill, lifespan, radius, icon);
+                    }
+
+                }
+            }
+
+            // Large, no collision, use generic methods
+            GuardianHelper.AddSymbolDecorationsWithLesserUncertainty(symbolOfResolutionCasts, player, log, replay, symbolOfResolutionSkill, lesserSymbolfOfResolutionSkill, symbolOfResolutionOrLesserSkill, EffectGUIDs.GuardianSymbolOfResolutionLarge, radiusLarge, durationLarge, EffectImages.EffectSymbolOfResolution);
+
+            if (log.CombatData.TryGetEffectEventsBySrcWithGUID(player.AgentItem, EffectGUIDs.LuminaryLuminousStaffSymbolLarge, out var luminousStaffLarges))
+            {
+                foreach (EffectEvent effect in luminousStaffLarges)
+                {
+                    var lifespan = effect.ComputeLifespan(log, durationLarge);
+                    AddCircleSkillDecoration(replay, effect, Colors.Guardian, luminousStaffSkill, lifespan, radiusLarge, EffectImages.EffectLuminousStaff);
+                }
+            }
+        }
+    }
 }

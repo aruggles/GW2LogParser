@@ -49,7 +49,7 @@ internal class BuffDictionary(int layer1InitialCapacity, int layer2InitialCapaci
                                 insert = false;
                             }
                         }
-                    }
+                    } 
                     if (insert)
                     {
                         listExtension.Add((beeCurrent, list.Count));
@@ -57,21 +57,21 @@ internal class BuffDictionary(int layer1InitialCapacity, int layer2InitialCapaci
                 }
                 else
                 {
-                    dictExtension[beeCurrent.BuffInstance] = new(initialListCapacity) { (beeCurrent, list.Count) };
+                    dictExtension[beeCurrent.BuffInstance] = new(initialListCapacity){ (beeCurrent, list.Count) };
                 }
             }
         }
         // handle duplicated application for buff initials
         else if (buffEvent is BuffApplyEvent bae && bae.BuffInstance != 0 && bae.Initial)
         {
-            var duplicated = log.CombatData.GetBuffDataByInstanceID(bae.BuffID, bae.BuffInstance)
-                .Where(x => x is BuffApplyEvent otherBae && x.To.Is(bae.To) && !otherBae.Initial && Math.Abs(otherBae.Time - bae.Time) <= 1)
-                .Any();
+            var duplicated = log.CombatData
+                .GetBuffDataByInstanceID(bae.BuffID, bae.BuffInstance)
+                .Any(x => x is BuffApplyEvent otherBae && x.To.Is(bae.To) && !otherBae.Initial && Math.Abs(otherBae.Time - bae.Time) <= 1);
             if (duplicated)
             {
                 insert = false;
             }
-        }
+        } 
         if (insert)
         {
             list.Add(buffEvent);
@@ -110,19 +110,12 @@ internal class BuffDictionary(int layer1InitialCapacity, int layer2InitialCapaci
         {
             if (bae.Time - _lastRemovedRegen.Time < ParserHelper.ServerDelayConstant)
             {
-                bae.OverridenDurationInternal = (uint)_lastRemovedRegen.RemovedDuration;
-                bae.OverridenInstance = _lastRemovedRegen.BuffInstance;
+                bae.OverridenRegenDuration = (uint)_lastRemovedRegen.RemovedDuration;
+                bae.OverridenRegenInstance = _lastRemovedRegen.BuffInstance;
             }
             _lastRemovedRegen = null;
         }
-        if (!_buffIDToEvents.TryGetValue(buff.ID, out var list))
-        {
-            list = new(_layer2InitialCapacityBuffs);
-            _buffIDToEvents[buff.ID] = list;
-            _buffIDToExtensions[buff.ID] = new(_layer2InitialCapacityExts);
-        }
-
-        AddToList(log, list, _buffIDToExtensions[buff.ID], buffEvent, _layer3InitialCapacityExts);
+        Add(log, buff, buffEvent);
     }
 
 

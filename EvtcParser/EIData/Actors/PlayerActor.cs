@@ -4,7 +4,7 @@ using static GW2EIEvtcParser.ParserHelper;
 
 namespace GW2EIEvtcParser.EIData;
 
-public abstract class PlayerActor : SingleActor
+public abstract partial class PlayerActor : SingleActor
 {
     public bool IsFriendlyPlayer => AgentItem.Type == AgentItem.AgentType.Player || AgentItem.IsNotInSquadFriendlyPlayer;
 
@@ -31,7 +31,7 @@ public abstract class PlayerActor : SingleActor
     {
         throw new InvalidOperationException("Players' name can't be overriden");
     }
-    internal override void SetManualHealth(int health, IReadOnlyList<(long hpValue, double percent)>? hpDistribution = null)
+    internal override void SetManualHealth(int health, IReadOnlyList<(int hpValue, double percent)>? hpDistribution = null)
     {
         throw new InvalidOperationException("Players' health can't be overriden");
     }
@@ -44,6 +44,10 @@ public abstract class PlayerActor : SingleActor
     public override int GetCurrentBarrier(ParsedEvtcLog log, double currentBarrierPercent, long time)
     {
         return -1;
+    }
+    internal override void SetHealthBars(IReadOnlyList<(double maxPercent, double minPercent, int hpValue, bool active)> hpBars)
+    {
+        throw new InvalidOperationException();
     }
 
     public override string GetIcon(bool forceLowResolutionIfApplicable = false)
@@ -77,6 +81,6 @@ public abstract class PlayerActor : SingleActor
 
     public override SingleActorCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log)
     {
-        return new PlayerCombatReplayDescription(this, log, map, InitCombatReplay(log));
+        return new PlayerCombatReplayDescription(this, log, map, GetCombatReplay(log));
     }
 }

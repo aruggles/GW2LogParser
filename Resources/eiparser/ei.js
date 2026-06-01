@@ -113,13 +113,11 @@ function getDefaultEncounter() {
 }
 
 function mainLoad() {
-    if (!apiRenderServiceOkay) {
-        for (let key in WeaponIcons) {
-            WeaponIcons[key] = _buildFallBackURL(WeaponIcons[key]);
-        }
-        for (let key in UIIcons) {
-            UIIcons[key] = _buildFallBackURL(UIIcons[key]);
-        }
+    for (let key in WeaponIcons) {
+        WeaponIcons[key] = _buildFallBackURL(WeaponIcons[key]);
+    }
+    for (let key in UIIcons) {
+        UIIcons[key] = _buildFallBackURL(UIIcons[key]);
     }
     // make some additional variables reactive
     for (let i = 0; i < logData.phases.length; i++) {
@@ -185,6 +183,7 @@ function mainLoad() {
                 index: i,
             });
         }
+        target.icon = _buildFallBackURL(target.icon);
         target.id = i;
         target.dpsGraphCache = new Map();
     }
@@ -203,8 +202,12 @@ function mainLoad() {
                 reactiveLogdata.activeEncounterPhaseData[j].player = i;
             }
         }
+        playerData.icon = _buildFallBackURL(playerData.icon);
         playerData.dpsGraphCache = new Map();
         playerData.id = i;
+    }
+    if (!activeFound) {
+        reactiveLogdata.players[0].active = true;
     }
     compileTemplates();
     if (!!crData) {
@@ -288,35 +291,73 @@ function mainLoad() {
     });
 };
 
+function checkImgurAccess() {
+    let resolved = false;
+    return new Promise((resolve) => {
+        const img = new Image();     
+        // Avoid caching
+        img.src = "https://imgur.com/favicon.ico?" + new Date().getTime(); 
+        img.onload = () => {
+            if (resolved) {
+                return;
+            }
+            console.log("Imgur is accessible.");
+            resolved = true;
+            resolve(true);
+        };
+        img.onerror = () => {
+            if (resolved) {
+                return;
+            }
+            console.warn("Imgur is blocked or unreachable.");
+            resolved = true;
+            resolve(false);
+        };
+        setTimeout(() => {
+            if (resolved) {
+                return;
+            }
+            console.warn("Imgur is blocked or unreachable.");
+            img.src = "";
+            resolve(false);
+            resolved = true;
+        }, 5000);
+    });
+}
+
 window.onload = function () {
     Vue.config.devtools = true;
-    // trick from
-    const imgOfficialAPI = document.createElement("img");
-    imgOfficialAPI.style.display = "none";
-    document.body.appendChild(imgOfficialAPI);
-    imgOfficialAPI.onload = function () {
-        console.info("Info: GW2 Render service available");
-        mainLoad();
-        document.body.removeChild(imgOfficialAPI);
-    };
-    imgOfficialAPI.onerror = function () {
-        apiRenderServiceOkay = false;      
-        document.body.removeChild(imgOfficialAPI);
-        const imgDarthmaim = document.createElement("img");
-        imgDarthmaim.style.display = "none";
-        imgDarthmaim.onload = function () {
-            console.warn("Warning: GW2 Render service unavailable, switching to https://icons-gw2.darthmaim-cdn.com");
-            useDarthmaim = true;
+    checkImgurAccess().then(notBlocked => {
+        replaceImgur = !notBlocked;
+        // trick from
+        const imgOfficialAPI = document.createElement("img");
+        imgOfficialAPI.style.display = "none";
+        document.body.appendChild(imgOfficialAPI);
+        imgOfficialAPI.onload = function () {
+            console.info("Info: GW2 Render service available");
             mainLoad();
-            document.body.removeChild(imgDarthmaim);
+            document.body.removeChild(imgOfficialAPI);
         };
-        imgDarthmaim.onerror = function() {
-            console.warn("Warning: GW2 Render service unavailable, switching to https://assets.gw2dat.com");
-            useDarthmaim = false;
-            mainLoad();
-            document.body.removeChild(imgDarthmaim);
-        }
-        imgDarthmaim.src = "https://icons-gw2.darthmaim-cdn.com/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
-    };
-    imgOfficialAPI.src = "https://render.guildwars2.com/file/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
+        imgOfficialAPI.onerror = function () {
+            apiRenderServiceOkay = false;      
+            document.body.removeChild(imgOfficialAPI);
+            const imgDarthmaim = document.createElement("img");
+            imgDarthmaim.style.display = "none";
+            imgDarthmaim.onload = function () {
+                console.warn("Warning: GW2 Render service unavailable, switching to https://icons-gw2.darthmaim-cdn.com");
+                useDarthmaim = true;
+                mainLoad();
+                document.body.removeChild(imgDarthmaim);
+            };
+            imgDarthmaim.onerror = function() {
+                console.warn("Warning: GW2 Render service unavailable, switching to https://assets.gw2dat.com");
+                useDarthmaim = false;
+                mainLoad();
+                document.body.removeChild(imgDarthmaim);
+            }
+            imgDarthmaim.src = "https://icons-gw2.darthmaim-cdn.com/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
+        };
+        imgOfficialAPI.src = "https://render.guildwars2.com/file/2FA9DF9D6BC17839BBEA14723F1C53D645DDB5E1/102852.png";
+    })
+    
 }

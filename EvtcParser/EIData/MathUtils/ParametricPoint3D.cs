@@ -13,18 +13,24 @@ public readonly struct ParametricPoint3D(in Vector3 value, long time)
     public readonly long Time = time;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ParametricPoint3D(float x, float y, float z, long time) : this(new(x, y, z), time)
+    public ParametricPoint3D(float x, float y, float z, long time) : this(new(x,y,z), time)
     {
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly ParametricPoint3D WithChangedTime(long newTime) => new(XYZ, newTime);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsNaNOrInfinity()
+    {
+        return Double.IsNaN(XYZ.X) || Double.IsNaN(XYZ.Y) || Double.IsNaN(XYZ.Z) ||
+               Double.IsInfinity(XYZ.X) || Double.IsInfinity(XYZ.Y) || Double.IsInfinity(XYZ.Z);
+    }
 
     public class Converter : JsonConverter<ParametricPoint3D>
     {
         public override ParametricPoint3D Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+            if(!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException($"Failed to read {nameof(ParametricPoint3D)}");
             }
@@ -34,10 +40,10 @@ public readonly struct ParametricPoint3D(in Vector3 value, long time)
 
 
             Span<char> buffer = stackalloc char[8];
-            for (int i = 0; i < 4; i++)
+            for(int i = 0; i < 4; i++)
             {
                 var len = reader.CopyString(buffer);
-                switch (buffer[..len])
+                switch(buffer[..len])
                 {
                     case "X": v.X = reader.GetSingle(); break;
                     case "Y": v.Y = reader.GetSingle(); break;

@@ -124,20 +124,11 @@
   <data name="animator" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\JS\CR-JS\animator.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="compressionUtils" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\compressionUtils.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
   <data name="css" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\ei.css;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;iso-8859-1</value>
+    <value>..\Resources\eiparser\ei.css;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="decorations" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\JS\CR-JS\decorations.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;iso-8859-1</value>
-  </data>
-  <data name="functions" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\JS\functions.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="global" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\JS\global.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\JS\CR-JS\decorations.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="healingExtFunctions" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\JS\HealingExt-JS\healingExtFunctions.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -145,77 +136,62 @@
   <data name="healingExtGlobals" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\JS\HealingExt-JS\healingExtGlobals.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="functions" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\JS\functions.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="global" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\JS\global.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="main_js" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\ei.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="mixins" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\JS\mixins.js;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="player_summary" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\player_summary.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="template_html" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\template.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplAdvancedRotation" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\tmplAdvancedRotation.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplBarrierDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplBarrierDistTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierDistTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplBarrierTakenDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierTakenDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
   <data name="tmplBuffStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplBuffStatsPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffStatsPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplBuffStatsTarget" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffStatsTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplBuffTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\tmplBuffTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplBuffTables" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplBuffVolumeStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplBuffVolumeStatsPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStatsPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  <data name="tmplBuffStatsTarget" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffStatsTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplBuffVolumeStatsTarget" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStatsTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="tmplBuffStatsPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffStatsPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplBuffVolumeStatsPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeStatsPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="tmplBuffVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplBuffTables" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplBuffTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplBuffVolumeTables" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplBuffVolumeTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayActorBuffStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayActorBuffStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorBuffStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayActorRotation" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayActorRotation.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorRotation.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayAnimationControl" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayAnimationControl.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayDamageData" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayDamageData.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageData.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayDamageTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayDamageTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayExtraDecorations" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayExtraDecorations.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -223,188 +199,143 @@
   <data name="tmplCombatReplayMechanicsList" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayMechanicsList.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplCombatReplayPlayerSelect" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerSelect.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplCombatReplayPlayersStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayersStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  <data name="tmplCombatReplayActorsStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorsStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayPlayerStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\Player\tmplCombatReplayPlayerStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="tmplCombatReplayPlayerStatus" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayPlayerStatus.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\Player\tmplCombatReplayPlayerStatus.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayStatusData" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayStatusData.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplCombatReplayTargetSelect" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetSelect.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplCombatReplayTargetsStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetsStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
   <data name="tmplCombatReplayTargetStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\Target\tmplCombatReplayTargetStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="tmplCombatReplayTargetStatus" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayTargetStatus.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\combatReplayTemplates\ActorStatus\Target\tmplCombatReplayTargetStatus.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplCombatReplayUI" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\combatReplayTemplates\tmplCombatReplayUI.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplConditionsTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplConditionsTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplConditionsVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplConditionsVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
   <data name="tmplDamageDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageDistTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageDistTarget" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageDistTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageModifierPersStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierPersStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierPersStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageModifierStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageModifierStatsContainer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierStatsContainer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierStatsContainer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageModifierTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DamageModifiers\tmplDamageModifierTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplDamageTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplDamageTakenDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageTakenDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplDamageTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDamageTakenDistTarget" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageTakenDistTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageTakenDistTarget.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplDamageTakenDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\DistributionTables\tmplDamageTakenDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDeathRecap" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplDeathRecap.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplDebuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplDebuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplDebuffVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplDebuffVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
   <data name="tmplDefenseTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplDefenseTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplDefenseTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDPSGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplDPSGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplDPSGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplDPSGraphModeSelector" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplDPSGraphModeSelector.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplDPSGraphModeSelector.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplEncounter" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplEncounter.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplEnhancementBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplEnhancementBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplEncounter.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplFood" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplFood.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplGameplayTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplGameplayTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplGameplayTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplOffensiveTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplOffensiveTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplGearBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplGearBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplGearBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplGearBuffVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplGearBuffVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  <data name="tmplNourishmentBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplNourishmentBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplEnhancementBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplEnhancementBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplOtherConsumableBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplOtherConsumableBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplDebuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplDebuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplDebuffVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplDebuffVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplConditionsTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplConditionsTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplConditionsVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplConditionsVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplGraphStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplGraphStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHealingDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHealingDistTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingDistTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHealingExtensionView" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingExtensionView.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplHealingGraphStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHealingGraphStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHealingStatTables" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplHealingStatTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHealingTakenDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingTakenDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHPSGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHPSGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplHPSGraphModeSelector" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHPSGraphModeSelector.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplIncomingHealingTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplIncomingHealingTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplGraphStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplMain" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\template.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
+  <data name="compressionUtils" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\compressionUtils.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="tmplBuffTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\tmplBuffTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="tmplMainView" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplMainView.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplMechanicsStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\tmplMechanicsStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
   <data name="tmplMechanicsTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplMechanicsTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplMechanicsTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplNourishmentBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplNourishmentBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplOffensiveTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplOffensiveTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplOtherConsumableBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplOtherConsumableBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplOutgoingHealingTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplOutgoingHealingTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
+    <data name="tmplMechanicsStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
+        <value>..\Resources\eiparser\htmlTemplates\tmplMechanicsStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    </data>
   <data name="tmplPersonalBuffTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplPersonalBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Buffs\tmplPersonalBuffTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplPersonalBuffVolumeTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\BuffVolumes\tmplPersonalBuffVolumeTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplPhase" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplPhase.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplPlayerBuffTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\tmplPlayerBuffTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplPlayerHealingStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplPlayerHealingTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="tmplPlayerHealingTabGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplPlayerHealingTabGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplPhase.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplPlayers" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplPlayers.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplPlayers.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplPlayersRotation" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplPlayersRotation.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -419,7 +350,10 @@
     <value>..\Resources\eiparser\htmlTemplates\tmplPlayerTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplPlayerTabGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplPlayerTabGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplPlayerTabGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplPlayerBuffTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\tmplPlayerBuffTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplRotationLegend" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplRotationLegend.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -427,23 +361,20 @@
   <data name="tmplSimpleRotation" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplSimpleRotation.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="tmplAdvancedRotation" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\tmplAdvancedRotation.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="tmplStatTables" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplStatTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplStatTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplSupportTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplSupportTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
-  <data name="tmplTargetBuffTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\tmplTargetBuffTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+    <value>..\Resources\eiparser\htmlTemplates\Statistics\tmplSupportTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplTargetData" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplTargetData.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplTargetPlayers" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Headers\tmplTargetPlayers.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
-  </data>
   <data name="tmplTargets" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplTargets.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Headers\tmplTargets.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplTargetStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\eiparser\htmlTemplates\tmplTargetStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -452,9 +383,68 @@
     <value>..\Resources\eiparser\htmlTemplates\tmplTargetTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="tmplTargetTabGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplTargetTabGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplTargetTabGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="tmplTargetTabPerPlayerGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplTargetTabPerPlayerGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  <data name="tmplTargetBuffTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlTemplates\tmplTargetBuffTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-</root>
+   <data name="tmplTargetTabPerPlayerGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
+       <value>..\Resources\eiparser\htmlTemplates\Graphs\tmplTargetTabPerPlayerGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+   </data>
+  <data name="tmplTargetPlayers" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Headers\tmplTargetPlayers.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHealingExtensionView" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\tmplHealingExtensionView.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplIncomingHealingTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplIncomingHealingTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHealingStatTables" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplHealingStatTables.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplOutgoingHealingTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Statistics\tmplOutgoingHealingTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHPSGraphModeSelector" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHPSGraphModeSelector.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHPSGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHPSGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHealingGraphStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplHealingGraphStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHealingDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHealingDistTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingDistTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplPlayerHealingStats" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingStats.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplPlayerHealingTab" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\tmplPlayerHealingTab.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplHealingTakenDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplHealingTakenDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplPlayerHealingTabGraph" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\Graphs\tmplPlayerHealingTabGraph.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplBarrierDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplBarrierDistTable" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierDistTable.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="tmplBarrierTakenDistPlayer" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\eiparser\htmlHealingExtensionTemplates\DistributionTables\tmplBarrierTakenDistPlayer.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="player_summary" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\player_summary.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="template_html" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\template.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data></root>

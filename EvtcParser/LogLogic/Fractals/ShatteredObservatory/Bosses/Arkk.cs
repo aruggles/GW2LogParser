@@ -17,10 +17,10 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Arkk : ShatteredObservatory
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup(
                 [
-                    new PlayerDstHealthDamageHitMechanic([ HorizonStrikeArkk1, HorizonStrikeArkk2 ], new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Horizon Strike", "Horizon Strike (turning pizza slices during Arkk)","Horizon Strike (Arkk)", 0),
+                    new PlayerDstHealthDamageHitMechanic([ HorizonStrikeArkk1, HorizonStrikeArkk2 ], new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Horizon Strike.A", "Horizon Strike (turning pizza slices during Arkk)","Horizon Strike (Arkk)", 0),
                     new PlayerDstHealthDamageHitMechanic(HorizonStrikeNormal, new MechanicPlotlySetting(Symbols.Circle,Colors.DarkRed), "Horizon Strike norm", "Horizon Strike (normal during Arkk)","Horizon Strike (normal, Arkk)", 0),
                 ]
             ),
@@ -97,9 +97,9 @@ internal class Arkk : ShatteredObservatory
         return trashIDs;
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return LogData.LogMode.CMNoName;
+        return LogData.Mode.CMNoName;
     }
 
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()
@@ -113,7 +113,7 @@ internal class Arkk : ShatteredObservatory
         ];
     }
 
-    private static void GetMiniBossPhase(TargetID targetID, ParsedEvtcLog log, IReadOnlyList<SingleActor> targets, string phaseName, List<PhaseData> phases, EncounterPhaseData encounterPhase)
+    private static void GetMiniBossPhase(TargetID targetID, ParsedEvtcLog log, IReadOnlyList<SingleActor> targets, string phaseName, List<SubPhasePhaseData> phases, EncounterPhaseData encounterPhase)
     {
         SingleActor? target = targets.FirstOrDefault(x => x.IsSpecies(targetID));
         if (target == null)
@@ -126,14 +126,14 @@ internal class Arkk : ShatteredObservatory
         phaseData.AddParentPhase(encounterPhase);
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor arkk, IReadOnlyList<SingleActor> targets, IReadOnlyList<SingleActor> trashMobs, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor arkk, IReadOnlyList<SingleActor> targets, IReadOnlyList<SingleActor> trashMobs, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(11);
-        phases.AddRange(GetPhasesByInvul(log, Determined762, arkk, false, true, encounterPhase.Start, encounterPhase.End));
+        var phases = new List<SubPhasePhaseData>(11);
+        phases.AddRange(GetSubPhasesByInvul(log, Determined762, arkk, false, true, encounterPhase.Start, encounterPhase.End));
         for (int i = 0; i < phases.Count; i++)
         {
             phases[i].Name = "Phase " + (i + 1);
@@ -144,9 +144,9 @@ internal class Arkk : ShatteredObservatory
         GetMiniBossPhase(TargetID.Archdiviner, log, encounterMiniBosses, "Archdiviner", phases, encounterPhase);
         GetMiniBossPhase(TargetID.EliteBrazenGladiator, log, encounterMiniBosses, "Brazen Gladiator", phases, encounterPhase);
 
-        var bloomPhases = new List<PhaseData>(10);
+        var bloomPhases = new List<SubPhasePhaseData>(10);
         var encounterBlooms = trashMobs.Where(x => x.IsSpecies(TargetID.SolarBloom) && encounterPhase.InInterval(x.FirstAware)).OrderBy(x => x.FirstAware);
-        foreach (NPC bloom in encounterBlooms)
+        foreach (var bloom in encounterBlooms)
         {
             long start = bloom.FirstAware;
             long end = bloom.LastAware;
@@ -196,38 +196,38 @@ internal class Arkk : ShatteredObservatory
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
     {
         var arkk = agentData.GetNPCsByID(TargetID.Arkk).FirstOrDefault() ?? throw new MissingKeyActorsException("Arkk not found");
-        CombatItem? startBuffApply = combatData.FirstOrDefault(x => x.SkillID == ArkkStartBuff && x.SrcMatchesAgent(arkk) && x.IsBuffApply());
+        CombatItem? startBuffApply = combatData.FirstOrDefault(x => x.SkillID == ArkkStartBuff && x.SrcMatchesAgent(arkk) && x.IsBuffApplyEvent());
         return startBuffApply?.Time ?? GetLogOffsetBySpawn(logData, combatData, arkk);
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
         // reward or death worked
-        if (logData.Success)
+        if (successHandler.Success)
         {
             return;
         }
         SingleActor target = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Arkk)) ?? throw new MissingKeyActorsException("Arkk not found");
         // missing buff apply events fallback, some phases will be missing
         // removes should be present
-        if (SetSuccessByBuffCount(combatData, logData, playerAgents, target, Determined762, 10))
+        if (SetSuccessByBuffCount(combatData, logData, playerAgents, successHandler, target, Determined762, 10))
         {
             var invulsRemoveTarget = combatData.GetBuffDataByIDByDst(Determined762, target.AgentItem).OfType<BuffRemoveAllEvent>();
             if (invulsRemoveTarget.Count() == 5)
             {
-                SetSuccessByCombatExit([target], combatData, logData, playerAgents);
+                SetSuccessByCombatExit([target], combatData, logData, playerAgents, successHandler);
             }
         }
     }
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
-        var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+        var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
         var finalEncounter = encounterPhases.LastOrDefault();
         if (finalEncounter != null && finalEncounter.Success)
         {
@@ -255,7 +255,7 @@ internal class Arkk : ShatteredObservatory
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -272,7 +272,7 @@ internal class Arkk : ShatteredObservatory
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -368,7 +368,7 @@ internal class Arkk : ShatteredObservatory
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -387,10 +387,17 @@ internal class Arkk : ShatteredObservatory
         }
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         List<CastEvent> res = [];
         res.AddRange(ProfHelper.ComputeUnderBuffCastEvents(combatData, skillData, HypernovaLaunchSAK, HypernovaLaunchBuff));
         return res;
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
     }
 }

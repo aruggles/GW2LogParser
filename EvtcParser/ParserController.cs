@@ -5,6 +5,10 @@ public abstract class ParserController
 {
 
     protected readonly List<string> StatusList;
+    /// <summary>
+    /// Uncompressed file size
+    /// </summary>
+    public long FileSize { get; private set; }
 
     protected ParserController()
     {
@@ -37,5 +41,10 @@ public abstract class ParserController
     public virtual void UpdateProgress(string status)
     {
         StatusList.Add(status);
+    }
+
+    internal void SetFileSize(long fileSize)
+    {
+        FileSize = fileSize;
     }
 }

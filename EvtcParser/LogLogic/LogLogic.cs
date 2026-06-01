@@ -4,6 +4,7 @@ using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.EIData.Decoration;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
@@ -30,7 +31,7 @@ public abstract class LogLogic
     }
 
 
-    private CombatReplayMap Map;
+    private CombatReplayMap? Map;
     protected readonly List<MechanicContainer> MechanicList;//Resurrects (start), Resurrect
     public ParseModeEnum ParseMode { get; protected set; } = ParseModeEnum.Unknown;
     public SkillModeEnum SkillMode { get; protected set; } = SkillModeEnum.PvE;
@@ -54,22 +55,28 @@ public abstract class LogLogic
 
     internal readonly Dictionary<string, _DecorationMetadata> DecorationCache = [];
 
-    private CombatReplayDecorationContainer EnvironmentDecorations;
+    private CombatReplayDecorationContainer? EnvironmentDecorations;
     private readonly CombatReplayDecorationContainer ArenaDecorations;
 
     public ChestID ChestID { get; protected set; } = ChestID.None;
 
 
-    public struct InstanceBuff
+    public readonly struct InstanceBuff
     {
         public readonly Buff Buff;
         public readonly int Stack;
         public readonly PhaseDataWithMetaData AttachedPhase;
+        public readonly long RemainingDuration;
         public InstanceBuff(Buff buff, int stack, PhaseDataWithMetaData phase)
         {
             Buff = buff;
             Stack = stack;
             AttachedPhase = phase;
+        }
+
+        public InstanceBuff(Buff buff, int stack, PhaseDataWithMetaData phase, long remainingDuration) : this(buff, stack, phase)
+        {
+            RemainingDuration = remainingDuration;
         }
     }
     protected List<InstanceBuff>? InstanceBuffs { get; private set; } = null;
@@ -113,7 +120,8 @@ public abstract class LogLogic
                         new PlayerDstCrowdControlMechanic(SkillIDs.ArcDPSGenericKnockbackPull, new MechanicPlotlySetting(Symbols.StarTriangleUp, Colors.DarkGreen), "Knck.Pll", "Knocked Back or Pulled", "Knocked Back/Pulled", 0),
                         new PlayerDstCrowdControlMechanic(SkillIDs.ArcDPSGenericFloat, new MechanicPlotlySetting(Symbols.StarTriangleUp, Colors.LightBlue), "Flt", "Float", "Float", 0),
                         new PlayerDstCrowdControlMechanic(SkillIDs.ArcDPSGenericLaunch, new MechanicPlotlySetting(Symbols.StarTriangleUp, Colors.DarkPurple), "Lnch", "Launched", "Launched", 0),
-                        new PlayerDstCrowdControlMechanic(SkillIDs.ArcDPSGenericWaterFloatSink, new MechanicPlotlySetting(Symbols.StarTriangleUp, Colors.DarkBlue), "Wtr.Flt.Snk", "Float or Sinked in Water", "Float or Sinked", 0),
+                        new PlayerDstCrowdControlMechanic([SkillIDs.ArcDPSGenericLockOut, SkillIDs.ArcDPSGenericStagger, SkillIDs.ArcDPSGenericFear], new MechanicPlotlySetting(Symbols.StarTriangleUp, Colors.LightPurple), "Lckt", "Lockout", "Lockout (Stun, Daze, Petrify, etc...) ", 0),
+                        new PlayerDstCrowdControlMechanic([SkillIDs.ArcDPSGenericWaterFloatSink, SkillIDs.ArcDPSGenericFloatWater, SkillIDs.ArcDPSGenericSink], new MechanicPlotlySetting(Symbols.StarTriangleUp, Colors.DarkBlue), "Wtr.Flt.Snk", "Float or Sinked in Water", "Float or Sinked", 0),
                     ]
                 ),
             ])
@@ -131,7 +139,7 @@ public abstract class LogLogic
         {
             allMechs.AddRange(mechGroup.GetMechanics());
         }
-        return new MechanicData(allMechs, GenericTriggerID == (int)TargetID.Instance);
+        return new MechanicData(allMechs);
     }
 
     internal virtual CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
@@ -149,6 +157,11 @@ public abstract class LogLogic
         return Map;
     }
 
+    internal virtual void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+
+    }
+
     internal virtual void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
         var mainPhase = log.LogData.GetMainPhase(log);
@@ -159,7 +172,7 @@ public abstract class LogLogic
                 instanceBuffs.Add(new(fractalInstability, 1, mainPhase));
             }
         }
-        var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>();
+        var encounterPhases = log.LogData.GetEncounterPhases(log);
         foreach (var encounterPhase in encounterPhases)
         {
             long end = encounterPhase.Success ? encounterPhase.End : (encounterPhase.End + encounterPhase.Start) / 2;
@@ -178,14 +191,17 @@ public abstract class LogLogic
             }).Max();
             if (emboldenedStacks > 0)
             {
-                instanceBuffs.Add(new(log.Buffs.BuffsByIDs[SkillIDs.Emboldened], emboldenedStacks, mainPhase));
+                instanceBuffs.Add(new(log.Buffs.BuffsByIDs[SkillIDs.Emboldened], emboldenedStacks, encounterPhase));
             }
         }
         // Quickplay
-        var hasQuickplay = log.PlayerList.Where(x => x.HasBuff(log, SkillIDs.QuickplayBoost, log.LogData.LogStart, log.LogData.LogEnd)).Any();
-        if (hasQuickplay)
+        if (log.PlayerList.Any(x => x.HasBuff(log, SkillIDs.QuickplayBoost, log.LogData.LogStart, log.LogData.LogEnd)))
         {
             instanceBuffs.Add(new(log.Buffs.BuffsByIDs[SkillIDs.QuickplayBoost], 1, mainPhase));
+        }
+        else if (log.PlayerList.Any(x => x.HasBuff(log, SkillIDs.QuickplayMorale, log.LogData.LogStart, log.LogData.LogEnd)))
+        {
+            instanceBuffs.Add(new(log.Buffs.BuffsByIDs[SkillIDs.QuickplayMorale], 1, mainPhase));
         }
     }
 
@@ -232,7 +248,7 @@ public abstract class LogLogic
         return [ ];
     }
 
-    internal virtual string GetLogicName(CombatData combatData, AgentData agentData)
+    internal virtual string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         SingleActor? target = Targets.FirstOrDefault(x => x.IsSpecies(GenericTriggerID));
         if (target == null)
@@ -250,7 +266,7 @@ public abstract class LogLogic
     private void ComputeLogTargets(AgentData agentData, List<CombatItem> combatItems, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         var ignoredSpeciesForRenaming = IgnoreForAutoNumericalRenaming();
-
+        ignoredSpeciesForRenaming.Add((int)TargetID.DummyTarget);
         // Build targets
         //NOTE(Rennorb): Even though this collection is used for contains tests, it is still faster to just iterate the 5 or so members this can have than
         // to build the hashset and hash the value each time.
@@ -262,10 +278,9 @@ public abstract class LogLogic
         {
             _targets.AddRange(agentData.GetNPCsByID(TargetID.Instance).Select(a => new NPC(a)));
         }
-        //TODO(Rennorb) @perf @cleanup: is this required?
         _targets.SortByFirstAware();
         var targetSortIDs = GetTargetsSortIDs();
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         _targets = _targets.OrderBy(x =>
         {
             if (targetSortIDs.TryGetValue(GetTargetID(x.ID), out int sortKey))
@@ -369,7 +384,7 @@ public abstract class LogLogic
             return [ ];
         }
 
-        //TODO(Rennorb) @perf: find average complexity
+        //TODO_PERF(Rennorb): find average complexity
         var breakbarPhases = new List<PhaseData>(Targets.Count);
         var noBreakbarSpecies = ForbidBreakbarPhasesFor();
         foreach (SingleActor target in Targets)
@@ -390,7 +405,7 @@ public abstract class LogLogic
 
                 long start = Math.Max(breakbarActive.Start - BreakbarPhaseTimeBuildup, log.LogData.LogStart);
                 long end = Math.Min(breakbarActive.End, log.LogData.LogEnd);
-                var phase = new BreakbarPhaseData(start, end, target.Character + " Breakbar " + ++i);
+                var phase = new BreakbarPhaseData(start, end, target.Character + " Breakbar " + ++i, start - breakbarActive.Start);
                 phase.AddTarget(target, log);
                 breakbarPhases.Add(phase);
             }
@@ -401,13 +416,12 @@ public abstract class LogLogic
     internal virtual List<PhaseData> GetPhases(ParsedEvtcLog log, bool requirePhases)
     {
         List<PhaseData> phases = GetInitialPhase(log);
-        // TODO: To be removed once all specific instance logics are implemented
         if (IsInstance)
         {
             var targets = Targets.Where(x => x.GetHealth(log.CombatData) > 3e6 && x.LastAware - x.FirstAware > MinimumInCombatDuration);
             if (targets.Any())
             {
-                AddPhasesPerTarget(log, phases, targets);
+                AddEncounterPhasesPerTarget(log, phases, targets);
             }
             else
             {
@@ -423,7 +437,7 @@ public abstract class LogLogic
 
     internal virtual IEnumerable<ErrorEvent> GetCustomWarningMessages(LogData logData, AgentData agentData, CombatData combatData, EvtcVersionEvent evtcVersion)
     {
-        if (evtcVersion.Build >= ArcDPSBuilds.DirectX11Update)
+        if (evtcVersion.Build >= ArcDPSBuilds.DirectX11Update && evtcVersion.Build < ArcDPSBuilds.ExtraDataInGUIDEvents)
         {
             return [new("As of arcdps 20210923, animated cast events' durations are broken, as such, any feature having a dependency on it are to be taken with a grain of salt. Impacted features are: <br>- Rotations <br>- Time spent in animation statistics <br>- Mechanics <br>- Phases <br>- Combat Replay Decorations")];
         }
@@ -462,7 +476,7 @@ public abstract class LogLogic
         return [ ];
     }
 
-    internal virtual List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal virtual List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         return [ ];
     }
@@ -506,44 +520,44 @@ public abstract class LogLogic
 
     internal IReadOnlyList<DecorationRenderingDescription> GetCombatReplayArenaDecorationRenderableDescriptions(CombatReplayMap map, ParsedEvtcLog log)
     {
-        return ArenaDecorations.GetCombatReplayRenderableDescriptions(Map, log, [], []);
+        return ArenaDecorations.GetCombatReplayRenderableDescriptions(map, log, [], []);
     }
 
     internal IReadOnlyList<DecorationRenderingDescription> GetCombatReplayEnvironmentDecorationRenderableDescriptions(CombatReplayMap map, ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
     {
         if (EnvironmentDecorations == null)
         {
-            //TODO(Rennorb) @perf: capacity
+            //TODO_PERF(Rennorb): capacity
             EnvironmentDecorations = new(DecorationCache);
             ComputeEnvironmentCombatReplayDecorations(log, EnvironmentDecorations);
         }
         return EnvironmentDecorations.GetCombatReplayRenderableDescriptions(map, log, usedSkills, usedBuffs);
     }
 
-    internal virtual LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal virtual LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (IsInstance)
         {
-            return LogData.LogMode.NotApplicable;
+            return LogData.Mode.NotApplicable;
         }
-        return LogData.LogMode.Normal;
+        return LogData.Mode.Normal;
     }
 
-    internal virtual LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal virtual LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (IsInstance)
         {
             InstanceStartEvent? evt = combatData.GetInstanceStartEvent();
             if (evt == null)
             {
-                return LogData.LogStartStatus.Normal;
+                return LogData.StartStatus.Normal;
             }
             else
             {
-                return evt.TimeOffsetFromInstanceCreation > 10000 ? LogData.LogStartStatus.Late : LogData.LogStartStatus.Normal;
+                return evt.TimeOffsetFromInstanceCreation > 10000 ? LogData.StartStatus.Late : LogData.StartStatus.Normal;
             }
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     protected virtual IReadOnlyList<TargetID> GetSuccessCheckIDs()
@@ -551,9 +565,9 @@ public abstract class LogLogic
         return [ GetTargetID(GenericTriggerID) ];
     }
 
-    internal virtual void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal virtual void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents);
+        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
     protected IEnumerable<SingleActor> GetSuccessCheckTargets()
@@ -561,26 +575,26 @@ public abstract class LogLogic
         return Targets.Where(x => x.IsAnySpecies(GetSuccessCheckIDs()));
     }
 
-    protected void NoBouncyChestGenericCheckSucess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    protected void NoBouncyChestGenericCheckSucess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        if (!logData.Success && ChestID != ChestID.None)
+        if (!successHandler.Success && ChestID != ChestID.None)
         {
-            SetSuccessByChestGadget(ChestID, agentData, logData);
+            SetSuccessByChestGadget(ChestID, agentData, logData, successHandler);
         }
-        if (!logData.Success && (GenericFallBackMethod & FallBackMethod.Death) > 0)
+        if (!successHandler.Success && (GenericFallBackMethod & FallBackMethod.Death) > 0)
         {
-            SetSuccessByDeath(GetSuccessCheckTargets(), combatData, logData, playerAgents, true);
+            SetSuccessByDeath(GetSuccessCheckTargets(), combatData, logData, playerAgents, successHandler, true);
         }
-        if (!logData.Success && (GenericFallBackMethod & FallBackMethod.CombatExit) > 0)
+        if (!successHandler.Success && (GenericFallBackMethod & FallBackMethod.CombatExit) > 0)
         {
-            SetSuccessByCombatExit(GetSuccessCheckTargets(), combatData, logData, playerAgents);
+            SetSuccessByCombatExit(GetSuccessCheckTargets(), combatData, logData, playerAgents, successHandler);
         }
-        if (!logData.Success)
+        if (!successHandler.Success)
         {
             var targets = GetSuccessCheckTargets();
             if (targets.Any())
             {
-                logData.SetSuccess(false, targets.Max(x => x.LastAware));
+                successHandler.SetSuccess(false, targets.Max(x => x.LastAware));
             }
         }
     }

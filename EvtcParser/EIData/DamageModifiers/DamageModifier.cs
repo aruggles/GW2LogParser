@@ -15,7 +15,8 @@ public abstract class DamageModifier
     public bool SkillBased => DamageModDescriptor.SkillBased;
 
     public bool Approximate => DamageModDescriptor.Approximate;
-    public Source Src => DamageModDescriptor.Src;
+    public bool SpecSpecificShared => DamageModDescriptor.SpecSpecificShared;
+    public IReadOnlyCollection<Source> Srcs => DamageModDescriptor.Srcs;
     public string Icon => DamageModDescriptor.Icon;
     public string Name => DamageModDescriptor.Name;
     /// <remarks>Not stable across restarts because it uses `Name.GetHashCode()`.</remarks>
@@ -25,6 +26,8 @@ public abstract class DamageModifier
     public bool Incoming { get; protected set; }
 
     public bool NeedsMinions => DmgSrc == DamageSource.All || DmgSrc == DamageSource.PetsOnly;
+    protected bool FoeAlwaysMaster => DamageModDescriptor.FoeAlwaysMaster;
+    protected bool ActorAlwaysMaster => DamageModDescriptor.ActorAlwaysMaster;
 
     internal DamageModifier(DamageModifierDescriptor damageModDescriptor)
     {
@@ -57,6 +60,7 @@ public abstract class DamageModifier
         }
     }
     internal abstract AgentItem GetFoe(HealthDamageEvent evt);
+    internal abstract AgentItem GetActor(HealthDamageEvent evt);
 
 
     internal List<DamageModifierEvent> ComputeDamageModifier(SingleActor actor, ParsedEvtcLog log)

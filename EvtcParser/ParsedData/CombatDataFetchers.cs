@@ -9,10 +9,6 @@ namespace GW2EIEvtcParser.ParsedData;
 
 partial class CombatData
 {
-    public IReadOnlyCollection<long> GetSkills()
-    {
-        return _skillIDs;
-    }
 
     internal static IReadOnlyList<T> GetValueOrEmpty<T>(Dictionary<AgentItem, List<T>> dict, AgentItem agent) where T : MetaDataEvent
     {
@@ -92,7 +88,7 @@ partial class CombatData
 
     public AttackTargetEvent? GetAttackTargetEventByAttackTarget(AgentItem attackTarget)
     {
-        if (_metaDataEvents.AttackTargetEventByAttackTarget.TryGetValue(attackTarget, out var attackTargetEvent)) 
+        if (_metaDataEvents.AttackTargetEventByAttackTarget.TryGetValue(attackTarget.EnglobingAgentItem, out var attackTargetEvent)) 
         {
             return attackTargetEvent;
         }
@@ -217,8 +213,8 @@ partial class CombatData
     /// <param name="markerEvents">Found marker events</param>
     public bool TryGetMarkerEventsByGUID(GUID marker, [NotNullWhen(true)] out IReadOnlyList<MarkerEvent>? markerEvents)
     {
-        var markerGUIDEvent = GetMarkerGUIDEvent(marker);
-        markerEvents = GetMarkerEventsByMarkerID(markerGUIDEvent.ContentID);
+        var markerGUIDEvent = GetMarkerGUIDEventByGUID(marker);
+        markerEvents = GetMarkerEventsByMarkerID(markerGUIDEvent.MarkerID);
         if (markerEvents.Count > 0)
         {
             return true;
@@ -252,9 +248,13 @@ partial class CombatData
         return GetTimeValueOrEmpty(_statusEvents.BarrierUpdateEvents, src);
     }
 
-    public IReadOnlyList<MaxHealthUpdateEvent> GetMaxHealthUpdateEvents(AgentItem src)
+    public IReadOnlyList<MaxHealthUpdateEvent> GetMaxHealthUpdateEventsBySrc(AgentItem src)
     {
         return GetTimeValueOrEmpty(_statusEvents.MaxHealthUpdateEvents, src);
+    }
+    public IReadOnlyList<MaxHealthUpdateEvent> GetMaxHealthUpdateEventsByMaxHP(long maxHP)
+    {
+        return _statusEvents.MaxHealthUpdateEventsByMaxHP.GetValueOrEmpty(maxHP);
     }
     public IReadOnlyList<HealthUpdateEvent> GetHealthUpdateEvents(AgentItem src)
     {
@@ -393,6 +393,15 @@ partial class CombatData
         return GetTimeValueOrEmpty(_buffRemoveAllDataByDst, dst);
     }
 
+    public IReadOnlyList<BuffRemoveSingleEvent> GetBuffRemoveSingleDataByIDByDst(long buffID, AgentItem dst)
+    {
+        if (_buffRemoveSingleDataByIDByDst.TryGetValue(buffID, out var byDst))
+        {
+            return GetTimeValueOrEmpty(byDst, dst);
+        }
+        return [];
+    }
+
     /// <summary>
     /// Returns list of buff events applied on agent
     /// </summary>
@@ -485,9 +494,13 @@ partial class CombatData
         return GetTimeValueOrEmpty(_crowControlTakenData, dst);
     }
 
-    public IReadOnlyList<StunBreakEvent> GetStunBreakEvents(AgentItem src)
+    public IReadOnlyList<StunBreakEvent> GetStunBreakReceivedData(AgentItem dst)
     {
-        return GetTimeValueOrEmpty(_statusEvents.StunBreakEventsBySrc, src);
+        return GetTimeValueOrEmpty(_stunBreakReceivedData, dst);
+    }
+    public IReadOnlyList<StunBreakEvent> GetStunBreakData(AgentItem src)
+    {
+        return GetTimeValueOrEmpty(_stunBreakData, src);
     }
     #endregion CROWDCONTROL
     #region CAST
@@ -528,6 +541,159 @@ partial class CombatData
     {
         return _animatedCastDataByID.GetValueOrEmpty(skillID);
     }
+    #region GADGET INTERACT
+    /// <summary>
+    /// Returns list of gadget interact cast events done by Agent
+    /// </summary>
+    public IReadOnlyList<GadgetInteractEvent> GetGadgetInteractCastData(AgentItem caster)
+    {
+        return GetTimeValueOrEmpty(_gadgetInteractCastData, caster);
+    }
+    /// <summary>
+    /// Returns list of gadget interact cast events attached to gadget
+    /// </summary>
+    public IReadOnlyList<GadgetInteractEvent> GetGadgetInteractCastDataByGadget(AgentItem gadget)
+    {
+        return GetTimeValueOrEmpty(_gadgetInteractCastDataByGadget, gadget);
+    }
+    /// <summary>
+    /// Returns list of gadget interact cast events attached to gadget
+    /// </summary>
+    public IReadOnlyList<GadgetInteractEvent> GetGadgetInteractCastDataByGadgetSpeciesID(long id)
+    {
+        return _gadgetInteractCastDataBySpeciesID.GetValueOrEmpty(id);
+    }
+    #endregion GADGET INTERACT
+    #region EMOTES
+    /// <summary>
+    /// Returns list of emote cast events from emote ID
+    /// </summary>
+    public IReadOnlyList<EmoteEvent> GetEmoteCastData(long emoteID)
+    {
+        return _emoteCastDataByEmoteID.GetValueOrEmpty(emoteID);
+    }
+    /// <summary>
+    /// Returns list of emote cast events from emote ID
+    /// </summary>
+    public IReadOnlyList<EmoteEvent> GetEmoteCastData(AgentItem caster)
+    {
+        return GetTimeValueOrEmpty(_emoteCastData, caster);
+    }
+
+    /// <returns>true on success</returns>
+    public bool TryGetEmoteEventsByGUID(GUID emoteGUID, [NotNullWhen(true)] out IReadOnlyList<EmoteEvent>? emoteEvents)
+    {
+        var emoteGUIDEvent = GetEmoteGUIDEventByGUID(emoteGUID);
+        emoteEvents = GetEmoteCastData(emoteGUIDEvent.EmoteID);
+        if (emoteEvents.Count > 0)
+        {
+            return true;
+        }
+        emoteEvents = null;
+        return false;
+    }
+
+    /// <returns>true on success</returns>
+    public bool TryGetEmoteEventsByGUIDs(Span<GUID> emotes, out List<EmoteEvent> emoteEvents)
+    {
+        //TODO_PERF(Rennorb): find average complexity
+        emoteEvents = new(emotes.Length * 10);
+        foreach (var emoteGUID in emotes)
+        {
+            if (TryGetEmoteEventsByGUID(emoteGUID, out var events))
+            {
+                emoteEvents.AddRange(events);
+            }
+        }
+
+        return emoteEvents.Count > 0;
+    }
+
+    private static List<EmoteEvent> GetSrcEmoteEventsCheckingParent(AgentItem agent, IReadOnlyList<EmoteEvent> emotes)
+    {
+        List<EmoteEvent> result;
+        if (agent.IsEnglobedAgent)
+        {
+            result = emotes.Where(emote => emote.Caster.Is(agent) && emote.Time >= agent.FirstAware && emote.Time <= agent.LastAware).ToList();
+        }
+        else
+        {
+            result = emotes.Where(emote => emote.Caster.Is(agent)).ToList();
+        }
+        return result;
+    }
+
+    private static List<EmoteEvent> GetSrcWithMasterEmoteEventsCheckingParent(AgentItem agent, IReadOnlyList<EmoteEvent> emotes)
+    {
+        List<EmoteEvent> result;
+        if (agent.IsEnglobedAgent)
+        {
+            var parentAgent = agent.EnglobingAgentItem;
+            result = emotes.Where(emote => parentAgent.IsMasterOf(emote.Caster) && emote.Time >= agent.FirstAware && emote.Time <= agent.LastAware).ToList();
+        }
+        else
+        {
+            result = emotes.Where(emote => agent.IsMasterOf(emote.Caster)).ToList();
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Returns emote events by the given agent and emote GUID.
+    /// </summary>
+    /// <returns>true on found emote with entries > 0</returns>
+    public bool TryGetEmoteEventsBySrcWithGUID(AgentItem agent, GUID emote, [NotNullWhen(true)] out IReadOnlyList<EmoteEvent>? emoteEvents)
+    {
+        if (TryGetEmoteEventsByGUID(emote, out var emotes))
+        {
+            List<EmoteEvent> result = GetSrcEmoteEventsCheckingParent(agent, emotes);
+            if (result.Count > 0)
+            {
+                emoteEvents = result;
+                return true;
+            }
+        }
+
+        emoteEvents = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns emote events by the given agent and emote GUIDs.
+    /// </summary>
+    /// <returns>true on success</returns>
+    public bool TryGetEmoteEventsBySrcWithGUIDs(AgentItem agent, ReadOnlySpan<GUID> emoteGUIDs, out List<EmoteEvent> emoteEvents)
+    {
+        //TODO_PERF(Rennorb): find average complexity
+        emoteEvents = new List<EmoteEvent>(emoteGUIDs.Length * 10);
+        foreach (var emoteGUID in emoteGUIDs)
+        {
+            if (TryGetEmoteEventsByGUID(emoteGUID, out var emotes))
+            {
+                emoteEvents.AddRange(GetSrcEmoteEventsCheckingParent(agent, emotes));
+            }
+        }
+
+        return emoteEvents.Count > 0;
+    }
+    /// <summary>
+    /// Returns emote events by the given agent <b>including</b> minions and the given emote GUIDs.
+    /// </summary>
+    /// <returns>true on success</returns>
+    public bool TryGetEmoteEventsByMasterWithGUIDs(AgentItem agent, Span<GUID> emoteGUIDs, out List<EmoteEvent> emoteEvents)
+    {
+        emoteEvents = [];
+        foreach (var emoteGUID in emoteGUIDs)
+        {
+            if (TryGetEmoteEventsByGUID(emoteGUID, out var emotes))
+            {
+                emoteEvents.AddRange(GetSrcWithMasterEmoteEventsCheckingParent(agent, emotes));
+            }
+        }
+
+        return emoteEvents.Count > 0;
+    }
+    #endregion EMOTES
     #endregion CAST
     #region MOVEMENTS
     public IReadOnlyList<MovementEvent> GetMovementData(AgentItem src)
@@ -558,8 +724,8 @@ partial class CombatData
     /// <returns>true on success</returns>
     public bool TryGetEffectEventsByGUID(GUID effectGUID, [NotNullWhen(true)] out IReadOnlyList<EffectEvent>? effectEvents)
     {
-        var effectGUIDEvent = GetEffectGUIDEvent(effectGUID);
-        effectEvents = GetEffectEventsByEffectID(effectGUIDEvent.ContentID);
+        var effectGUIDEvent = GetEffectGUIDEventByGUID(effectGUID);
+        effectEvents = GetEffectEventsByEffectID(effectGUIDEvent.EffectID);
         if (effectEvents.Count > 0)
         {
             return true;
@@ -571,7 +737,7 @@ partial class CombatData
     /// <returns>true on success</returns>
     public bool TryGetEffectEventsByGUIDs(Span<GUID> effects, out List<EffectEvent> effectEvents)
     {
-        //TODO(Rennorb) @perf: fid average complexity
+        //TODO_PERF(Rennorb): find average complexity
         effectEvents = new(effects.Length * 10);
         foreach (var effectGUID in effects)
         {
@@ -647,17 +813,6 @@ partial class CombatData
         return false;
     }
 
-    /// <summary>
-    /// Appends effect events by the given agent and effect GUID.
-    /// </summary>
-    public void AppendEffectEventsBySrcWithGUID(AgentItem agent, GUID effect, List<EffectEvent> effectEvents)
-    {
-        if (TryGetEffectEventsByGUID(effect, out var effects))
-        {
-            effectEvents.AddRange(GetSrcEffectEventsCheckingParent(agent, effects));
-        }
-    }
-
 
     /// <summary>
     /// Returns effect events on the given agent and effect GUID.
@@ -678,28 +833,21 @@ partial class CombatData
         effectEvents = null;
         return false;
     }
-    /// <summary>
-    /// Append effect events on the given agent and effect GUID.
-    /// </summary>
-    public void AppendEffectEventsByDstWithGUID(AgentItem agent, GUID effect, List<EffectEvent> effectEvents)
-    {
-        if (TryGetEffectEventsByGUID(effect, out var effects))
-        {
-            effectEvents.AddRange(GetDstEffectEventsCheckingParent(agent, effects));
-        }
-    }
 
     /// <summary>
     /// Returns effect events by the given agent and effect GUIDs.
     /// </summary>
     /// <returns>true on success</returns>
-    public bool TryGetEffectEventsBySrcWithGUIDs(AgentItem agent, ReadOnlySpan<GUID> effects, out List<EffectEvent> effectEvents)
+    public bool TryGetEffectEventsBySrcWithGUIDs(AgentItem agent, ReadOnlySpan<GUID> effectGUIDs, out List<EffectEvent> effectEvents)
     {
-        //TODO(Rennorb) @perf: find average complexity
-        effectEvents = new List<EffectEvent>(effects.Length * 10);
-        foreach (var effectGUID in effects)
+        //TODO_PERF(Rennorb): find average complexity
+        effectEvents = new List<EffectEvent>(effectGUIDs.Length * 10);
+        foreach (var effectGUID in effectGUIDs)
         {
-            AppendEffectEventsBySrcWithGUID(agent, effectGUID, effectEvents);
+            if (TryGetEffectEventsByGUID(effectGUID, out var effects))
+            {
+                effectEvents.AddRange(GetSrcEffectEventsCheckingParent(agent, effects));
+            }
         }
 
         return effectEvents.Count > 0;
@@ -708,13 +856,16 @@ partial class CombatData
     /// Returns effect events on the given agent and effect GUIDs.
     /// </summary>
     /// <returns>true on success</returns>
-    public bool TryGetEffectEventsByDstWithGUIDs(AgentItem agent, ReadOnlySpan<GUID> effects, out List<EffectEvent> effectEvents)
+    public bool TryGetEffectEventsByDstWithGUIDs(AgentItem agent, ReadOnlySpan<GUID> effectGUIDs, out List<EffectEvent> effectEvents)
     {
-        //TODO(Rennorb) @perf: find average complexity
-        effectEvents = new List<EffectEvent>(effects.Length * 10);
-        foreach (var effectGUID in effects)
+        //TODO_PERF(Rennorb): find average complexity
+        effectEvents = new List<EffectEvent>(effectGUIDs.Length * 10);
+        foreach (var effectGUID in effectGUIDs)
         {
-            AppendEffectEventsByDstWithGUID(agent, effectGUID, effectEvents);
+            if (TryGetEffectEventsByGUID(effectGUID, out var effects))
+            {
+                effectEvents.AddRange(GetDstEffectEventsCheckingParent(agent, effects));
+            }
         }
 
         return effectEvents.Count > 0;
@@ -741,26 +892,18 @@ partial class CombatData
     }
 
     /// <summary>
-    /// Returns effect events by the given agent <b>including</b> minions and the given effect GUID.
-    /// </summary>
-    public void AppendEffectEventsByMasterWithGUID(AgentItem agent, GUID effect, List<EffectEvent> effectEvents)
-    {
-        if (TryGetEffectEventsByGUID(effect, out var effects))
-        {
-            effectEvents.AddRange(GetSrcWithMasterEffectEventsCheckingParent(agent, effects));
-        }
-    }
-
-    /// <summary>
     /// Returns effect events by the given agent <b>including</b> minions and the given effect GUIDs.
     /// </summary>
     /// <returns>true on success</returns>
-    public bool TryGetEffectEventsByMasterWithGUIDs(AgentItem agent, Span<GUID> effects, out List<EffectEvent> effectEvents)
+    public bool TryGetEffectEventsByMasterWithGUIDs(AgentItem agent, Span<GUID> effectGUIDs, out List<EffectEvent> effectEvents)
     {
         effectEvents = [];
-        foreach (var effectGUID in effects)
+        foreach (var effectGUID in effectGUIDs)
         {
-            AppendEffectEventsByMasterWithGUID(agent, effectGUID, effectEvents);
+            if (TryGetEffectEventsByGUID(effectGUID, out var effects))
+            {
+                effectEvents.AddRange(GetSrcWithMasterEffectEventsCheckingParent(agent, effects));
+            }
         }
 
         return effectEvents.Count > 0;
@@ -875,12 +1018,12 @@ partial class CombatData
     }
     #endregion EFFECTS
     #region GUIDS
-    public EffectGUIDEvent GetEffectGUIDEvent(GUID effectGUID)
+    public EffectGUIDEvent GetEffectGUIDEventByGUID(GUID effectGUID)
     {
         return _metaDataEvents.EffectGUIDEventsByGUID.TryGetValue(effectGUID, out var evt) ? evt : EffectGUIDEvent.DummyEffectGUID;
     }
 
-    internal EffectGUIDEvent GetEffectGUIDEvent(long effectID)
+    public EffectGUIDEvent GetEffectGUIDEventByEffectID(long effectID)
     {
         if (_metaDataEvents.EffectGUIDEventsByEffectID.TryGetValue(effectID, out var evt))
         {
@@ -895,34 +1038,54 @@ partial class CombatData
         return EffectGUIDEvent.DummyEffectGUID;
     }
 
-    public SkillGUIDEvent? GetSkillGUIDEvent(GUID skill)
+    public SkillGUIDEvent? GetSkillGUIDEventByGUID(GUID skill)
     {
         return _metaDataEvents.SkillGUIDEventsByGUID.TryGetValue(skill, out var evt) ? evt : HasSpeciesAndSkillGUIDs ? SkillGUIDEvent.DummySkillGUID : null;
     }
 
-    internal SkillGUIDEvent? GetSkillGUIDEvent(long skillID)
+    public SkillGUIDEvent? GetSkillGUIDEventBySKillID(long skillID)
     {
         return _metaDataEvents.SkillGUIDEventsBySkillID.TryGetValue(skillID, out var evt) ? evt : HasSpeciesAndSkillGUIDs ? SkillGUIDEvent.DummySkillGUID : null;
     }
 
-    public SpeciesGUIDEvent? GetSpeciesGUIDEvent(GUID species)
+    public SpeciesGUIDEvent? GetSpeciesGUIDEventByGUID(GUID species)
     {
         return _metaDataEvents.SpeciesGUIDEventsByGUID.TryGetValue(species, out var evt) ? evt : HasSpeciesAndSkillGUIDs ? SpeciesGUIDEvent.DummySpeciesGUID : null;
     }
 
-    internal SpeciesGUIDEvent? GetSpeciesGUIDEvent(long speciesID)
+    public SpeciesGUIDEvent? GetSpeciesGUIDEventBySpeciesID(long speciesID)
     {
         return _metaDataEvents.SpeciesGUIDEventsBySpeciesID.TryGetValue(speciesID, out var evt) ? evt : HasSpeciesAndSkillGUIDs ? SpeciesGUIDEvent.DummySpeciesGUID : null;
     }
 
-    public MarkerGUIDEvent GetMarkerGUIDEvent(GUID marker)
+    public EmoteGUIDEvent GetEmoteGUIDEventByGUID(GUID emote)
+    {
+        return _metaDataEvents.EmoteGUIDEventsByGUID.TryGetValue(emote, out var evt) ? evt : EmoteGUIDEvent.DummyEmoteGUID;
+    }
+
+    public EmoteGUIDEvent GetEmoteGUIDEventByEmoteID(long emoteID)
+    {
+        return _metaDataEvents.EmoteGUIDEventsByEmoteID.TryGetValue(emoteID, out var evt) ? evt : EmoteGUIDEvent.DummyEmoteGUID;
+    }
+
+    public MarkerGUIDEvent GetMarkerGUIDEventByGUID(GUID marker)
     {
         return _metaDataEvents.MarkerGUIDEventsByGUID.TryGetValue(marker, out var evt) ? evt : MarkerGUIDEvent.DummyMarkerGUID;
     }
 
-    internal MarkerGUIDEvent GetMarkerGUIDEvent(long markerID)
+    public MarkerGUIDEvent GetMarkerGUIDEventByMarkerID(long markerID)
     {
         return _metaDataEvents.MarkerGUIDEventsByMarkerID.TryGetValue(markerID, out var evt) ? evt : MarkerGUIDEvent.DummyMarkerGUID;
+    }
+
+    public TeamGUIDEvent? GetTeamGUIDEventByGUID(GUID team)
+    {
+        return _metaDataEvents.TeamGUIDEventsByGUID.TryGetValue(team, out var evt) ? evt : null;
+    }
+
+    public TeamGUIDEvent? GetTeamGUIDEventByTeamID(ulong teamID)
+    {
+        return _metaDataEvents.TeamGUIDEventsByTeamID.TryGetValue(teamID, out var evt) ? evt : null;
     }
     #endregion GUIDS
     #region MISSILE

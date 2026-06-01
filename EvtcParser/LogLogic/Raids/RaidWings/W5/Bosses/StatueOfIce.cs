@@ -7,12 +7,13 @@ using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
+using GW2EIGW2API;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class StatueOfIce : HallOfChains
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup(
+    internal readonly MechanicGroup Mechanics = new(
         [
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic(KingsWrathConeAoE, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.White), "Cone AoE", "Hit by King's Wrath (Cone AoEs)", "King's Wrath Cone AoE Hit", 0),
@@ -53,22 +54,15 @@ internal class StatueOfIce : HallOfChains
         CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
         if (logStartNPCUpdate != null)
         {
-            CombatItem? initialCast = combatData.FirstOrDefault(x => x.StartCasting() && x.SkillID == BrokenKingFirstCast && x.SrcMatchesAgent(brokenKing));
-            if (initialCast != null)
-            {
-                startToUse = initialCast.Time;
-            }
-            else
-            {
-                startToUse = GetFirstDamageEventTime(logData, agentData, combatData, brokenKing);
-            }
+            CombatItem? initialCast = combatData.FirstOrDefault(x => x.IsStartCastEvent() && x.SkillID == BrokenKingFirstCast && x.SrcMatchesAgent(brokenKing));
+            startToUse = initialCast?.Time ?? GetFirstDamageEventTime(logData, agentData, combatData, brokenKing);
         }
         return startToUse;
     }
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -88,7 +82,7 @@ internal class StatueOfIce : HallOfChains
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -106,7 +100,7 @@ internal class StatueOfIce : HallOfChains
                                 uint range = 450;
                                 int angle = 100;
                                 var connector = new AgentConnector(target);
-                                var rotationConnector = new AngleConnector(facing);
+                                var rotationConnector = new AngleConnector(facing.Value);
                                 replay.Decorations.Add(new PieDecoration(range, angle, lifespan, Colors.LightBlue, 0.2, connector).UsingRotationConnector(rotationConnector));
                                 replay.Decorations.Add(new PieDecoration(range, angle, (lifespan.start + 1900, lifespan.end), Colors.LightBlue, 0.3, connector).UsingRotationConnector(rotationConnector));
                             }
@@ -123,7 +117,7 @@ internal class StatueOfIce : HallOfChains
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -158,7 +152,7 @@ internal class StatueOfIce : HallOfChains
         {
             foreach (EffectEvent green in greens)
             {
-                EIData.Color color = Colors.DarkGreen;
+                Color color = Colors.DarkGreen;
 
                 // Ice Breaker - Failed Greens
                 if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.BrokenKingIceBreakerGreenExplosion, out var failedGreens))
@@ -179,9 +173,16 @@ internal class StatueOfIce : HallOfChains
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 
@@ -195,12 +196,12 @@ internal class StatueOfIce : HallOfChains
                 .UsingAgentRedirectionIfUnknown((int)TargetID.BrokenKing),
         ];
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents);
+        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Statue of Ice";
     }

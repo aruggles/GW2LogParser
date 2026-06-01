@@ -17,6 +17,7 @@ public abstract partial class SingleActor : Actor
     public int UniqueID => AgentItem.UniqueID;
     public long LastAware => AgentItem.LastAware;
     public long FirstAware => AgentItem.FirstAware;
+    public long HalfAware => AgentItem.HalfAware;
     public ushort InstID => AgentItem.EnglobingAgentItem.InstID;
 
     public AgentItem EnglobingAgentItem => AgentItem.EnglobingAgentItem;
@@ -67,11 +68,11 @@ public abstract partial class SingleActor : Actor
         if (Health == -2)
         {
             Health = -1;
-            IReadOnlyList<MaxHealthUpdateEvent> maxHpUpdates = combatData.GetMaxHealthUpdateEvents(EnglobingAgentItem);
+            IReadOnlyList<MaxHealthUpdateEvent> maxHpUpdates = combatData.GetMaxHealthUpdateEventsBySrc(EnglobingAgentItem);
             if (maxHpUpdates.Any())
             {
                 HealthDamageEvent? lastDamage = combatData.GetDamageTakenData(AgentItem).LastOrDefault(x => x.HealthDamage > 0);
-                long timeCheck = (FirstAware + LastAware) / 2;
+                long timeCheck = HalfAware;
                 if (lastDamage != null)
                 {
                     timeCheck = Math.Max(timeCheck, Math.Max(FirstAware, lastDamage.Time - 5000));
@@ -83,9 +84,16 @@ public abstract partial class SingleActor : Actor
         return Health;
     }
 
-    internal abstract void SetManualHealth(int health, IReadOnlyList<(long hpValue, double percent)>? hpDistribution = null);
+    internal abstract void SetManualHealth(int health, IReadOnlyList<(int hpValue, double percent)>? hpDistribution = null);
 
-    public virtual IReadOnlyList<(long hpValue, double percent)>? GetHealthDistribution()
+    internal abstract void SetHealthBars(IReadOnlyList<(double maxPercent, double minPercent, int hpValue, bool active)> hpBars);
+
+    public virtual IReadOnlyList<(int hpValue, double percent)>? GetHealthDistribution()
+    {
+        return null;
+    }
+
+    public virtual IReadOnlyList<(double maxPercent, double minPercent, int hpValue, bool active)>? GetHealthBars()
     {
         return null;
     }
@@ -202,19 +210,19 @@ public abstract partial class SingleActor : Actor
     {
         return (type) switch
         {
-            BuffEnum.Group or BuffEnum.OffGroup => ([], []),
+            BuffEnum.Group or BuffEnum.OffGroup => ([ ], [ ]),
             BuffEnum.Squad =>
-                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p != this), log, AgentItem, start, end),
+                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p != this), log, this, start, end),
             _ => BuffStatistics.GetBuffsForSelf(log, this, start, end),
         };
     }
 
     internal virtual (Dictionary<long, BuffVolumeStatistics> Volumes, Dictionary<long, BuffVolumeStatistics> ActiveVolumes) ComputeBuffVolumes(ParsedEvtcLog log, long start, long end, BuffEnum type)
     {
-        return (type) switch
+        return (type) switch 
         {
-            BuffEnum.Group or BuffEnum.OffGroup => ([], []),
-            BuffEnum.Squad =>
+            BuffEnum.Group or BuffEnum.OffGroup => ([ ], [ ]),
+            BuffEnum.Squad => 
                 BuffVolumeStatistics.GetBuffVolumesForPlayers(log.PlayerList.Where(p => p != this), log, this, start, end),
             _ => BuffVolumeStatistics.GetBuffVolumesForSelf(log, this, start, end),
         };
@@ -248,12 +256,14 @@ public abstract partial class SingleActor : Actor
 
     public IReadOnlyList<ParametricPoint3D> GetCombatReplayNonPolledPositions(ParsedEvtcLog log)
     {
-        return InitCombatReplay(log).Positions;
+        InitCombatReplay(log);
+        return CombatReplay.Positions;
     }
 
     public IReadOnlyList<ParametricPoint3D> GetCombatReplayPolledPositions(ParsedEvtcLog log)
     {
-        return InitCombatReplay(log).PolledPositions;
+        InitCombatReplay(log);
+        return CombatReplay.PolledPositions;
     }
     private IReadOnlyList<ParametricPoint3D?>? CombatReplayActivePositions;
     /// <summary> Calculates a list of positions of the player which are null in places where the player is dead or disconnected. </summary>
@@ -277,7 +287,7 @@ public abstract partial class SingleActor : Actor
                 if (!canCR)
                 {
                     activePositions[positionIndex] = null;
-                }
+                } 
                 else if (active.End < cur.Time)
                 {
                     break;
@@ -298,12 +308,14 @@ public abstract partial class SingleActor : Actor
 
     public IReadOnlyList<ParametricPoint3D> GetCombatReplayNonPolledRotations(ParsedEvtcLog log)
     {
-        return InitCombatReplay(log).Rotations;
+        InitCombatReplay(log);
+        return CombatReplay.Rotations;
     }
 
     public IReadOnlyList<ParametricPoint3D> GetCombatReplayPolledRotations(ParsedEvtcLog log)
     {
-        return InitCombatReplay(log).PolledRotations;
+        InitCombatReplay(log);
+        return CombatReplay.PolledRotations;
     }
 
     protected virtual IReadOnlyList<Segment> GetActiveSegmentsForCRTrim(ParsedEvtcLog log)
@@ -344,19 +356,19 @@ public abstract partial class SingleActor : Actor
         }
         replay.Trim(Math.Max(trimStart, FirstAware), Math.Min(trimEnd, LastAware));
     }
-
+    
     [MemberNotNull(nameof(CombatReplay))]
-    protected CombatReplay InitCombatReplay(ParsedEvtcLog log)
+    protected void InitCombatReplay(ParsedEvtcLog log)
     {
         if (CombatReplay != null)
         {
-            return CombatReplay;
+            return;
         }
-        CombatReplay = new CombatReplay(log);
+        CombatReplay = AgentItem.PositionAttachedAgentItem != null ? new CombatReplayRotationOnly(log) : new CombatReplay(log);
         if (!log.CombatData.HasMovementData)
         {
             // no combat replay support on log
-            return CombatReplay;
+            return;
         }
         if (AgentItem.IsEnglobedAgent)
         {
@@ -364,9 +376,15 @@ public abstract partial class SingleActor : Actor
             var parentActor = log.FindActor(AgentItem.EnglobingAgentItem);
             parentActor.InitCombatReplay(log);
             CombatReplay.CopyFrom(parentActor.CombatReplay);
-        }
+        } 
         else
         {
+            if (AgentItem.PositionAttachedAgentItem != null)
+            {
+                var attachedActor = log.FindActor(AgentItem.PositionAttachedAgentItem);
+                attachedActor.InitCombatReplay(log);
+                CombatReplay.CopyPositionsFrom(attachedActor.CombatReplay);
+            }
             foreach (MovementEvent movementEvent in log.CombatData.GetMovementData(AgentItem))
             {
                 movementEvent.AddPoint3D(CombatReplay);
@@ -374,7 +392,12 @@ public abstract partial class SingleActor : Actor
             CombatReplay.PollingRate(log.LogData.LogDuration, AgentItem.Type == AgentItem.AgentType.Player);
         }
         TrimCombatReplay(log, CombatReplay);
-        if (!IsFakeActor && !AgentItem.IsEnglobingAgent)
+    }
+
+    protected CombatReplay GetCombatReplay(ParsedEvtcLog log)
+    {
+        InitCombatReplay(log);
+        if (CombatReplay.Decorations.IsEmpty() && !IsFakeActor && !AgentItem.IsEnglobingAgent)
         {
             InitAdditionalCombatReplayData(log, CombatReplay);
         }
@@ -383,7 +406,7 @@ public abstract partial class SingleActor : Actor
 
     internal IReadOnlyList<DecorationRenderingDescription> GetCombatReplayDecorationRenderableDescriptions(CombatReplayMap map, ParsedEvtcLog log, Dictionary<long, SkillItem> usedSkills, Dictionary<long, Buff> usedBuffs)
     {
-        return InitCombatReplay(log).Decorations.GetCombatReplayRenderableDescriptions(map, log, usedSkills, usedBuffs);
+        return GetCombatReplay(log).Decorations.GetCombatReplayRenderableDescriptions(map, log, usedSkills, usedBuffs);
     }
 
     protected virtual void InitAdditionalCombatReplayData(ParsedEvtcLog log, CombatReplay replay)
@@ -405,17 +428,17 @@ public abstract partial class SingleActor : Actor
 
     public abstract SingleActorCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log);
 
-    private static bool TryGetCurrentPoint(IReadOnlyList<ParametricPoint3D> points, long time, [NotNullWhen(true)] out Vector3 point, long forwardWindow = 0)
+    private static bool TryGetCurrentPoint(IReadOnlyList<ParametricPoint3D> points, long time, [NotNullWhen(true)] out Vector3? point, long forwardWindow = 0)
     {
         if (forwardWindow != 0)
         {
-            var parametric = points.FirstOrNull((in ParametricPoint3D x) => x.Time >= time && x.Time <= time + forwardWindow)
-                 ?? points.LastOrNull((in ParametricPoint3D x) => x.Time <= time);
-            if (parametric.HasValue)
-            {
+           var parametric = points.FirstOrNull((in ParametricPoint3D x) => x.Time >= time && x.Time <= time + forwardWindow)
+                ?? points.LastOrNull((in ParametricPoint3D x) => x.Time <= time);
+           if(parametric.HasValue)
+           {
                 point = parametric.Value.XYZ;
                 return true;
-            }
+           }
 
             point = default;
             return false;
@@ -427,20 +450,20 @@ public abstract partial class SingleActor : Actor
             point = default;
             return false;
         }
-
+        
         ParametricPoint3D position = points[foundIndex];
         if (position.Time > time)
         {
             point = default;
             return false;
         }
-
+        
         point = position.XYZ;
         return true;
     }
 
     /// <param name="forwardWindow">Position will be looked up to time + forwardWindow if given</param>
-    public bool TryGetCurrentPosition(ParsedEvtcLog log, long time, [NotNullWhen(true)] out Vector3 position, long forwardWindow = 0)
+    public bool TryGetCurrentPosition(ParsedEvtcLog log, long time, [NotNullWhen(true)] out Vector3? position, long forwardWindow = 0)
     {
         if (!HasCombatReplayPositions(log))
         {
@@ -455,7 +478,7 @@ public abstract partial class SingleActor : Actor
         return TryGetCurrentPoint(GetCombatReplayPolledPositions(log), time, out position, forwardWindow);
     }
 
-    public bool TryGetCurrentInterpolatedPosition(ParsedEvtcLog log, long time, [NotNullWhen(true)] out Vector3 position)
+    public bool TryGetCurrentInterpolatedPosition(ParsedEvtcLog log, long time, [NotNullWhen(true)] out Vector3? position)
     {
         if (!HasCombatReplayPositions(log))
         {
@@ -483,7 +506,7 @@ public abstract partial class SingleActor : Actor
         else
         {
             var parametric = prev ?? next;
-            if (parametric != null)
+            if(parametric != null)
             {
                 position = parametric.Value.XYZ;
                 return true;
@@ -499,7 +522,7 @@ public abstract partial class SingleActor : Actor
     //TODO(Rennorb) @cleanup: There is an argument to be made here that in all the places where this is used you probably want to add a decoration either way, regardless if this fails or not.
     //Something to look into.
     /// <param name="forwardWindow">Rotation will be looked up to time + forwardWindow if given</param>
-    public bool TryGetCurrentFacingDirection(ParsedEvtcLog log, long time, [NotNullWhen(true)] out Vector3 rotation, long forwardWindow = 0)
+    public bool TryGetCurrentFacingDirection(ParsedEvtcLog log, long time, [NotNullWhen(true)] out Vector3? rotation, long forwardWindow = 0) 
     {
         if (!HasCombatReplayRotations(log))
         {
@@ -557,11 +580,11 @@ public abstract partial class SingleActor : Actor
     {
         var animationCastData = log.CombatData.GetAnimatedCastData(AgentItem);
         var instantCastData = log.CombatData.GetInstantCastData(AgentItem);
-#pragma warning disable IDE0028 //NOTE(Rennorb): this is (likely) more efficient because of the list types
+        #pragma warning disable IDE0028 //NOTE(Rennorb): this is (likely) more efficient because of the list types
         CastEvents = new List<CastEvent>(animationCastData.Count + instantCastData.Count);
         CastEvents.AddRange(animationCastData);
         CastEvents.AddRange(instantCastData);
-#pragma warning restore IDE0028
+        #pragma warning restore IDE0028 
         foreach (WeaponSwapEvent wepSwap in log.CombatData.GetWeaponSwapData(AgentItem))
         {
             if (CastEvents.Count > 0 && (wepSwap.Time - CastEvents.Last().Time) < ServerDelayConstant && CastEvents.Last().SkillID == WeaponSwap)
@@ -582,7 +605,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollectionWithTarget<DamageStatistics>? _dpsStats;
     public DamageStatistics GetDamageStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _dpsStats ??= new CachingCollectionWithTarget<DamageStatistics>(log);
+        _dpsStats ??= new (AgentItem, log);
 
         if (!_dpsStats.TryGetValue(start, end, target, out var value))
         {
@@ -602,7 +625,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollectionWithTarget<DefensePerTargetStatistics>? _defenseStats;
     public DefensePerTargetStatistics GetDefenseStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _defenseStats ??= new CachingCollectionWithTarget<DefensePerTargetStatistics>(log);
+        _defenseStats ??= new (AgentItem, log);
 
         if (!_defenseStats.TryGetValue(start, end, target, out var value))
         {
@@ -622,7 +645,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollection<GameplayStatistics>? _gameplayStats;
     public GameplayStatistics GetGameplayStats(ParsedEvtcLog log, long start, long end)
     {
-        _gameplayStats ??= new(log);
+        _gameplayStats ??= new(log); 
 
         if (!_gameplayStats.TryGetValue(start, end, out var value))
         {
@@ -635,7 +658,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollectionWithTarget<OffensiveStatistics>? _offensiveStats;
     public OffensiveStatistics GetOffensiveStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _offensiveStats ??= new CachingCollectionWithTarget<OffensiveStatistics>(log);
+        _offensiveStats ??= new (AgentItem, log);
 
         if (!_offensiveStats.TryGetValue(start, end, target, out OffensiveStatistics? value))
         {
@@ -654,7 +677,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollectionWithTarget<SupportPerAllyStatistics>? _supportStats;
     public SupportPerAllyStatistics GetSupportStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _supportStats ??= new CachingCollectionWithTarget<SupportPerAllyStatistics>(log);
+        _supportStats ??= new (AgentItem, log);
 
         if (!_supportStats.TryGetValue(start, end, target, out SupportPerAllyStatistics? value))
         {
@@ -685,21 +708,21 @@ public abstract partial class SingleActor : Actor
         if (DamageEventByDst == null)
         {
             List<HealthDamageEvent> damageEvents = [.. log.CombatData.GetDamageData(AgentItem).Where(x => !x.ToFriendly)];
-            var minionsList = GetMinions(log); //TODO(Rennorb @perf: find average complexity
+            var minionsList = GetMinions(log); //TODO_PERF(Rennorb @ average complexity
             foreach (Minions mins in minionsList)
             {
                 damageEvents.AddRange(mins.GetDamageEvents(null, log));
             }
             damageEvents.SortByTime();
             DamageEventByDst = damageEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
-            DamageEventByDst[ParserHelper._nullAgent] = damageEvents;
+            DamageEventByDst[_nullAgent] = damageEvents;
         }
     }
 
     private CachingCollectionWithTarget<List<HealthDamageEvent>>? _justActorDamageCache;
     public IReadOnlyList<HealthDamageEvent> GetJustActorDamageEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _justActorDamageCache ??= new(log);
+        _justActorDamageCache ??= new(AgentItem, log);
         if (!_justActorDamageCache.TryGetValue(start, end, target, out var damageEvents))
         {
             damageEvents = GetDamageEvents(target, log, start, end).Where(x => x.From.Is(AgentItem)).ToList();
@@ -718,7 +741,7 @@ public abstract partial class SingleActor : Actor
         {
             List<HealthDamageEvent> damageTakenEvents = [.. log.CombatData.GetDamageTakenData(AgentItem)];
             DamageTakenEventsBySrc = damageTakenEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
-            DamageTakenEventsBySrc[ParserHelper._nullAgent] = damageTakenEvents;
+            DamageTakenEventsBySrc[_nullAgent] = damageTakenEvents;
         }
     }
 
@@ -730,7 +753,7 @@ public abstract partial class SingleActor : Actor
     {
         if (!_typedSelfHitDamageEvents.TryGetValue(damageType, out var hitDamageEventsPerPhasePerTarget))
         {
-            hitDamageEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<HealthDamageEvent>>(log);
+            hitDamageEventsPerPhasePerTarget = new (AgentItem, log);
             _typedSelfHitDamageEvents[damageType] = hitDamageEventsPerPhasePerTarget;
         }
         if (!hitDamageEventsPerPhasePerTarget.TryGetValue(start, end, target, out List<HealthDamageEvent>? dls))
@@ -746,7 +769,7 @@ public abstract partial class SingleActor : Actor
     {
         if (!_typedMinionsHitDamageEvents.TryGetValue(damageType, out var hitDamageEventsPerPhasePerTarget))
         {
-            hitDamageEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<HealthDamageEvent>>(log);
+            hitDamageEventsPerPhasePerTarget = new (AgentItem, log);
             _typedMinionsHitDamageEvents[damageType] = hitDamageEventsPerPhasePerTarget;
         }
         if (!hitDamageEventsPerPhasePerTarget.TryGetValue(start, end, target, out List<HealthDamageEvent>? dls))
@@ -763,7 +786,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollectionWithTarget<List<BreakbarDamageEvent>>? _justActorBreakbarDamageCache;
     public IReadOnlyList<BreakbarDamageEvent> GetJustActorBreakbarDamageEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _justActorBreakbarDamageCache ??= new(log);
+        _justActorBreakbarDamageCache ??= new(AgentItem, log);
         if (!_justActorBreakbarDamageCache.TryGetValue(start, end, target, out var damageEvents))
         {
             damageEvents = GetBreakbarDamageEvents(target, log, start, end).Where(x => x.From.Is(AgentItem)).ToList();
@@ -777,14 +800,14 @@ public abstract partial class SingleActor : Actor
         if (BreakbarDamageEventsByDst == null)
         {
             var breakbarDamageEvents = new List<BreakbarDamageEvent>(log.CombatData.GetBreakbarDamageData(AgentItem).Where(x => !x.ToFriendly));
-            var minionsList = GetMinions(log); //TODO(Rennorb) @perf: find average complexity
+            var minionsList = GetMinions(log); //TODO_PERF(Rennorb) @find average complexity
             foreach (Minions mins in minionsList)
             {
                 breakbarDamageEvents.AddRange(mins.GetBreakbarDamageEvents(null, log));
             }
             breakbarDamageEvents.SortByTime();
             BreakbarDamageEventsByDst = breakbarDamageEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
-            BreakbarDamageEventsByDst[ParserHelper._nullAgent] = breakbarDamageEvents;
+            BreakbarDamageEventsByDst[_nullAgent] = breakbarDamageEvents;
         }
     }
 
@@ -794,7 +817,7 @@ public abstract partial class SingleActor : Actor
         {
             var breakbarDamageTakenEvents = new List<BreakbarDamageEvent>(log.CombatData.GetBreakbarDamageTakenData(AgentItem));
             BreakbarDamageTakenEventsBySrc = breakbarDamageTakenEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
-            BreakbarDamageTakenEventsBySrc[ParserHelper._nullAgent] = breakbarDamageTakenEvents;
+            BreakbarDamageTakenEventsBySrc[_nullAgent] = breakbarDamageTakenEvents;
         }
     }
 
@@ -804,7 +827,7 @@ public abstract partial class SingleActor : Actor
     private CachingCollectionWithTarget<List<CrowdControlEvent>>? _justActorCrowdControlCache;
     public IReadOnlyList<CrowdControlEvent> GetJustOutgoingActorCrowdControlEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _justActorCrowdControlCache ??= new(log);
+        _justActorCrowdControlCache ??= new(AgentItem, log);
         if (!_justActorCrowdControlCache.TryGetValue(start, end, target, out var ccEvents))
         {
             ccEvents = GetOutgoingCrowdControlEvents(target, log, start, end).Where(x => x.From.Is(AgentItem)).ToList();
@@ -818,14 +841,14 @@ public abstract partial class SingleActor : Actor
         if (OutgoingCrowdControlEventsByDst == null)
         {
             var outgoingCrowdControlEvents = new List<CrowdControlEvent>(log.CombatData.GetOutgoingCrowdControlData(AgentItem).Where(x => !x.ToFriendly));
-            var minionsList = GetMinions(log);
+            var minionsList = GetMinions(log); //TODO_PERF(Rennorb) @find average complexity
             foreach (Minions mins in minionsList)
             {
                 outgoingCrowdControlEvents.AddRange(mins.GetOutgoingCrowdControlEvents(null, log));
             }
             outgoingCrowdControlEvents.SortByTime();
             OutgoingCrowdControlEventsByDst = outgoingCrowdControlEvents.GroupBy(x => x.To).ToDictionary(x => x.Key, x => x.ToList());
-            OutgoingCrowdControlEventsByDst[ParserHelper._nullAgent] = outgoingCrowdControlEvents;
+            OutgoingCrowdControlEventsByDst[_nullAgent] = outgoingCrowdControlEvents;
         }
     }
 
@@ -835,11 +858,17 @@ public abstract partial class SingleActor : Actor
         {
             var incomingCrowdControlEvents = new List<CrowdControlEvent>(log.CombatData.GetIncomingCrowdControlData(AgentItem));
             IncomingCrowdControlEventsBySrc = incomingCrowdControlEvents.GroupBy(x => x.From).ToDictionary(x => x.Key, x => x.ToList());
-            IncomingCrowdControlEventsBySrc[ParserHelper._nullAgent] = incomingCrowdControlEvents;
+            IncomingCrowdControlEventsBySrc[_nullAgent] = incomingCrowdControlEvents;
         }
     }
 
     #endregion CROWD CONTROL
+
+
+    public virtual IReadOnlyList<AchievementEligibilityEvent> GetAchievementEligibilityEvents(ParsedEvtcLog log)
+    {
+        return [];
+    }
 
 
     // https://www.c-sharpcorner.com/blogs/binary-search-implementation-using-c-sharp1

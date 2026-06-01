@@ -14,7 +14,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class ValeGuardian : SpiritVale
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
                 new PlayerDstHealthDamageHitMechanic(GreenGuardianUnstableMagicSpike, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Blue), "Split TP", "Unstable Magic Spike (Green Guard Teleport)","Green Guard TP",500),
                 new PlayerDstHealthDamageHitMechanic(UnstableMagicSpike, new MechanicPlotlySetting(Symbols.Circle,Colors.Blue), "Boss TP", "Unstable Magic Spike (Boss Teleport)","Boss TP", 500),
@@ -39,10 +39,10 @@ internal class ValeGuardian : SpiritVale
                 new PlayerDstHealthDamageHitMechanic(UnstablePylonGreen, new MechanicPlotlySetting(Symbols.HexagramOpen,Colors.DarkGreen), "Floor G", "Unstable Pylon (Green Floor dmg)","Floor dmg", 0),
             ]),
             new MechanicGroup([
-                new EnemyCastStartMechanic(MagicStorm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC", "Magic Storm (Breakbar)","Breakbar",0),
-                new EnemyCastEndMechanic(MagicStorm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed", "Magic Storm (Breakbar broken) ","CCed", 0)
+                new EnemyCastStartMechanic(MagicStorm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "CC.VG", "Magic Storm (Breakbar)","Breakbar",0),
+                new EnemyCastEndMechanic(MagicStorm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkGreen), "CCed.VG", "Magic Storm (Breakbar broken) ","CCed", 0)
                     .UsingChecker((c, log) => c.ActualDuration <= 8544),
-                new EnemyCastEndMechanic(MagicStorm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC Fail", "Magic Storm (Breakbar failed) ","CC Fail", 0)
+                new EnemyCastEndMechanic(MagicStorm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "CC.VG Fail", "Magic Storm (Breakbar failed) ","CC Fail", 0)
                     .UsingChecker((c, log) => c.ActualDuration > 8544),
             ]),
         ]);
@@ -97,20 +97,20 @@ internal class ValeGuardian : SpiritVale
         };
     }
 
-    private static readonly List<TargetID> SplitGuardianIDs = new List<TargetID>
-    {
+    private static readonly List<TargetID> SplitGuardianIDs =
+    [
         TargetID.BlueGuardian,
         TargetID.GreenGuardian,
         TargetID.RedGuardian
-    };
+    ];
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor valeGuardian, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor valeGuardian, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = GetPhasesByInvul(log, Invulnerability757, valeGuardian, true, true, encounterPhase.Start, encounterPhase.End);
+        var phases = GetSubPhasesByInvul(log, Invulnerability757, valeGuardian, true, true, encounterPhase.Start, encounterPhase.End);
         for (int i = 0; i < phases.Count; i++)
         {
             int index = i + 1;
@@ -150,7 +150,7 @@ internal class ValeGuardian : SpiritVale
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -183,7 +183,7 @@ internal class ValeGuardian : SpiritVale
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -221,8 +221,8 @@ internal class ValeGuardian : SpiritVale
                     }
                 }
                 #if DEBUG_EFFECTS
-                    CombatReplay.DebugEffects(target, log, replay, knownEffectsIDs, target.FirstAware, target.LastAware);
-                    CombatReplay.DebugUnknownEffects(log, replay, knownEffectsIDs, target.FirstAware, target.LastAware);
+                    CombatReplay.DebugEffects(target, log, replay.Decorations, [], target.FirstAware, target.LastAware);
+                    CombatReplay.DebugUnknownEffects(log, replay.Decorations, [], target.FirstAware, target.LastAware);
                 #endif
                 break;
             case (int)TargetID.BlueGuardian:
@@ -244,7 +244,7 @@ internal class ValeGuardian : SpiritVale
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -255,7 +255,7 @@ internal class ValeGuardian : SpiritVale
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
@@ -278,6 +278,13 @@ internal class ValeGuardian : SpiritVale
             replay.Decorations.Add(new PieDecoration(arenaRadius, 120, lifespan, Colors.Green, 0.1, piePositionConnector).UsingGrowingEnd(lifespan.end).UsingRotationConnector(rotationConnector));
             replay.Decorations.Add(new PieDecoration(arenaRadius, 120, (lifespan.end, lifespan.end + impactDuration), Colors.Green, 0.3, piePositionConnector).UsingRotationConnector(rotationConnector));
             replay.Decorations.Add(new CircleDecoration(180, lifespan, Colors.Green, 0.2, circlePositionConnector));
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

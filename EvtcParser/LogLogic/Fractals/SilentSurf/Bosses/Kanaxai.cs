@@ -16,7 +16,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Kanaxai : SilentSurf
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup(
+    internal readonly MechanicGroup Mechanics = new(
         [
             new MechanicGroup(
                 [
@@ -73,7 +73,7 @@ internal class Kanaxai : SilentSurf
             new PlayerDstBuffApplyMechanic(ExposedPlayer, new MechanicPlotlySetting(Symbols.TriangleRight, Colors.Pink), "Expo.A", "Applied Exposed", "Exposed Application (Player)", 0),
             new PlayerDstBuffApplyMechanic(Fear, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.Yellow), "Fear.A", "Fear Applied", "Fear Application", 150),
             new PlayerDstBuffApplyMechanic(Phantasmagoria, new MechanicPlotlySetting(Symbols.Diamond, Colors.Pink), "Phant.A", "Phantasmagoria Applied (Aspect visible on Island)", "Phantasmagoria Application", 150),
-            new EnemyDstBuffApplyMechanic(Exposed31589, new MechanicPlotlySetting(Symbols.TriangleLeft, Colors.Pink), "Expo.A", "Applied Exposed to Kanaxai", "Exposed Application (Kanaxai)", 150),
+            new EnemyDstBuffApplyMechanic(Exposed31589, new MechanicPlotlySetting(Symbols.TriangleLeft, Colors.Pink), "Expo.A.K", "Applied Exposed to Kanaxai", "Exposed Application (Kanaxai)", 150),
         ]);
     public Kanaxai(int triggerID) : base(triggerID)
     {
@@ -101,17 +101,18 @@ internal class Kanaxai : SilentSurf
         ];
     }
 
-    internal static readonly IReadOnlyList<TargetID> Aspects = [
-            TargetID.AspectOfTorment,
-            TargetID.AspectOfLethargy,
-            TargetID.AspectOfExposure,
-            TargetID.AspectOfDeath,
-            TargetID.AspectOfFear,
+    internal static readonly IReadOnlyList<TargetID> Aspects = 
+    [
+        TargetID.AspectOfTorment,
+        TargetID.AspectOfLethargy,
+        TargetID.AspectOfExposure,
+        TargetID.AspectOfDeath,
+        TargetID.AspectOfFear,
     ];
 
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()
     {
-        return new Dictionary<TargetID, int>()
+        return new Dictionary<TargetID, int>
         {
             {TargetID.KanaxaiScytheOfHouseAurkusCM, 0 },
             {TargetID.AspectOfTorment, 1 },
@@ -122,9 +123,9 @@ internal class Kanaxai : SilentSurf
         };
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
-        return LogData.LogMode.CMNoName;
+        return LogData.Mode.CMNoName;
     }
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
@@ -134,22 +135,22 @@ internal class Kanaxai : SilentSurf
         return GetLogOffsetByInvulnStart(logData, combatData, kanaxai, Determined762);
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor kanaxai, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor kanaxai, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(5);
+        var phases = new List<SubPhasePhaseData>(5);
         // Phases
-        List<PhaseData> mainPhases = GetPhasesByInvul(log, DeterminedToDestroy, kanaxai, true, true, encounterPhase.Start, encounterPhase.End);
+        var mainPhases = GetSubPhasesByInvul(log, DeterminedToDestroy, kanaxai, true, true, encounterPhase.Start, encounterPhase.End);
         var worldCleaverPhaseStarts = log.CombatData.GetBuffApplyDataByIDByDst(DeterminedToDestroy, kanaxai.AgentItem).OfType<BuffApplyEvent>().Select(x => x.Time);
         int worldCleaverCount = 0;
         int repeatedCount = 0;
         var isRepeatedWorldCleaverPhase = new List<bool>();
         for (int i = 0; i < mainPhases.Count; i++)
         {
-            PhaseData curPhase = mainPhases[i];
+            var curPhase = mainPhases[i];
             curPhase.AddParentPhase(encounterPhase);
             if (worldCleaverPhaseStarts.Any(x => curPhase.Start == x))
             {
@@ -217,7 +218,7 @@ internal class Kanaxai : SilentSurf
         int phaseCount = 0;
         for (int i = 0; i < mainPhases.Count; i++)
         {
-            PhaseData curPhase = mainPhases[i];
+            var curPhase = mainPhases[i];
             if (!worldCleaverPhaseStarts.Any(x => curPhase.Start == x))
             {
                 var baseName = "Phase ";
@@ -253,23 +254,23 @@ internal class Kanaxai : SilentSurf
         return phases;
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         SingleActor kanaxai = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.KanaxaiScytheOfHouseAurkusCM)) ?? throw new MissingKeyActorsException("Kanaxai not found");
         BuffApplyEvent? invul762Gain = combatData.GetBuffApplyDataByIDByDst(Determined762, kanaxai.AgentItem).OfType<BuffApplyEvent>().FirstOrDefault(x => x.Time > 0);
         if (invul762Gain != null && !combatData.GetDespawnEvents(kanaxai.AgentItem).Any(x => Math.Abs(x.Time - invul762Gain.Time) < ServerDelayConstant))
         {
-            logData.SetSuccess(true, invul762Gain.Time);
+            successHandler.SetSuccess(true, invul762Gain.Time);
         }
         else
         {
-            logData.SetSuccess(false, kanaxai.LastAware);
+            successHandler.SetSuccess(false, kanaxai.LastAware);
         }
     }
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor player, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(player, log, replay);
         }
@@ -293,7 +294,7 @@ internal class Kanaxai : SilentSurf
         // Blue tether from Aspect to player, appears when the player gains Phantasmagoria
         // Custom decoration not visible in game
         var phantasmagorias = GetBuffApplyRemoveSequence(log.CombatData, Phantasmagoria, player, true, true);
-        replay.Decorations.AddTether(phantasmagorias, Colors.LightBlue, 0.5);
+        replay.Decorations.AddTethers(phantasmagorias, Colors.LightBlue, 0.5);
 
         // Rending Storm - Axe AoE attached to players - There are 2 buffs for the targetting
         IEnumerable<Segment> axes = player.GetBuffStatus(log, [RendingStormAxeTargetBuff1, RendingStormAxeTargetBuff2]).Where(x => x.Value > 0);
@@ -319,7 +320,7 @@ internal class Kanaxai : SilentSurf
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -436,7 +437,7 @@ internal class Kanaxai : SilentSurf
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -457,7 +458,7 @@ internal class Kanaxai : SilentSurf
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.AxeGroundAoE, out var axeAoEs))
         {
             // Get Axe AoE Buffs
-            //TODO(Rennorb) @perf: find average complexity
+            //TODO_PERF(Rennorb): find average complexity
             var axes = new List<BuffEvent>(50);
             axes.AddRange(log.CombatData.GetBuffData(RendingStormAxeTargetBuff1).OfType<BuffRemoveAllEvent>());
             axes.AddRange(log.CombatData.GetBuffData(RendingStormAxeTargetBuff2).OfType<BuffRemoveAllEvent>());
@@ -501,9 +502,16 @@ internal class Kanaxai : SilentSurf
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

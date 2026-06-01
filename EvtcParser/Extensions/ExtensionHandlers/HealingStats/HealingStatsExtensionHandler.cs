@@ -41,11 +41,11 @@ public class HealingStatsExtensionHandler : ExtensionHandler
         MindWrackAmmo,
         LifeLeech,
         LifeSiphonOld,
-        LifeSiphon,
         DeadlyFeast,
         LifeLeechUW,
         BloodFrenzy,
         LesserSymbolOfProtection,
+        BattleStandard,
         OmnomberryGhost,
         ArcaneBrilliance,
         PricklyPearPie,
@@ -92,30 +92,50 @@ public class HealingStatsExtensionHandler : ExtensionHandler
         GarishPillarSkill,
         WingsOfResolveSkill,
         ElixirOfPromise,
-        HauntShot,
+        EternalNight,
         GraspingShadows,
         DawnsRepose,
-        EternalNight,
         MindShock,
-        Flourish,
-        EchoingErosion,
-        FrigidFlurry,
-        SoothingSplash,
-        Journey,
-        FriendlyFire,
-        FriendlyFireIllu,
-        InspiringImagery,
-        Effervescence,
-        RampartSplitter,
-        PathToVictory,
-        ValiantLeap,
-        Gorge,
+        HauntShot,
+        LifeSiphon,
         PathOfGluttony,
+        Effervescence,
         HungeringMaelstrom,
-        EnervationBlade,
         EnervationEcho,
-        DeathlyEnervation,
+        Gorge,
+        RampartSplitter,
         EssenceOfLivingShadows,
+        FriendlyFire,
+        Journey,
+        LineBreakerHeal,
+        PathToVictoryWarrior,
+        PathToVictoryBerserker,
+        PathToVictorySpellbreaker,
+        FriendlyFireIllu,
+        EnervationBlade,
+        SymbolOfIgnition,
+        Flourish,
+        ValiantLeap,
+        InspiringImagery,
+        FrigidFlurry,
+        PathToVictoryBladesworn,
+        SoothingSplash,
+        InspiringWhirl,
+        DeathlyEnervation,
+        EchoingErosion,
+        PathToVictoryParagon,
+        DaybreakingSlashWave,
+        HelioRush,
+        DaybreakingSlash,
+        SymbolOfLuminanceSkill,
+        LuminousStaff,
+        FlusteringFlute,
+        LivelyLuteAfterimage,
+        NightmareWeaponBuff,
+        DeafeningDrum,
+        SovereignOfLight,
+        RelicOfTheNauticalBeastDamageHealing,
+        LesserSymbolOfBlades,
     ];
 
     private readonly List<EXTHealingEvent> _healingEvents = [];
@@ -203,14 +223,14 @@ public class HealingStatsExtensionHandler : ExtensionHandler
         return SrcIsAgent(c);
     }
 
-    internal override bool IsDamage(CombatItem c)
+    internal override bool IsDamageEvent(CombatItem c)
     {
         return SrcIsAgent(c);
     }
 
-    internal override bool IsDamagingDamage(CombatItem c)
+    internal override bool IsNonZeroDamageEvent(CombatItem c)
     {
-        return IsDamage(c);
+        return IsDamageEvent(c);
     }
 
     internal override void InsertEIExtensionEvent(CombatItem c, AgentData agentData, SkillData skillData)

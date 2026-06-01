@@ -4,6 +4,7 @@ using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -17,7 +18,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class BanditTrio : SalvationPass
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstBuffApplyMechanic(ShellShocked, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.DarkGreen), "Launched", "Shell-Shocked (Launched from pad)", "Shell-Shocked", 0),
             new PlayerDstBuffApplyMechanic(SlowBurn, new MechanicPlotlySetting(Symbols.StarTriangleDown, Colors.LightPurple), "SlowBurn.A", "Received Slow Burn", "Slow Burn Application", 0),
             new PlayerSrcBuffApplyMechanic(SapperBombDamageBuff, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Green), "Hit Cage", "Hit Cage with Sapper Bomb", "Hit Cage (Sapper Bomb)", 0).UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.Cage)),
@@ -28,8 +29,9 @@ internal class BanditTrio : SalvationPass
                 ]),
                 new MechanicGroup([
                     new PlayerCastStartMechanic(Beehive, new MechanicPlotlySetting(Symbols.Pentagon, Colors.Yellow), "Beehive.T", "Threw Beehive", "Beehive Throw", 0),
-                    new PlayerSrcHealthDamageHitMechanic(Beehive, new MechanicPlotlySetting(Symbols.PentagonOpen, Colors.Yellow), "Beehive.H.B", "Beehive Hits (Berg)", "Beehive Hit (Berg)", 0).UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.Berg)),
-                    new PlayerSrcHealthDamageHitMechanic(Beehive, new MechanicPlotlySetting(Symbols.PentagonOpen, Colors.LightOrange), "Beehive.H.A", "Beehive Hits (Any)", "Beehive Hit (Any)", 0),
+                    new PlayerSrcHealthDamageHitMechanic(Beehive, new MechanicPlotlySetting(Symbols.PentagonOpen, Colors.Yellow), "Beehive.H.B", "Beehive Hits (Berg)", "Beehive Hit (Berg)", 0)
+                        .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.Berg)),
+                    new PlayerSrcHealthDamageHitMechanic(Beehive, new MechanicPlotlySetting(Symbols.PentagonOpen, Colors.LightOrange), "Beehive.H.A", "Beehive Hits (Any)", "Beehive Hit (Any)", 0)
                 ]),
                 new PlayerDstHealthDamageHitMechanic(OverheadSmashBerg, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Orange), "Smash", "Overhead Smash (CC Attack Berg)","CC Smash", 0),
             ]),
@@ -40,7 +42,7 @@ internal class BanditTrio : SalvationPass
             new MechanicGroup([
                 new PlayerCastStartMechanic(ThrowOilKeg, new MechanicPlotlySetting(Symbols.Hourglass, Colors.LightRed), "OilKeg.T", "Threw Oil Keg", "Oil Keg Throw", 0),
                 new PlayerDstBuffApplyMechanic(Burning, new MechanicPlotlySetting(Symbols.StarOpen, Colors.Red), "Burning", "Burned by Narella", "Burning", 0).UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.Narella)),
-                new PlayerDstHealthDamageHitMechanic(FieryVortexNarella, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Yellow), "Tornado", "Fiery Vortex (Tornado Narella)","Tornado (Narella)", 250),
+                new PlayerDstHealthDamageHitMechanic(FieryVortexNarella, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Yellow), "Tornado.N", "Fiery Vortex (Tornado Narella)","Tornado (Narella)", 250),
                 new PlayerDstHealthDamageHitMechanic(FlakShotNarella, new MechanicPlotlySetting(Symbols.Diamond, Colors.LightRed), "Flak", "Flak Shot (Narella)", "Flak Shot Hit", 0),
             ]),
         ]);
@@ -64,7 +66,7 @@ internal class BanditTrio : SalvationPass
         ];
     }
 
-    internal override IReadOnlyList<TargetID>  GetTargetsIDs()
+    internal override IReadOnlyList<TargetID> GetTargetsIDs()
     {
         return
         [
@@ -74,9 +76,12 @@ internal class BanditTrio : SalvationPass
         ];
     }
 
-    internal override IReadOnlyList<TargetID>  GetFriendlyNPCIDs()
+    internal override IReadOnlyList<TargetID> GetFriendlyNPCIDs()
     {
-        return [ TargetID.Cage ];
+        return [ 
+            TargetID.Cage,
+            TargetID.InsectSwarms,
+        ];
     }
 
     internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
@@ -88,6 +93,22 @@ internal class BanditTrio : SalvationPass
         return crMap;
     }
 
+    private static readonly HashSet<TargetID> TrashMobsToCheck =
+    [
+        TargetID.BanditAssassin,
+        TargetID.BanditAssassin2,
+        TargetID.BanditSapperTrio,
+        TargetID.BanditDeathsayer,
+        TargetID.BanditDeathsayer2,
+        TargetID.BanditBrawler,
+        TargetID.BanditBrawler2,
+        TargetID.BanditBattlemage,
+        TargetID.BanditBattlemage2,
+        TargetID.BanditCleric,
+        TargetID.BanditCleric2,
+        TargetID.BanditBombardier,
+        TargetID.BanditSniper,
+    ];
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
     {
         long startToUse = GetGenericLogOffset(logData);
@@ -116,23 +137,7 @@ internal class BanditTrio : SalvationPass
             // Thrash mob start check
             var boxStart = new Vector2(-2200, -11300);
             var boxEnd = new Vector2(1000, -7200);
-            var trashMobsToCheck = new HashSet<TargetID>()
-            {
-                TargetID.BanditAssassin,
-                TargetID.BanditAssassin2,
-                TargetID.BanditSapperTrio,
-                TargetID.BanditDeathsayer,
-                TargetID.BanditDeathsayer2,
-                TargetID.BanditBrawler,
-                TargetID.BanditBrawler2,
-                TargetID.BanditBattlemage,
-                TargetID.BanditBattlemage2,
-                TargetID.BanditCleric,
-                TargetID.BanditCleric2,
-                TargetID.BanditBombardier,
-                TargetID.BanditSniper,
-            };
-            var banditPositions = combatData.Where(x => x.IsStateChange == StateChange.Position && agentData.GetAgent(x.SrcAgent, x.Time).IsAnySpecies(trashMobsToCheck))
+            var banditPositions = combatData.Where(x => x.IsStateChange == StateChange.Position && agentData.GetAgent(x.SrcAgent, x.Time).IsAnySpecies(TrashMobsToCheck))
                 .Select(x => new PositionEvent(x, agentData));
             var banditsInBox = banditPositions.Where(x => x.Time < startToUse + 10000 && x.GetPointXY().IsInBoundingBox(boxStart, boxEnd))
                 .Select(x => x.Src)
@@ -147,51 +152,80 @@ internal class BanditTrio : SalvationPass
 
     internal static void FindCageAndBombs(AgentData agentData, List<CombatItem> combatData)
     {
-        // Cage
-        AgentItem? cage = combatData.Where(x => MaxHealthUpdateEvent.GetMaxHealth(x) == 224100 && x.IsStateChange == StateChange.MaxHealthUpdate).Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxWidth == 238 && x.HitboxHeight == 300).FirstOrDefault();
-        if (cage != null)
+        var banditTrioBosses = agentData.GetNPCsByIDs([TargetID.Berg, TargetID.Narella, TargetID.Zane]);
+        if (banditTrioBosses.Count == 0)
         {
-            cage.OverrideType(AgentItem.AgentType.NPC, agentData);
-            cage.OverrideID(TargetID.Cage, agentData);
+            return;
+        }
+        var banditTrioNPCs = agentData.GetNPCsByIDs([.. TrashMobsToCheck.ToArray(), TargetID.Berg, TargetID.Narella, TargetID.Zane]);
+        long minFirstAware = banditTrioNPCs.Count > 0 ? banditTrioNPCs.Min(x => x.FirstAware - 2000) : long.MinValue;
+        long maxLastAware = banditTrioBosses.Count > 0 ? banditTrioBosses.Max(x => x.LastAware + 2000) : long.MaxValue;
+        // Cage
+        var cages = combatData.Where(x => MaxHealthUpdateEvent.GetMaxHealth(x) == 224100 && x.IsStateChange == StateChange.MaxHealthUpdate).Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxWidth == 238 && x.HitboxHeight == 300).Distinct();
+        foreach (var cage in cages)
+        {
+            long expectedStart = Math.Max(minFirstAware, cage.FirstAware);
+            long expectedEnd = Math.Min(maxLastAware, cage.LastAware);
+            AgentItem encounterCage = AgentManipulationHelper.CreateAgentInIntervalAndDummiesAround(cage, agentData, expectedStart, expectedEnd);
+            encounterCage.OverrideType(AgentItem.AgentType.NPC, agentData);
+            encounterCage.OverrideID(TargetID.Cage, agentData);
         }
         // Bombs
         var bombs = combatData.Where(x => MaxHealthUpdateEvent.GetMaxHealth(x) == 0 && x.IsStateChange == StateChange.MaxHealthUpdate).Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxHeight == 240);
         foreach (AgentItem bomb in bombs)
         {
-            bomb.OverrideType(AgentItem.AgentType.NPC, agentData);
-            bomb.OverrideID(TargetID.Bombs, agentData);
+            long expectedStart = Math.Max(minFirstAware, bomb.FirstAware);
+            long expectedEnd = Math.Min(maxLastAware, bomb.LastAware);
+            AgentItem encounterBomb = AgentManipulationHelper.CreateAgentInIntervalAndDummiesAround(bomb, agentData, expectedStart, expectedEnd);
+            encounterBomb.OverrideType(AgentItem.AgentType.NPC, agentData);
+            encounterBomb.OverrideID(TargetID.Bombs, agentData);
         }
     }
 
+    internal static AgentItem CreateCustomInsectSwarmMasterAgent(LogData logData, AgentData agentData)
+    {
+        return agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "Insect Swarms\0:Insect Swarms\051", Spec.NPC, TargetID.InsectSwarms, false);
+    }
+
+    internal static void RedirectInsectSwarmsToCustomMaster(AgentItem bees, AgentData agentData)
+    {
+        var minions = new List<AgentItem>();
+        foreach (var bee in agentData.GetNPCsByID(MinionID.InsectSwarm))
+        {
+            minions.Add(bee);
+            bee.SetMaster(bees);
+        }
+        if (minions.Count > 0)
+        {
+            bees.OverrideAwareTimes(minions.Min(x => x.FirstAware), minions.Max(x => x.LastAware));
+        }
+    }
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         FindCageAndBombs(agentData, combatData);
+        var insectSwarms = CreateCustomInsectSwarmMasterAgent(logData, agentData);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
+        RedirectInsectSwarmsToCustomMaster(insectSwarms, agentData);
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (TargetHPPercentUnderThreshold(TargetID.Berg, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
         if (agentData.TryGetFirstAgentItem(TargetID.Berg, out var berg) && combatData.GetLogNPCUpdateEvents().Count > 0)
         {
-            var movements = combatData.GetMovementData(berg).Where(x => x.Time > berg.FirstAware + MinimumInCombatDuration);
-            if (movements.Any())
+            var firstMovement = combatData.GetMovementData(berg).First(x => x.Time > berg.FirstAware + MinimumInCombatDuration);
+            if (firstMovement != null && firstMovement.Time < 120000)
             {
-                MovementEvent firstMove = movements.First();
-                // two minutes
-                if (firstMove.Time < 120000)
-                {
-                    return LogData.LogStartStatus.Late;
-                }
+                return LogData.StartStatus.Late;
             }
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
-    private static void SetPhasePerTarget(SingleActor target, List<PhaseData> phases, PhaseData encounterPhase, ParsedEvtcLog log)
+    private static void SetPhasePerTarget(SingleActor target, List<SubPhasePhaseData> phases, PhaseData encounterPhase, ParsedEvtcLog log)
     {
         EnterCombatEvent? phaseStart = log.CombatData.GetEnterCombatEvents(target.AgentItem).LastOrDefault(x => x.Time >= encounterPhase.Start);
         if (phaseStart != null)
@@ -217,13 +251,13 @@ internal class BanditTrio : SalvationPass
         }
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor berg, SingleActor zane, SingleActor narella, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor berg, SingleActor zane, SingleActor narella, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(3);
+        var phases = new List<SubPhasePhaseData>(3);
         SetPhasePerTarget(berg, phases, encounterPhase, log);
         SetPhasePerTarget(zane, phases, encounterPhase, log);
         SetPhasePerTarget(narella, phases, encounterPhase, log);
@@ -237,7 +271,7 @@ internal class BanditTrio : SalvationPass
         SingleActor zane = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Zane)) ?? throw new MissingKeyActorsException("Zane not found");
         SingleActor narella = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Narella)) ?? throw new MissingKeyActorsException("Narella not found");
         phases[0].AddTargets(Targets, log);
-        ComputePhases(log, berg, zane, narella, (EncounterPhaseData)phases[0], requirePhases);
+        phases.AddRange(ComputePhases(log, berg, zane, narella, (EncounterPhaseData)phases[0], requirePhases));
         return phases;
     }
 
@@ -265,19 +299,18 @@ internal class BanditTrio : SalvationPass
             TargetID.OilSlick,
             TargetID.Prisoner1,
             TargetID.Prisoner2,
-            TargetID.InsectSwarm,
             TargetID.Bombs,
         ];
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Bandit Trio";
     }
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -299,7 +332,7 @@ internal class BanditTrio : SalvationPass
                             lifespan = (cast.Time, growing);
                             if (target.TryGetCurrentFacingDirection(log, lifespan.start + 600, out var facing, lifespan.end))
                             {
-                                var cone = (PieDecoration)new PieDecoration(550, 80, lifespan, Colors.Orange, 0.2, new AgentConnector(target)).UsingRotationConnector(new AngleConnector(facing));
+                                var cone = (PieDecoration)new PieDecoration(550, 80, lifespan, Colors.Orange, 0.2, new AgentConnector(target)).UsingRotationConnector(new AngleConnector(facing.Value));
                                 replay.Decorations.AddWithGrowing(cone, growing);
                             }
                             break;
@@ -322,7 +355,7 @@ internal class BanditTrio : SalvationPass
                             if (target.TryGetCurrentFacingDirection(log, firstCone.start, out var facing))
                             {
                                 var connector = new AgentConnector(target);
-                                var rotationConnector = new AngleConnector(facing);
+                                var rotationConnector = new AngleConnector(facing.Value);
                                 replay.Decorations.Add(new PieDecoration(radius, 28, firstCone, Colors.LightOrange, 0.2, connector).UsingRotationConnector(rotationConnector));
                                 replay.Decorations.Add(new PieDecoration(radius, 54, secondCone, Colors.LightOrange, 0.2, connector).UsingRotationConnector(rotationConnector));
                                 replay.Decorations.Add(new PieDecoration(radius, 81, thirdCone, Colors.LightOrange, 0.2, connector).UsingRotationConnector(rotationConnector));
@@ -332,7 +365,7 @@ internal class BanditTrio : SalvationPass
                             break;
                     }
                 }
-            break;
+                break;
             case (int)TargetID.Narella:
                 break;
             default:
@@ -342,7 +375,7 @@ internal class BanditTrio : SalvationPass
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor player, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(player, log, replay);
         }
@@ -357,20 +390,20 @@ internal class BanditTrio : SalvationPass
     }
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
         if (log.CombatData.GetBuffData(EnvironmentallyFriendly).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -378,6 +411,13 @@ internal class BanditTrio : SalvationPass
                     instanceBuffs.MaybeAdd(GetOnPlayerCustomInstanceBuff(log, encounterPhase, EnvironmentallyFriendly));
                 }
             }
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

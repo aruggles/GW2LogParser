@@ -27,7 +27,7 @@ internal abstract class ShatteredObservatory : FractalLogic
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
         // Set manual FractalScale for old logs without the event
-        AddFractalScaleEvent(gw2Build, combatData, new List<(ulong, byte)>
+        AddFractalScaleEvent(gw2Build, evtcVersion, combatData, new List<(ulong, byte)>
         {
             ( GW2Builds.July2017ShatteredObservatoryRelease, 100),
             ( GW2Builds.September2020SunquaPeakRelease, 99),
@@ -39,7 +39,7 @@ internal abstract class ShatteredObservatory : FractalLogic
     /// <summary>
     /// Returns true if the buff count was not reached so that another method can be called, if necessary
     /// </summary>
-    protected static bool SetSuccessByBuffCount(CombatData combatData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, SingleActor target, long buffID, int count)
+    protected static bool SetSuccessByBuffCount(CombatData combatData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler, SingleActor target, long buffID, int count)
     {
         if (target == null)
         {
@@ -49,9 +49,9 @@ internal abstract class ShatteredObservatory : FractalLogic
         if (invulsTarget.Count() == count)
         {
             BuffEvent last = invulsTarget.Last();
-            if (!(last is BuffApplyEvent))
+            if (last is not BuffApplyEvent)
             {
-                SetSuccessByCombatExit(new List<SingleActor> { target }, combatData, logData, playerAgents);
+                SetSuccessByCombatExit(new List<SingleActor> { target }, combatData, logData, playerAgents, successHandler);
                 return false;
             }
         }
@@ -102,6 +102,6 @@ internal abstract class ShatteredObservatory : FractalLogic
         var fixations = p.GetBuffStatus(log, [FixatedBloom1, FixatedBloom2, FixatedBloom3, FixatedBloom4]).Where(x => x.Value > 0);
         var fixationEvents = GetBuffApplyRemoveSequence(log.CombatData, [FixatedBloom1, FixatedBloom2, FixatedBloom3, FixatedBloom4], p, true, true);
         replay.Decorations.AddOverheadIcons(fixations, p, ParserIcons.FixationPurpleOverhead);
-        replay.Decorations.AddTether(fixationEvents, Colors.Magenta, 0.5);
+        replay.Decorations.AddTethers(fixationEvents, Colors.Magenta, 0.5);
     }
 }

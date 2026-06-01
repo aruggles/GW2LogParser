@@ -1,5 +1,4 @@
-﻿using GW2EIEvtcParser.LogLogic;
-using GW2EIEvtcParser.ParsedData;
+﻿using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
 using static GW2EIEvtcParser.ParserHelper;
 
@@ -9,39 +8,70 @@ internal class BuffOnFoeDamageModifier : BuffOnActorDamageModifier
 {
     private BuffsTracker? _trackerSource = null;
     private GainComputer? _gainComputerSource = null;
+
+    protected bool FromSrc = false;
     internal BuffOnFoeDamageModifier(int id, long buffID, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, Source src, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, buffID, name, tooltip, damageSource, gainPerStack, srctype, compareType, src, gainComputer, icon, mode)
+    {
+    }
+    internal BuffOnFoeDamageModifier(int id, long buffID, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, HashSet<Source> srcs, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, buffID, name, tooltip, damageSource, gainPerStack, srctype, compareType, srcs, gainComputer, icon, mode)
     {
     }
 
     internal BuffOnFoeDamageModifier(int id, HashSet<long> buffIDs, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, Source src, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, buffIDs, name, tooltip, damageSource, gainPerStack, srctype, compareType, src, gainComputer, icon, mode)
     {
     }
+    internal BuffOnFoeDamageModifier(int id, HashSet<long> buffIDs, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, HashSet<Source> srcs, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, buffIDs, name, tooltip, damageSource, gainPerStack, srctype, compareType, srcs, gainComputer, icon, mode)
+    {
+    }
 
-    internal BuffOnFoeDamageModifier UsingSrcCheckerByAbsence(long buffOnSourceID)
+    internal BuffOnFoeDamageModifier UsingActorCheckerByAbsence(long buffOnSourceID)
     {
         _trackerSource = new BuffsTrackerSingle(buffOnSourceID);
         _gainComputerSource = ByAbsence;
         return this;
     }
 
-    internal BuffOnFoeDamageModifier UsingSrcCheckerByAbsence(HashSet<long> buffOnSourceIDs)
+    internal BuffOnFoeDamageModifier UsingActorCheckerByAbsence(HashSet<long> buffOnSourceIDs)
     {
         _trackerSource = new BuffsTrackerMulti(buffOnSourceIDs);
         _gainComputerSource = ByAbsence;
         return this;
     }
 
-    internal BuffOnFoeDamageModifier UsingSrcCheckerByPresence(long buffOnSourceID)
+    internal BuffOnFoeDamageModifier UsingActorCheckerByPresence(long buffOnSourceID)
     {
         _trackerSource = new BuffsTrackerSingle(buffOnSourceID);
         _gainComputerSource = ByPresence;
         return this;
     }
 
-    internal BuffOnFoeDamageModifier UsingSrcCheckerByPresence(HashSet<long> buffOnSourceIDs)
+    internal BuffOnFoeDamageModifier UsingActorCheckerByPresence(HashSet<long> buffOnSourceIDs)
     {
         _trackerSource = new BuffsTrackerMulti(buffOnSourceIDs);
         _gainComputerSource = ByPresence;
+        return this;
+    }
+    internal override DamageModifierDescriptor WithBuffOnActorFromFoe()
+    {
+        if (_gainComputerSource == null )
+        {
+            throw new InvalidOperationException("Unsupported mode when not using src checker");
+        }
+        if (_gainComputerSource == ByAbsence)
+        {
+            throw new InvalidOperationException("Unsupported mode when using ByAbsence");
+        }
+        FromDst = true;
+        return this;
+    }
+
+    internal DamageModifierDescriptor WithBuffOnFoeFromActor()
+    {
+        if (GainComputer == ByAbsence)
+        {
+            throw new InvalidOperationException("Unsupported mode when using ByAbsence");
+        }
+        FromSrc = true;
         return this;
     }
 
@@ -62,37 +92,86 @@ internal class BuffOnFoeDamageModifier : BuffOnActorDamageModifier
 
     internal override List<DamageModifierEvent> ComputeDamageModifier(SingleActor actor, ParsedEvtcLog log, DamageModifier damageModifier)
     {
+        var res = new List<DamageModifierEvent>();
         if (CheckEarlyExit(actor, log))
         {
-            return [];
+            return res;
         }
         IReadOnlyDictionary<long, BuffGraph> bgmsSource = actor.GetBuffGraphs(log);
-        if (_trackerSource != null)
+        if (damageModifier.NeedsMinions)
         {
-            if (Skip(_trackerSource, bgmsSource, _gainComputerSource!))
+            var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
+            var ignoredTargets = new HashSet<SingleActor>();
+            var ignoredSources = new HashSet<SingleActor>();
+            foreach (HealthDamageEvent evt in typeHits)
             {
-                return [];
+                SingleActor target = log.FindActor(damageModifier.GetFoe(evt));
+                SingleActor minionOrActor = log.FindActor(damageModifier.GetActor(evt));
+                if (ignoredTargets.Contains(target) || ignoredSources.Contains(minionOrActor))
+                {
+                    continue;
+                }
+                IReadOnlyDictionary<long, BuffGraph> bgms = target.GetBuffGraphs(log);
+                if (Skip(Tracker, bgms, GainComputer))
+                {
+                    ignoredTargets.Add(target);
+                    continue;
+                }
+                if (FromDst)
+                {
+                    bgmsSource = minionOrActor.GetBuffGraphs(log, target);
+                }
+                if (_trackerSource != null && Skip(_trackerSource, bgmsSource, _gainComputerSource!))
+                {
+                    ignoredSources.Add(minionOrActor);
+                    continue;
+                }
+                if (FromSrc)
+                {
+                    bgms = target.GetBuffGraphs(log, minionOrActor.GetMainSingleActorWhenAttackTarget(log));
+                }
+                if (CheckActor(bgmsSource, evt.Time) && ComputeGain(bgms, evt, log, out double gain) && CheckCondition(evt, log))
+                {
+                    res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));
+                }
             }
-        }
-        var res = new List<DamageModifierEvent>();
-        var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
-        var ignoredTargets = new HashSet<SingleActor>();
-        foreach (HealthDamageEvent evt in typeHits)
+        } 
+        else
         {
-            SingleActor target = log.FindActor(damageModifier.GetFoe(evt));
-            if (ignoredTargets.Contains(target))
+            if (_trackerSource != null)
             {
-                continue;
+                if (Skip(_trackerSource, bgmsSource, _gainComputerSource!))
+                {
+                    return res;
+                }
             }
-            IReadOnlyDictionary<long, BuffGraph> bgms = target.GetBuffGraphs(log);
-            if (Skip(Tracker, bgms, GainComputer))
+            var typeHits = damageModifier.GetHitDamageEvents(actor, log, null);
+            var ignoredTargets = new HashSet<SingleActor>();
+            foreach (HealthDamageEvent evt in typeHits)
             {
-                ignoredTargets.Add(target);
-                continue;
-            }
-            if (CheckActor(bgmsSource, evt.Time) && ComputeGain(bgms, evt, log, out double gain) && CheckCondition(evt, log))
-            {
-                res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));
+                SingleActor target = log.FindActor(damageModifier.GetFoe(evt));
+                if (ignoredTargets.Contains(target))
+                {
+                    continue;
+                }
+                IReadOnlyDictionary<long, BuffGraph> bgms = target.GetBuffGraphs(log);
+                if (Skip(Tracker, bgms, GainComputer))
+                {
+                    ignoredTargets.Add(target);
+                    continue;
+                }
+                if (FromDst)
+                {
+                    bgmsSource = log.FindActor(damageModifier.GetActor(evt)).GetBuffGraphs(log, target);
+                }
+                if (FromSrc)
+                {
+                    bgms = target.GetBuffGraphs(log, damageModifier.GetActor(evt).GetMainSingleActorWhenAttackTarget(log));
+                }
+                if (CheckActor(bgmsSource, evt.Time) && ComputeGain(bgms, evt, log, out double gain) && CheckCondition(evt, log))
+                {
+                    res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));
+                }
             }
         }
         return res;

@@ -39,7 +39,7 @@ public class BuffGraph
         {
             return new Segment(long.MinValue, long.MaxValue, 0);
         }
-
+        
         int foundIndex = Values.BinarySearchRecursive(time, 0, Values.Count - 1);
         Segment found = Values[foundIndex];
         if (found.ContainsPoint(time))
@@ -83,7 +83,7 @@ public class BuffGraph
         }
         else
         {
-            //TODO(Rennorb) @perf
+            //TODO_PERF(Rennorb)
             var segmentsToFill = new LinkedList<Segment>(_buffChart.Values);
             var node = segmentsToFill.First;
             foreach (Segment seg in from)

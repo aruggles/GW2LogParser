@@ -33,7 +33,11 @@ internal static class TempestHelper
         new BuffOnActorDamageModifier(Mod_TranscendentTempest, TranscendentTempest, "Transcendent Tempest", "15% after overload", DamageSource.NoPets, 15.0, DamageType.StrikeAndCondition, DamageType.All, Source.Tempest, ByPresence, TraitImages.TranscendentTempest, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.August2022Balance, GW2Builds.SOTOReleaseAndBalance),
         new BuffOnActorDamageModifier(Mod_TranscendentTempest, TranscendentTempest, "Transcendent Tempest", "25% after overload", DamageSource.NoPets, 25.0, DamageType.StrikeAndCondition, DamageType.All, Source.Tempest, ByPresence, TraitImages.TranscendentTempest, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.SOTOReleaseAndBalance),
+            .WithBuilds(GW2Builds.SOTOReleaseAndBalance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_TranscendentTempestStrike, TranscendentTempest, "Transcendent Tempest", "25% after overload", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Tempest, ByPresence, TraitImages.TranscendentTempest, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_TranscendentTempestCondition, TranscendentTempest, "Transcendent Tempest", "20% after overload", DamageSource.NoPets, 20.0, DamageType.Condition, DamageType.All, Source.Tempest, ByPresence, TraitImages.TranscendentTempest, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // Tempestuous Aria
         new BuffOnActorDamageModifier(Mod_TempestuousAria, TempestuousAria, "Tempestuous Aria", "7% after giving aura", DamageSource.NoPets, 7.0, DamageType.StrikeAndCondition, DamageType.All, Source.Tempest, ByPresence, TraitImages.TempestuousAria, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),

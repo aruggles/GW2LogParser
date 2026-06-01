@@ -5,6 +5,7 @@ using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -18,7 +19,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Escort : StrongholdOfTheFaithful
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new PlayerDstHealthDamageMechanic(DetonateMineEscort, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Red), "Mine.H", "Hit by Mine Detonation", "Mine Detonation Hit", 150).UsingChecker((de, log) => de.CreditedFrom.IsSpecies(TargetID.Mine)),
             new PlayerDstHealthDamageMechanic(GlennaBombHit, new MechanicPlotlySetting(Symbols.Hexagon, Colors.LightGrey), "Bomb.H", "Hit by Glenna's Bomb", "Glenna's Bomb Hit", 0),
             new PlayerDstHealthDamageHitMechanic(FireMortarEscortHit, new MechanicPlotlySetting(Symbols.Hourglass, Colors.DarkPurple), "Shrd.H", "Hit by Mortar Fire (Bloodstone Turrets)", "Mortar Fire Hit", 0),
@@ -51,14 +52,14 @@ internal class Escort : StrongholdOfTheFaithful
         return crMap;
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Siege the Stronghold";
     }
 
-    private static IReadOnlyList<PhaseData> GetMcLeodPhases(SingleActor mcLeod, IReadOnlyList<SingleActor> targets, ParsedEvtcLog log, EncounterPhaseData encounterPhase)
+    private static IReadOnlyList<SubPhasePhaseData> GetMcLeodPhases(SingleActor mcLeod, IReadOnlyList<SingleActor> targets, ParsedEvtcLog log, EncounterPhaseData encounterPhase)
     {
-        var phases = new List<PhaseData>();
+        var phases = new List<SubPhasePhaseData>();
         //
         DeadEvent? mcLeodDeath = log.CombatData.GetDeadEvents(mcLeod.AgentItem).LastOrDefault();
         long mcLeodStart = Math.Max(mcLeod.FirstAware, encounterPhase.Start);
@@ -70,7 +71,7 @@ internal class Escort : StrongholdOfTheFaithful
         mainPhase.AddTarget(mcLeod, log);
         phases.Add(mainPhase);
         //
-        phases.AddRange(GetPhasesByInvul(log, Invulnerability757, mcLeod, true, true, mcLeodStart, mcLeodEnd));
+        phases.AddRange(GetSubPhasesByInvul(log, Invulnerability757, mcLeod, true, true, mcLeodStart, mcLeodEnd));
         for (int i = 1; i < phases.Count; i++)
         {
             PhaseData phase = phases[i];
@@ -78,8 +79,7 @@ internal class Escort : StrongholdOfTheFaithful
             if (i % 2 == 0)
             {
                 phase.Name = "McLeod Split " + (i) / 2;
-                phase.AddTargets(targets.Where(x => x.IsAnySpecies([TargetID.RadiantMcLeod, TargetID.CrimsonMcLeod])), log);
-                phase.OverrideTimes(log);
+                AddTargetsToPhaseAndFit(phase, targets, [TargetID.RadiantMcLeod, TargetID.CrimsonMcLeod], log);
             }
             else
             {
@@ -91,13 +91,13 @@ internal class Escort : StrongholdOfTheFaithful
         return phases;
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor? mcLeod, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor? mcLeod, IReadOnlyList<SingleActor> targets, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(9);
+        var phases = new List<SubPhasePhaseData>(9);
         var wargs = targets.Where(x => x.IsSpecies(TargetID.WargBloodhound));
         {
             long preEventEnd = mcLeod != null ? mcLeod.FirstAware : encounterPhase.End;
@@ -221,7 +221,7 @@ internal class Escort : StrongholdOfTheFaithful
         return startToUse;
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (!agentData.TryGetFirstAgentItem(TargetID.McLeodTheSilent, out var mcLeod))
         {
@@ -238,18 +238,18 @@ internal class Escort : StrongholdOfTheFaithful
                 var glennaInitialPosition = new Vector2(9092.697f, 21477.2969f/*, -2946.81885f*/);
                 if (!combatData.GetMovementData(glenna).Any(x => x is PositionEvent pe && pe.Time < glenna.FirstAware + MinimumInCombatDuration && (pe.GetPointXY() - glennaInitialPosition).Length() < 100))
                 {
-                    return LogData.LogStartStatus.Late;
+                    return LogData.StartStatus.Late;
                 }
             }
-            return LogData.LogStartStatus.Normal;
+            return LogData.StartStatus.Normal;
         }
         else if (combatData.GetLogNPCUpdateEvents().Any())
         {
-            return LogData.LogStartStatus.NoPreEvent;
+            return LogData.StartStatus.NoPreEvent;
         }
         else
         {
-            return LogData.LogStartStatus.Normal;
+            return LogData.StartStatus.Normal;
         }
     }
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()
@@ -266,7 +266,8 @@ internal class Escort : StrongholdOfTheFaithful
 
     internal override IReadOnlyList<TargetID> GetTrashMobsIDs()
     {
-        return [
+        return
+        [
             TargetID.MushroomCharger,
             TargetID.MushroomKing,
             TargetID.MushroomSpikeThrower,
@@ -294,13 +295,13 @@ internal class Escort : StrongholdOfTheFaithful
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
         if (log.CombatData.GetBuffData(AchievementEligibilityLoveIsBunny).Any() || log.CombatData.GetBuffData(AchievementEligibilityFastSiege).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -314,7 +315,7 @@ internal class Escort : StrongholdOfTheFaithful
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -328,7 +329,7 @@ internal class Escort : StrongholdOfTheFaithful
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -339,9 +340,16 @@ internal class Escort : StrongholdOfTheFaithful
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

@@ -21,10 +21,10 @@ public static class SpeciesIDs
         GreenGuardian = 15420,
         // - Spirit Race
         EtherealBarrier = SpeciesIDs.EtherealBarrier,
-        _EtherealBarrier1 = SpeciesIDs.EtherealBarrier1,
-        _EtherealBarrier2 = SpeciesIDs.EtherealBarrier2,
-        _EtherealBarrier3 = SpeciesIDs.EtherealBarrier3,
-        _EtherealBarrier4 = SpeciesIDs.EtherealBarrier4,
+        _EtherealBarrier1 = EtherealBarrier1,
+        _EtherealBarrier2 = EtherealBarrier2,
+        _EtherealBarrier3 = EtherealBarrier3,
+        _EtherealBarrier4 = EtherealBarrier4,
         EtherealBarrierGadget = 47188, // Gadget
         EtherealBarrierGadget_CHINA = 48133, // Gadget
         WallOfGhosts = 15415,
@@ -48,6 +48,7 @@ public static class SpeciesIDs
         BanditArsonist = 15421,
         Cannon = SpeciesIDs.Cannon,
         HeavyBomb = SpeciesIDs.HeavyBomb,
+        SabethaPlatform = SpeciesIDs.SabethaPlatform,
         // - Wing 2
         // - Slothasor
         Slothasor = 16123,
@@ -56,6 +57,7 @@ public static class SpeciesIDs
         Slubling3 = 16077,
         Slubling4 = 16104,
         PoisonMushroom = SpeciesIDs.PoisonMushroom,
+        PlayerSlubling = SpeciesIDs.PlayerSlubling,
         // - Bandit Trio
         Berg = 16088,
         Zane = 16137,
@@ -80,9 +82,9 @@ public static class SpeciesIDs
         BanditSniper = 16065,
         NarellaTornado = 16092,
         OilSlick = 16096,
-        InsectSwarm = 16120,
         Prisoner1 = 16056,
         Prisoner2 = 16103,
+        InsectSwarms = SpeciesIDs.InsectSwarms,
         // - Matthias
         Matthias = 16115,
         Spirit = 16105,
@@ -90,7 +92,7 @@ public static class SpeciesIDs
         IcePatch = 16139,
         Storm = 16108,
         Tornado = 16068,
-        MatthiasSacrificeCrystal = MatthiasSacrifice,
+        MatthiasSacrificeCrystal = SpeciesIDs.MatthiasSacrificeCrystal,
         // - Wing 3
         // - Escort
         McLeodTheSilent = 16253,
@@ -197,25 +199,26 @@ public static class SpeciesIDs
         BrokenKing = 19691,
         // - Statue of Death
         EaterOfSouls = 19536,
-        OrbSpider = 19801,
-        GreenSpirit1 = 19587,
-        GreenSpirit2 = 19571,
+        TwistedSpirit = 19801, // Spider
+        LostSpirit1 = 19587, // Greens
+        LostSpirit2 = 19571, // Greens
         AscalonianPeasant1 = 19810,
         AscalonianPeasant2 = 19758,
         // - Statues of Darkness
         EyeOfJudgement = 19651,
         EyeOfFate = 19844,
-        LightThieves = 19658,
+        LightThief = 19658,
         MazeMinotaur = 19402,
         // - Dhuum (Skeletons are the same as Spirit Hordes)
         Dhuum = 19450,
-        Messenger = 19807,
-        Echo = 19628,
-        Enforcer = 19681,
+        DhuumsMessenger = 19807,
+        EndersEcho = 19628,
+        DhuumsEnforcer = 19681,
         Deathling = 19759,
         UnderworldReaper = 19831,
         DhuumDesmina = 19481,
         YourSoul = SpeciesIDs.YourSoul,
+        EtherealSeal = SpeciesIDs.EtherealSeal,
         // - Wing 6
         // - Conjured Amalgamate
         ConjuredAmalgamate = 43974, // Gadget
@@ -319,8 +322,8 @@ public static class SpeciesIDs
         SabirSquarePlateform = SpeciesIDs.SabirSquarePlateform,
         SabirRectanglePlateform = SpeciesIDs.SabirRectanglePlateform,
         SabirBigRectanglePlateform = SpeciesIDs.SabirBigRectanglePlateform,
-        // - Peerless Qadim
-        PeerlessQadim = 22000,
+        // - Qadim the Peerless
+        QadimThePeerless = 22000,
         PeerlessQadimPylon = 21996,
         PeerlessQadimAuraPylon = 21962,
         EntropicDistortion = 21973,
@@ -485,6 +488,7 @@ public static class SpeciesIDs
         TheDragonVoidSooWon = SpeciesIDs.TheDragonVoidSooWon,
         TheDragonVoidPrimordus = SpeciesIDs.TheDragonVoidPrimordus,
         TheDragonVoidMordremoth = SpeciesIDs.TheDragonVoidMordremoth,
+        TheDragonVoidUnknown = SpeciesIDs.TheDragonVoidUnknown,
         PushableVoidAmalgamate = SpeciesIDs.PushableVoidAmalgamate,
         VoidAmalgamate = 24375,
         KillableVoidAmalgamate = 23956,
@@ -500,16 +504,28 @@ public static class SpeciesIDs
         VoidTimeCaster = 25025,
         VoidBrandbomber = 24783,
         VoidBurster = 24464,
-        VoidWarforged1 = 24129,
-        VoidWarforged2 = 24855,
+        VoidWarforgedElite = 24129,
+        VoidWarforgedVeteran = 24855,
         VoidStormseer = 24677,
         VoidMelter = 24223,
         VoidGoliath = 24761,
-        DragonEnergyOrb = DragonOrb,
+        DragonEnergyOrb = 21941,
         GravityBall = SpeciesIDs.GravityBall,
         JormagMovingFrostBeamCenter = 23747,
         JormagMovingFrostBeamNorth = 24541,
         JormagMovingFrostBeam = SpeciesIDs.JormagMovingFrostBeam,
+        HTGreenJormagWest = SpeciesIDs.HTGreenJormagWest,
+        HTGreenJormagEast = SpeciesIDs.HTGreenJormagEast,
+        HTGreenJormagSouthEast = SpeciesIDs.HTGreenJormagSouthEast,
+        HTGreenPrimordusNorthWest = SpeciesIDs.HTGreenPrimordusNorthWest,
+        HTGreenPrimordusNorthEast = SpeciesIDs.HTGreenPrimordusNorthEast,
+        HTGreenPrimordusNorth = SpeciesIDs.HTGreenPrimordusNorth,
+        HTGreenZhaitanNorthWest = SpeciesIDs.HTGreenZhaitanNorthWest,
+        HTGreenZhatainNorthEast = SpeciesIDs.HTGreenZhatainNorthEast,
+        HTGreenZhaitanSouth = SpeciesIDs.HTGreenZhaitanSouth,
+        HTGreenSooWonNorthEast = SpeciesIDs.HTGreenSooWonNorthEast,
+        HTGreenSooWonSouthEast = SpeciesIDs.HTGreenSooWonSouthEast,
+        HTGreenSooWonSouth = SpeciesIDs.HTGreenSooWonSouth,
         // - Old Lion's Court
         PrototypeVermilion = 25413,
         PrototypeArsenite = 25415,
@@ -544,6 +560,16 @@ public static class SpeciesIDs
         PermanentEmbodimentOfRegret = SpeciesIDs.PermanentEmbodimentOfRegret,
         PermanentEmbodimentOfEnvy = SpeciesIDs.PermanentEmbodimentOfEnvy,
         PermanentEmbodimentOfMalice = SpeciesIDs.PermanentEmbodimentOfMalice,
+        // - Guardian's Glade
+        KelaSeneschalOfWaves = 27124,
+        KelaSeneschalOfWavesSand = 27665, // keeps sand after executor of waves dies
+        KelaSeneschalOfWavesScaldingWave = 27670, // spawns scalding waves
+        ExecutorOfWaves = 27651,
+        VeteranCrocodilianRazortooth = 27667,
+        DownedEliteCrocodilianRazortooth = 27658,
+        GuardiansGladeTornado = 27654,
+        EliteCrocodilianRazortooth = 27655,
+        CursedArtifact_NPC = 27663,
         #endregion RAID ENCOUNTERS
         #region FRACTALS
         FractalVindicator = 19684,
@@ -608,7 +634,7 @@ public static class SpeciesIDs
         CHOP = 16552,
         ProjectionArkk = 17613,
         // - Ai
-        Parent_AiKeeperOfThePeak = SpeciesIDs.ParentAiKeeperOfThePeak,
+        Parent_AiKeeperOfThePeak = ParentAiKeeperOfThePeak,
         AiKeeperOfThePeak = 23254,
         DarkAiKeeperOfThePeak = SpeciesIDs.DarkAiKeeperOfThePeak,
         EnragedWaterSprite = 23270,
@@ -660,46 +686,46 @@ public static class SpeciesIDs
         #region OPEN WORLD
         // Soo Won OW
         SooWonOW = 35552, // Gadget
-        SooWonTail = 51756,
-        VoidGiant2 = 24310,
-        VoidTimeCaster2 = 24586,
-        VoidBrandstalker = 24951,
-        VoidColdsteel2 = 23791,
-        VoidObliterator2 = 24947,
-        VoidAbomination2 = 23886,
-        VoidBomber = 24714,
-        VoidBrandbeast = 23917,
-        VoidBrandcharger1 = 24936,
-        VoidBrandcharger2 = 24039,
-        VoidBrandfang1 = 24912,
-        VoidBrandfang2 = 24772,
-        VoidBrandscale1 = 24053,
-        VoidBrandscale2 = 24426,
-        VoidColdsteel3 = 24063,
-        VoidCorpseknitter1 = 24756,
-        VoidCorpseknitter2 = 24607,
-        VoidDespoiler1 = 23874,
-        VoidDespoiler2 = 25179,
-        VoidFiend1 = 23707,
-        VoidFiend2 = 24737,
-        VoidFoulmaw = 24766,
-        VoidFrostwing = 24780,
-        VoidGlacier1 = 23753,
-        VoidGlacier2 = 24235,
-        VoidInfested1 = 24390,
-        VoidInfested2 = 24997,
-        VoidMelter1 = 24497,
-        VoidMelter2 = 24807,
-        VoidRimewolf1 = 24698,
-        VoidRimewolf2 = 23798,
-        VoidRotspinner1 = 25057,
-        VoidStorm = 24007,
-        VoidStormseer2 = 24419,
-        VoidStormseer3 = 23962,
-        VoidTangler2 = 23567,
-        VoidThornheart1 = 24406,
-        VoidThornheart2 = 23688,
-        VoidWorm = 23701,
+        SooWonTailOW = 51756,
+        VoidGiantOW = 24310,
+        VoidTimeCasterOW = 24586,
+        VoidBrandstalkerOW = 24951,
+        VoidColdsteelOW1 = 23791,
+        VoidObliteratorOW = 24947,
+        VoidAbominationOW = 23886,
+        VoidBomberOW = 24714,
+        VoidBrandbeastOW = 23917,
+        VoidBrandchargerOW1 = 24936,
+        VoidBrandchargerOW2 = 24039,
+        VoidBrandfangOW1 = 24912,
+        VoidBrandfangOW2 = 24772,
+        VoidBrandscaleOW1 = 24053,
+        VoidBrandscaleOW2 = 24426,
+        VoidColdsteelOW2 = 24063,
+        VoidCorpseknitterOW1 = 24756,
+        VoidCorpseknitterOW2 = 24607,
+        VoidDespoilerOW1 = 23874,
+        VoidDespoilerOW2 = 25179,
+        VoidFiendOW1 = 23707,
+        VoidFiendOW2 = 24737,
+        VoidFoulmawOW = 24766,
+        VoidFrostwingOW = 24780,
+        VoidGlacierOW1 = 23753,
+        VoidGlacierOW2 = 24235,
+        VoidInfestedOW1 = 24390,
+        VoidInfestedOW2 = 24997,
+        VoidMelterOW1 = 24497,
+        VoidMelterOW2 = 24807,
+        VoidRimewolfOW1 = 24698,
+        VoidRimewolfOW2 = 23798,
+        VoidRotspinnerOW1 = 25057,
+        VoidStormOW = 24007,
+        VoidStormseerOW1 = 24419,
+        VoidStormseerOW2 = 23962,
+        VoidTanglerOW = 23567,
+        VoidThornheartOW1 = 24406,
+        VoidThornheartOW2 = 23688,
+        VoidWormOW = 23701,
         #endregion OPEN WORLD
 
         #region STORY
@@ -788,6 +814,11 @@ public static class SpeciesIDs
         IllusionaryAvenger = 15188,
         IllusionarySharpShooter = 26152,
         IllusionaryLancer = 26271,
+        // Troubadour after images
+        LivelyLuteAfterimage = 27021,
+        DeafeningDrumAfterimage = 27022,
+        HarmoniousHarpAfterimage = 27024,
+        FlusteringFluteAfterimage = 27034,
         // Mesmer Clones
         // - Single Weapon
         CloneSword = 8108,
@@ -917,6 +948,7 @@ public static class SpeciesIDs
         JuvenileSpinegazer = 26220,
         JuvenileWarclaw = 26628,
         JuvenileJanthiriBee = 26851,
+        JuvenileRaptorSwiftwing = 27259,
         // Guardian Weapon Summons
         BowOfTruth = 6383,
         HammerOfWisdom = 5791,
@@ -978,7 +1010,7 @@ public static class SpeciesIDs
         // Antiquary
         KryptisTurret = SpeciesIDs.KryptisTurret,
         HoloDancer = SpeciesIDs.HoloDancer,
-        SkrittThievesGuild = 27026, // TODO Find this ID
+        SkrittThievesGuild = 27026,
         // Elementalist Summons
         LesserAirElemental = 8711,
         LesserEarthElemental = 8712,
@@ -1014,18 +1046,20 @@ public static class SpeciesIDs
         VentariTablet = SpeciesIDs.VentariTablet,
         // Mechanist
         JadeMech = 23549,
+        // Raids
+        InsectSwarm = 16120,
         // General
         Unknown,
     }
 
-    internal static readonly Vector3 GuardianChestPosition = new( -4770.21f, -20629.2f, -2401.27f );
+    internal static readonly Vector3 GuardianChestPosition = new(-4770.21f, -20629.2f, -2401.27f);
     internal static readonly Vector3 GorsevalChestPosition = new(1626.19f, -4467.53f, -1904.65f);
     internal static readonly Vector3 SabethaChestPosition = new(-4903.99f, 3431.57f, -2461.83f);
     internal static readonly Vector3 SlothasorChestPosition = new(7690.45f, -496.617f, -25.7641f);
     internal static readonly Vector3 ChestOfPrisonCampPosition = new(-903.703f, -9450.76f, -126.277008f);
     internal static readonly Vector3 MatthiasChestPosition = new(-5896.35f, 5454.3f, -5182.15f);
     internal static readonly Vector3 SiegeChestPosition = new(-3815.47f, 16688.5f, -5322.35f);
-    internal static readonly Vector3 KeepConstructChestPosition = new (-3860.69f, 9389.32f, -5907.59f);
+    internal static readonly Vector3 KeepConstructChestPosition = new(-3860.69f, 9389.32f, -5907.59f);
     internal static readonly Vector3 XeraChestPosition = new(-2840.79f, -7552.79f, -9594.75f);
     internal static readonly Vector3 CairnChestPosition = new(14025.2f, 2211.56f, -1348.89f);
     internal static readonly Vector3 RecreationRoomChestPosition = new(2647.21f, 3985.09f, -4187.83f);
@@ -1045,6 +1079,7 @@ public static class SpeciesIDs
     internal static readonly Vector3 DecimasChestPosition = new(-10464.6f, 13033.6f, -5450.19f);
     internal static readonly Vector3 UrasChestPosition = new(4925.35f, 10724.1f, -10632.8f);
     internal static readonly Vector3 GrandStrikeChestHarvestTemplePosition = new(605.31f, -20400.5f, -15420.1f);
+    internal static readonly Vector3 GrandRaidChestKelaPosition = new(-20832.9f, 12552.2f, -1698.32f);
 
     public enum ChestID : int
     {
@@ -1074,7 +1109,8 @@ public static class SpeciesIDs
         GreersChest = SpeciesIDs.GreersChest,
         DecimasChest = SpeciesIDs.DecimasChest,
         UrasChest = SpeciesIDs.UrasChest,
-        GrandStrikeChest = SpeciesIDs.GrandStrikeChest,
+        GrandStrikeHarvestTempleChest = SpeciesIDs.GrandStrikeHarvestTempleChest,
+        GrandRaidKelaChest = SpeciesIDs.GrandRaidKelaChest,
 
         None = int.MaxValue,
     };
@@ -1103,7 +1139,7 @@ public static class SpeciesIDs
     private const int PyreGuardianRetal = -6;
     private const int QadimLamp = -7;
     private const int DarkAiKeeperOfThePeak = -8;
-    private const int MatthiasSacrifice = -9;
+    private const int MatthiasSacrificeCrystal = -9;
     private const int BloodstoneFragment = -10;
     private const int BloodstoneShardMainFight = -11;
     private const int ChargedBloodstone = -12;
@@ -1122,7 +1158,7 @@ public static class SpeciesIDs
     private const int VentariTablet = -25;
     private const int PoisonMushroom = -26;
     private const int SpearAggressionRevulsion = -27;
-    private const int DragonOrb = -28;
+    // -28 empty
     private const int ChestOfSouls = -29;
     private const int ShackledPrisoner = -30;
     private const int DemonicBond = -31;
@@ -1146,7 +1182,7 @@ public static class SpeciesIDs
     private const int QadimPlatform = -49;
     private const int GravityBall = -50;
     private const int JormagMovingFrostBeam = -51;
-    private const int GrandStrikeChest = -52;
+    private const int GrandStrikeHarvestTempleChest = -52;
     private const int PermanentEmbodimentOfGluttony = -53;
     private const int PermanentEmbodimentOfRage = -54;
     private const int PermanentEmbodimentOfDespair = -55;
@@ -1203,6 +1239,24 @@ public static class SpeciesIDs
     private const int KryptisTurret = -105;
     private const int HoloDancer = -106;
     private const int ParentAiKeeperOfThePeak = -107;
+    private const int PlayerSlubling = -108;
+    private const int TheDragonVoidUnknown = -109;
+    private const int HTGreenJormagWest = -110;
+    private const int HTGreenJormagEast = -111;
+    private const int HTGreenJormagSouthEast = -112;
+    private const int HTGreenPrimordusNorthWest = -113;
+    private const int HTGreenPrimordusNorthEast = -114;
+    private const int HTGreenPrimordusNorth = -115;
+    private const int HTGreenZhaitanNorthWest = -116;
+    private const int HTGreenZhatainNorthEast = -117;
+    private const int HTGreenZhaitanSouth = -118;
+    private const int HTGreenSooWonNorthEast = -119;
+    private const int HTGreenSooWonSouthEast = -120;
+    private const int HTGreenSooWonSouth = -121;
+    private const int GrandRaidKelaChest = -122;
+    private const int InsectSwarms = -123;
+    private const int EtherealSeal = -124;
+    private const int SabethaPlatform = -125;
 
     public const int IgnoredSpecies = int.MinValue;
     public const int NonIdentifiedSpecies = 0;

@@ -33,7 +33,11 @@ internal static class ScrapperHelper
     [
         // Object in Motion
         new BuffOnActorDamageModifier(Mod_ObjectInMotion, [Swiftness, Superspeed, Stability], "Object in Motion", "5% under swiftness/superspeed/stability, cumulative", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Scrapper, ByMultiPresence, TraitImages.ObjectInMotion, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.July2019Balance)
+            .WithBuilds(GW2Builds.July2019Balance, GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_ObjectInMotion, [Swiftness, Superspeed, Stability], "Object in Motion", "5% under swiftness/superspeed/stability, cumulative", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Scrapper, ByMultiPresence, TraitImages.ObjectInMotion, DamageModifierMode.PvEsPvP)
+            .WithBuilds(GW2Builds.January2026Balance),
+        new BuffOnActorDamageModifier(Mod_ObjectInMotion, [Swiftness, Superspeed, Stability], "Object in Motion", "3% under swiftness/superspeed/stability, cumulative", DamageSource.NoPets, 3.0, DamageType.Strike, DamageType.All, Source.Scrapper, ByMultiPresence, TraitImages.ObjectInMotion, DamageModifierMode.WvW)
+            .WithBuilds(GW2Builds.January2026Balance)
     ];
 
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
@@ -47,6 +51,7 @@ internal static class ScrapperHelper
     [
         new Buff("Watchful Eye", WatchfulEye, Source.Scrapper, BuffClassification.Defensive, SkillImages.BulwarkGyro),
         new Buff("Watchful Eye PvP", WatchfulEyePvP, Source.Scrapper, BuffClassification.Defensive, SkillImages.BulwarkGyro),
+        new Buff("Fuel Remaining", FuelRemaining, Source.Scrapper, BuffClassification.Other, BuffImages.FuelRemaining),
     ];
 
     private static readonly HashSet<int> Minions =

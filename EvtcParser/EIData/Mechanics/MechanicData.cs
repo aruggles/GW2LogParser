@@ -12,17 +12,12 @@ public class MechanicData
     private CachingCollection<HashSet<Mechanic>>? _presentMechanics;
     private CachingCollection<List<SingleActor>>? _enemyList;
 
-    internal MechanicData(List<Mechanic> logMechanics, bool isIntanceLog)
+    internal MechanicData(List<Mechanic> logMechanics)
     {
         _mechanicLogs = new(logMechanics.Count);
         Tracing.Trace.TrackAverageStat("logMechanics", logMechanics.Count);
-        foreach (Mechanic m in logMechanics.OrderBy(x => !x.IsAchievementEligibility))
+        foreach (Mechanic m in logMechanics.OrderBy(x => x is not AchievementEligibilityMechanic))
         {
-            // Ignore achievement eligibility mechanics in instances for now
-            if (isIntanceLog && m.IsAchievementEligibility)
-            {
-                continue;
-            }
             _mechanicLogs.Add(m, []);
         }
 
@@ -31,28 +26,33 @@ public class MechanicData
     private void CheckConfiguration(ParsedEvtcLog log)
     {
         var logMechanics = _mechanicLogs;
-        //TODO(Rennorb) @perf: find average complexity
+        //TODO_PERF(Rennorb) @find average complexity
         var errorMechanicConfig = new Dictionary<string, Dictionary<string, Dictionary<int, List<Mechanic>>>>(logMechanics.Count / 2);
-        var errorMechanicNaming = new Dictionary<string, Dictionary<string, Dictionary<string, List<Mechanic>>>>(logMechanics.Count);
+        var errorMechanicShortNaming = new Dictionary<string, Mechanic>(logMechanics.Count);
+        var errorMechanicNaming = new Dictionary<string, Dictionary<string, List<Mechanic>>>(logMechanics.Count);
         foreach (Mechanic m in logMechanics.Keys)
         {
-            if (!log.LogData.IsInstance)
+            if (m.Ignored)
+            {
+                continue;
+            }
+            if (!log.LogData.AllowDuplicateMechanicPlotlyConfigs)
             {
                 if (!errorMechanicConfig.TryGetValue(m.PlotlySetting.Symbol, out var colorDict))
                 {
-                    //TODO(Rennorb) @perf
+                    //TODO_PERF(Rennorb)
                     colorDict = [];
                     errorMechanicConfig[m.PlotlySetting.Symbol] = colorDict;
                 }
                 if (!colorDict.TryGetValue(m.PlotlySetting.Color, out var sizeDict))
                 {
-                    //TODO(Rennorb) @perf
+                    //TODO_PERF(Rennorb)
                     sizeDict = [];
                     colorDict[m.PlotlySetting.Color] = sizeDict;
                 }
                 if (!sizeDict.TryGetValue(m.PlotlySetting.Size, out var mList))
                 {
-                    //TODO(Rennorb) @perf
+                    //TODO_PERF(Rennorb)
                     mList = [];
                     sizeDict[m.PlotlySetting.Size] = mList;
                 }
@@ -63,48 +63,54 @@ public class MechanicData
                 }
             }
             {
-                if (!errorMechanicNaming.TryGetValue(m.FullName, out var shortNameDict))
+                if (!errorMechanicShortNaming.TryGetValue(m.ShortName, out var mech))
                 {
-                    //TODO(Rennorb) @perf
-                    shortNameDict = [];
-                    errorMechanicNaming[m.FullName] = shortNameDict;
+                    errorMechanicShortNaming.Add(m.ShortName, m);
                 }
-                if (!shortNameDict.TryGetValue(m.ShortName, out var descriptionDict))
+                else
                 {
-                    //TODO(Rennorb) @perf
+                    throw new InvalidDataException(m.ShortName + " is not a unique short name");
+                }
+            }
+            {
+
+                if (!errorMechanicNaming.TryGetValue(m.FullName, out var descriptionDict))
+                {
+                    //TODO_PERF(Rennorb)
                     descriptionDict = [];
-                    shortNameDict[m.ShortName] = descriptionDict;
+                    errorMechanicNaming[m.FullName] = descriptionDict;
                 }
                 if (!descriptionDict.TryGetValue(m.Description, out var mList))
                 {
-                    //TODO(Rennorb) @perf
+                    //TODO_PERF(Rennorb)
                     mList = [];
                     descriptionDict[m.Description] = mList;
                 }
                 mList.Add(m);
                 if (mList.Count > 1)
                 {
-                    throw new InvalidDataException(mList[0].FullName + " and " + mList[1].FullName + " share the same naming configuration");
+                    throw new InvalidDataException(mList[0].FullName + " and " + mList[1].FullName + " share the same naming/desc configuration");
                 }
             }
         }
 
         Tracing.Trace.TrackAverageStat("errorMechanicConfig", errorMechanicConfig.Count);
+        Tracing.Trace.TrackAverageStat("errorMechanicShortNaming", errorMechanicShortNaming.Count);
         Tracing.Trace.TrackAverageStat("errorMechanicNaming", errorMechanicNaming.Count);
     }
 
     private void ComputeMechanics(ParsedEvtcLog log)
     {
-        //TODO(Rennorb) @perf <regroupedMobs> = 0
+        //TODO_PERF(Rennorb) <regroupedMobs> = 0
         var regroupedMobs = new Dictionary<int, SingleActor>();
-        foreach (var x in _mechanicLogs.Keys.Where(x => !x.Available(log)))
-        {
-            _mechanicLogs.Remove(x);
+        foreach(var x in _mechanicLogs.Keys.Where(x => !x.Available(log))) 
+        { 
+            _mechanicLogs.Remove(x); 
         }
         CheckConfiguration(log);
         foreach (Mechanic mech in _mechanicLogs.Keys)
         {
-            if (mech.IsASubMechanic)
+            if (mech is SubMechanic)
             {
                 continue;
             }
@@ -122,23 +128,23 @@ public class MechanicData
     {
         if (_presentMechanics != null)
         {
-#nullable disable
+            #nullable disable
             return;
-#nullable restore
+            #nullable restore
         }
 
         _presentOnFriendliesMechanics = new(log);
-        _presentOnEnemyMechanics = new(log);
-        _presentMechanics = new(log);
-        _enemyList = new(log);
+        _presentOnEnemyMechanics      = new(log);
+        _presentMechanics             = new(log);
+        _enemyList                    = new(log);
         ComputeMechanics(log);
         foreach (var (mechanic, events) in _mechanicLogs)
         {
-            if (events.Count != 0)
+            if(events.Count != 0)
             {
                 events.SortByTime();
             }
-            else if (!mechanic.KeepIfEmpty(log))
+            else
             {
                 //NOTE(Rennorb: Removing from dicts is allowed during iteration.
                 _mechanicLogs.Remove(mechanic);
@@ -176,7 +182,7 @@ public class MechanicData
         var enemyHash = new HashSet<SingleActor>();
         foreach (KeyValuePair<Mechanic, List<MechanicEvent>> pair in _mechanicLogs)
         {
-            if (pair.Key.KeepIfEmpty(log) || pair.Value.Any(x => x.Time >= start && x.Time <= end))
+            if (pair.Value.Any(x => x.Time >= start && x.Time <= end))
             {
                 presentMechanics.Add(pair.Key);
                 if (pair.Key.ShowOnTable)
@@ -204,7 +210,7 @@ public class MechanicData
         _presentMechanics!.Set(start, end, presentMechanics);
         _presentOnEnemyMechanics!.Set(start, end, presentOnEnemyMechanics);
         _presentOnFriendliesMechanics!.Set(start, end, presentOnFriendliesMechanics);
-        _enemyList!.Set(start, end, new List<SingleActor>(enemyHash));
+        _enemyList!.Set(start, end, [..enemyHash]);
     }
 
     public IReadOnlyCollection<Mechanic> GetPresentEnemyMechs(ParsedEvtcLog log, long start, long end)

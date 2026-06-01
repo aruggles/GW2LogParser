@@ -71,9 +71,9 @@ public abstract class EffectEvent : StatusEvent
     /// <summary>
     /// Scale of the effect
     /// </summary>
-    public float Scale { get; protected set; } = -1.0f;
+    public float Scale { get; protected set; } = 0.0f;
 
-    public bool IsScaled => Scale >= 0.0f;
+    public virtual bool IsScaled => false;
 
     /// <summary>
     /// Scale something of the effect
@@ -283,5 +283,20 @@ public abstract class EffectEvent : StatusEvent
             end = Math.Min(target.LastAware, end);
         }
         return (start, end);
+    }
+
+    public bool IsAtHeight(float height, float epsilon = 10f)
+    {
+        return Math.Abs(Position.Z - height) < epsilon;
+    }
+
+    public bool IsAboveHeight(float height, float epsilon = 10f)
+    {
+        return Position.Z < height + epsilon; // towards negative = higher
+    }
+
+    public bool IsBelowHeight(float height, float epsilon = 10f)
+    {
+        return Position.Z > height - epsilon; // towards positive = lower
     }
 }

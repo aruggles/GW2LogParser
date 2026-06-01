@@ -4,6 +4,7 @@ using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ArcDPSEnums;
+using static GW2EIEvtcParser.LogLogic.LogLogic;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
@@ -83,7 +84,7 @@ internal class Freezie : FestivalRaidEncounterLogic
         {
             return phases;
         }
-        phases.AddRange(GetPhasesByInvul(log, Determined895, mainTarget, true, true));
+        phases.AddRange(GetSubPhasesByInvul(log, Determined895, mainTarget, true, true));
         for (int i = 1; i < phases.Count; i++)
         {
             PhaseData phase = phases[i];
@@ -102,27 +103,27 @@ internal class Freezie : FestivalRaidEncounterLogic
         return phases;
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         RewardEvent? reward = combatData.GetRewardEvents().FirstOrDefault(x => x.RewardType == RewardTypes.OldRaidReward1 && x.Time > logData.LogStart);
         if (reward != null)
         {
-            logData.SetSuccess(true, reward.Time);
+            successHandler.SetSuccess(true, reward.Time);
         } 
         else
         {
             AgentItem freezie = agentData.GetNPCsByID(TargetID.Freezie).FirstOrDefault() ?? throw new MissingKeyActorsException("Freezie not found");
-            logData.SetSuccess(false, freezie.LastAware);
+            successHandler.SetSuccess(false, freezie.LastAware);
         }
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         AgentItem freezie = agentData.GetNPCsByID(TargetID.Freezie).FirstOrDefault() ?? throw new MissingKeyActorsException("Freezie not found");
         HealthUpdateEvent? freezieHpUpdate = combatData.GetHealthUpdateEvents(freezie).FirstOrDefault(x => x.Time >= freezie.FirstAware);
         if ((freezieHpUpdate != null && freezieHpUpdate.HealthPercent <= 90))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
         AgentItem? heart = agentData.GetNPCsByID(TargetID.FreeziesFrozenHeart).FirstOrDefault();
         if (heart != null)
@@ -130,10 +131,10 @@ internal class Freezie : FestivalRaidEncounterLogic
             HealthUpdateEvent? heartHpUpdate = combatData.GetHealthUpdateEvents(heart).FirstOrDefault(x => x.Time >= freezie.FirstAware);
             if ((heartHpUpdate != null && heartHpUpdate.HealthPercent > 0) )
             {
-                return LogData.LogStartStatus.Late;
+                return LogData.StartStatus.Late;
             }
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     internal override IReadOnlyList<TargetID>  GetTargetsIDs()
@@ -158,12 +159,16 @@ internal class Freezie : FestivalRaidEncounterLogic
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
         switch (target.ID)
         {
             case (int)TargetID.Freezie:
                 // Fixation tether to Icy Protector
                 var fixations = GetBuffApplyRemoveSequence(log.CombatData, IcyBarrier, target, true, true);
-                replay.Decorations.AddTether(fixations, "rgba(30, 144, 255, 0.4)");
+                replay.Decorations.AddTethers(fixations, "rgba(30, 144, 255, 0.4)");
                 break;
             default:
                 break;
@@ -172,7 +177,10 @@ internal class Freezie : FestivalRaidEncounterLogic
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        base.ComputePlayerCombatReplayActors(p, log, replay);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
 
         // Fixation Aurora Beam
         var fixatedBeam = p.GetBuffStatus(log, AuroraBeamTargetBuff).Where(x => x.Value > 0);
@@ -185,7 +193,10 @@ internal class Freezie : FestivalRaidEncounterLogic
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
 
         // Frost Patch
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.FreezieFrozenPatch, out var frozenPatches))
@@ -225,6 +236,22 @@ internal class Freezie : FestivalRaidEncounterLogic
                 environmentDecorations.Add(new DoughnutDecoration(760, 780, lifespan, Colors.Orange, 0.2, connector));
                 environmentDecorations.Add(new DoughnutDecoration(980, 1000, lifespan, Colors.Orange, 0.2, connector));
             }
+        }
+    }
+
+    internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 }

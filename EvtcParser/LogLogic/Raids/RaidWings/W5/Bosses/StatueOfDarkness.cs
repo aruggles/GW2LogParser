@@ -1,6 +1,7 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
+using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -13,7 +14,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class StatueOfDarkness : HallOfChains
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
 
             new PlayerDstBuffApplyMechanic(Fear, new MechanicPlotlySetting(Symbols.StarSquare,Colors.Black), "Feared", "Feared by Eye Teleport Skill","Feared", 0),
             new MechanicGroup([
@@ -21,7 +22,7 @@ internal class StatueOfDarkness : HallOfChains
                 new PlayerCastStartMechanic(Flare, new MechanicPlotlySetting(Symbols.Circle,Colors.Green), "Detonate", "Flare (detonate light orb to incapacitate eye)","Detonate orb", 0)
                     .UsingChecker((evt, log) => !evt.IsInterrupted),
             ]),
-            new PlayerDstHealthDamageHitMechanic(PiercingShadow, new MechanicPlotlySetting(Symbols.HexagramOpen,Colors.Blue), "Spin", "Piercing Shadow (damaging spin to all players in sight)","Eye Spin", 0),
+            new PlayerDstHealthDamageHitMechanic(PiercingShadow, new MechanicPlotlySetting(Symbols.HexagramOpen,Colors.Blue), "Spin.SoD", "Piercing Shadow (damaging spin to all players in sight)","Eye Spin", 0),
             new PlayerDstHealthDamageHitMechanic(DeepAbyss, new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.Red), "Beam", "Deep Abyss (ticking eye beam)","Eye Beam", 0),
             new MechanicGroup([
                 new PlayerSrcBuffApplyMechanic([Daze, Fear, Knockdown], new MechanicPlotlySetting(Symbols.TriangleUp,Colors.Red), "Hard CC Fate", "Applied Daze/Fear/Knockdown on Eye of Fate","CC Fate", 50)
@@ -53,7 +54,7 @@ internal class StatueOfDarkness : HallOfChains
     {
         return
         [
-            TargetID.LightThieves,
+            TargetID.LightThief,
             TargetID.MazeMinotaur,
         ];
     }
@@ -77,14 +78,14 @@ internal class StatueOfDarkness : HallOfChains
         ];
     }
 
-    internal override LogData.LogStartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (TargetHPPercentUnderThreshold(TargetID.EyeOfJudgement, logData.LogStart, combatData, Targets) ||
             TargetHPPercentUnderThreshold(TargetID.EyeOfFate, logData.LogStart, combatData, Targets))
         {
-            return LogData.LogStartStatus.Late;
+            return LogData.StartStatus.Late;
         }
-        return LogData.LogStartStatus.Normal;
+        return LogData.StartStatus.Normal;
     }
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
@@ -93,7 +94,7 @@ internal class StatueOfDarkness : HallOfChains
         CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
         if (logStartNPCUpdate != null)
         {
-            IReadOnlyList<AgentItem> lightThieves = agentData.GetNPCsByID(TargetID.LightThieves);
+            IReadOnlyList<AgentItem> lightThieves = agentData.GetNPCsByID(TargetID.LightThief);
             if (lightThieves.Any())
             {
                 startToUse = lightThieves.Min(x => x.FirstAware);
@@ -102,9 +103,9 @@ internal class StatueOfDarkness : HallOfChains
         return startToUse;
     }
 
-    private static List<PhaseData> GetSubPhases(SingleActor eye, ParsedEvtcLog log, EncounterPhaseData encounterPhase)
+    private static List<SubPhasePhaseData> GetSubPhases(SingleActor eye, ParsedEvtcLog log, EncounterPhaseData encounterPhase)
     {
-        var res = new List<PhaseData>();
+        var res = new List<SubPhasePhaseData>();
         BuffRemoveAllEvent? det762Loss = log.CombatData.GetBuffDataByIDByDst(Determined762, eye.AgentItem).OfType<BuffRemoveAllEvent>().FirstOrDefault();
         if (det762Loss != null)
         {
@@ -128,13 +129,13 @@ internal class StatueOfDarkness : HallOfChains
         }
         return res;
     }
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor eyeFate, SingleActor eyeJudgement, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor eyeFate, SingleActor eyeJudgement, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(4);
+        var phases = new List<SubPhasePhaseData>(4);
         phases.AddRange(GetSubPhases(eyeFate, log, encounterPhase));
         phases.AddRange(GetSubPhases(eyeJudgement, log, encounterPhase));
         return phases;
@@ -156,13 +157,13 @@ internal class StatueOfDarkness : HallOfChains
 
     internal static bool HasIntersectingLastGrasps(CombatData combatData, SingleActor eyeFate, SingleActor eyeJudgement, out long intersectTime)
     {
-        var lastGraspsJudgement = GetBuffApplyRemoveSequence(combatData, LastGraspJudgment, eyeJudgement, true, true).ToList(); //TODO(Rennorb) @perf
+        var lastGraspsJudgement = GetBuffApplyRemoveSequence(combatData, LastGraspJudgment, eyeJudgement, true, true).ToList(); //TODO_PERF(Rennorb)
         var lastGraspsJudgementSegments = new List<Segment>(lastGraspsJudgement.Count / 2);
         for (int i = 0; i < lastGraspsJudgement.Count; i += 2)
         {
             lastGraspsJudgementSegments.Add(new Segment(lastGraspsJudgement[i].Time, lastGraspsJudgement[i + 1].Time, 1));
         }
-        var lastGraspsFate = GetBuffApplyRemoveSequence(combatData, LastGraspFate, eyeFate, true, true).ToList(); //TODO(Rennorb) @perf
+        var lastGraspsFate = GetBuffApplyRemoveSequence(combatData, LastGraspFate, eyeFate, true, true).ToList(); //TODO_PERF(Rennorb)
         var lastGraspsFateSegments = new List<Segment>(lastGraspsFate.Count / 2);
         for (int i = 0; i < lastGraspsFate.Count; i += 2)
         {
@@ -181,10 +182,10 @@ internal class StatueOfDarkness : HallOfChains
         return false;
     }
 
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents);
-        if (!logData.Success)
+        NoBouncyChestGenericCheckSucess(combatData, agentData, logData, playerAgents, successHandler);
+        if (!successHandler.Success)
         {
             SingleActor? eyeFate = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.EyeOfFate));
             SingleActor? eyeJudgement = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.EyeOfJudgement));
@@ -194,14 +195,14 @@ internal class StatueOfDarkness : HallOfChains
             }
             if (HasIntersectingLastGrasps(combatData, eyeFate, eyeJudgement, out var intersectTime))
             {
-                logData.SetSuccess(true, intersectTime);
+                successHandler.SetSuccess(true, intersectTime);
             }
         }
     }
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -209,34 +210,41 @@ internal class StatueOfDarkness : HallOfChains
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors (target, log, replay);
         }
     }
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
     }
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
     }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()
     {
-        return new Dictionary<TargetID, int>()
+        return new Dictionary<TargetID, int>
         {
             {TargetID.EyeOfFate, 0 },
             {TargetID.EyeOfJudgement, 0 },
         };
     }
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Statue of Darkness";
     }

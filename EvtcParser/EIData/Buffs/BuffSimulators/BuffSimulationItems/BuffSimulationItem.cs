@@ -11,7 +11,7 @@ internal abstract class BuffSimulationItem : SimulationItem
     // however I did not investigate what penalty a fix for tat bug would incur (probably quite minor, something like one clamp).
     public readonly long Start;
     public long End;
-    public long Duration => End - Start;
+    public long Duration  => End - Start;
 
     public BuffSimulationItem(long start, long end)
     {
@@ -22,6 +22,19 @@ internal abstract class BuffSimulationItem : SimulationItem
     public long GetClampedDuration(long start, long end)
     {
         if (start >= end || start >= End || Start >= end)
+        {
+            return 0;
+        }
+        return Math.Max(0, Math.Clamp(End, start, end) - Math.Clamp(Start, start, end));
+    }
+
+    public long GetClampedDuration(long start, long end, SingleActor actor)
+    {
+        if (start >= end || start >= End || Start >= end)
+        {
+            return 0;
+        }
+        if (GetActiveStacks(actor) == 0)
         {
             return 0;
         }

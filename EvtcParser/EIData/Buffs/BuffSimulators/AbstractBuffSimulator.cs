@@ -7,9 +7,9 @@ namespace GW2EIEvtcParser.EIData.BuffSimulators;
 internal abstract class AbstractBuffSimulator(ParsedEvtcLog log, Buff buff, BuffStackItemPool pool)
 {
     // Fields
-    public readonly List<BuffSimulationItem> GenerationSimulation = []; //TODO(Rennorb) @perf
-    public readonly List<BuffSimulationItemOverstack> OverstackSimulationResult = []; //TODO(Rennorb) @perf
-    public readonly List<BuffSimulationItemWasted> WasteSimulationResult = []; //TODO(Rennorb) @perf
+    public readonly List<BuffSimulationItem>          GenerationSimulation      = [];
+    public readonly List<BuffSimulationItemOverstack> OverstackSimulationResult = [];
+    public readonly List<BuffSimulationItemWasted>    WasteSimulationResult     = [];
 
     public readonly Buff Buff = buff;
 
@@ -77,6 +77,6 @@ internal abstract class AbstractBuffSimulator(ParsedEvtcLog log, Buff buff, Buff
     public abstract void Extend(long extension, long oldValue, AgentItem src, long time, uint stackID);
 
     public abstract void Activate(uint stackID);
-    public abstract void Reset(uint stackID, long toDuration);
+    public abstract void Deactivate(uint stackID, long toDuration);
 }
 

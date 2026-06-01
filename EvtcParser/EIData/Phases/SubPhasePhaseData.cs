@@ -1,7 +1,5 @@
-﻿using GW2EIBuilders.HtmlModels;
+﻿using System.Numerics;
 using GW2EIEvtcParser.ParsedData;
-using System.Numerics;
-using System.Xml.Linq;
 
 namespace GW2EIEvtcParser.EIData;
 

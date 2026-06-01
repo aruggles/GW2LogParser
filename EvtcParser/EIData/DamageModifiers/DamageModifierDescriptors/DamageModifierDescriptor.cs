@@ -23,18 +23,27 @@ internal abstract class DamageModifierDescriptor : IVersionable
     public bool SkillBased => GainComputer.SkillBased;
 
     public bool Approximate { get; protected set; } = false;
-    public readonly Source Src;
+    public readonly HashSet<Source> Srcs;
     public readonly string Icon;
     public readonly string Name;
 
     public readonly int ID;
     public string InitialTooltip { get; protected set; }
 
-    internal readonly DamageModifierMode Mode = DamageModifierMode.All;
-    private List<DamageLogChecker> _dlCheckers;
-    private List<ActorChecker> _earlyExitCheckers;
+    public bool FoeAlwaysMaster { get; private set; }
+    public bool ActorAlwaysMaster { get; private set; }
 
-    internal DamageModifierDescriptor(int id, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, Source src, string icon, GainComputer gainComputer, DamageModifierMode mode)
+    internal readonly DamageModifierMode Mode = DamageModifierMode.All;
+    private readonly List<DamageLogChecker> _dlCheckers;
+    private readonly List<ActorChecker> _earlyExitCheckers;
+
+    public bool SpecSpecificShared { get; private set; }
+
+    internal DamageModifierDescriptor(int id, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, Source src, string icon, GainComputer gainComputer, DamageModifierMode mode) : this(id, name, tooltip, damageSource, gainPerStack, srctype, compareType, [src], icon, gainComputer, mode)
+    {
+    }
+
+    internal DamageModifierDescriptor(int id, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, HashSet<Source> srcs, string icon, GainComputer gainComputer, DamageModifierMode mode)
     {
         if (id <= 0)
         {
@@ -51,7 +60,7 @@ internal abstract class DamageModifierDescriptor : IVersionable
         }
         CompareType = compareType;
         SrcType = srctype;
-        Src = src;
+        Srcs = srcs;
         Icon = icon;
         GainComputer = gainComputer;
         Mode = mode;
@@ -79,9 +88,30 @@ internal abstract class DamageModifierDescriptor : IVersionable
         return this;
     }
 
+    internal virtual DamageModifierDescriptor UsingActorFetchIsAlwaysMaster()
+    {
+        ActorAlwaysMaster = true;
+        return this;
+    }
+
+    internal virtual DamageModifierDescriptor UsingFoeFetchIsAlwaysMaster()
+    {
+        FoeAlwaysMaster = true;
+        return this;
+    }
+
     internal virtual DamageModifierDescriptor UsingChecker(DamageLogChecker dlChecker)
     {
         _dlCheckers.Add(dlChecker);
+        return this;
+    }
+    /// <summary>
+    /// Will cause the damage modifier to fall into "Common" while still remembering the source spec
+    /// </summary>
+    /// <returns></returns>
+    internal DamageModifierDescriptor UsingSpecSpecificShared()
+    {
+        SpecSpecificShared = true;
         return this;
     }
 

@@ -34,7 +34,7 @@ internal static class LogLogicTimeUtils
         {
             throw new MissingKeyActorsException("Main target not found");
         }
-        CombatItem? firstDamageEvent = combatData.FirstOrDefault(x => (x.SrcMatchesAgent(mainTarget) || x.DstMatchesAgent(mainTarget)) && x.IsDamagingDamage() && x.Time >= upperLimit - ParserHelper.ServerDelayConstant);
+        CombatItem? firstDamageEvent = combatData.FirstOrDefault(x => (x.SrcMatchesAgent(mainTarget) || x.DstMatchesAgent(mainTarget)) && x.IsNonZeroDamageEvent() && x.Time >= upperLimit - ParserHelper.ServerDelayConstant);
         if (firstDamageEvent != null)
         {
             return firstDamageEvent.Time;
@@ -48,7 +48,7 @@ internal static class LogLogicTimeUtils
         {
             throw new MissingKeyActorsException("Main target not found");
         }
-        CombatItem? firstDamageEvent = combatData.FirstOrDefault(x => (x.SrcMatchesAgent(mainTarget) || x.DstMatchesAgent(mainTarget)) && x.IsDamagingDamage());
+        CombatItem? firstDamageEvent = combatData.FirstOrDefault(x => (x.SrcMatchesAgent(mainTarget) || x.DstMatchesAgent(mainTarget)) && x.IsNonZeroDamageEvent());
         if (firstDamageEvent != null)
         {
             return firstDamageEvent.Time;
@@ -61,7 +61,10 @@ internal static class LogLogicTimeUtils
         long start = long.MaxValue;
         foreach (int id in ids)
         {
-            AgentItem target = (agentData.GetNPCsByIDAndAgent(id, agent).FirstOrDefault() ?? agentData.GetNPCsByID(id).FirstOrDefault(x => x.InAwareTimes(upperLimit))) ?? throw new MissingKeyActorsException("Main target not found");
+            AgentItem target = agentData.GetNPCsByIDAndAgent(id, agent).FirstOrDefault() ?? // check for targeted agent, on old logs agent will be 0, defaulting to a simple first or default on complete list of species id
+                                agentData.GetNPCsByID(id).FirstOrDefault(x => x.InAwareTimes(upperLimit)) ?? // check for aware species id
+                                agentData.GetNPCsByID(id).FirstOrDefault(x => x.FirstAware > upperLimit) ?? // check for species id aware after event
+                                throw new MissingKeyActorsException("Main target not found");
             upperLimit = GetPostLogStartNPCUpdateDamageEventTime(logData, agentData, combatData, upperLimit, target);
             CombatItem? enterCombat = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.EnterCombat && x.SrcMatchesAgent(target) && x.Time <= upperLimit + ParserHelper.TimeThresholdConstant);
             if (enterCombat != null)
@@ -112,15 +115,15 @@ internal static class LogLogicTimeUtils
     internal static long GetLogOffsetByInvulnStart(LogData logData, List<CombatItem> combatData, AgentItem target, long invulnID)
     {
         long start = GetLogOffsetForTarget(logData, target);
-        CombatItem? invulnRemove = combatData.FirstOrDefault(x => x.SkillID == invulnID && x.IsBuffRemove == BuffRemove.All && x.SrcMatchesAgent(target) && x.Time >= start);
+        CombatItem? invulnRemove = combatData.FirstOrDefault(x => x.SkillID == invulnID && x.IsBuffRemoveAllEvent() && x.SrcMatchesAgent(target) && x.Time >= start);
         if (invulnRemove != null)
         {
-            CombatItem? invulnApply = combatData.FirstOrDefault(x => x.SkillID == invulnID && x.DstMatchesAgent(target) && x.IsBuffApply() && x.Time >= start);
+            CombatItem? invulnApply = combatData.FirstOrDefault(x => x.SkillID == invulnID && x.DstMatchesAgent(target) && x.IsBuffApplyEvent() && x.Time >= start);
             if (invulnApply != null && invulnApply.Time <= invulnRemove.Time)
             {
                 // check if invuln was applied at start rather than already present (otherwise could be a late start)
                 // this is a faster check for targets that get their starting invuln applied as they spawn or as the encounter starts
-                if (invulnApply.IsStateChange == StateChange.None && invulnApply.Time <= target.FirstAware + ParserHelper.TimeThresholdConstant)
+                if (invulnApply.IsStateChange != StateChange.BuffInitial && invulnApply.Time <= target.FirstAware + ParserHelper.TimeThresholdConstant)
                 {
                     return invulnRemove.Time;
                 }
@@ -156,7 +159,7 @@ internal static class LogLogicTimeUtils
         return null;
     }
 
-    internal static void SetSuccessByCombatExit(IEnumerable<SingleActor> targets, CombatData combatData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal static void SetSuccessByCombatExit(IEnumerable<SingleActor> targets, CombatData combatData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         if (!targets.Any())
         {
@@ -170,7 +173,7 @@ internal static class LogLogicTimeUtils
             ExitCombatEvent? exitCombat;
             if (enterCombat != null)
             {
-                exitCombat = combatData.GetExitCombatEvents(t.AgentItem).Where(x => x.Time > enterCombat.Time).LastOrDefault();
+                exitCombat = combatData.GetExitCombatEvents(t.AgentItem).LastOrDefault(x => x.Time > enterCombat.Time);
             }
             else
             {
@@ -195,20 +198,20 @@ internal static class LogLogicTimeUtils
             {
                 return;
             }
-            logData.SetSuccess(true, lastDamageTaken.Time);
+            successHandler.SetSuccess(true, lastDamageTaken.Time);
         }
     }
 
-    internal static void SetSuccessByChestGadget(ChestID chestID, AgentData agentData, LogData logData)
+    internal static void SetSuccessByChestGadget(ChestID chestID, AgentData agentData, LogData logData, LogData.LogSuccessHandler successHandler)
     {
         AgentItem? chest = agentData.GetGadgetsByID(chestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
         }
     }
 
-    internal static void SetSuccessByDeath(IEnumerable<SingleActor> targets, CombatData combatData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, bool all)
+    internal static void SetSuccessByDeath(IEnumerable<SingleActor> targets, CombatData combatData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler, bool all)
     {
         if (!targets.Any())
         {
@@ -233,7 +236,7 @@ internal static class LogLogicTimeUtils
         }
         if ((all && success == targets.Count()) || (!all && success > 0))
         {
-            logData.SetSuccess(true, maxTime);
+            successHandler.SetSuccess(true, maxTime);
         }
     }
 

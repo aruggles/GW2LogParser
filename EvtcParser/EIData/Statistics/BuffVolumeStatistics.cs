@@ -19,13 +19,14 @@ public class BuffVolumeStatistics
 
         var buffsToTrack = new HashSet<Buff>();
         var playerCount = 0;
-        foreach (Player p in playerList)
+        var playersToUse = playerList.Where(x => x.InAwareTimes(start, end)).ToList();
+        foreach (Player p in playersToUse)
         {
             buffsToTrack.UnionWith(p.GetTrackedBuffs(log));
             playerCount++;
         }
 
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         var buffs = new Dictionary<long, BuffVolumeStatistics>();
         var activeBuffs = new Dictionary<long, BuffVolumeStatistics>();
 
@@ -37,7 +38,7 @@ public class BuffVolumeStatistics
             double totalActiveOutgoing = 0;
             double totalActiveOutgoingByExtension = 0;
             int activePlayerCount = 0;
-            foreach (Player p in playerList)
+            foreach (Player p in playersToUse)
             {
                 long playerActiveDuration = p.GetActiveDuration(log, start, end);
                 if (playerActiveDuration > 0)
@@ -56,7 +57,7 @@ public class BuffVolumeStatistics
                         totalOutgoing += bae.AppliedDuration;
                         if (playerActiveDuration > 0)
                         {
-                            totalActiveOutgoing += bae.AppliedDuration / playerActiveDuration;
+                            totalActiveOutgoing += (double)bae.AppliedDuration / playerActiveDuration;
                         }
                     }
                     if (abae is BuffExtensionEvent bee)
@@ -64,7 +65,7 @@ public class BuffVolumeStatistics
                         totalOutgoingByExtension += bee.ExtendedDuration;
                         if (playerActiveDuration > 0)
                         {
-                            totalActiveOutgoingByExtension += bee.ExtendedDuration / playerActiveDuration;
+                            totalActiveOutgoingByExtension += (double)bee.ExtendedDuration / playerActiveDuration;
                         }
                     }
                 }
@@ -75,7 +76,7 @@ public class BuffVolumeStatistics
             totalOutgoing /= phaseDuration;
             totalOutgoingByExtension /= phaseDuration;
 
-            //TODO(Rennorb) @perf
+            //TODO_PERF(Rennorb)
             var uptime = new BuffVolumeStatistics();
             var uptimeActive = new BuffVolumeStatistics();
             buffs[buff.ID] = uptime;
@@ -164,7 +165,7 @@ public class BuffVolumeStatistics
             {
                 totalActiveIncoming = totalIncoming / playerActiveDuration;
                 totalActiveOutgoing = totalOutgoing / playerActiveDuration;
-                totalActiveIncomingByExtension = totalIncomingByExtension / playerActiveDuration;
+                totalActiveIncomingByExtension = totalIncomingByExtension / playerActiveDuration; 
                 totalActiveIncomingByUnknownExtension = totalIncomingByUnknownExtension / playerActiveDuration;
                 totalActiveOutgoingByExtension = totalOutgoingByExtension / playerActiveDuration;
             }
@@ -202,15 +203,15 @@ public class BuffVolumeStatistics
                 uptime.IncomingByExtension = Math.Round(totalIncomingByExtension, ParserHelper.BuffDigit);
                 uptime.IncomingByUnknownExtension = Math.Round(totalIncomingByUnknownExtension, ParserHelper.BuffDigit);
                 uptime.Outgoing = Math.Round(totalOutgoing, ParserHelper.BuffDigit);
-                uptime.OutgoingByExtension = Math.Round((totalOutgoingByExtension), ParserHelper.BuffDigit);
+                uptime.OutgoingByExtension = Math.Round((totalOutgoingByExtension) , ParserHelper.BuffDigit);
                 //
                 if (playerActiveDuration > 0)
                 {
                     uptimeActive.Incoming = Math.Round(totalActiveIncoming, ParserHelper.BuffDigit);
                     uptimeActive.IncomingByExtension = Math.Round(totalActiveIncomingByExtension, ParserHelper.BuffDigit);
-                    uptimeActive.IncomingByUnknownExtension = Math.Round(totalActiveIncomingByUnknownExtension, ParserHelper.BuffDigit);
-                    uptimeActive.Outgoing = Math.Round(totalActiveOutgoing, ParserHelper.BuffDigit);
-                    uptimeActive.OutgoingByExtension = Math.Round((totalActiveOutgoingByExtension), ParserHelper.BuffDigit);
+                    uptimeActive.IncomingByUnknownExtension = Math.Round(totalActiveIncomingByUnknownExtension , ParserHelper.BuffDigit);
+                    uptimeActive.Outgoing = Math.Round(totalActiveOutgoing , ParserHelper.BuffDigit);
+                    uptimeActive.OutgoingByExtension = Math.Round((totalActiveOutgoingByExtension) , ParserHelper.BuffDigit);
                 }
             }
         }

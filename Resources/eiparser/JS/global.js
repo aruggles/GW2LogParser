@@ -3,6 +3,7 @@
 
 let apiRenderServiceOkay = true;
 let useDarthmaim = false;
+let replaceImgur = false;
 
 const quickColor = {
     r: 220,

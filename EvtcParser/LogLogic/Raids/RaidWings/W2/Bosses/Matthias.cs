@@ -16,7 +16,7 @@ namespace GW2EIEvtcParser.LogLogic;
 
 internal class Matthias : SalvationPass
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
 
 
             new PlayerDstHealthDamageHitMechanic([OppressiveGazeHuman, OppressiveGazeAbomination], new MechanicPlotlySetting(Symbols.Hexagram,Colors.Red), "Hadouken", "Oppressive Gaze (Hadouken projectile)","Hadouken", 0),
@@ -32,7 +32,7 @@ internal class Matthias : SalvationPass
                     .WithMinions(),
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(FieryVortex, new MechanicPlotlySetting(Symbols.TriangleDownOpen,Colors.Yellow), "Tornado", "Fiery Vortex (Tornado Matthias)","Tornado (Matthias)", 250),
+                new PlayerDstHealthDamageHitMechanic(FieryVortex, new MechanicPlotlySetting(Symbols.TriangleDownOpen,Colors.Yellow), "Tornado.M", "Fiery Vortex (Tornado Matthias)","Tornado (Matthias)", 250),
                 new PlayerDstBuffApplyMechanic(Slow, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Blue), "Icy KD", "Knockdown by Icy Patch","Icy Patch KD", 0)
                     .UsingBuffChecker(Stability, false)
                     .UsingChecker((br,log) => br.AppliedDuration == 10000),
@@ -88,14 +88,14 @@ internal class Matthias : SalvationPass
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
         IReadOnlyList<BuffEvent> bloodstoneBisque = log.CombatData.GetBuffData(BloodstoneBisque);
-        if (bloodstoneBisque.Any()) 
+        if (bloodstoneBisque.Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -142,7 +142,7 @@ internal class Matthias : SalvationPass
         ];
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor matthias, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor matthias, IEnumerable<SingleActor> sacrifices, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
@@ -150,7 +150,7 @@ internal class Matthias : SalvationPass
         }
         var encounterStart = encounterPhase.Start;
         var encounterEnd = encounterPhase.End;
-        var phases = new List<PhaseData>(4);
+        var phases = new List<SubPhasePhaseData>(4);
         // Special buff cast check
         BuffEvent? heatWave = log.CombatData.GetBuffData(HeatWaveMatthias).FirstOrDefault();
         if (heatWave != null)
@@ -164,7 +164,7 @@ internal class Matthias : SalvationPass
                 if (abo != null)
                 {
                     phases.Add(new SubPhasePhaseData(downPour.Time, abo.Time));
-                    BuffEvent? invulRemove = log.CombatData.GetBuffDataByIDByDst(Invulnerability757, matthias.AgentItem).FirstOrDefault(x => x.Time >= abo.Time && x.Time <= abo.Time + 10000 && !(x is BuffApplyEvent));
+                    BuffEvent? invulRemove = log.CombatData.GetBuffDataByIDByDst(Invulnerability757, matthias.AgentItem).FirstOrDefault(x => x.Time >= abo.Time && x.Time <= abo.Time + 10000 && x is not BuffApplyEvent);
                     if (invulRemove != null)
                     {
                         phases.Add(new SubPhasePhaseData(invulRemove.Time, encounterEnd));
@@ -186,6 +186,7 @@ internal class Matthias : SalvationPass
             phases[i].Name = namesMat[i];
             phases[i].AddParentPhase(encounterPhase);
             phases[i].AddTarget(matthias, log);
+            phases[i].AddTargets(sacrifices, log, PhaseData.TargetPriority.NonBlocking);
         }
         return phases;
     }
@@ -193,74 +194,38 @@ internal class Matthias : SalvationPass
     {
         List<PhaseData> phases = GetInitialPhase(log);
         SingleActor mainTarget = Targets.FirstOrDefault(x => x.IsSpecies(TargetID.Matthias)) ?? throw new MissingKeyActorsException("Matthias not found");
+        var sacrifices = Targets.Where(x => x.IsSpecies(TargetID.MatthiasSacrificeCrystal));
         phases[0].AddTarget(mainTarget, log);
-        phases.AddRange(ComputePhases(log, mainTarget, (EncounterPhaseData)phases[0], requirePhases));
+        phases[0].AddTargets(sacrifices, log, PhaseData.TargetPriority.NonBlocking);
+        phases.AddRange(ComputePhases(log, mainTarget, sacrifices, (EncounterPhaseData)phases[0], requirePhases));
         return phases;
     }
 
     internal static void FindSacrifices(LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
-        // has breakbar state into
-        if (combatData.Any(x => x.IsStateChange == StateChange.BreakbarState))
+        var sacrificeList = combatData.Where(x => x.SkillID == MatthiasSacrifice && (x.IsBuffRemoveAllEvent() || x.IsBuffApplyEvent())).ToList();
+        var sacrificeStartList = sacrificeList.Where(x => !x.IsBuffRemoveAllEvent()).ToList();
+        var sacrificeEndList = sacrificeList.Where(x => x.IsBuffRemoveAllEvent()).ToList();
+        var copies = new List<CombatItem>();
+        for (int i = 0; i < sacrificeStartList.Count; i++)
         {
-            var sacrificeList = combatData.Where(x => x.SkillID == MatthiasSacrifice && !x.IsExtension && (x.IsBuffRemove == BuffRemove.All || x.IsBuffApply()));
-            var sacrificeStartList = sacrificeList.Where(x => x.IsBuffRemove == BuffRemove.None).ToList();
-            var sacrificeEndList = sacrificeList.Where(x => x.IsBuffRemove == BuffRemove.All).ToList();
-            var copies = new List<CombatItem>();
-            for (int i = 0; i < sacrificeStartList.Count; i++)
+            //
+            long sacrificeStartTime = sacrificeStartList[i].Time;
+            long sacrificeEndTime = i < sacrificeEndList.Count ? sacrificeEndList[i].Time : logData.LogEnd;
+            //
+            AgentItem? sacrifice = agentData.GetAgentByType(AgentItem.AgentType.Player).FirstOrDefault(x => x.Is(agentData.GetAgent(sacrificeStartList[i].DstAgent, sacrificeStartList[i].Time)));
+            if (sacrifice == null)
             {
-                //
-                long sacrificeStartTime = sacrificeStartList[i].Time;
-                long sacrificeEndTime = i < sacrificeEndList.Count ? sacrificeEndList[i].Time : logData.LogEnd;
-                //
-                AgentItem? sacrifice = agentData.GetAgentByType(AgentItem.AgentType.Player).FirstOrDefault(x => x.Is(agentData.GetAgent(sacrificeStartList[i].DstAgent, sacrificeStartList[i].Time)));
-                if (sacrifice == null)
-                {
-                    continue;
-                }
-                sacrifice = sacrifice.EnglobingAgentItem;
-                AgentItem sacrificeCrystal = agentData.AddCustomNPCAgent(sacrificeStartTime, sacrificeEndTime + 100, "Sacrificed " + (i + 1) + " " + sacrifice.Name.Split('\0')[0], Spec.NPC, TargetID.MatthiasSacrificeCrystal, false);
-                foreach (CombatItem cbt in combatData)
-                {
-                    if (!sacrificeCrystal.InAwareTimes(cbt.Time))
-                    {
-                        continue;
-                    }
-                    bool skip = !(cbt.DstMatchesAgent(sacrifice, extensions) || cbt.SrcMatchesAgent(sacrifice, extensions));
-                    if (skip)
-                    {
-                        continue;
-                    }
-                    // redirect damage events
-                    if (cbt.IsDamage(extensions))
-                    {
-                        // only redirect incoming damage
-                        if (cbt.DstMatchesAgent(sacrifice, extensions))
-                        {
-                            cbt.OverrideDstAgent(sacrificeCrystal);
-                        }
-                    }
-                    // copy the rest
-                    else
-                    {
-                        var copy = new CombatItem(cbt);
-                        if (copy.DstMatchesAgent(sacrifice, extensions))
-                        {
-                            copy.OverrideDstAgent(sacrificeCrystal);
-                        }
-                        if (copy.SrcMatchesAgent(sacrifice, extensions))
-                        {
-                            copy.OverrideSrcAgent(sacrificeCrystal);
-                        }
-                        copies.Add(copy);
-                    }
-                }
+                continue;
             }
-            if (copies.Count != 0)
-            {
-                combatData.AddRange(copies);
-                combatData.SortByTime();
-            }
+            sacrifice = sacrifice.EnglobingAgentItem;
+            AgentItem sacrificeCrystal = agentData.AddCustomNPCAgent(sacrificeStartTime, sacrificeEndTime + 100, "Sacrificed " + (i + 1) + " " + sacrifice.Name.Split('\0')[0], Spec.NPC, TargetID.MatthiasSacrificeCrystal, false);
+            AgentManipulationHelper.RedirectDamageAndCopyRemainingFromSrcToDst(sacrificeCrystal, sacrifice, copies, combatData, extensions);
+        }
+        if (copies.Count != 0)
+        {
+            combatData.AddRange(copies);
+            combatData.SortByTime();
         }
     }
 
@@ -277,12 +242,15 @@ internal class Matthias : SalvationPass
 
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
+        // Bees can be brought to Matthias
+        var bees = BanditTrio.CreateCustomInsectSwarmMasterAgent(logData, agentData);
         FindSacrifices(logData, agentData, combatData, extensions);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
+        BanditTrio.RedirectInsectSwarmsToCustomMaster(bees, agentData);
         ForceSacrificeHealth(Targets);
     }
 
-    internal override IReadOnlyList<TargetID>  GetTargetsIDs()
+    internal override IReadOnlyList<TargetID> GetTargetsIDs()
     {
         return
         [
@@ -293,7 +261,9 @@ internal class Matthias : SalvationPass
 
     protected override HashSet<int> IgnoreForAutoNumericalRenaming()
     {
-        return [(int)TargetID.MatthiasSacrificeCrystal];
+        return [
+            (int)TargetID.MatthiasSacrificeCrystal,
+        ];
     }
 
     internal override IReadOnlyList<TargetID> GetTrashMobsIDs()
@@ -319,7 +289,7 @@ internal class Matthias : SalvationPass
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -355,7 +325,7 @@ internal class Matthias : SalvationPass
                             if (!log.CombatData.HasMissileData && target.TryGetCurrentFacingDirection(log, lifespan.start + 1000, out var facingOppressiveGaze))
                             {
                                 var positionConnector = (AgentConnector)new AgentConnector(target).WithOffset(new(width / 2, 0, 0), true);
-                                var rotationConnextor = new AngleConnector(facingOppressiveGaze);
+                                var rotationConnextor = new AngleConnector(facingOppressiveGaze.Value);
                                 replay.Decorations.Add(new RectangleDecoration(width, height, lifespan, Colors.Red, 0.1, positionConnector).UsingRotationConnector(rotationConnextor));
                                 replay.Decorations.Add(new RectangleDecoration(width, height, lifespanHit, Colors.Red, 0.7, positionConnector).UsingRotationConnector(rotationConnextor));
                             }
@@ -398,7 +368,7 @@ internal class Matthias : SalvationPass
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(p, log, replay);
         }
@@ -455,7 +425,7 @@ internal class Matthias : SalvationPass
 
                         for (int i = 0; i < WellsPositions.Count; i++)
                         {
-                            float distance = Vector3.Distance(position, WellsPositions[i]);
+                            float distance = Vector3.Distance(position.Value, WellsPositions[i]);
                             if (distance < curDistance)
                             {
                                 curDistance = distance;
@@ -485,7 +455,7 @@ internal class Matthias : SalvationPass
                 if (p.TryGetCurrentInterpolatedPosition(log, seg.End, out var position))
                 {
                     lifespan = (seg.End, seg.End + 90000);
-                    replay.Decorations.Add(new CircleDecoration(300, lifespan, Colors.Red, 0.4, new PositionConnector(position)));
+                    replay.Decorations.Add(new CircleDecoration(300, lifespan, Colors.Red, 0.4, new PositionConnector(position.Value)));
                 }
             }
             replay.Decorations.AddOverheadIcon(seg, p, ParserIcons.VolatilePoisonOverhead);
@@ -493,7 +463,7 @@ internal class Matthias : SalvationPass
 
         // Sacrifice Selection
         var sacrificeSelection = p.GetBuffStatus(log, MatthiasSacrificeSelection).Where(x => x.Value > 0);
-        replay.Decorations.AddOverheadIcons(sacrificeSelection, p, ParserIcons.RedArrowOverhead);
+        replay.Decorations.AddOverheadIcons(sacrificeSelection, p, ParserIcons.RedArrowDownOverhead);
 
         // Sacrifice
         var sacrificeMatthias = p.GetBuffStatus(log, MatthiasSacrifice).Where(x => x.Value > 0);
@@ -518,7 +488,7 @@ internal class Matthias : SalvationPass
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -545,6 +515,13 @@ internal class Matthias : SalvationPass
                 var circle = new CircleDecoration(300, lifespan, Colors.Red, 0.4, new PositionConnector(effect.Position));
                 environmentDecorations.Add(circle);
             }
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
 

@@ -12,6 +12,7 @@ public class Player : PlayerActor
 
     private List<GenericSegment<GUID>>? CommanderStates = null;
     private bool _squadless = false;
+    private List<AchievementEligibilityEvent>? _achievementEligibilityEvents = null;
     // Constructors
     internal Player(AgentItem agent, bool noSquad) : base(agent)
     {
@@ -57,15 +58,15 @@ public class Player : PlayerActor
 
     internal override (Dictionary<long, BuffStatistics> Buffs, Dictionary<long, BuffStatistics> ActiveBuffs) ComputeBuffs(ParsedEvtcLog log, long start, long end, BuffEnum type)
     {
-        return (type) switch
+        return (type) switch 
         {
             BuffEnum.Group =>
-                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p.Group == Group && this != p), log, AgentItem, start, end),
-            BuffEnum.OffGroup =>
-                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p.Group != Group), log, AgentItem, start, end),
+                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p.Group == Group && this != p), log, this, start, end),
+            BuffEnum.OffGroup => 
+                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p.Group != Group), log, this, start, end),
             BuffEnum.Squad =>
-                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p != this), log, AgentItem, start, end),
-            _ => BuffStatistics.GetBuffsForSelf(log, this, start, end),
+                BuffStatistics.GetBuffsForPlayers(log.PlayerList.Where(p => p != this), log, this, start, end),
+            _ =>  BuffStatistics.GetBuffsForSelf(log, this, start, end),
         };
     }
 
@@ -102,83 +103,7 @@ public class Player : PlayerActor
     {
         if (CommanderStates == null)
         {
-            var useGUIDs = log.LogMetadata.EvtcBuild >= ArcDPSBuilds.FunctionalIDToGUIDEvents;
-            var statesByPlayer = new Dictionary<AgentItem, IReadOnlyList<GenericSegment<GUID>>>(log.PlayerList.Count);
-            var relevantPlayers = log.PlayerList.DistinctBy(x => x.EnglobingAgentItem).Select(x => x.EnglobingAgentItem);
-            foreach (var player in relevantPlayers)
-            {
-                IReadOnlyList<MarkerEvent> markerEvents = log.CombatData.GetMarkerEvents(player);
-                //TODO(Rennorb) @perf: find average complexity
-                var commanderMarkerStates = new List<GenericSegment<GUID>>(markerEvents.Count);
-                foreach (MarkerEvent markerEvent in markerEvents)
-                {
-                    MarkerGUIDEvent marker = markerEvent.GUIDEvent!;
-                    if (useGUIDs)
-                    {
-                        if (marker.IsCommanderTag)
-                        {
-                            commanderMarkerStates.Add(new(markerEvent.Time, Math.Min(markerEvent.EndTime, log.LogData.EvtcLogEnd), marker.ContentGUID));
-                            if (markerEvent.EndNotSet)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    else if (markerEvent.MarkerID != 0)
-                    {
-                        commanderMarkerStates.Clear();
-                        commanderMarkerStates.Add(new(player.FirstAware, log.LogData.EvtcLogEnd, MarkerGUIDs.BlueCommanderTag));
-                        break;
-                    }
-                }
-                if (commanderMarkerStates.Count > 0)
-                {
-                    statesByPlayer[player] = commanderMarkerStates;
-                }
-            }
-
-            if (!statesByPlayer.Any(x => AgentItem.Is(x.Key)))
-            {
-                CommanderStates = [];
-                return CommanderStates;
-            }
-
-            //TODO(Rennorb) @perf: find average complexity
-            var states = new List<(AgentItem p, GenericSegment<GUID> seg)>(statesByPlayer.Count * statesByPlayer.Values.FirstOrDefault()?.Count ?? 1);
-            foreach (var (player, state) in statesByPlayer)
-            {
-                foreach (var segment in state)
-                {
-                    states.Add((player, segment));
-                }
-            }
-            states.Sort((a, b) => (int)(a.seg.Start - b.seg.Start));
-
-            CommanderStates = new(states.Count);
-
-            var (lastPlayer, lastSegment) = states[0];
-            foreach (var (player, seg) in states.Skip(1))
-            {
-                if (lastPlayer.Is(player) && lastSegment.Value == seg.Value)
-                {
-                    lastSegment.End = seg.End;
-                }
-                else
-                {
-                    //TODO(Rennorb) @correctness: This just seems wrong. what if the players are interleaved?
-                    if (player.Is(AgentItem))
-                    {
-                        CommanderStates.Add(lastSegment);
-                    }
-
-                    lastPlayer = player;
-                    lastSegment = seg;
-                }
-            }
-            if (lastPlayer.Is(AgentItem))
-            {
-                CommanderStates.Add(lastSegment);
-            }
+            CommanderStates = log.StatisticsHelper.GetCommanderStates(log).Where(x => x.p.Is(AgentItem)).Select(x => x.state).ToList();
             // Clamp to aware times
             for (var i = 0; i < CommanderStates.Count; i++)
             {
@@ -197,7 +122,7 @@ public class Player : PlayerActor
     public IReadOnlyList<Segment> GetCommanderStatesNoTagValues(ParsedEvtcLog log)
     {
         var commanderStates = GetCommanderStates(log);
-        if (commanderStates.Count == 0) { return []; }
+        if(commanderStates.Count == 0) { return [ ]; }
 
         var result = new List<Segment>();
         Segment last = commanderStates[0].WithOtherType<double>();
@@ -228,6 +153,16 @@ public class Player : PlayerActor
             }
         }
         base.InitAdditionalCombatReplayData(log, replay);
+    }
+
+    public override IReadOnlyList<AchievementEligibilityEvent> GetAchievementEligibilityEvents(ParsedEvtcLog log)
+    {
+        if (_achievementEligibilityEvents == null)
+        {
+            _achievementEligibilityEvents = [];
+            log.LogData.Logic.ComputeAchievementEligibilityEvents(log, this, _achievementEligibilityEvents);
+        }
+        return _achievementEligibilityEvents;
     }
 
 }

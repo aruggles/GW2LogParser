@@ -55,9 +55,11 @@ internal static class RenegadeHelper
         new BuffOnActorDamageModifier(Mod_ImprovedKallasFervorStrike, ImprovedKallasFervor, "Improved Kalla's Fervor (Strike)", "5% per stack", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Renegade, ByStack, TraitImages.KallasFervor, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.April2025Balance),
         // Soulcleave's Summit
-        new SkillDamageModifier(Mod_SoulcleavesSummit, "Soulcleave's Summit", "per hit (no ICD)", SoulcleavesSummitBuff, DamageSource.NoPets, DamageType.Power, DamageType.All, Source.Common, SkillImages.SoulcleavesSummit, DamageModifierMode.All)
+        new SkillDamageModifier(Mod_SoulcleavesSummit, "Soulcleave's Summit", "per hit (no ICD)", SoulcleavesSummitBuff, DamageSource.NoPets, DamageType.Power, DamageType.All, Source.Renegade, SkillImages.SoulcleavesSummit, DamageModifierMode.All)
+            .UsingSpecSpecificShared()
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance),
-        new SkillDamageModifier(Mod_SoulcleavesSummit, "Soulcleave's Summit", "per hit (1s ICD per target)", SoulcleavesSummitBuff, DamageSource.NoPets, DamageType.Power, DamageType.All, Source.Common, SkillImages.SoulcleavesSummit, DamageModifierMode.All)
+        new SkillDamageModifier(Mod_SoulcleavesSummit, "Soulcleave's Summit", "per hit (1s ICD per target)", SoulcleavesSummitBuff, DamageSource.NoPets, DamageType.Power, DamageType.All, Source.Renegade, SkillImages.SoulcleavesSummit, DamageModifierMode.All)
+            .UsingSpecSpecificShared()
             .WithBuilds(GW2Builds.May2021Balance),
         // All for One
         new BuffOnActorDamageModifier(Mod_AllForOne, AllForOne, "All for One", "10%", DamageSource.NoPets, 10.0, DamageType.StrikeAndCondition, DamageType.All, Source.Renegade, ByPresence, TraitImages.AllForOne, DamageModifierMode.All)
@@ -71,7 +73,8 @@ internal static class RenegadeHelper
     internal static readonly IReadOnlyList<DamageModifierDescriptor> IncomingDamageModifiers =
     [
         // Breakrazor's Bastion
-        new BuffOnActorDamageModifier(Mod_BreakrazorsBastion, BreakrazorsBastionBuff, "Breakrazor's Bastion", "-50%", DamageSource.Incoming, -50.0, DamageType.Condition, DamageType.All, Source.Common, ByPresence, SkillImages.BreakrazorsBastion, DamageModifierMode.All),
+        new BuffOnActorDamageModifier(Mod_BreakrazorsBastion, BreakrazorsBastionBuff, "Breakrazor's Bastion", "-50%", DamageSource.Incoming, -50.0, DamageType.Condition, DamageType.All, Source.Renegade, ByPresence, SkillImages.BreakrazorsBastion, DamageModifierMode.All)
+            .UsingSpecSpecificShared(),
         // Righteous Rebel
         new BuffOnActorDamageModifier(Mod_RighteousRebel, KallasFervor, "Righteous Rebel", "-33%", DamageSource.Incoming, -33.0, DamageType.Condition, DamageType.All, Source.Renegade, ByPresence, TraitImages.RighteousRebel, DamageModifierMode.All)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.October2018Balance),
@@ -124,7 +127,7 @@ internal static class RenegadeHelper
                 {
                     if (player.AgentItem.TryGetCurrentPosition(log, effect.Time, out var playerPosition))
                     {
-                        var playerPositionConnector = new PositionConnector(playerPosition);
+                        var playerPositionConnector = new PositionConnector(playerPosition.Value);
                         var positions = new List<Vector3>();
                         foreach (EffectEvent hitEffect in citadelBombardmentHits.Where(x => x.Time >= effect.Time && x.Time <= effect.Time + 3000))
                         {
@@ -133,7 +136,7 @@ internal static class RenegadeHelper
                             // Shooting Animation
                             long animationDuration = hitEffect.Time - effect.Time;
                             (long start, long end) lifespanAnimation = (effect.Time, effect.Time + animationDuration);
-                            var startPoint = new ParametricPoint3D(playerPosition, lifespanAnimation.start);
+                            var startPoint = new ParametricPoint3D(playerPosition.Value, lifespanAnimation.start);
                             var endPoint = new ParametricPoint3D(hitEffect.Position, lifespanAnimation.end);
                             var rotationConnector = new AngleConnector(effect.Rotation.Z);
                             var shootingArrow = (RectangleDecoration)new RectangleDecoration(15, 100, lifespanAnimation, color, 0.5, new InterpolationConnector(new List<ParametricPoint3D>() { startPoint, endPoint }))

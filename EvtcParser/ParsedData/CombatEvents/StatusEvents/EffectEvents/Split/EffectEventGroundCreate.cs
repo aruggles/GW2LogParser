@@ -6,6 +6,7 @@ namespace GW2EIEvtcParser.ParsedData;
 
 public class EffectEventGroundCreate : SplitEffectEvent
 {
+    public override bool IsScaled => true;
     internal EffectEventGroundCreate(CombatItem evtcItem, AgentData agentData, IReadOnlyDictionary<long, EffectGUIDEvent> effectGUIDs, Dictionary<long, List<EffectEventGroundCreate>> effectEventsByTrackingID) : base(evtcItem, agentData, effectGUIDs)
     {
         // Vectors
@@ -36,6 +37,10 @@ public class EffectEventGroundCreate : SplitEffectEvent
         scaleBytes.PushNative(evtcItem.IsShields);
         scaleBytes.PushNative(evtcItem.IsOffcycle);
         Scale = BitConverter.ToUInt16(scaleBytes) * OrientationAndScaleConvertConstant;
+        if (Scale == 0)
+        {
+            Scale = 1.0f;
+        }
         // ScaleSomething
         var scaleSomethingBytes = new ByteBuffer(stackalloc byte[sizeof(ushort)]);
         scaleSomethingBytes.PushNative(evtcItem.IsFifty);

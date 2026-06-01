@@ -22,6 +22,10 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
     {
         _actor = actor;
     }
+    protected override AgentItem GetAgentItemForCachingSrc()
+    {
+        return _agentItem;
+    }
 
     protected override void InitHealEvents(ParsedEvtcLog log)
     {
@@ -52,7 +56,7 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
     private CachingCollectionWithTarget<List<EXTHealingEvent>>? _justActorHealCache;
     public IReadOnlyList<EXTHealingEvent> GetJustActorOutgoingHealEvents(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _justActorHealCache ??= new(log);
+        _justActorHealCache ??= new(_agentItem, log);
         if (!_justActorHealCache.TryGetValue(start, end, target, out var healEvents))
         {
             healEvents = GetOutgoingHealEvents(target, log, start, end).Where(x => x.From.Is(_agentItem)).ToList();
@@ -65,7 +69,7 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
     {
         if (!_typedSelfHealEvents.TryGetValue(healingType, out var healEventsPerPhasePerTarget))
         {
-            healEventsPerPhasePerTarget = new CachingCollectionWithTarget<List<EXTHealingEvent>>(log);
+            healEventsPerPhasePerTarget = new (_agentItem, log);
             _typedSelfHealEvents[healingType] = healEventsPerPhasePerTarget;
         }
 
@@ -109,7 +113,7 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
     {
         if (!_healing1S.TryGetValue(healingType, out var graphs))
         {
-            graphs = new CachingCollectionWithTarget<int[]>(log);
+            graphs = new (_agentItem, log);
             _healing1S[healingType] = graphs;
         }
         if (!graphs.TryGetValue(start, end, target, out var graph))
@@ -125,7 +129,7 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
     {
         if (!_healingReceived1S.TryGetValue(healingType, out var graphs))
         {
-            graphs = new CachingCollectionWithTarget<int[]>(log);
+            graphs = new (_agentItem, log);
             _healingReceived1S[healingType] = graphs;
         }
         if (!graphs.TryGetValue(start, end, target, out var graph))
@@ -139,7 +143,7 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
 
     public EXTFinalOutgoingHealingStat GetOutgoingHealStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _outgoingHealStats ??= new CachingCollectionWithTarget<EXTFinalOutgoingHealingStat>(log);
+        _outgoingHealStats ??= new (_agentItem, log);
         if (!_outgoingHealStats.TryGetValue(start, end, target, out var value))
         {
             value = new EXTFinalOutgoingHealingStat(log, start, end, _actor, target);
@@ -150,7 +154,7 @@ public class EXTSingleActorHealingHelper : EXTActorHealingHelper
 
     public EXTFinalIncomingHealingStat GetIncomingHealStats(SingleActor? target, ParsedEvtcLog log, long start, long end)
     {
-        _incomingHealStats ??= new CachingCollectionWithTarget<EXTFinalIncomingHealingStat>(log);
+        _incomingHealStats ??= new (_agentItem, log);
         if (!_incomingHealStats.TryGetValue(start, end, target, out var value))
         {
             value = new EXTFinalIncomingHealingStat(log, start, end, _actor, target);

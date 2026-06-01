@@ -6,10 +6,9 @@ namespace GW2EIEvtcParser.EIData;
 
 internal abstract class EffectMechanic : StringBasedMechanic<EffectEvent>
 {
-
     protected abstract AgentItem GetAgentItem(EffectEvent effectEvt, AgentData agentData);
 
-    public EffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([effect], plotlySetting, shortName, description, fullName, internalCoolDown)
+    public EffectMechanic(GUID effect, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : this([ effect ], plotlySetting, shortName, description, fullName, internalCoolDown)
     {
     }
 

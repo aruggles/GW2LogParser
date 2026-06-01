@@ -9,16 +9,24 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
     protected List<Checker> Checkers { get; private set; }
 
 
-    internal delegate long TimeClamper(long time, ParsedEvtcLog log);
+    internal delegate long TimeClamper(long time, ParsedEvtcLog log, PhaseData encounterPhase);
     private TimeClamper _timeClamper;
 
 
     internal delegate bool SingleActorChecker(long time, SingleActor actor, ParsedEvtcLog log);
-    private readonly List<(CheckedMechanic<Checkable> Mechanic, SingleActorChecker Checker)> _subMechanics = [];
+    private readonly List<(SubMechanic Mechanic, SingleActorChecker Checker)> _subMechanics = [];
+
+    private bool _weighted = false;
 
     protected CheckedMechanic(MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown) : base(plotlySetting, shortName, description, fullName, internalCoolDown)
     {
         Checkers = [];
+    }
+
+    internal CheckedMechanic<Checkable> UsingWeight()
+    {
+        _weighted = true;
+        return this;
     }
 
     internal CheckedMechanic<Checkable> UsingChecker(Checker checker)
@@ -33,9 +41,8 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
         return this;
     }
 
-    internal CheckedMechanic<Checkable> WithSubMechanic(CheckedMechanic<Checkable> mechanic, SingleActorChecker actorChecker)
+    internal CheckedMechanic<Checkable> WithSubMechanic(SubMechanic mechanic, SingleActorChecker actorChecker)
     {
-        mechanic.IsASubMechanic = true;
         _subMechanics.Add((
             mechanic,
             actorChecker
@@ -43,19 +50,13 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
         return this;
     }
 
-    internal CheckedMechanic<Checkable> WithStabilitySubMechanic(CheckedMechanic<Checkable> stabMechanic, bool stabPresent)
+    internal CheckedMechanic<Checkable> WithStabilitySubMechanic(SubMechanic stabMechanic, bool stabPresent)
     {
         if (stabPresent)
         {
-            return WithSubMechanic(stabMechanic, (time, actor, log) =>
-            {
-                return actor.HasBuff(log, SkillIDs.Stability, time - ParserHelper.ServerDelayConstant);
-            });
+            return WithSubMechanic(stabMechanic, (time, actor, log) => actor.HasBuff(log, SkillIDs.Stability, time - ParserHelper.ServerDelayConstant));
         }
-        return WithSubMechanic(stabMechanic, (time, actor, log) =>
-        {
-            return !actor.HasBuff(log, SkillIDs.Stability, time - ParserHelper.ServerDelayConstant);
-        });
+        return WithSubMechanic(stabMechanic, (time, actor, log) => !actor.HasBuff(log, SkillIDs.Stability, time - ParserHelper.ServerDelayConstant));
     }
 
     public override IReadOnlyList<Mechanic> GetMechanics()
@@ -70,37 +71,33 @@ public abstract class CheckedMechanic<Checkable> : Mechanic
         }
         return res;
     }
-
-    protected void InsertMechanicWithSubMechanics(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, long time, long timeToUse, SingleActor actor)
+    protected void InsertMechanicWithSubMechanics(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, long time, SingleActor actor, MechanicEvent mechEvent)
     {
         if (!Ignored)
         {
-            mechanicLogs[this].Add(new MechanicEvent(timeToUse, this, actor));
+            mechanicLogs[this].Add(mechEvent);
         }
         foreach (var subMechanic in _subMechanics)
         {
             if (subMechanic.Checker(time, actor, log))
             {
-                subMechanic.Mechanic.InsertMechanicWithSubMechanics(log, mechanicLogs, time, timeToUse, actor);
+                mechanicLogs[subMechanic.Mechanic].Add(mechEvent.CopyForSubMechanic(subMechanic.Mechanic));
             }
         }
     }
-
-    protected void InsertMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, long time, SingleActor actor)
+    protected void InsertMechanic(ParsedEvtcLog log, Dictionary<Mechanic, List<MechanicEvent>> mechanicLogs, long time, SingleActor actor, double weight = 1.0)
     {
-        if (actor != null)
+        long timeToUse = time;
+        if (_timeClamper != null)
         {
-            long timeToUse = time;
-            if (_timeClamper != null)
-            {
-                timeToUse = _timeClamper(time, log);
-            }
-            if (actor.AgentItem.IsEnglobingAgent)
-            {
-                actor = log.FindActor(actor.AgentItem.FindEnglobedAgentItem(time));
-            }
-            InsertMechanicWithSubMechanics(log, mechanicLogs, time, timeToUse, actor);
+            var encounterPhase = log.LogData.GetEncounterPhases(log).FirstOrDefault(x => x.InInterval(time) || x.Start > time) ?? log.LogData.GetPhases(log)[0];
+            timeToUse = _timeClamper(time, log, encounterPhase);
         }
+        if (actor.AgentItem.IsEnglobingAgent)
+        {
+            actor = log.FindActor(actor.AgentItem.FindEnglobedAgentItem(time));
+        }
+        InsertMechanicWithSubMechanics(log, mechanicLogs, time, actor, _weighted ? new WeightedMechanicEvent(timeToUse, this, actor, weight) : new CounterMechanicEvent(timeToUse, this, actor));
     }
 
     protected virtual bool Keep(Checkable checkable, ParsedEvtcLog log)

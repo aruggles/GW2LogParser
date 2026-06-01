@@ -25,7 +25,7 @@ public abstract class PhaseData
     private readonly HashSet<PhaseData> CanBeSubPhaseOf = [];
 
     public bool BreakbarPhase { get; protected set; } = false;
-
+    
     public PhaseType Type { get; protected set; }
     public enum PhaseType
     {
@@ -91,13 +91,13 @@ public abstract class PhaseData
         return minEnd - maxStart > 0;
     }
 
-    internal void RemoveTarget(SingleActor target)
+    internal virtual void RemoveTarget(SingleActor target)
     {
-        //TODO(Rennorb) @perf
+        //TODO_PERF(Rennorb)
         _targets.Remove(target);
     }
 
-    internal void AddTarget(SingleActor? target, ParsedEvtcLog log, TargetPriority priority = TargetPriority.Main)
+    internal virtual void AddTarget(SingleActor? target, ParsedEvtcLog log, TargetPriority priority = TargetPriority.Main)
     {
         if (target == null)
         {
@@ -114,17 +114,16 @@ public abstract class PhaseData
             {
                 targetData.Priority = priority;
             }
-        }
-        else
+        } else
         {
-            _targets[target] = new PhaseTargetData()
+            _targets[target] = new PhaseTargetData
             {
                 Priority = priority,
             };
         }
     }
 
-    internal void AddTargets(IEnumerable<SingleActor?> targets, ParsedEvtcLog log, TargetPriority priority = TargetPriority.Main)
+    internal virtual void AddTargets(IEnumerable<SingleActor?> targets, ParsedEvtcLog log, TargetPriority priority = TargetPriority.Main)
     {
         foreach (SingleActor? target in targets)
         {
@@ -174,7 +173,7 @@ public abstract class PhaseData
                 if (enterCombat != null)
                 {
                     startTime = enterCombat.Time;
-                }
+                } 
                 else
                 {
                     SpawnEvent? spawned = log.CombatData.GetSpawnEvents(target.AgentItem).FirstOrDefault();
@@ -205,7 +204,7 @@ public abstract class PhaseData
                 if (died != null)
                 {
                     endTime = died.Time;
-                }
+                } 
                 else
                 {
                     var despawned = log.CombatData.GetDespawnEvents(target.AgentItem).LastOrDefault();

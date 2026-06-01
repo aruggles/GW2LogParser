@@ -1,10 +1,12 @@
-﻿using GW2EIEvtcParser.Extensions;
+﻿using System.Numerics;
+using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.DamageModifierIDs;
 using static GW2EIEvtcParser.EIData.Buff;
 using static GW2EIEvtcParser.EIData.DamageModifiersUtils;
+using static GW2EIEvtcParser.EIData.ProfHelper;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SkillIDs;
 
@@ -34,12 +36,24 @@ internal static class WarriorHelper
 
     private static HashSet<AgentItem> GetBannerAgents(CombatData combatData, long id, HashSet<AgentItem> playerAgents)
     {
-        return new HashSet<AgentItem>(combatData.GetBuffData(id).Where(x =>
+        return
+        [
+            ..combatData.GetBuffData(id).Where(x =>
                 x is BuffApplyEvent &&
                 x.CreditedBy.Type == AgentItem.AgentType.Gadget &&
                 x.CreditedBy.Master == null &&
                 playerAgents.Any(x.To.IsMaster)
-        ).Select(x => x.CreditedBy));
+            ).Select(x => x.CreditedBy)
+        ];
+    }
+
+    private static DamageLogChecker WarriorsCunningNoBarrierChecker(double hpThreshold)
+    {
+        var hpChecker = ToHPChecker(hpThreshold);
+        return (x, log) =>
+        {
+            return x.ShieldDamage == 0 && hpChecker(x, log);
+        };
     }
 
 
@@ -59,16 +73,22 @@ internal static class WarriorHelper
         new BuffOnActorDamageModifier(Mod_BerserkersPower, BerserkersPower, "Berserker's Power", "7% per stack", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, ByStack, TraitImages.BerserkersPower, DamageModifierMode.All)
             .WithBuilds(GW2Builds.StartOfLife, GW2Builds.October2022Balance),
         new BuffOnActorDamageModifier(Mod_BerserkersPower, BerserkersPower, "Berserker's Power", "5.25% per stack", DamageSource.NoPets, 5.25, DamageType.Strike, DamageType.All, Source.Warrior, ByStack, TraitImages.BerserkersPower, DamageModifierMode.All)
-            .WithBuilds(GW2Builds.October2022Balance),
+            .WithBuilds(GW2Builds.October2022Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_BerserkersPower, BerserkersPower, "Berserker's Power", "5.25% per stack", DamageSource.NoPets, 5.25, DamageType.Strike, DamageType.All, Source.Warrior, ByStack, TraitImages.BerserkersPower, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_BerserkersPower, BerserkersPower, "Berserker's Power", "3.75% per stack", DamageSource.NoPets, 3.75, DamageType.Strike, DamageType.All, Source.Warrior, ByStack, TraitImages.BerserkersPower, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         
         // Defense
         // - Stalwart Strength
-        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "10%", DamageSource.NoPets, 10, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.BerserkersPower, DamageModifierMode.All)
+        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.StalwartStrength, DamageModifierMode.All)
             .WithBuilds(GW2Builds.October2022Balance, GW2Builds.June2025Balance),
-        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "12.5%", DamageSource.NoPets, 12.5, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.BerserkersPower, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.June2025Balance),
-        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "10%", DamageSource.NoPets, 10, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.BerserkersPower, DamageModifierMode.sPvPWvW)
-            .WithBuilds(GW2Builds.June2025Balance),
+        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "12.5%", DamageSource.NoPets, 12.5, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.StalwartStrength, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.June2025Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.StalwartStrength, DamageModifierMode.sPvPWvW)
+            .WithBuilds(GW2Builds.June2025Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnActorDamageModifier(Mod_StalwartStrength, Stability, "Stalwart Strength", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.StalwartStrength, DamageModifierMode.All)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // - Merciless Hammer
         new DamageLogDamageModifier(Mod_MercilessHammerDefiant, "Merciless Hammer", "20% to hammer and mace skills when hitting defiant foe", DamageSource.NoPets, 20.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.MercilessHammer, MercilessHammerChecker, DamageModifierMode.PvEInstanceOnly)
             .WithBuilds(GW2Builds.November2022Balance, GW2Builds.June2025Balance)
@@ -95,7 +115,9 @@ internal static class WarriorHelper
         new BuffOnFoeDamageModifier(Mod_LegSpecialist, [Crippled, Immobile, Chilled], "Leg Specialist", "7% to movement-impaired foes", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.LegSpecialist, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.May2021Balance),
         new BuffOnFoeDamageModifier(Mod_LegSpecialist, [Crippled, Immobile, Chilled], "Leg Specialist", "10% to movement-impaired foes", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.LegSpecialist, DamageModifierMode.PvE)
-            .WithBuilds(GW2Builds.May2021Balance),
+            .WithBuilds(GW2Builds.May2021Balance, GW2Builds.April2026Balancepocalypse),
+        new BuffOnFoeDamageModifier(Mod_LegSpecialist, [Crippled, Immobile, Chilled], "Leg Specialist", "5% to movement-impaired foes", DamageSource.NoPets, 5.0, DamageType.Strike, DamageType.All, Source.Warrior, ByPresence, TraitImages.LegSpecialist, DamageModifierMode.PvE)
+            .WithBuilds(GW2Builds.April2026Balancepocalypse),
         // - Empowered
         new BuffOnActorDamageModifier(Mod_Empowered, NumberOfBoons, "Empowered", "1% per boon", DamageSource.NoPets, 1.0, DamageType.Strike, DamageType.All, Source.Warrior, ByStack, TraitImages.Empowered, DamageModifierMode.All),
         // - Warrior's Cunning (Barrier)
@@ -108,22 +130,22 @@ internal static class WarriorHelper
         new DamageLogDamageModifier(Mod_WarriorsCunningBarrier, "Warrior's Cunning (Barrier)", "10% against barrier", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) => x.ShieldDamage > 0 , DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
         // - Warrior's Cunning (High HP, no Barrier)
-        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "25% if foe hp >=90%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) => x.ShieldDamage == 0 && x.To.GetCurrentHealthPercent(log, x.Time) >= 90.0, DamageModifierMode.PvEWvW)
+        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "25% if foe hp >=90%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, WarriorsCunningNoBarrierChecker(90), DamageModifierMode.PvEWvW)
             .UsingApproximate()
             .WithBuilds(GW2Builds.December2019Balance, GW2Builds.May2021Balance),
-        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "25% if foe hp >=80%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) => x.ShieldDamage == 0 && x.To.GetCurrentHealthPercent(log, x.Time) >= 80.0, DamageModifierMode.PvEWvW)
+        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "25% if foe hp >=80%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, WarriorsCunningNoBarrierChecker(80), DamageModifierMode.PvEWvW)
             .UsingApproximate()
             .WithBuilds(GW2Builds.May2021Balance, GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
-        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "25% if foe hp >=80%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) => x.ShieldDamage == 0 && x.To.GetCurrentHealthPercent(log, x.Time) >= 80.0, DamageModifierMode.PvE)
+        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "25% if foe hp >=80%", DamageSource.NoPets, 25.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, WarriorsCunningNoBarrierChecker(80), DamageModifierMode.PvE)
             .UsingApproximate()
             .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
-        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "7% if foe hp >=90%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) => x.ShieldDamage == 0 && x.To.GetCurrentHealthPercent(log, x.Time) >= 90.0, DamageModifierMode.sPvP)
+        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "7% if foe hp >=90%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, WarriorsCunningNoBarrierChecker(90), DamageModifierMode.sPvP)
             .UsingApproximate()
             .WithBuilds(GW2Builds.December2019Balance, GW2Builds.May2021Balance),
-        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "7% if foe hp >=80%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) =>x.To.GetCurrentBarrierPercent(log, x.Time) == 0.0 && x.To.GetCurrentHealthPercent(log, x.Time) >= 80.0, DamageModifierMode.sPvP)
+        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "7% if foe hp >=80%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, WarriorsCunningNoBarrierChecker(80), DamageModifierMode.sPvP)
             .UsingApproximate()
             .WithBuilds(GW2Builds.May2021Balance, GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
-        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "7% if foe hp >=80%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, (x, log) =>x.To.GetCurrentBarrierPercent(log, x.Time) == 0.0 && x.To.GetCurrentHealthPercent(log, x.Time) >= 80.0, DamageModifierMode.sPvPWvW)
+        new DamageLogDamageModifier(Mod_WarriorsCunningNoBarrier, "Warrior's Cunning (High HP, no Barrier)", "7% if foe hp >=80%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Warrior, TraitImages.WarriorsCunning, WarriorsCunningNoBarrierChecker(80), DamageModifierMode.sPvPWvW)
             .UsingApproximate()
             .WithBuilds(GW2Builds.June2023BalanceAndSOTOBetaAndSilentSurfNM),
         
@@ -226,24 +248,24 @@ internal static class WarriorHelper
         if (warriorsCount == 1)
         {
             AgentItem warrior = warriors.First();
-            ProfHelper.SetGadgetMaster(strBanners, warrior);
-            ProfHelper.SetGadgetMaster(disBanners, warrior);
-            ProfHelper.SetGadgetMaster(tacBanners, warrior);
-            ProfHelper.SetGadgetMaster(defBanners, warrior);
+            SetGadgetMaster(strBanners, warrior);
+            SetGadgetMaster(disBanners, warrior);
+            SetGadgetMaster(tacBanners, warrior);
+            SetGadgetMaster(defBanners, warrior);
         }
         else if (warriorsCount > 1)
         {
-            // land and under water cast ids
-            ProfHelper.AttachMasterToGadgetByCastData(combatData, strBanners, new List<long> { BannerOfStrengthSkill, BannerOfStrengthSkillUW }, 1000);
-            ProfHelper.AttachMasterToGadgetByCastData(combatData, defBanners, new List<long> { BannerOfDefenseSkill, BannerOfDefenseSkillUW }, 1000);
-            ProfHelper.AttachMasterToGadgetByCastData(combatData, disBanners, new List<long> { BannerOfDisciplineSkill, BannerOfDisciplineSkillUW }, 1000);
-            ProfHelper.AttachMasterToGadgetByCastData(combatData, tacBanners, new List<long> { BannerOfTacticsSkill, BannerOfTacticsSkillUW }, 1000);
+            // land and underwater cast ids
+            AttachMasterToGadgetByCastData(combatData, strBanners, new List<long> { BannerOfStrengthSkill, BannerOfStrengthSkillUW }, 1000);
+            AttachMasterToGadgetByCastData(combatData, defBanners, new List<long> { BannerOfDefenseSkill, BannerOfDefenseSkillUW }, 1000);
+            AttachMasterToGadgetByCastData(combatData, disBanners, new List<long> { BannerOfDisciplineSkill, BannerOfDisciplineSkillUW }, 1000);
+            AttachMasterToGadgetByCastData(combatData, tacBanners, new List<long> { BannerOfTacticsSkill, BannerOfTacticsSkillUW }, 1000);
         }
     }
 
     private static bool MercilessHammerChecker(DamageEvent x, ParsedEvtcLog log)
     {
-        long[] improvedSkills =
+        long[] improvedSkills = 
         [
             // Mace
             MaceSmash, MaceBash, PulverizeMace,
@@ -268,13 +290,6 @@ internal static class WarriorHelper
             return false;
         }
 
-        if (x.To.GetCurrentBreakbarState(log, x.Time) != BreakbarState.None)
-        {
-            return true;
-        }
-        else
-        {
-            return log.CombatData.GetIncomingCrowdControlData(x.To).Any(cc => x.Time >= cc.Time && x.Time <= cc.Time + cc.Duration);
-        }
+        return x.To.GetCurrentBreakbarState(log, x.Time) != BreakbarState.None || log.CombatData.GetIncomingCrowdControlData(x.To).Any(cc => x.Time >= cc.Time && x.Time <= cc.Time + cc.Duration);
     }
 }

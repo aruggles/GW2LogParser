@@ -1,0 +1,15 @@
+﻿namespace GW2EIEvtcParser.ParsedData;
+
+internal class BreakbarChangeEvent : NonDamageEvent
+{
+    public double BreakbarChanged { get; protected set; }
+    internal BreakbarChangeEvent(CombatItem evtcItem, AgentData agentData, SkillData skillData) : base(evtcItem, agentData, skillData)
+    {
+        BreakbarChanged = Math.Round(evtcItem.Value / 10.0, 1);
+    }
+
+    internal override double GetValue()
+    {
+        return BreakbarChanged;
+    }
+}

@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tracing;
 
-//[assembly: CLSCompliant(false)]
 namespace GW2EIBuilders;
 
 // compile-time generated serialization logic
@@ -18,7 +17,7 @@ namespace GW2EIBuilders;
     ]
 )]
 [JsonSerializable(typeof(LogDataDto))]
-partial class LogDataDtoSerializerContext : JsonSerializerContext { }
+partial class LogDataDtoSerializerContext : JsonSerializerContext {  }
 
 
 public class HTMLBuilder
@@ -30,7 +29,6 @@ public class HTMLBuilder
     private readonly string _eiHealingExtJS;
 
     private readonly string _scriptVersion;
-    private readonly int _scriptVersionRev;
 
     private readonly ParsedEvtcLog _log;
     private readonly Version _parserVersion;
@@ -41,7 +39,7 @@ public class HTMLBuilder
     private readonly string? _externalScriptsCdn;
     private readonly bool _compressJson;
 
-    private readonly string[] _uploadLink;
+    private readonly UploadResults _uploadLink;
 
     // https://point2blog.wordpress.com/2012/12/26/compressdecompress-a-string-in-c/
     private static string CompressAndBase64(string s)
@@ -73,13 +71,13 @@ public class HTMLBuilder
         _scriptVersion = parserVersion.Major + "." + parserVersion.Minor;
 #if !DEBUG
         _scriptVersion += "." + parserVersion.Build;
+        _scriptVersion += "." + parserVersion.Revision;
 #else
         _scriptVersion += "-debug";
 #endif
-        _scriptVersionRev = parserVersion.Revision;
         _log = log;
 
-        _uploadLink = uploadResults.ToArray();
+        _uploadLink = uploadResults;
 
         _cr = _log.CanCombatReplay;
         _light = settings.HTMLLightTheme;
@@ -169,7 +167,7 @@ public class HTMLBuilder
         var (externalPath, cdnPath) = BuildAssetPaths(path);
         _log.UpdateProgressWithCancellationCheck("HTML: replacing global variables");
         html.Replace("${bootstrapTheme}", !_light ? "slate" : "yeti");
-
+        
         // Compression stuff
         html.Replace("<!--${CompressionRequire}-->", _compressJson ? "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.10/pako.min.js\"></script>" : "");
         html.Replace("<!--${CompressionUtils}-->", _compressJson ? Gw2LogParser.Properties.Resources.compressionUtils : "");
@@ -269,7 +267,7 @@ public class HTMLBuilder
         {
             string fileName = "EliteInsights-CR-" + _scriptVersion + ".js";
             string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
-            return "<script src=\"" + path + "?version=" + _scriptVersionRev + "\"></script>\n";
+            return "<script src=\"" + path + "\"></script>\n";
         }
         else
         {
@@ -290,7 +288,7 @@ public class HTMLBuilder
         {
             string fileName = "EliteInsights-HealingExt-" + _scriptVersion + ".js";
             string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
-            return "<script src=\"" + path + "?version=" + _scriptVersionRev + "\"></script>\n";
+            return "<script src=\"" + path + "\"></script>\n";
         }
         else
         {
@@ -307,7 +305,7 @@ public class HTMLBuilder
         {
             string fileName = "EliteInsights-" + _scriptVersion + ".css";
             string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
-            return "<link rel=\"stylesheet\" type=\"text/css\" href=\"" + path + "?version=" + _scriptVersionRev + "\">";
+            return "<link rel=\"stylesheet\" type=\"text/css\" href=\"" + path + "\">";
         }
         else
         {
@@ -324,7 +322,7 @@ public class HTMLBuilder
         {
             string fileName = "EliteInsights-" + _scriptVersion + ".js";
             string path = CreateAssetFile(externalPath, cdnPath, fileName, scriptContent);
-            return "<script src=\"" + path + "?version=" + _scriptVersionRev + "\"></script>";
+            return "<script src=\"" + path + "\"></script>";
         }
         else
         {
@@ -332,3 +330,4 @@ public class HTMLBuilder
         }
     }
 }
+

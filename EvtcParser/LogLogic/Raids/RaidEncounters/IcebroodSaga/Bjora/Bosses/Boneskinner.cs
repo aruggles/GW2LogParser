@@ -36,7 +36,7 @@ internal class Boneskinner : Bjora
             new PlayerDstHealthDamageHitMechanic(BarrageWispBoneskinner, new MechanicPlotlySetting(Symbols.TriangleRight, Colors.Green), "Barrage.H", "Hit by Barrage (Wisp AoE)", "Barrage Hit", 0),
             new PlayerDstBuffApplyMechanic(UnrelentingPainBuff, new MechanicPlotlySetting(Symbols.DiamondOpen, Colors.Pink), "UnrelPain.A", "Unreleting Pain Applied", "Unrelenting Pain Applied", 0),
             new EnemyCastStartMechanic(BoneskinnerBreakbar, new MechanicPlotlySetting(Symbols.Square, Colors.Purple), "Breakbar", "Casting a Breakbar", "Breakbar", 0),
-            new EnemyDstBuffApplyMechanic(Exposed31589, new MechanicPlotlySetting(Symbols.SquareOpen, Colors.Pink), "Exposed", "Gained Exposed (Breakbar broken)", "Exposed", 0),
+            new EnemyDstBuffApplyMechanic(Exposed31589, new MechanicPlotlySetting(Symbols.SquareOpen, Colors.Pink), "Exposed.E", "Gained Exposed (Breakbar broken)", "Exposed", 0),
         ])
         );
         Extension = "boneskin";
@@ -89,11 +89,14 @@ internal class Boneskinner : Bjora
 
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        base.SetInstanceBuffs(log, instanceBuffs);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.SetInstanceBuffs(log, instanceBuffs);
+        }
 
         if (log.CombatData.GetBuffData(AchievementEligibilityHoldOntoTheLight).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             foreach (var encounterPhase in encounterPhases)
             {
                 if (encounterPhase.Success)
@@ -104,8 +107,28 @@ internal class Boneskinner : Bjora
         }
     }
 
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+    }
+
+    internal override void ComputePlayerCombatReplayActors(PlayerActor p, ParsedEvtcLog log, CombatReplay replay)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputePlayerCombatReplayActors(p, log, replay);
+        }
+    }
+
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeNPCCombatReplayActors(target, log, replay);
+        }
         switch (target.ID)
         {
             case (int)TargetID.Boneskinner:
@@ -193,7 +216,10 @@ internal class Boneskinner : Bjora
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
+        }
 
         (long start, long end) lifespan;
 
@@ -231,7 +257,7 @@ internal class Boneskinner : Bjora
 
                 if (actor.TryGetCurrentFacingDirection(log, lifespan.start, out var rotation, duration))
                 {
-                    var rectangle = (RectangleDecoration)new RectangleDecoration(width, height, lifespan, Colors.Orange, 0.2, new PositionConnector(indicator.Position)).UsingRotationConnector(new AngleConnector(rotation));
+                    var rectangle = (RectangleDecoration)new RectangleDecoration(width, height, lifespan, Colors.Orange, 0.2, new PositionConnector(indicator.Position)).UsingRotationConnector(new AngleConnector(rotation.Value));
                     replay.Decorations.AddWithBorder(rectangle, Colors.Red, 0.2);
                 }
             }

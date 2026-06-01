@@ -63,6 +63,8 @@ internal static class UtilityBuffs
         new Buff("Lump of Crystallized Nougat", LumpOfCrystallizedNougat, Source.Item, BuffClassification.Enhancement, ItemImages.LumpOfCrystallizedNougat),
         new Buff("Decade Enhancement", DecadeEnhancement, Source.Item, BuffClassification.Enhancement, ItemImages.DecadeEnhancement),
         new Buff("Sharpening Golem", SharpeningGolem, Source.Item, BuffClassification.Enhancement, ItemImages.NourishmentEffect),
+        new Buff("Snow Diamond Ornament", SnowDiamondOrnament, Source.Item, BuffClassification.Enhancement, ItemImages.SnowDiamondOrnament),
+        new Buff("Super Sharpening Polygon", SuperSharpeningPolygon, Source.Item, BuffClassification.Enhancement, ItemImages.SnowDiamondOrnament),
     ];
 
     internal static readonly IReadOnlyList<Buff> OtherConsumables =
@@ -95,13 +97,13 @@ internal static class UtilityBuffs
         new Buff("Writ of Strength", WritOfStrength, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfStrength),
         new Buff("Writ of Studied Strength", WritOfStudiedStrength, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfStudiedStrength),
         new Buff("Writ of Calculated Strength", WritOfCalculatedStrength, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfCalculatedStrength),
-        new Buff("Writ of Learned Strength", WritOfLearnedStrength, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfLearnedStrength),
+        new Buff("Writ of Learned Strength", WritOfLearnedStrength, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfCalculatedStrength),
         new Buff("Writ of Masterful Strength", WritOfMasterfulStrength, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfMasterfulStrength),
         new Buff("Writ of Basic Accuracy", WritOfBasicAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfBasicAccuracy),
         new Buff("Writ of Accuracy", WritOfAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfAccuracy),
         new Buff("Writ of Studied Accuracy", WritOfStudiedAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfStudiedAccuracy),
         new Buff("Writ of Calculated Accuracy", WritOfCalculatedAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfCalculatedAccuracy),
-        new Buff("Writ of Learned Accuracy", WritOfLearnedAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfLearnedAccuracy),
+        new Buff("Writ of Learned Accuracy", WritOfLearnedAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfMasterfulAccuracy),
         new Buff("Writ of Masterful Accuracy", WritOfMasterfulAccuracy, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfMasterfulAccuracy),
         new Buff("Writ of Basic Malice", WritOfBasicMalice, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfBasicMalice),
         new Buff("Writ of Malice", WritOfMalice, Source.Item, BuffClassification.Enhancement, ItemImages.WritOfMalice),

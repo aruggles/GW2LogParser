@@ -11,6 +11,7 @@ using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SpeciesIDs;
+using GW2EIGW2API;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -46,7 +47,7 @@ internal class HallOfChainsInstance : HallOfChains
         MechanicList.Add(_dhuum.Mechanics);
     }
 
-    internal override string GetLogicName(CombatData combatData, AgentData agentData)
+    internal override string GetLogicName(CombatData combatData, AgentData agentData, GW2APIController apiController)
     {
         return "Hall Of Chains";
     }
@@ -59,17 +60,17 @@ internal class HallOfChainsInstance : HallOfChains
         {
             subLogic.GetCombatMapInternal(log, arenaDecorations);
         }
-        return crMap;
+        return CombatReplayMap.CreateSquareMapFrom(crMap);
     }
-    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents)
+    internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
         var chest = agentData.GetGadgetsByID(_dhuum.ChestID).FirstOrDefault();
         if (chest != null)
         {
-            logData.SetSuccess(true, chest.FirstAware);
+            successHandler.SetSuccess(true, chest.FirstAware);
             return;
         }
-        base.CheckSuccess(combatData, agentData, logData, playerAgents);
+        base.CheckSuccess(combatData, agentData, logData, playerAgents, successHandler);
     }
 
     private List<EncounterPhaseData> HandleRiverOfSoulsPhases(IReadOnlyDictionary<int, List<SingleActor>> targetsByIDs, IReadOnlyDictionary<int, List<SingleActor>> friendliesByIDs, ParsedEvtcLog log, List<PhaseData> phases)
@@ -115,7 +116,7 @@ internal class HallOfChainsInstance : HallOfChains
         {
             foreach (var brokenKing in brokenKings)
             {
-                var firstCombatCast = brokenKing.GetCastEvents(log).FirstOrDefault(x => x.SkillID == SkillIDs.BrokenKingFirstCast);
+                var firstCombatCast = brokenKing.GetCastEvents(log).FirstOrDefault(x => x.SkillID == BrokenKingFirstCast);
                 if (firstCombatCast == null)
                 {
                     continue;
@@ -177,7 +178,7 @@ internal class HallOfChainsInstance : HallOfChains
         if (targetsByIDs.TryGetValue((int)TargetID.EyeOfFate, out var eyeOfFates) &&
             targetsByIDs.TryGetValue((int)TargetID.EyeOfJudgement, out var eyeOfJudgements))
         {
-            var lightThieves = log.AgentData.GetNPCsByID(TargetID.LightThieves);
+            var lightThieves = log.AgentData.GetNPCsByID(TargetID.LightThief);
             foreach (var eyeOfFate in eyeOfFates)
             {
                 var eyeOfJudgement = eyeOfJudgements.FirstOrDefault(x => x.InAwareTimes(eyeOfFate));
@@ -211,7 +212,7 @@ internal class HallOfChainsInstance : HallOfChains
         var mainPhase = phases[0];
         if (targetsByIDs.TryGetValue((int)TargetID.Dhuum, out var dhuums))
         {
-            var messengers = log.AgentData.GetNPCsByID(TargetID.Messenger);
+            var messengers = log.AgentData.GetNPCsByID(TargetID.DhuumsMessenger);
             var chest = log.AgentData.GetGadgetsByID(_dhuum.ChestID).FirstOrDefault();
             foreach (var dhuum in dhuums)
             {
@@ -230,11 +231,11 @@ internal class HallOfChainsInstance : HallOfChains
                 }
                 if (dhuum.GetAnimatedCastEvents(log).Any(x => (x.SkillID != WeaponStow && x.SkillID != WeaponDraw) && x.Time >= start && x.Time <= start + 40000))
                 {
-                    AddInstanceEncounterPhase(log, phases, encounterPhases, [dhuum], [], [], mainPhase, "Dhuum", start, end, success, _dhuum, dhuum.GetHealth(log.CombatData) > 35e6 ? LogData.LogMode.CM : LogData.LogMode.Normal, LogData.LogStartStatus.NoPreEvent);
+                    AddInstanceEncounterPhase(log, phases, encounterPhases, [dhuum], [], [], mainPhase, "Dhuum", start, end, success, _dhuum, dhuum.GetHealth(log.CombatData) > 35e6 ? LogData.Mode.CM : LogData.Mode.Normal, LogData.StartStatus.NoPreEvent);
                 } 
                 else
                 {
-                    AddInstanceEncounterPhase(log, phases, encounterPhases, [dhuum], [], [], mainPhase, "Dhuum", start, end, success, _dhuum, dhuum.GetHealth(log.CombatData) > 35e6 ? LogData.LogMode.CM : LogData.LogMode.Normal);
+                    AddInstanceEncounterPhase(log, phases, encounterPhases, [dhuum], [], [], mainPhase, "Dhuum", start, end, success, _dhuum, dhuum.GetHealth(log.CombatData) > 35e6 ? LogData.Mode.CM : LogData.Mode.Normal);
                 }
             }
         }
@@ -248,9 +249,9 @@ internal class HallOfChainsInstance : HallOfChains
         var targetsByIDs = Targets.GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
         var friendliesByIDs = NonSquadFriendlies.Where(x => x.AgentItem.IsNPC).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
         {
-            var shPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.SoullessHorror, [], "Soulless Horror", _soullessHorror, (log, soullessHorror) => {
-                return SoullessHorror.HasFastNecrosis(log.CombatData, soullessHorror.FirstAware, soullessHorror.LastAware) ? LogData.LogMode.CM : LogData.LogMode.Story;
-            });
+            var shPhases = ProcessGenericEncounterPhasesForInstance(targetsByIDs, log, phases, TargetID.SoullessHorror, [], "Soulless Horror", _soullessHorror, 
+                (log, soullessHorror) => 
+                SoullessHorror.HasFastNecrosis(log.CombatData, soullessHorror.FirstAware, soullessHorror.LastAware) ? LogData.Mode.CM : LogData.Mode.Normal);
             foreach (var shPhase in shPhases)
             {
                 var soullessHorror = shPhase.Targets.Keys.First(x => x.IsSpecies(TargetID.SoullessHorror));
@@ -334,6 +335,7 @@ internal class HallOfChainsInstance : HallOfChains
     {
         agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "River of Souls", Spec.NPC, (int)TargetID.DummyTarget, true);
         Dhuum.HandleYourSouls(agentData, combatData);
+        Dhuum.HandleEtherealSeals(agentData, combatData);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
         foreach (var target in Targets)
         {
@@ -358,12 +360,12 @@ internal class HallOfChainsInstance : HallOfChains
         return res;
     }
 
-    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, SkillData skillData)
+    internal override List<CastEvent> SpecialCastEventProcess(CombatData combatData, AgentData agentData, SkillData skillData, Dictionary<long, List<AnimatedCastEvent>> animatedCastDataByID)
     {
         var res = new List<CastEvent>();
         foreach (var subLogic in _subLogics)
         {
-            res.AddRange(subLogic.SpecialCastEventProcess(combatData, skillData));
+            res.AddRange(subLogic.SpecialCastEventProcess(combatData, agentData, skillData, animatedCastDataByID));
         }
         return res;
     }
@@ -411,6 +413,14 @@ internal class HallOfChainsInstance : HallOfChains
         foreach (var logic in _subLogics)
         {
             logic.SetInstanceBuffs(log, instanceBuffs);
+        }
+    }
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        foreach (var logic in _subLogics)
+        {
+            logic.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
         }
     }
     internal override Dictionary<TargetID, int> GetTargetsSortIDs()

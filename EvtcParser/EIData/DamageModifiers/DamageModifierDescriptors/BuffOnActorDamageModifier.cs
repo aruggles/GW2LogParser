@@ -8,10 +8,17 @@ internal class BuffOnActorDamageModifier : DamageModifierDescriptor
 {
     internal delegate double DamageGainAdjuster(HealthDamageEvent dl, ParsedEvtcLog log);
 
+    protected bool FromDst = false;
+
     internal BuffsTracker Tracker;
     internal DamageGainAdjuster? GainAdjuster;
 
     internal BuffOnActorDamageModifier(int id, long buffID, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, Source src, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, name, tooltip, damageSource, gainPerStack, srctype, compareType, src, icon, gainComputer, mode)
+    {
+        Tracker = new BuffsTrackerSingle(buffID);
+    }
+
+    internal BuffOnActorDamageModifier(int id, long buffID, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, HashSet<Source> srcs, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, name, tooltip, damageSource, gainPerStack, srctype, compareType, srcs, icon, gainComputer, mode)
     {
         Tracker = new BuffsTrackerSingle(buffID);
     }
@@ -21,9 +28,24 @@ internal class BuffOnActorDamageModifier : DamageModifierDescriptor
         Tracker = new BuffsTrackerMulti(buffIDs);
     }
 
+    internal BuffOnActorDamageModifier(int id, HashSet<long> buffIDs, string name, string tooltip, DamageSource damageSource, double gainPerStack, DamageType srctype, DamageType compareType, HashSet<Source> srcs, GainComputer gainComputer, string icon, DamageModifierMode mode) : base(id, name, tooltip, damageSource, gainPerStack, srctype, compareType, srcs, icon, gainComputer, mode)
+    {
+        Tracker = new BuffsTrackerMulti(buffIDs);
+    }
+
     internal virtual DamageModifierDescriptor UsingGainAdjuster(DamageGainAdjuster gainAdjuster)
     {
         GainAdjuster = gainAdjuster;
+        return this;
+    }
+
+    internal virtual DamageModifierDescriptor WithBuffOnActorFromFoe()
+    {
+        if (GainComputer == ByAbsence)
+        {
+            throw new InvalidOperationException("Unsupported mode when using ByAbsence");
+        }
+        FromDst = true;
         return this;
     }
 
@@ -57,23 +79,27 @@ internal class BuffOnActorDamageModifier : DamageModifierDescriptor
             var ignoredSources = new HashSet<SingleActor>();
             foreach (HealthDamageEvent evt in typeHits)
             {
-                var singleActor = log.FindActor(evt.From);
-                if (ignoredSources.Contains(singleActor))
+                var minionOrActor = log.FindActor(damageModifier.GetActor(evt));
+                if (ignoredSources.Contains(minionOrActor))
                 {
                     continue;
                 }
-                var bgms = singleActor.GetBuffGraphs(log);
+                var bgms = minionOrActor.GetBuffGraphs(log);
                 if (Skip(Tracker, bgms, GainComputer))
                 {
-                    ignoredSources.Add(singleActor);
+                    ignoredSources.Add(minionOrActor);
                     continue;
+                }
+                if (FromDst)
+                {
+                    bgms = minionOrActor.GetBuffGraphs(log, damageModifier.GetFoe(evt).GetMainSingleActorWhenAttackTarget(log));
                 }
                 if (ComputeGain(bgms, evt, log, out double gain) && CheckCondition(evt, log))
                 {
                     res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));
                 }
             }
-        }
+        } 
         else
         {
             IReadOnlyDictionary<long, BuffGraph> bgms = actor.GetBuffGraphs(log);
@@ -83,6 +109,10 @@ internal class BuffOnActorDamageModifier : DamageModifierDescriptor
             }
             foreach (HealthDamageEvent evt in typeHits)
             {
+                if (FromDst)
+                {
+                    bgms = actor.GetBuffGraphs(log, damageModifier.GetFoe(evt).GetMainSingleActorWhenAttackTarget(log));
+                }
                 if (ComputeGain(bgms, evt, log, out double gain) && CheckCondition(evt, log))
                 {
                     res.Add(new DamageModifierEvent(evt, damageModifier, gain * evt.HealthDamage));

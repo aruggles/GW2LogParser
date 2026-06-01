@@ -14,7 +14,7 @@ internal abstract class SkillMechanic<T> : IDBasedMechanic<T> where T : SkillEve
     private readonly CombatEventsGetter _getter;
     protected bool Minions { get; private set; } = false;
 
-    public SkillMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
+     public SkillMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, int internalCoolDown, CombatEventsGetter getter) : base(mechanicIDs, plotlySetting, shortName, description, fullName, internalCoolDown)
     {
         _getter = getter;
     }
@@ -48,7 +48,7 @@ internal abstract class SkillMechanic<T> : IDBasedMechanic<T> where T : SkillEve
         {
             agentItem = agentItem.GetFinalMaster();
         }
-        return agentItem!;
+        return agentItem;
     }
     protected abstract bool TryGetActor(ParsedEvtcLog log, AgentItem agentItem, Dictionary<int, SingleActor> regroupedMobs, [NotNullWhen(true)] out SingleActor? actor);
 
@@ -60,7 +60,7 @@ internal abstract class SkillMechanic<T> : IDBasedMechanic<T> where T : SkillEve
             {
                 if (TryGetActor(log, GetCreditedAgentItem(evt), regroupedMobs, out var amp) && Keep(evt, log))
                 {
-                    InsertMechanic(log, mechanicLogs, evt.Time, amp);
+                    InsertMechanic(log, mechanicLogs, evt.Time, amp, evt.GetValue());
                 }
             }
         }

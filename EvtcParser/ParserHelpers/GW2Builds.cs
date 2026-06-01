@@ -10,6 +10,9 @@ public static class GW2Builds
     // https://wiki.guildwars2.com/wiki/Game_updates/2015-10-23
     public const ulong HoTRelease = 54485;
 
+    // https://wiki.guildwars2.com/wiki/Game_updates/2016-01-26
+    public const ulong January2016Balance = 57306;
+
     // https://wiki.guildwars2.com/wiki/Game_updates/2016-11-21
     public const ulong November2016NightmareRelease = 69591;
 
@@ -33,6 +36,9 @@ public static class GW2Builds
 
     // https://wiki.guildwars2.com/wiki/Game_updates/2018-02-06
     public const ulong February2018Balance = 86181;
+
+    // https://wiki.guildwars2.com/wiki/Game_updates/2018-03-27
+    public const ulong March2018Balance = 87476;
 
     // https://wiki.guildwars2.com/wiki/Game_updates/2018-05-08
     public const ulong May2018Balance = 88541;
@@ -225,6 +231,27 @@ public static class GW2Builds
 
     // https://wiki.guildwars2.com/wiki/Game_updates/2025-08-19
     public const ulong August2025VoEBeta = 186019;
+
+    // https://wiki.guildwars2.com/wiki/Game_updates/2025-10-28
+    public const ulong OctoberVoERelease = 190000;
+
+    // https://wiki.guildwars2.com/wiki/Game_updates/2025-11-18
+    public const ulong November2025Balance = 191204;
+
+    // https://wiki.guildwars2.com/wiki/Game_updates/2025-12-09
+    public const ulong December2025Balance = 192224;
+
+    //https://wiki.guildwars2.com/wiki/Game_updates/2026-01-13
+    public const ulong January2026Balance = 193778;
+    
+    // https://wiki.guildwars2.com/wiki/Game_updates/2026-02-03
+    public const ulong February2026GuardiansGladeReleaseAndPvPBalance = 194969;
+
+    // https://wiki.guildwars2.com/wiki/Game_updates/2026-02-24
+    public const ulong February2026GuardiansGladeCMReleaseAndMinorBalance = 196063;
+
+    // https://wiki.guildwars2.com/wiki/Game_updates/2026-04-14
+    public const ulong April2026Balancepocalypse = 198816;
 
     public const ulong EndOfLife = ulong.MaxValue;
 }

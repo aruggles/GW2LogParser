@@ -7,14 +7,14 @@ using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SpeciesIDs;
 using static GW2EIEvtcParser.SkillIDs;
+using static GW2EIEvtcParser.AchievementEligibilityIDs;
 using GW2EIEvtcParser.ParserHelpers;
-using System;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class WhisperingShadow : Kinfall
 {
-    internal readonly MechanicGroup Mechanics = new MechanicGroup([
+    internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
                 new PlayerDstBuffApplyMechanic(DeathlyGrime, new MechanicPlotlySetting(Symbols.Diamond, Colors.Purple), "DeathGr.A", "Gained Deathly Grime", "Deathly Grime Application", 0),
                 new PlayerDstBuffApplyMechanic([LifeFireCircleT1, LifeFireCircleT2, LifeFireCircleT3, LifeFireCircleT4, LifeFireCircleCM], new MechanicPlotlySetting(Symbols.Pentagon, Colors.LightBlue), "LifeFire.A", "Gained Life-Fire Circle", "Life-Fire Circle Apply", 0),
@@ -45,8 +45,10 @@ internal class WhisperingShadow : Kinfall
                 new EnemyDstBuffApplyMechanic(EmpoweredWatchknightTriumverate, new MechanicPlotlySetting(Symbols.Square, Colors.Red), "Emp.A", "Gained Empowered", "Empowered Application", 0),
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic([LoftedCryoflash, TerrestialCryoflash], new MechanicPlotlySetting(Symbols.YDown, Colors.Yellow), "Shatterstep.Achiv", "Achievement Eligibility: Shatterstep", "Achiv Shatterstep", 0)
-                    .UsingAchievementEligibility(),
+                new AchievementEligibilityMechanic(Ach_Shatterstep, new MechanicPlotlySetting(Symbols.YDown, Colors.DarkYellow), "Shatterstep.Achiv.L", "Achievement Eligibility: Shatterstep Lost", "Achiv Shatterstep Lost", 0)
+                    .UsingChecker((evt, log) => evt.Lost),
+                new AchievementEligibilityMechanic(Ach_Shatterstep, new MechanicPlotlySetting(Symbols.YDown, Colors.Yellow), "Shatterstep.Achiv.K", "Achievement Eligibility: Shatterstep Kept", "Achiv Shatterstep Kept", 0)
+                    .UsingChecker((evt, log) => !evt.Lost)
             ]),
         ]);
     public WhisperingShadow(int triggerID) : base(triggerID)
@@ -78,22 +80,22 @@ internal class WhisperingShadow : Kinfall
         return Targets.FirstOrDefault(x => x.IsSpecies(TargetID.WhisperingShadow)) ?? throw new MissingKeyActorsException("Whispering Shadow not found");
     }
 
-    internal override LogData.LogMode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
+    internal override LogData.Mode GetLogMode(CombatData combatData, AgentData agentData, LogData logData)
     {
         if (combatData.GetBuffApplyData(LifeFireCircleCM).Any())
         {
-            return LogData.LogMode.CM;
+            return LogData.Mode.CM;
         }
-        return LogData.LogMode.Normal;
+        return LogData.Mode.Normal;
     }
 
-    internal static List<PhaseData> ComputePhases(ParsedEvtcLog log, SingleActor shadow, EncounterPhaseData encounterPhase, bool requirePhases)
+    internal static IReadOnlyList<SubPhasePhaseData> ComputePhases(ParsedEvtcLog log, SingleActor shadow, EncounterPhaseData encounterPhase, bool requirePhases)
     {
         if (!requirePhases)
         {
             return [];
         }
-        var phases = new List<PhaseData>(7);
+        var phases = new List<SubPhasePhaseData>(7);
         // guttering light queues up at 80%, 50%, 20%
         // we use the first cast as start and stun/breakbar as end
         int i = 1;
@@ -152,7 +154,7 @@ internal class WhisperingShadow : Kinfall
 
     internal override void ComputePlayerCombatReplayActors(PlayerActor player, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputePlayerCombatReplayActors(player, log, replay);
         }
@@ -173,7 +175,7 @@ internal class WhisperingShadow : Kinfall
         var inevitableDarkness = player.GetBuffStatus(log, InevitableDarknessPlayer).Where(x => x.Value > 0);
         var inevitableDarknessEvents = GetBuffApplyRemoveSequence(log.CombatData, InevitableDarknessPlayer, player, true, false);
         replay.Decorations.AddOverheadIcons(inevitableDarkness, player, BuffImages.SpiritsConsumed);
-        replay.Decorations.AddTether(inevitableDarknessEvents, Colors.LightPurple, 0.5);
+        replay.Decorations.AddTethers(inevitableDarknessEvents, Colors.LightPurple, 0.5);
 
         // wintry orb (green)
         var wintryOrbs = player.GetBuffStatus(log, LethalCoalescenceBuff).Where(x => x.Value > 0);
@@ -197,7 +199,7 @@ internal class WhisperingShadow : Kinfall
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeNPCCombatReplayActors(target, log, replay);
         }
@@ -213,7 +215,7 @@ internal class WhisperingShadow : Kinfall
                     if (target.TryGetCurrentFacingDirection(log, effect.Time, out var facing, 300))
                     {
                         var position = new PositionConnector(effect.Position);
-                        var rotation = new AngleConnector(facing);
+                        var rotation = new AngleConnector(facing.Value);
                         var decoration = (FormDecoration)new PieDecoration(1200, 190f, lifespan, Colors.LightOrange, 0.2, position).UsingRotationConnector(rotation);
                         replay.Decorations.AddWithGrowing(decoration, lifespan.end);
                     }
@@ -224,7 +226,7 @@ internal class WhisperingShadow : Kinfall
 
     internal override void ComputeEnvironmentCombatReplayDecorations(ParsedEvtcLog log, CombatReplayDecorationContainer environmentDecorations)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.ComputeEnvironmentCombatReplayDecorations(log, environmentDecorations);
         }
@@ -246,8 +248,10 @@ internal class WhisperingShadow : Kinfall
             foreach (var effect in spikes)
             {
                 var lifespan = effect.ComputeLifespan(log, 1500);
-                var decoration = new CircleDecoration(130, lifespan, Colors.Orange, 0.2, new PositionConnector(effect.Position));
+                var position = new PositionConnector(effect.Position);
+                var decoration = new CircleDecoration(130, lifespan, Colors.Orange, 0.2, position);
                 environmentDecorations.AddWithGrowing(decoration, lifespan.end);
+                environmentDecorations.Add(new IconDecoration(ParserIcons.RedArrowUpOverhead, CombatReplaySkillDefaultSizeInPixel, CombatReplaySkillDefaultSizeInWorld, 0.7f, lifespan, position));
             }
         }
         if (log.CombatData.TryGetEffectEventsByGUID(EffectGUIDs.WhisperingShadowVitreousSpikeDanger, out var spikesDanger))
@@ -255,8 +259,10 @@ internal class WhisperingShadow : Kinfall
             foreach (var effect in spikesDanger)
             {
                 var lifespan = effect.ComputeLifespan(log, 2000);
-                var decoration = new CircleDecoration(130, lifespan, Colors.Red, 0.2, new PositionConnector(effect.Position));
+                var position = new PositionConnector(effect.Position);
+                var decoration = new CircleDecoration(130, lifespan, Colors.Red, 0.2, position);
                 environmentDecorations.AddWithGrowing(decoration, lifespan.end);
+                environmentDecorations.Add(new IconDecoration(ParserIcons.RedXMarkerOverhead, CombatReplaySkillDefaultSizeInPixel, CombatReplaySkillDefaultSizeInWorld, 0.7f, lifespan, position));
             }
         }
 
@@ -336,15 +342,41 @@ internal class WhisperingShadow : Kinfall
         }
     }
 
+    internal override void ComputeAchievementEligibilityEvents(ParsedEvtcLog log, Player p, List<AchievementEligibilityEvent> achievementEligibilityEvents)
+    {
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
+        {
+            base.ComputeAchievementEligibilityEvents(log, p, achievementEligibilityEvents);
+        }
+        {
+            var shatterstepEligibilityEvents = new List<AchievementEligibilityEvent>();
+            var whisperingShadowPhases = log.LogData.GetEncounterPhases(log, LogID).Where(x => x.IntersectsWindow(p.FirstAware, p.LastAware)).ToHashSet();
+            List<HealthDamageEvent> damageData = [
+                ..log.CombatData.GetDamageData(LoftedCryoflash),
+                ..log.CombatData.GetDamageData(TerrestialCryoflash)
+            ];
+            damageData.SortByTime();
+            foreach (var evt in damageData)
+            {
+                if (evt.HasHit && evt.To.Is(p.AgentItem) && p.InAwareTimes(evt.Time))
+                {
+                    InsertAchievementEligibityEventAndRemovePhase(whisperingShadowPhases, shatterstepEligibilityEvents, evt.Time, Ach_Shatterstep, p);
+                }
+            }
+            AddSuccessBasedAchievementEligibityEvents(whisperingShadowPhases, shatterstepEligibilityEvents, Ach_Shatterstep, p);
+            achievementEligibilityEvents.AddRange(shatterstepEligibilityEvents);
+        }
+    }
+
     internal override void SetInstanceBuffs(ParsedEvtcLog log, List<InstanceBuff> instanceBuffs)
     {
-        if (!log.LogData.IsInstance)
+        if (!log.LogData.IgnoreBaseCallsForCRAndInstanceBuffs)
         {
             base.SetInstanceBuffs(log, instanceBuffs);
         }
         if (log.CombatData.GetBuffData(AchievementEligibilityUndyingLight).Any())
         {
-            var encounterPhases = log.LogData.GetPhases(log).OfType<EncounterPhaseData>().Where(x => x.LogID == LogID);
+            var encounterPhases = log.LogData.GetEncounterPhases(log, LogID);
             var lastEncounter = encounterPhases.LastOrDefault();
             if (lastEncounter != null && lastEncounter.Success && lastEncounter.IsCM)
             {
