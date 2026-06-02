@@ -90,6 +90,30 @@ namespace Gw2LogParser.ExportModels
             original.Wasted += item.Wasted;
         }
 
+        // Merge boon stats from one fight into the running total, keyed by buff ID.
+        private static void MergeBoons(List<BoonReport> original, List<BoonReport> report)
+        {
+            var byId = new Dictionary<long, BoonReport>();
+            foreach (var b in original) { byId[b.Id] = b; }
+            foreach (var rb in report)
+            {
+                if (byId.TryGetValue(rb.Id, out var ob))
+                {
+                    ob.Value += rb.Value;
+                    ob.Uptime += rb.Uptime;
+                    ob.Extended += rb.Extended;
+                    ob.Wasted += rb.Wasted;
+                    ob.Overstack += rb.Overstack;
+                }
+                else
+                {
+                    var clone = new BoonReport { Id = rb.Id, Value = rb.Value, Uptime = rb.Uptime, Extended = rb.Extended, Wasted = rb.Wasted, Overstack = rb.Overstack };
+                    original.Add(clone);
+                    byId[rb.Id] = clone;
+                }
+            }
+        }
+
         public void SumPlayerStats(PlayerReport original, PlayerReport report)
         {
             original.numberOfFights++;
@@ -174,73 +198,14 @@ namespace Gw2LogParser.ExportModels
                     SumSummaryStats(original.TakenSummary[i], summaryItem);
                 }
             }
-            // Boon Summary
-            for (var i = 0; i < original.BoonStats.Count; i++)
-            {
-                var originalBoon = original.BoonStats[i];
-
-                if (report.BoonStats.Count > i)
-                {
-                    var reportBoon = report.BoonStats[i];
-                    originalBoon.Value += reportBoon.Value;
-                    originalBoon.Wasted += reportBoon.Wasted;
-                    originalBoon.Uptime += reportBoon.Uptime;
-                    originalBoon.Extended += reportBoon.Extended;
-                    originalBoon.Overstack += reportBoon.Overstack;
-                }
-            }
-            for (var i = 0; i < original.BoonGenSelfStats.Count; i++)
-            {
-                var originalBoon = original.BoonGenSelfStats[i];
-                if (report.BoonGenSelfStats.Count > i)
-                {
-                    var reportBoon = report.BoonGenSelfStats[i];
-                    originalBoon.Value += reportBoon.Value;
-                    originalBoon.Wasted += reportBoon.Wasted;
-                    originalBoon.Uptime += reportBoon.Uptime;
-                    originalBoon.Extended += reportBoon.Extended;
-                    originalBoon.Overstack += reportBoon.Overstack;
-                }
-            }
-            for (var i = 0; i < original.BoonGenGroupStats.Count; i++)
-            {
-                var originalBoon = original.BoonGenGroupStats[i];
-                if (report.BoonGenGroupStats.Count > i)
-                {
-                    var reportBoon = report.BoonGenGroupStats[i];
-                    originalBoon.Value += reportBoon.Value;
-                    originalBoon.Wasted += reportBoon.Wasted;
-                    originalBoon.Uptime += reportBoon.Uptime;
-                    originalBoon.Extended += reportBoon.Extended;
-                    originalBoon.Overstack += reportBoon.Overstack;
-                }
-            }
-            for (var i = 0; i < original.BoonGenOGroupStats.Count; i++)
-            {
-                var originalBoon = original.BoonGenOGroupStats[i];
-                if (report.BoonGenOGroupStats.Count > i)
-                {
-                    var reportBoon = report.BoonGenOGroupStats[i];
-                    originalBoon.Value += reportBoon.Value;
-                    originalBoon.Wasted += reportBoon.Wasted;
-                    originalBoon.Uptime += reportBoon.Uptime;
-                    originalBoon.Extended += reportBoon.Extended;
-                    originalBoon.Overstack += reportBoon.Overstack;
-                }
-            }
-            for (var i = 0; i < original.BoonGenSquadStats.Count; i++)
-            {
-                var originalBoon = original.BoonGenSquadStats[i];
-                if (report.BoonGenSquadStats.Count > i)
-                {
-                    var reportBoon = report.BoonGenSquadStats[i];
-                    originalBoon.Value += reportBoon.Value;
-                    originalBoon.Wasted += reportBoon.Wasted;
-                    originalBoon.Uptime += reportBoon.Uptime;
-                    originalBoon.Extended += reportBoon.Extended;
-                    originalBoon.Overstack += reportBoon.Overstack;
-                }
-            }
+            // Boon Summary - merge by buff ID, not position. Logs can have different
+            // PresentBoons (e.g. Alacrity present in some fights only), so a by-index
+            // merge would add different boons together and misalign every later column.
+            MergeBoons(original.BoonStats, report.BoonStats);
+            MergeBoons(original.BoonGenSelfStats, report.BoonGenSelfStats);
+            MergeBoons(original.BoonGenGroupStats, report.BoonGenGroupStats);
+            MergeBoons(original.BoonGenOGroupStats, report.BoonGenOGroupStats);
+            MergeBoons(original.BoonGenSquadStats, report.BoonGenSquadStats);
             if (report.healing != null)
             {
                 if (original.healing == null)
@@ -336,25 +301,22 @@ namespace Gw2LogParser.ExportModels
                     playerReport.Defense.Downed = Parse<int>(phase.DefStats[playerIndex][12]);
                     playerReport.Defense.Dead = Parse<int>(phase.DefStats[playerIndex][14]);
                     playerReport.Gameplay = BuildGameplayReport(phase.GameplayStats[playerIndex], phase.OffensiveStats[playerIndex]);
-                    for (int b = 0; b < phase.BuffsStatContainer.BoonStats[playerIndex].Data.Count; b++) {
-                        playerReport.BoonStats.Add(new BoonReport(phase.BuffsStatContainer.BoonStats[playerIndex].Data[b]));
-                    }
-                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenSquadStats[playerIndex].Data.Count; b++)
+                    // Tag each boon with its buff ID (BoonStats columns follow data.Boons /
+                    // PresentBoons). Dedupe by ID so multi-phase logs keep the first (full-fight) entry.
+                    void AddBoons(List<BoonReport> target, GW2EIBuilders.HtmlModels.HTMLStats.BuffData buffData)
                     {
-                        playerReport.BoonGenSquadStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenSquadStats[playerIndex].Data[b]));
+                        for (int b = 0; b < buffData.Data.Count; b++)
+                        {
+                            long id = (data.Boons != null && b < data.Boons.Count) ? data.Boons[b] : 0;
+                            if (target.Exists(x => x.Id == id)) { continue; }
+                            target.Add(new BoonReport(buffData.Data[b]) { Id = id });
+                        }
                     }
-                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenSelfStats[playerIndex].Data.Count; b++)
-                    {
-                        playerReport.BoonGenSelfStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenSelfStats[playerIndex].Data[b]));
-                    }
-                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenOGroupStats[playerIndex].Data.Count; b++)
-                    {
-                        playerReport.BoonGenOGroupStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenOGroupStats[playerIndex].Data[b]));
-                    }
-                    for (int b = 0; b < phase.BuffsStatContainer.BoonGenGroupStats[playerIndex].Data.Count; b++)
-                    {
-                        playerReport.BoonGenGroupStats.Add(new BoonReport(phase.BuffsStatContainer.BoonGenGroupStats[playerIndex].Data[b]));
-                    }
+                    AddBoons(playerReport.BoonStats, phase.BuffsStatContainer.BoonStats[playerIndex]);
+                    AddBoons(playerReport.BoonGenSquadStats, phase.BuffsStatContainer.BoonGenSquadStats[playerIndex]);
+                    AddBoons(playerReport.BoonGenSelfStats, phase.BuffsStatContainer.BoonGenSelfStats[playerIndex]);
+                    AddBoons(playerReport.BoonGenOGroupStats, phase.BuffsStatContainer.BoonGenOGroupStats[playerIndex]);
+                    AddBoons(playerReport.BoonGenGroupStats, phase.BuffsStatContainer.BoonGenGroupStats[playerIndex]);
                     if (data.HealingStatsExtension != null)
                     {
                         var healingReport = new HealingReport();

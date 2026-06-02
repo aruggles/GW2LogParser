@@ -154,7 +154,6 @@
     <Content Include="Resources\eiparser\JS\HealingExt-JS\healingExtGlobals.js" />
     <Content Include="Resources\eiparser\JS\mixins.js" />
     <Content Include="Resources\eiparser\template.html" />
-    <Content Include="Resources\player_summary.html" />
     <Content Include="Resources\template.html" />
   </ItemGroup>
   <ItemGroup>

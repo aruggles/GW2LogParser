@@ -7,6 +7,10 @@ namespace Gw2LogParser.ExportModels.Report;
 [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 public class BoonReport
 {
+    // GW2 buff ID (e.g. Might 740, Stability 1122). Lets the client and the cross-log
+    // aggregation key boons by identity instead of a positional index, which shifts
+    // depending on which boons were present in each log.
+    public long Id { get; set; }
     public double Value { get; set; }
     public double Uptime { get; set; }
     public double Extended { get; set; }

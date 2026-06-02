@@ -83,10 +83,6 @@ namespace Gw2LogParser.Properties {
             get { return ResourceManager.GetString("mixins", resourceCulture); }
         }
 
-        public static string player_summary {
-            get { return ResourceManager.GetString("player_summary", resourceCulture); }
-        }
-
         public static string template_html {
             get { return ResourceManager.GetString("template_html", resourceCulture); }
         }
