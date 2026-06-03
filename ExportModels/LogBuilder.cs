@@ -1,5 +1,6 @@
 ﻿using GW2EIBuilders;
 using GW2EIBuilders.HtmlModels;
+using GW2EIBuilders.HtmlModels.EXTHealing;
 using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
@@ -21,6 +22,38 @@ namespace Gw2LogParser.ExportModels
         public LogBuilder(LogContainer parsedLog)
         {
             log = parsedLog.Log;
+        }
+
+        // arcDPS records reviving a downed ally under the generic "Resurrect" skill (id 1006)
+        // and reports it as outgoing healing with a wildly inflated magnitude. It isn't real
+        // healing output, so it's stripped from the summary's healing stats.
+        private const long ResurrectSkillId = 1006;
+
+        // Sum the Resurrect (id 1006) healing in a single healing distribution. Distribution
+        // items are [isIndirect, skillId, totalHealing, ...] (see EXTHealingStatsHealingDistributionDto).
+        private static long ResurrectHealingIn(EXTHealingStatsHealingDistributionDto? distribution)
+        {
+            long sum = 0;
+            if (distribution?.Distribution == null) { return 0; }
+            foreach (var item in distribution.Distribution)
+            {
+                if (item.Length > 2 && Convert.ToInt64(item[1]) == ResurrectSkillId)
+                {
+                    sum += Convert.ToInt64(item[2]);
+                }
+            }
+            return sum;
+        }
+
+        // Pick the requested phase from a per-phase list of healing distributions and return
+        // its Resurrect healing.
+        private static long ResurrectHealing(List<EXTHealingStatsHealingDistributionDto>? distributionsPerPhase, int phaseIndex)
+        {
+            if (distributionsPerPhase == null || phaseIndex < 0 || phaseIndex >= distributionsPerPhase.Count)
+            {
+                return 0;
+            }
+            return ResurrectHealingIn(distributionsPerPhase[phaseIndex]);
         }
 
         internal LogDataDto BuildLogData(Version parserVersion, UploadResults uploadResults)
@@ -117,6 +150,12 @@ namespace Gw2LogParser.ExportModels
         public void SumPlayerStats(PlayerReport original, PlayerReport report)
         {
             original.numberOfFights++;
+            // Fold this fight's subgroup into the running tally so original.Group ends up
+            // being the subgroup this account was in across the most fights, not the first.
+            foreach (var kv in report.GroupCounts)
+            {
+                original.RecordGroup(kv.Key, kv.Value);
+            }
             original.TimeInCombat += report.TimeInCombat;
             original.Damage.AllDamage += report.Damage.AllDamage;
             original.Damage.Power += report.Damage.Power;
@@ -239,11 +278,14 @@ namespace Gw2LogParser.ExportModels
 
         public void UpdateLogReport(LogReport report, LogDataDto data)
         {
+            int alliesOutside = 0;
+            long outBarrier = 0;
             for (int playerIndex = 0; playerIndex < data.Players?.Count; playerIndex++)
             {
                 var player = data.Players[playerIndex];
                 if (player == null || player.Group == 51)
                 {
+                    if (player != null) { alliesOutside++; }
                     continue;
                 }
                 var playerReport = new PlayerReport()
@@ -254,6 +296,8 @@ namespace Gw2LogParser.ExportModels
                     Group = player.Group,
                     Icon = player.Icon
                 };
+                // Seed this account's group tally with the subgroup it was in this fight.
+                playerReport.RecordGroup(player.Group);
                 foreach (object[] item in player.Details.DmgDistributions[0].Distribution)
                 {
                     playerReport.DamageSummary.Add(BuildSummary(item, data));
@@ -262,6 +306,8 @@ namespace Gw2LogParser.ExportModels
                 {
                     playerReport.TakenSummary.Add(BuildSummary(item, data));
                 }
+                // Squad outgoing barrier damage (damage absorbed by enemy barrier).
+                foreach (var s in playerReport.DamageSummary) { outBarrier += s.BarrierDamage; }
                 //var count = data.Wvw ? 1 : data.Phases.Count;
                 for (int phaseIndex = 0; phaseIndex < data.Phases.Count; phaseIndex++)
                 {
@@ -320,11 +366,30 @@ namespace Gw2LogParser.ExportModels
                     if (data.HealingStatsExtension != null)
                     {
                         var healingReport = new HealingReport();
-                        healingReport.IncomingHealed = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][0]);
+                        // The arcDPS healing addon counts reviving downed allies (the generic
+                        // "Resurrect" skill, id 1006) as outgoing healing, and the reported value
+                        // is wildly inflated (a single fight credited a DPS millions of healing,
+                        // topping the leaderboard above real healers). Resurrect isn't sustained
+                        // healing output, so strip its contribution out of the squad healing stats.
+                        var healDetails = (data.HealingStatsExtension.PlayerHealingDetails != null
+                            && playerIndex < data.HealingStatsExtension.PlayerHealingDetails.Count)
+                            ? data.HealingStatsExtension.PlayerHealingDetails[playerIndex] : null;
+                        long resurrectAll = ResurrectHealing(healDetails?.HealingDistributions, phaseIndex);
+                        long resurrectIncoming = ResurrectHealing(healDetails?.IncomingHealingDistributions, phaseIndex);
+                        long resurrectTarget = 0;
+                        var targetDists = (healDetails?.HealingDistributionsTargets != null
+                            && phaseIndex < healDetails.HealingDistributionsTargets.Count)
+                            ? healDetails.HealingDistributionsTargets[phaseIndex] : null;
+                        if (targetDists != null)
+                        {
+                            foreach (var td in targetDists) { resurrectTarget += ResurrectHealingIn(td); }
+                        }
+
+                        healingReport.IncomingHealed = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][0]) - (int)resurrectIncoming;
                         healingReport.IncomingHealingPower = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][1]);
                         healingReport.IncomingConversion = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][2]);
                         healingReport.IncomingDowned = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].IncomingHealingStats[playerIndex][3]);
-                        healingReport.OutgoingAll = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][0]);
+                        healingReport.OutgoingAll = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][0]) - (int)resurrectAll;
                         healingReport.OutgoingAllHealingPower = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][1]);
                         healingReport.OutgoingAllConversion = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][2]);
                         healingReport.OutgoingAllDowned = Parse<int>(data.HealingStatsExtension.HealingPhases[phaseIndex].OutgoingHealingStats[playerIndex][3]);
@@ -340,7 +405,7 @@ namespace Gw2LogParser.ExportModels
                             OutgoingTargetConversion += Parse<int>(targetStats[target][2]);
                             OutgoingTargetDowned += Parse<int>(targetStats[target][3]);
                         }
-                        healingReport.OutgoingTargetAll = OutgoingTargetAll;
+                        healingReport.OutgoingTargetAll = OutgoingTargetAll - (int)resurrectTarget;
                         healingReport.OutgoingTargetHealingPower = OutgoingTargetHealingPower;
                         healingReport.OutgoingTargetConversion = OutgoingTargetConversion;
                         healingReport.OutgoingTargetDowned = OutgoingTargetDowned;
@@ -360,8 +425,29 @@ namespace Gw2LogParser.ExportModels
                     }
                     
                 }
-                report.players[playerReport.Name] = playerReport;
+                // Key by full identity (account|character|profession) so a player who swaps
+                // character or class within the batch isn't overwritten by another row.
+                report.players[playerReport.Key] = playerReport;
             }
+
+            // Roll up per-fight aggregates for the "Fights In This Report" table.
+            report.SquadSize = report.players.Count;
+            report.AlliesOutsideSquad = alliesOutside;
+            report.TotalEnemies = data.Targets?.Count ?? 0;
+            foreach (var p in report.players.Values)
+            {
+                report.OutgoingDamage += p.Damage.AllDamage;
+                report.IncomingDamage += p.Defense.DamageTaken;
+                report.SquadBarrierAbsorbed += p.Defense.DamageBarrier;
+                report.AlliesDowned += p.Defense.Downed;
+                report.AlliesDead += p.Defense.Dead;
+                report.AlliesRevived += p.Support.Resurrects;
+                report.EnemyDowns += p.Gameplay.Downed;
+                report.EnemyDeaths += p.Gameplay.Killed;
+            }
+            report.EnemyBarrierAbsorbed = outBarrier;
+            report.DamageDelta = report.OutgoingDamage - report.IncomingDamage;
+            report.BarrierDelta = report.SquadBarrierAbsorbed - report.EnemyBarrierAbsorbed;
         }
 
         private GameplayReport BuildGameplayReport(List<double> DmgStats, List<double> OffStats)

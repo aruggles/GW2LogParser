@@ -58,7 +58,25 @@ internal class HTMLReportBuilder
             {
                 index = i + 1,
                 name = log.Name,
-                duration = log.DurationString
+                startTime = log.StartTime,
+                mapName = log.MapName,
+                duration = log.Duration,              // numeric ms — JS formats mm:ss + ms tooltip
+                durationString = log.DurationString,
+                success = log.Success,
+                squadSize = log.SquadSize,
+                alliesOutsideSquad = log.AlliesOutsideSquad,
+                totalEnemies = log.TotalEnemies,
+                alliesDowned = log.AlliesDowned,
+                alliesDead = log.AlliesDead,
+                alliesRevived = log.AlliesRevived,
+                enemyDowns = log.EnemyDowns,
+                enemyDeaths = log.EnemyDeaths,
+                outgoingDamage = log.OutgoingDamage,
+                incomingDamage = log.IncomingDamage,
+                damageDelta = log.DamageDelta,
+                squadBarrierAbsorbed = log.SquadBarrierAbsorbed,
+                enemyBarrierAbsorbed = log.EnemyBarrierAbsorbed,
+                barrierDelta = log.BarrierDelta
             }),
             players = Report.players
         };

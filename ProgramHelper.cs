@@ -189,23 +189,34 @@ public sealed class ProgramHelper : IDisposable
             logReport.DurationString = parsedLog.Log.LogData.DurationString;
             logReport.LogsEnd = parsedLog.Log.LogData.LogEnd;
             logReport.PointOfView = data.RecordedBy;
+            logReport.StartTime = parsedLog.Log.LogMetadata.DateStart;
+            logReport.MapName = data.Wvw ? data.LogName : "";
+            logReport.Success = parsedLog.Log.LogData.GetMainPhase(parsedLog.Log).Success;
             exporter.UpdateLogReport(logReport, data);
+            // WvW logs have no real victory condition — EI hardcodes Success = true (see
+            // WvWLogic.CheckSuccess). Derive a meaningful outcome from the squad's kills vs deaths:
+            // a win means we killed more enemies than we lost squad members.
+            if (data.Wvw)
+            {
+                logReport.Success = logReport.EnemyDeaths > logReport.AlliesDead;
+            }
 
             report.Logs.Add(logReport);
             report.PointOfView = data.RecordedBy;
             foreach (PlayerReport player in logReport.players.Values)
             {
-                PlayerReport? playerValue = null;
+                // Aggregate by account + character + class so each distinct combination is
+                // tracked separately: an account swapping characters or elite specs across
+                // fights produces one summary row per combination, not a single merged row.
                 if (player.Name != null)
                 {
-                    _ = report.players.TryGetValue(player.Name, out playerValue);
-                    if (playerValue == null)
+                    if (report.players.TryGetValue(player.Key, out PlayerReport? playerValue))
                     {
-                        report.players[player.Name] = player;
+                        exporter.SumPlayerStats(playerValue, player);
                     }
                     else
                     {
-                        exporter.SumPlayerStats(playerValue, player);
+                        report.players[player.Key] = player;
                     }
                 }
             }

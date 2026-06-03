@@ -291,25 +291,22 @@
         .lb-bar .avg { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--cool-soft); opacity: .8; }
         .lb-val { font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); text-align: right; min-width: 78px; }
         .lb-item.top1 .lb-val { color: var(--ember-soft); }
+        .lb-item.exempt { opacity: .5; }
+        .lb-item.exempt .lb-bar > span { background: var(--panel-3); }
 
-        .tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-        .tag.up   { color: var(--teal); background: rgba(65,184,160,.12); }
-        .tag.even { color: var(--text-faint); background: rgba(120,140,190,.07); }
-        .tag.grow { color: var(--cool-soft); background: rgba(93,124,179,.14); }
+        .lb-avg { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 14px; padding: 11px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, rgba(93,124,179,.07), var(--panel-2)); }
+        .lb-avg .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-faint); }
+        .lb-avg .num { font-family: var(--display); font-size: 22px; font-weight: 700; color: var(--cool-soft); font-variant-numeric: tabular-nums; }
+        .lb-avg .sub { font-size: 12px; color: var(--text-faint); margin-left: auto; }
+
 
         /* growth spotlight */
-        .growth { margin-top: 22px; border: 1px solid #28324a; border-radius: var(--radius); background: linear-gradient(180deg, rgba(93,124,179,.07), var(--panel)); padding: 18px 20px; }
-        .growth h3 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .12em; color: var(--cool-soft); display: flex; align-items: center; gap: 9px; }
-        .growth h3::before { content: "\1F331"; -webkit-font-smoothing: auto; }
-        .growth .lead { color: var(--text-dim); font-size: 13.5px; margin-bottom: 12px; }
-        .growth .g-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line-soft); }
-        .growth .g-item:first-of-type { border-top: 0; }
-        .growth .g-item img { width: 26px; height: 26px; margin-top: 1px; }
-        .growth .g-item .gtext { font-size: 13.5px; color: var(--text-dim); }
-        .growth .g-item .gtext b { color: var(--text); font-family: var(--display); font-weight: 600; }
-        .growth .g-item .gtext .num { color: var(--cool-soft); font-weight: 600; }
-        .growth.allgood h3 { color: var(--teal); }
-        .growth.allgood h3::before { content: "\1F4AA"; }
+
+        /* fight outcome */
+        .fight-win  { color: var(--teal); font-weight: 600; }
+        .fight-loss { color: var(--ember); font-weight: 600; }
+        .fight-map  { color: var(--text-dim); font-size: 12px; }
+        .fight-map::before { content: "\00B7"; margin: 0 6px; color: var(--text-faint); }
 
         /* ---------------- TABLES ---------------- */
         .panel.table-panel { padding: 16px 16px 8px; overflow-x: auto; }
@@ -365,6 +362,13 @@
         #nav-players .card-header .btn-link { color: var(--ember-soft); font-family: var(--display); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; padding: 6px 0 0; text-decoration: none; }
         #nav-players .card-header .btn-link:hover { color: var(--ember); }
         #nav-players .card-header h5 { margin: 0; }
+        #nav-players .acct-builds { display: flex; flex-wrap: wrap; gap: 8px; margin: 9px 0 4px; }
+        #nav-players .acct-build { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-dim); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; }
+        #nav-players .acct-build img.icon { width: 18px; height: 18px; margin: 0; }
+        #nav-players .build-section { border-top: 1px solid var(--line); }
+        #nav-players .build-section + .build-section { border-top: 1px solid var(--line); }
+        #nav-players .build-title { margin: 0; padding: 14px 18px 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ember-soft); display: flex; align-items: center; gap: 9px; }
+        #nav-players .build-title img.icon { width: 20px; height: 20px; margin: 0; }
 
         /* tooltip */
         .tooltip-inner { background: #05070b; border: 1px solid var(--line); color: var(--text); font-family: var(--body); font-size: 12.5px; border-radius: 8px; box-shadow: 0 10px 26px -12px #000; }
@@ -500,9 +504,67 @@
                         </div>
                     </div>
 
-                    <div class="panel">
+                    <div class="panel table-panel">
                         <h3>Fights In This Report</h3>
-                        <div id="fight-strip"></div>
+                        <nav id="fights-subnav">
+                            <div class="nav subnav" role="tablist">
+                                <a class="nav-item nav-link active" data-toggle="tab" href="#fights-counts" role="tab">Counts</a>
+                                <a class="nav-item nav-link" data-toggle="tab" href="#fights-outcome" role="tab">Outcome</a>
+                                <a class="nav-item nav-link" data-toggle="tab" href="#fights-damage" role="tab">Damage</a>
+                            </div>
+                        </nav>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="fights-counts" role="tabpanel">
+                                <table class="table table-striped" id="table-fights-counts">
+                                    <thead>
+                                        <tr>
+                                            <th data-toggle="tooltip" title="Report number" style="width: 48px;">#</th>
+                                            <th>Report</th>
+                                            <th>Duration</th>
+                                            <th>Outcome</th>
+                                            <th data-toggle="tooltip" title="Players in the squad">Squad</th>
+                                            <th data-toggle="tooltip" title="Allies fighting outside the squad">Allies</th>
+                                            <th data-toggle="tooltip" title="Enemies tracked in this fight">Enemies</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="fights-outcome" role="tabpanel">
+                                <table class="table table-striped" id="table-fights-outcome">
+                                    <thead>
+                                        <tr>
+                                            <th data-toggle="tooltip" title="Report number" style="width: 48px;">#</th>
+                                            <th>Report</th>
+                                            <th>Duration</th>
+                                            <th>Outcome</th>
+                                            <th data-toggle="tooltip" title="Times squad members were downed">Allies Down</th>
+                                            <th data-toggle="tooltip" title="Times squad members died">Allies Dead</th>
+                                            <th data-toggle="tooltip" title="Resurrects performed by the squad">Allies Revived</th>
+                                            <th data-toggle="tooltip" title="Enemies the squad downed">Enemy Downs</th>
+                                            <th data-toggle="tooltip" title="Enemies the squad killed">Enemy Deaths</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="fights-damage" role="tabpanel">
+                                <table class="table table-striped" id="table-fights-damage">
+                                    <thead>
+                                        <tr>
+                                            <th data-toggle="tooltip" title="Report number" style="width: 48px;">#</th>
+                                            <th>Report</th>
+                                            <th>Duration</th>
+                                            <th>Outcome</th>
+                                            <th data-toggle="tooltip" title="Total damage dealt by the squad">Outgoing</th>
+                                            <th data-toggle="tooltip" title="Total damage taken by the squad">Incoming</th>
+                                            <th data-toggle="tooltip" title="Outgoing minus incoming damage">Δ Damage</th>
+                                            <th data-toggle="tooltip" title="Damage absorbed by squad barrier">Barrier</th>
+                                            <th data-toggle="tooltip" title="Squad damage absorbed by enemy barrier">Enemy Barrier</th>
+                                            <th data-toggle="tooltip" title="Squad barrier minus enemy barrier">Δ Barrier</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -515,8 +577,8 @@
                     </div>
                     <div id="lb-pills" class="lb-pills"></div>
                     <div id="lb-podium" class="podium"></div>
+                    <div id="lb-avg" class="lb-avg"></div>
                     <div id="lb-list" class="lb-list"></div>
-                    <div id="lb-growth"></div>
                 </div>
 
                 <!-- ===================== DAMAGE ===================== -->
@@ -526,7 +588,7 @@
                         <table class="table table-striped" id="table-damagestats">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                     <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
@@ -551,7 +613,7 @@
                         <table class="table table-striped" id="table-defensestats">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                     <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
@@ -578,7 +640,7 @@
                         <table class="table table-striped" id="table-supportstats">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                     <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
@@ -599,7 +661,7 @@
                         <table class="table table-striped" id="table-gameplaystats">
                             <thead>
                                 <tr>
-                                    <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                    <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                     <th style="width: 32px;">&nbsp;</th>
                                     <th>Name</th>
                                     <th>Account</th>
@@ -675,7 +737,7 @@
                                 <table class="oldtable table table-striped">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -701,7 +763,7 @@
                                 <table class="oldtable table table-striped">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -727,7 +789,7 @@
                                 <table class="oldtable table table-striped">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -753,7 +815,7 @@
                                 <table class="oldtable table table-striped">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -779,7 +841,7 @@
                                 <table class="oldtable table table-striped">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -818,7 +880,7 @@
                                 <table class="table table-striped" id="table-healing-outgoing">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -842,7 +904,7 @@
                                 <table class="table table-striped" id="table-healing-incoming">
                                     <thead>
                                         <tr>
-                                            <th data-toggle="tooltip" title="Starting Group" style="width: 32px;">Grp</th>
+                                            <th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>
                                             <th style="width: 32px;">&nbsp;</th>
                                             <th>Name</th>
                                             <th>Account</th>
@@ -891,10 +953,10 @@
     <script>
         function buildHealingData() {
             data = [];
-            for (const [key, value] of Object.entries(playerData)) {
+            for (const [_, value] of Object.entries(playerData)) {
                 if (value.healing !== undefined) {
                     data.push({
-                        group: value.group, profession: value.profession, name: key, account: value.account,
+                        group: value.group, profession: value.profession, name: value.name, account: value.account, identifier: value.identifier,
                         incomingConversion: value.healing.incomingConversion,
                         incomingDowned: value.healing.incomingDowned,
                         incomingHealed: value.healing.incomingHealed,
@@ -919,51 +981,51 @@
         }
         function getProfIcon(prof) {
             switch (prof) {
-                case "Warrior": return "https://wiki.guildwars2.com/images/4/43/Warrior_tango_icon_20px.png";
-                case "Berserker": return "https://wiki.guildwars2.com/images/d/da/Berserker_tango_icon_20px.png";
-                case "Spellbreaker": return "https://wiki.guildwars2.com/images/e/ed/Spellbreaker_tango_icon_20px.png";
-                case "Bladesworn": return "https://wiki.guildwars2.com/images/thumb/c/c1/Bladesworn_tango_icon_200px.png/20px-Bladesworn_tango_icon_200px.png";
-                case "Paragon": return "https://i.imgur.com/Wp4lhTM.png";
-                case "Guardian": return "https://wiki.guildwars2.com/images/8/8c/Guardian_tango_icon_20px.png";
-                case "Dragonhunter": return "https://wiki.guildwars2.com/images/c/c9/Dragonhunter_tango_icon_20px.png";
-                case "Firebrand": return "https://wiki.guildwars2.com/images/0/02/Firebrand_tango_icon_20px.png";
-                case "Willbender": return "https://wiki.guildwars2.com/images/3/3a/Willbender_tango_icon_20px.png";
-                case "Luminary": return "https://i.imgur.com/H9upKPo.png";
-                case "Revenant": return "https://wiki.guildwars2.com/images/b/b5/Revenant_tango_icon_20px.png";
-                case "Herald": return "https://wiki.guildwars2.com/images/6/67/Herald_tango_icon_20px.png";
-                case "Renegade": return "https://wiki.guildwars2.com/images/7/7c/Renegade_tango_icon_20px.png";
-                case "Vindicator": return "https://wiki.guildwars2.com/images/5/5a/Vindicator_tango_icon_20px.png";
-                case "Conduit": return "https://i.imgur.com/qaXHsQU.png";
-                case "Engineer": return "https://wiki.guildwars2.com/images/2/27/Engineer_tango_icon_20px.png";
-                case "Scrapper": return "https://wiki.guildwars2.com/images/3/3a/Scrapper_tango_icon_200px.png";
-                case "Holosmith": return "https://wiki.guildwars2.com/images/2/28/Holosmith_tango_icon_20px.png";
-                case "Mechanist": return "https://wiki.guildwars2.com/images/thumb/8/8a/Mechanist_tango_icon_200px.png/20px-Mechanist_tango_icon_200px.png";
-                case "Amalgam": return "https://i.imgur.com/SjSb5yJ.png";
-                case "Ranger": return "https://wiki.guildwars2.com/images/4/43/Ranger_tango_icon_20px.png";
-                case "Druid": return "https://wiki.guildwars2.com/images/d/d2/Druid_tango_icon_20px.png";
-                case "Soulbeast": return "https://wiki.guildwars2.com/images/7/7c/Soulbeast_tango_icon_20px.png";
-                case "Untamed": return "https://wiki.guildwars2.com/images/thumb/3/33/Untamed_tango_icon_200px.png/20px-Untamed_tango_icon_200px.png";
-                case "Galeshot": return "https://i.imgur.com/4wTs28o.png";
-                case "Thief": return "https://wiki.guildwars2.com/images/7/7a/Thief_tango_icon_20px.png";
-                case "Daredevil": return "https://wiki.guildwars2.com/images/e/e1/Daredevil_tango_icon_20px.png";
-                case "Deadeye": return "https://wiki.guildwars2.com/images/c/c9/Deadeye_tango_icon_20px.png";
-                case "Specter": return "https://i.imgur.com/nVAyYVQ.png";
-                case "Antiquary": return "https://i.imgur.com/wJBMKe2.png";
-                case "Elementalist": return "https://wiki.guildwars2.com/images/a/aa/Elementalist_tango_icon_20px.png";
-                case "Tempest": return "https://wiki.guildwars2.com/images/4/4a/Tempest_tango_icon_20px.png";
-                case "Weaver": return "https://wiki.guildwars2.com/images/f/fc/Weaver_tango_icon_20px.png";
-                case "Catalyst": return "https://i.imgur.com/2B73rSk.png";
-                case "Evoker": return "https://i.imgur.com/P1a4oqd.png";
-                case "Mesmer": return "https://wiki.guildwars2.com/images/6/60/Mesmer_tango_icon_20px.png";
-                case "Chronomancer": return "https://wiki.guildwars2.com/images/f/f4/Chronomancer_tango_icon_20px.png";
-                case "Mirage": return "https://wiki.guildwars2.com/images/d/df/Mirage_tango_icon_20px.png";
-                case "Virtuoso": return "https://wiki.guildwars2.com/images/6/62/Virtuoso_tango_icon_20px.png";
-                case "Troubadour": return "https://i.imgur.com/vkpnTJD.png";
-                case "Necromancer": return "https://wiki.guildwars2.com/images/4/43/Necromancer_tango_icon_20px.png";
-                case "Reaper": return "https://wiki.guildwars2.com/images/1/11/Reaper_tango_icon_20px.png";
-                case "Scourge": return "https://wiki.guildwars2.com/images/0/06/Scourge_tango_icon_20px.png";
-                case "Harbinger": return "https://wiki.guildwars2.com/images/7/7f/Harbinger_tango_icon_20px.png";
-                case "Ritualist": return "https://i.imgur.com/gi5JSey.png";
+                case "Warrior": return "https://wiki.guildwars2.com/images/thumb/d/db/Warrior_tango_icon_200px.png/48px-Warrior_tango_icon_200px.png";
+                case "Berserker": return "https://wiki.guildwars2.com/images/thumb/8/80/Berserker_tango_icon_200px.png/48px-Berserker_tango_icon_200px.png";
+                case "Spellbreaker": return "https://wiki.guildwars2.com/images/thumb/7/78/Spellbreaker_tango_icon_200px.png/48px-Spellbreaker_tango_icon_200px.png";
+                case "Bladesworn": return "https://wiki.guildwars2.com/images/thumb/c/c1/Bladesworn_tango_icon_200px.png/48px-Bladesworn_tango_icon_200px.png";
+                case "Paragon": return "https://wiki.guildwars2.com/images/thumb/f/f8/Paragon_tango_icon_200px.png/48px-Paragon_tango_icon_200px.png";
+                case "Guardian": return "https://wiki.guildwars2.com/images/thumb/6/6c/Guardian_tango_icon_200px.png/48px-Guardian_tango_icon_200px.png";
+                case "Dragonhunter": return "https://wiki.guildwars2.com/images/thumb/1/1f/Dragonhunter_tango_icon_200px.png/48px-Dragonhunter_tango_icon_200px.png";
+                case "Firebrand": return "https://wiki.guildwars2.com/images/thumb/7/73/Firebrand_tango_icon_200px.png/48px-Firebrand_tango_icon_200px.png";
+                case "Willbender": return "https://wiki.guildwars2.com/images/thumb/5/57/Willbender_tango_icon_200px.png/48px-Willbender_tango_icon_200px.png";
+                case "Luminary": return "https://wiki.guildwars2.com/images/thumb/1/1f/Luminary_tango_icon_200px.png/48px-Luminary_tango_icon_200px.png";
+                case "Revenant": return "https://wiki.guildwars2.com/images/thumb/a/a8/Revenant_tango_icon_200px.png/48px-Revenant_tango_icon_200px.png";
+                case "Herald": return "https://wiki.guildwars2.com/images/thumb/c/c7/Herald_tango_icon_200px.png/48px-Herald_tango_icon_200px.png";
+                case "Renegade": return "https://wiki.guildwars2.com/images/thumb/b/bc/Renegade_tango_icon_200px.png/48px-Renegade_tango_icon_200px.png";
+                case "Vindicator": return "https://wiki.guildwars2.com/images/thumb/f/f0/Vindicator_tango_icon_200px.png/48px-Vindicator_tango_icon_200px.png";
+                case "Conduit": return "https://wiki.guildwars2.com/images/thumb/f/f1/Conduit_tango_icon_200px.png/48px-Conduit_tango_icon_200px.png";
+                case "Engineer": return "https://wiki.guildwars2.com/images/thumb/2/2f/Engineer_tango_icon_200px.png/48px-Engineer_tango_icon_200px.png";
+                case "Scrapper": return "https://wiki.guildwars2.com/images/thumb/3/3a/Scrapper_tango_icon_200px.png/48px-Scrapper_tango_icon_200px.png";
+                case "Holosmith": return "https://wiki.guildwars2.com/images/thumb/a/ae/Holosmith_tango_icon_200px.png/48px-Holosmith_tango_icon_200px.png";
+                case "Mechanist": return "https://wiki.guildwars2.com/images/thumb/8/8a/Mechanist_tango_icon_200px.png/48px-Mechanist_tango_icon_200px.png";
+                case "Amalgam": return "https://wiki.guildwars2.com/images/thumb/f/f4/Amalgam_tango_icon_200px.png/48px-Amalgam_tango_icon_200px.png";
+                case "Ranger": return "https://wiki.guildwars2.com/images/thumb/5/51/Ranger_tango_icon_200px.png/48px-Ranger_tango_icon_200px.png";
+                case "Druid": return "https://wiki.guildwars2.com/images/thumb/6/6d/Druid_tango_icon_200px.png/48px-Druid_tango_icon_200px.png";
+                case "Soulbeast": return "https://wiki.guildwars2.com/images/thumb/f/f6/Soulbeast_tango_icon_200px.png/48px-Soulbeast_tango_icon_200px.png";
+                case "Untamed": return "https://wiki.guildwars2.com/images/thumb/3/33/Untamed_tango_icon_200px.png/48px-Untamed_tango_icon_200px.png";
+                case "Galeshot": return "https://wiki.guildwars2.com/images/thumb/f/f1/Galeshot_tango_icon_200px.png/48px-Galeshot_tango_icon_200px.png";
+                case "Thief": return "https://wiki.guildwars2.com/images/thumb/1/19/Thief_tango_icon_200px.png/48px-Thief_tango_icon_200px.png";
+                case "Daredevil": return "https://wiki.guildwars2.com/images/thumb/c/ca/Daredevil_tango_icon_200px.png/48px-Daredevil_tango_icon_200px.png";
+                case "Deadeye": return "https://wiki.guildwars2.com/images/thumb/b/b0/Deadeye_tango_icon_200px.png/48px-Deadeye_tango_icon_200px.png";
+                case "Specter": return "https://wiki.guildwars2.com/images/thumb/e/eb/Specter_tango_icon_200px.png/48px-Specter_tango_icon_200px.png";
+                case "Antiquary": return "https://wiki.guildwars2.com/images/thumb/e/ea/Antiquary_tango_icon_200px.png/48px-Antiquary_tango_icon_200px.png";
+                case "Elementalist": return "https://wiki.guildwars2.com/images/thumb/a/a0/Elementalist_tango_icon_200px.png/48px-Elementalist_tango_icon_200px.png";
+                case "Tempest": return "https://wiki.guildwars2.com/images/thumb/9/90/Tempest_tango_icon_200px.png/48px-Tempest_tango_icon_200px.png";
+                case "Weaver": return "https://wiki.guildwars2.com/images/thumb/3/31/Weaver_tango_icon_200px.png/48px-Weaver_tango_icon_200px.png";
+                case "Catalyst": return "https://wiki.guildwars2.com/images/thumb/9/92/Catalyst_tango_icon_200px.png/48px-Catalyst_tango_icon_200px.png";
+                case "Evoker": return "https://wiki.guildwars2.com/images/thumb/5/58/Evoker_tango_icon_200px.png/48px-Evoker_tango_icon_200px.png";
+                case "Mesmer": return "https://wiki.guildwars2.com/images/thumb/7/73/Mesmer_tango_icon_200px.png/48px-Mesmer_tango_icon_200px.png";
+                case "Chronomancer": return "https://wiki.guildwars2.com/images/thumb/8/8b/Chronomancer_tango_icon_200px.png/48px-Chronomancer_tango_icon_200px.png";
+                case "Mirage": return "https://wiki.guildwars2.com/images/thumb/a/a9/Mirage_tango_icon_200px.png/48px-Mirage_tango_icon_200px.png";
+                case "Virtuoso": return "https://wiki.guildwars2.com/images/thumb/c/cd/Virtuoso_tango_icon_200px.png/48px-Virtuoso_tango_icon_200px.png";
+                case "Troubadour": return "https://wiki.guildwars2.com/images/thumb/b/b3/Troubadour_tango_icon_200px.png/48px-Troubadour_tango_icon_200px.png";
+                case "Necromancer": return "https://wiki.guildwars2.com/images/thumb/c/cd/Necromancer_tango_icon_200px.png/48px-Necromancer_tango_icon_200px.png";
+                case "Reaper": return "https://wiki.guildwars2.com/images/thumb/9/95/Reaper_tango_icon_200px.png/48px-Reaper_tango_icon_200px.png";
+                case "Scourge": return "https://wiki.guildwars2.com/images/thumb/8/8a/Scourge_tango_icon_200px.png/48px-Scourge_tango_icon_200px.png";
+                case "Harbinger": return "https://wiki.guildwars2.com/images/thumb/b/b3/Harbinger_tango_icon_200px.png/48px-Harbinger_tango_icon_200px.png";
+                case "Ritualist": return "https://wiki.guildwars2.com/images/thumb/8/8d/Ritualist_tango_icon_200px.png/48px-Ritualist_tango_icon_200px.png";
             }
             return "https://i.imgur.com/UbvyFSt.png";
         }
@@ -985,9 +1047,11 @@
         };
         function coreProf(p) { return CORE_PROF[p] || p; }
         function profColor(p) { return PROF_COLOR[coreProf(p)] || '#5b6477'; }
-        function nameFunction(data, type) {
-            if (type === 'display' && playerData[data] !== undefined) {
-                return '<a class="player-link" href="#' + playerData[data].identifier + '">' + data + '</a>';
+        // playerData is keyed by account|character|profession, so we can't look a row up by
+        // its display name. DataTables hands us the full row, which carries its own identifier.
+        function nameFunction(data, type, row) {
+            if (type === 'display' && row && row.identifier) {
+                return '<a class="player-link" href="#' + row.identifier + '">' + data + '</a>';
             }
             return data;
         }
@@ -1036,14 +1100,39 @@
             playerArray.push(value);
         }
 
+        // Group the per-build entities by the human behind them (account). Builds stay
+        // separate — stats are never blended — so this layer only drives the account-grouped
+        // player cards and the people-based Overview counts. Falls back to name/identifier
+        // when an account is missing (anonymised accounts are still a consistent token).
+        function slugId(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9_-]/g, '_'); }
+        var accountArray = (function () {
+            var map = {};
+            playerArray.forEach(function (p) {
+                var key = p.account || p.name || p.identifier || '';
+                if (!map[key]) { map[key] = { key: key, account: p.account || '', name: p.name || '', builds: [] }; }
+                map[key].builds.push(p);
+            });
+            var groups = Object.keys(map).map(function (k) { return map[k]; });
+            groups.forEach(function (g) {
+                // Most-played build represents the person wherever a single icon/label/group is needed.
+                g.builds.sort(function (a, b) {
+                    var d = (b.numberOfFights || 0) - (a.numberOfFights || 0);
+                    return d !== 0 ? d : ((b.damage.allDamage || 0) - (a.damage.allDamage || 0));
+                });
+                g.primary = g.builds[0];
+                g.name = g.primary.name || g.name;
+                g.id = 'acct-' + slugId(g.key);
+            });
+            return groups;
+        })();
+
         /* ============================================================
            OVERVIEW
            ============================================================ */
         function buildOverview() {
             if (!playerArray.length) { return; }
             var T = { dmg: 0, target: 0, heal: 0, barrier: 0, cleanse: 0, strips: 0, res: 0, downs: 0, kills: 0, deaths: 0, dps: 0 };
-            var groups = {}, profs = {};
-            var mightSum = 0, mightN = 0, stabSum = 0, stabN = 0;
+            // Squad totals sum over every build — a sum across builds equals the true squad total.
             playerArray.forEach(function (p) {
                 T.dmg += p.damage.allDamage || 0;
                 T.target += p.damage.targetDamage || 0;
@@ -1055,6 +1144,12 @@
                 T.downs += (p.gameplay.downed || 0);
                 T.kills += (p.gameplay.killed || 0);
                 T.deaths += (p.defense.dead || 0);
+            });
+            // People-based counts: each account counted once, represented by its most-played build.
+            var groups = {}, profs = {};
+            var mightSum = 0, mightN = 0, stabSum = 0, stabN = 0;
+            accountArray.forEach(function (a) {
+                var p = a.primary;
                 groups[p.group] = (groups[p.group] || 0) + 1;
                 profs[p.profession] = (profs[p.profession] || 0) + 1;
                 var nf = p.numberOfFights || 1;
@@ -1068,7 +1163,7 @@
                 ? report.fights.length
                 : playerArray.reduce(function (m, p) { return Math.max(m, p.numberOfFights || 1); }, 0);
             document.getElementById('meta-fights').textContent = fightCount;
-            document.getElementById('meta-squad').textContent = playerArray.length;
+            document.getElementById('meta-squad').textContent = accountArray.length;
             document.getElementById('meta-groups').textContent = Object.keys(groups).length;
 
             // KPI cards
@@ -1113,12 +1208,14 @@
                     '<span class="pc-name">' + esc(x.p) + '</span><span class="pc-count">' + x.c + '</span></div>';
             }).join('');
 
-            // Sub-group contribution (by target damage)
+            // Sub-group contribution (by target damage): one count per person, attributed to
+            // their main group; the person's damage is summed across all their builds.
             var gAgg = {};
-            playerArray.forEach(function (p) {
-                var g = p.group;
+            accountArray.forEach(function (a) {
+                var g = a.primary.group;
                 if (!gAgg[g]) gAgg[g] = { count: 0, dmg: 0 };
-                gAgg[g].count++; gAgg[g].dmg += p.damage.targetDamage || 0;
+                gAgg[g].count++;
+                a.builds.forEach(function (b) { gAgg[g].dmg += b.damage.targetDamage || 0; });
             });
             var gKeys = Object.keys(gAgg).sort(function (a, b) { return Number(a) - Number(b); });
             var gMax = gKeys.reduce(function (m, k) { return Math.max(m, gAgg[k].dmg); }, 0) || 1;
@@ -1131,7 +1228,7 @@
         }
 
         /* ============================================================
-           LEADERBOARDS  (role-fair + gentle growth spotlight)
+           LEADERBOARDS  (role-fair, outliers exempt from the average)
            ============================================================ */
         var LB_CATS = [
             { k: 'target', label: 'Target Damage', noun: 'damage to enemies', get: function (p) { return p.damage.targetDamage || 0; } },
@@ -1144,14 +1241,12 @@
             { k: 'downs', label: 'Enemy Downs', noun: 'enemy downs', get: function (p) { return p.gameplay ? (p.gameplay.downed || 0) : 0; } },
             { k: 'kills', label: 'Enemy Kills', noun: 'enemy kills', get: function (p) { return p.gameplay ? (p.gameplay.killed || 0) : 0; } }
         ];
-        var lbMaxFights = 1;
 
         function buildLeaderboard() {
             if (!playerArray.length) {
                 document.getElementById('lb-list').innerHTML = '<div class="empty">No players to rank.</div>';
                 return;
             }
-            lbMaxFights = playerArray.reduce(function (m, p) { return Math.max(m, p.numberOfFights || 1); }, 1);
             var pillsEl = document.getElementById('lb-pills');
             pillsEl.innerHTML = LB_CATS.map(function (c, i) {
                 return '<span class="lb-pill' + (i === 0 ? ' active' : '') + '" data-cat="' + c.k + '">' + c.label + '</span>';
@@ -1166,6 +1261,24 @@
             renderLeaderboard(LB_CATS[0].k);
         }
 
+        // Find the cutoff between role-doers and non-doers in a DESC-sorted list of positive
+        // contributions: the value at the top of the widest relative gap (a "natural break").
+        // Values >= the returned floor are doers; anything below is treated as not built for
+        // the role. Adapts to each board's shape instead of a fixed percentage.
+        function doerFloor(desc) {
+            var GAP_FACTOR = 5;   // a genuine role break is a >=5x drop between neighbours
+            var MIN_POINTS = 3;   // too few contributors to trust a split -> count them all
+            if (desc.length < MIN_POINTS) {
+                return desc.length ? desc[desc.length - 1] : 0;
+            }
+            var cut = -1, best = GAP_FACTOR;
+            for (var i = 0; i < desc.length - 1; i++) {
+                var ratio = desc[i] / desc[i + 1];   // desc has only positives, so > 0
+                if (ratio >= best) { best = ratio; cut = i; }   // ties -> lower split (fewer exempt)
+            }
+            return cut < 0 ? desc[desc.length - 1] : desc[cut];
+        }
+
         function renderLeaderboard(catKey) {
             var cat = LB_CATS.filter(function (c) { return c.k === catKey; })[0];
             var rows = playerArray.map(function (p) { return { p: p, v: cat.get(p) }; });
@@ -1173,20 +1286,29 @@
 
             var vals = rows.map(function (r) { return r.v; });
             var max = Math.max.apply(null, vals.concat([0])) || 1;
-            var squadAvg = vals.reduce(function (s, v) { return s + v; }, 0) / rows.length;
 
-            // per-core-profession averages (only trusted when >=3 members share the role)
-            var coreAgg = {};
-            rows.forEach(function (r) {
-                var c = coreProf(r.p.profession);
-                if (!coreAgg[c]) coreAgg[c] = { sum: 0, n: 0 };
-                coreAgg[c].sum += r.v; coreAgg[c].n++;
-            });
-            function benchmarkFor(prof) {
-                var c = coreProf(prof), a = coreAgg[c];
-                if (a && a.n >= 3) { return { val: a.sum / a.n, label: c + ' average', peers: a.n }; }
-                return { val: squadAvg, label: 'squad average', peers: rows.length };
-            }
+            // Outlier handling: not every build is geared for every role (a DPS spec does
+            // ~no healing, a healer does ~no boon strips, etc.). Those low/zero numbers form a
+            // cluster well separated from the players who actually perform the role, so we find
+            // the widest relative gap in the sorted contributions and exempt everything below
+            // it from the average. This adapts to each board's shape instead of a fixed
+            // percentage, which a bimodal board (e.g. a couple of dedicated cleansers towering
+            // over incidental ones) would defeat. Everyone is still listed; exempt rows are
+            // flagged and left out of the average.
+            var positives = vals.filter(function (v) { return v > 0; }).sort(function (a, b) { return b - a; });
+            var floor = doerFloor(positives);
+            rows.forEach(function (r) { r.exempt = positives.length === 0 || r.v < floor; });
+
+            var counted = rows.filter(function (r) { return !r.exempt; });
+            var squadAvg = counted.length ? counted.reduce(function (s, r) { return s + r.v; }, 0) / counted.length : 0;
+
+            // Average summary (outliers excluded)
+            var exemptCount = rows.length - counted.length;
+            document.getElementById('lb-avg').innerHTML =
+                '<span class="lab">Average ' + esc(cat.noun) + '</span>' +
+                '<span class="num">' + fmtCompact(squadAvg) + '</span>' +
+                '<span class="sub">across ' + counted.length + ' contributing player' + (counted.length === 1 ? '' : 's') +
+                (exemptCount ? ' &middot; ' + exemptCount + ' exempt (role not built for it)' : '') + '</span>';
 
             // Podium (top 3 with a positive value)
             var podium = rows.filter(function (r) { return r.v > 0; }).slice(0, 3);
@@ -1200,51 +1322,19 @@
                     '<div class="val">' + fmtCompact(r.v) + '</div></div>';
             }).join('') || '<div class="empty" style="grid-column:1/-1">No contributions recorded in this category.</div>';
 
-            // Full ranked list with role-fair tag + squad-average marker
+            // Full ranked list with squad-average marker
             var avgPct = Math.max(0, Math.min(100, (squadAvg / max) * 100));
             document.getElementById('lb-list').innerHTML = rows.map(function (r, i) {
-                var b = benchmarkFor(r.p.profession);
-                var tag;
-                if (r.v >= b.val * 1.15 && r.v > 0) {
-                    tag = '<span class="tag up" data-toggle="tooltip" title="Above the ' + esc(b.label) + ' (' + fmtCompact(b.val) + ')">above ' + esc(b.label) + '</span>';
-                } else if (b.val > 0 && r.v < b.val * 0.6) {
-                    tag = '<span class="tag grow" data-toggle="tooltip" title="' + esc(b.label) + ': ' + fmtCompact(b.val) + ' &mdash; room to grow">room to grow</span>';
-                } else {
-                    tag = '<span class="tag even">around ' + esc(b.label) + '</span>';
-                }
                 var w = ((r.v / max) * 100).toFixed(1);
-                return '<div class="lb-item' + (i === 0 && r.v > 0 ? ' top1' : '') + '">' +
+                return '<div class="lb-item' + (i === 0 && r.v > 0 ? ' top1' : '') + (r.exempt ? ' exempt' : '') + '">' +
                     '<div class="lr">' + (i + 1) + '</div>' +
                     '<img class="icon" src="' + getProfIcon(r.p.profession) + '" alt="' + esc(r.p.profession) + '" data-toggle="tooltip" title="' + esc(r.p.profession) + '">' +
-                    '<div class="ln"><a class="player-link" href="#' + r.p.identifier + '">' + esc(r.p.name) + '</a> ' + tag + '<div class="la">' + esc(r.p.account || '') + '</div></div>' +
-                    '<div class="lb-barwrap"><div class="lb-bar"><span style="width:' + w + '%"></span><div class="avg" style="left:' + avgPct.toFixed(1) + '%" data-toggle="tooltip" title="Squad average: ' + fmtCompact(squadAvg) + '"></div></div></div>' +
+                    '<div class="ln"><a class="player-link" href="#' + r.p.identifier + '">' + esc(r.p.name) + '</a><div class="la">' + esc(r.p.account || '') + '</div></div>' +
+                    '<div class="lb-barwrap"><div class="lb-bar"><span style="width:' + w + '%"></span><div class="avg" style="left:' + avgPct.toFixed(1) + '%" data-toggle="tooltip" title="Average (outliers excluded): ' + fmtCompact(squadAvg) + '"></div></div></div>' +
                     '<div class="lb-val">' + fmtCompact(r.v) + '</div></div>';
             }).join('');
 
-            // Gentle growth spotlight: only flag players present in most fights, framed constructively.
-            var grow = rows.filter(function (r) {
-                var b = benchmarkFor(r.p.profession);
-                return b.val > 0 && r.v < b.val * 0.6 && (r.p.numberOfFights || 1) >= Math.max(2, lbMaxFights * 0.5);
-            }).map(function (r) {
-                var b = benchmarkFor(r.p.profession);
-                return { r: r, b: b, gap: b.val - r.v };
-            }).sort(function (a, b) { return b.gap - a.gap; }).slice(0, 2);
-
-            var gEl = document.getElementById('lb-growth');
-            if (grow.length) {
-                gEl.innerHTML = '<div class="growth"><h3>Growth Opportunities</h3>' +
-                    '<div class="lead">A friendly nudge &mdash; small lifts here would strengthen the whole squad. Everyone has a category where they shine.</div>' +
-                    grow.map(function (g) {
-                        return '<div class="g-item"><img src="' + getProfIcon(g.r.p.profession) + '" alt="' + esc(g.r.p.profession) + '">' +
-                            '<div class="gtext"><b>' + esc(g.r.p.name) + '</b> contributed <span class="num">' + fmtCompact(g.r.v) + '</span> ' + cat.noun +
-                            ', a little under the ' + esc(g.b.label) + ' of <span class="num">' + fmtCompact(g.b.val) + '</span>. A bit more focus here next time would lift the team.</div></div>';
-                    }).join('') + '</div>';
-            } else {
-                gEl.innerHTML = '<div class="growth allgood"><h3>Well Balanced</h3>' +
-                    '<div class="lead">Nice and even &mdash; everyone is pulling their weight in <b>' + esc(cat.label) + '</b>. Great teamwork!</div></div>';
-            }
-
-            if (window.jQuery) { $('#lb-podium, #lb-list, #lb-growth').find('[data-toggle="tooltip"]').tooltip(); }
+            if (window.jQuery) { $('#lb-podium, #lb-list').find('[data-toggle="tooltip"]').tooltip(); }
         }
 
         /* ============================================================
@@ -1286,13 +1376,64 @@
             set('meta-pov', report.pointOfView);
         }
 
+        // Duration cell: mm:ss display, full m/s/ms in the tooltip; raw ms for sorting.
+        function fightDurationCell(ms, type) {
+            if (type !== 'display') { return ms; }
+            var total = Math.floor(ms / 1000), m = Math.floor(total / 60), s = total % 60;
+            var mmss = m + ':' + (s < 10 ? '0' + s : s);
+            return '<span data-toggle="tooltip" title="' + m + 'm ' + s + 's ' + (ms % 1000) + 'ms">' + mmss + '</span>';
+        }
+        // Fight start time without the year (month/day + time), local zone.
+        function formatFightTime(s) {
+            var d = parseLogDate(s);
+            if (!d) { return s; }
+            try {
+                return new Intl.DateTimeFormat(undefined, {
+                    month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                }).format(d);
+            } catch (e) {
+                return d.toLocaleString();
+            }
+        }
+        // Strip the "World vs World - " / "Detailed WvW - " prefix to just the map/borderland.
+        function wvwMapLabel(name) {
+            if (!name) { return ''; }
+            var i = name.lastIndexOf(' - ');
+            return i >= 0 ? name.slice(i + 3) : name;
+        }
+        // Report cell: the fight's start time (no year), linked to its single-fight report.
+        // For WvW fights, the map/borderland is appended.
+        function reportLinkCell(d, type, row) {
+            if (type !== 'display') { return row.startTime || ''; }
+            var label = formatFightTime(row.startTime) || ('Report ' + row.index);
+            var map = wvwMapLabel(row.mapName);
+            var text = esc(label) + (map ? ' <span class="fight-map">' + esc(map) + '</span>' : '');
+            return '<a class="player-link" href="fight_' + row.index + '.html" target="_blank">' + text + '</a>';
+        }
+        function outcomeCell(win, type) {
+            if (type !== 'display') { return win ? 1 : 0; }
+            return win ? '<span class="fight-win">Win</span>' : '<span class="fight-loss">Loss</span>';
+        }
+        var fightShared = [
+            { data: 'index' },
+            { data: 'startTime', render: reportLinkCell },
+            { data: 'duration', render: fightDurationCell },
+            { data: 'success', render: outcomeCell }
+        ];
+        function initFightTable(id, extra) {
+            $(id).DataTable({ data: (report.fights || []), order: [[0, 'asc']], columns: fightShared.concat(extra) });
+        }
         function renderFights() {
-            var el = document.getElementById('fight-strip');
-            if (!el) { return; }
-            var fights = (report && report.fights) ? report.fights : [];
-            el.innerHTML = fights.map(function (f) {
-                return '<button type="button" class="btn" onclick="window.open(\'fight_' + f.index + '.html\', \'_blank\')">Fight ' + f.index + ' (' + esc(f.duration) + ')</button>';
-            }).join('') || '<div class="empty">No fights in this report.</div>';
+            if (!window.jQuery || !$.fn.dataTable) { return; }
+            initFightTable('#table-fights-counts', [{ data: 'squadSize' }, { data: 'alliesOutsideSquad' }, { data: 'totalEnemies' }]);
+            initFightTable('#table-fights-outcome', [{ data: 'alliesDowned' }, { data: 'alliesDead' }, { data: 'alliesRevived' }, { data: 'enemyDowns' }, { data: 'enemyDeaths' }]);
+            initFightTable('#table-fights-damage', [{ data: 'outgoingDamage', render: compactCell }, { data: 'incomingDamage', render: compactCell }, { data: 'damageDelta', render: compactCell }, { data: 'squadBarrierAbsorbed', render: compactCell }, { data: 'enemyBarrierAbsorbed', render: compactCell }, { data: 'barrierDelta', render: compactCell }]);
+            $('#fights-subnav a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                $($(e.target).attr('href')).find('table.dataTable').each(function () {
+                    try { $(this).DataTable().columns.adjust(); } catch (err) { }
+                });
+            });
         }
 
         // Sorted-by-name copy, matching the previous server-side player ordering.
@@ -1363,17 +1504,10 @@
             });
         }
 
-        // Per-player collapsible card (replaces the old player_summary.html resource).
-        function renderPlayerCard(p) {
-            var id = p.identifier;
-            var title = esc(p.name) + ' (' + esc(p.account || '') + ')';
+        // The Outgoing/Incoming skill tables for one build, keyed by that build's identifier.
+        // The per-build DataTable init loop later fills these by id, so ids must stay unique.
+        function buildSkillTables(id) {
             return '' +
-                '<div class="card">' +
-                '  <div class="card-header" id="heading-' + id + '">' +
-                '    <a id="' + id + '" name="' + id + '"><h4>' + title + '</h4></a>' +
-                '    <h5 class="mb-0"><button class="btn btn-link" data-toggle="collapse" href="#' + id + '_collapse">Toggle Statistics</button></h5>' +
-                '  </div>' +
-                '  <div class="collapse" id="' + id + '_collapse">' +
                 '    <nav class="players"><div class="nav subnav" role="tablist">' +
                 '      <a class="nav-item nav-link active" data-toggle="tab" href="#nav-' + id + '-damage" role="tab">Outgoing Damage</a>' +
                 '      <a class="nav-item nav-link" data-toggle="tab" href="#nav-' + id + '-defense" role="tab">Incoming Damage</a>' +
@@ -1397,15 +1531,44 @@
                 '          <th data-toggle="tooltip" title="Percent time hits while flanking">Flank</th><th data-toggle="tooltip" title="Percent time hits while glancing">Glance</th>' +
                 '        </tr></thead></table></div>' +
                 '      </div>' +
-                '    </div>' +
+                '    </div>';
+        }
+
+        // One collapsible card per person (account). Each build the person played gets its own
+        // anchored section (id = build identifier, so existing #identifier links still resolve)
+        // with that build's skill tables. Builds keep their own stats — nothing is blended.
+        function renderAccountCard(group) {
+            var acctId = group.id;
+            var title = esc(group.name) + (group.account ? ' (' + esc(group.account) + ')' : '');
+            var multi = group.builds.length > 1;
+            var chips = group.builds.map(function (b) {
+                var nf = b.numberOfFights || 1;
+                return '<span class="acct-build"><img src="' + getProfIcon(b.profession) + '" alt="' + esc(b.profession) + '" class="icon" data-toggle="tooltip" title="' + esc(b.profession) + '">' +
+                    esc(b.profession) + ' &times;' + nf + '</span>';
+            }).join('');
+            var sections = group.builds.map(function (b) {
+                var nf = b.numberOfFights || 1;
+                var head = multi
+                    ? '<h6 class="build-title"><img src="' + getProfIcon(b.profession) + '" class="icon">' + esc(b.profession) + ' &mdash; ' + nf + ' fight' + (nf === 1 ? '' : 's') + '</h6>'
+                    : '';
+                return '<div class="build-section" id="' + b.identifier + '">' + head + buildSkillTables(b.identifier) + '</div>';
+            }).join('');
+            return '' +
+                '<div class="card">' +
+                '  <div class="card-header" id="heading-' + acctId + '">' +
+                '    <a id="' + acctId + '" name="' + acctId + '"><h4>' + title + '</h4></a>' +
+                '    <div class="acct-builds">' + chips + '</div>' +
+                '    <h5 class="mb-0"><button class="btn btn-link" data-toggle="collapse" href="#' + acctId + '_collapse">Toggle Statistics</button></h5>' +
                 '  </div>' +
+                '  <div class="collapse" id="' + acctId + '_collapse">' + sections + '</div>' +
                 '</div>';
         }
 
         function renderPlayerCards() {
             var el = document.getElementById('player-cards');
             if (!el) { return; }
-            el.innerHTML = playersByName().map(renderPlayerCard).join('');
+            var sorted = accountArray.slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+            el.innerHTML = sorted.map(renderAccountCard).join('');
         }
 
         /* ============================================================
@@ -1445,7 +1608,6 @@
         $(document).ready(function () {
             // Build all server-free HTML BEFORE DataTables init (cards/boon rows must exist first).
             renderMeta();
-            renderFights();
             renderPlayerCards();
             renderBoonTables();
             $.extend($.fn.dataTable.defaults, {
@@ -1457,6 +1619,8 @@
                 autoWidth: false,
                 dom: "t"
             });
+            // renderFights builds DataTables, so it must run AFTER the defaults are set.
+            renderFights();
             $('#table-damagestats').DataTable({
                 data: playerArray,
                 order: [[5, "desc"]],
