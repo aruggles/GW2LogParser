@@ -1,7 +1,6 @@
 ﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
-using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
@@ -61,12 +60,12 @@ internal class Cairn : BastionOfThePenitent
         ChestID = ChestID.CairnChest;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (607, 607),
                         (12981, 642, 15725, 3386));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayCairn, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayCairn, crMap, parentMap);
         return crMap;
     }
 
@@ -129,7 +128,7 @@ internal class Cairn : BastionOfThePenitent
             {
                 spatialManipulations.AddRange(log.CombatData.GetAnimatedCastData(castSkillID));
             }
-            var cairns = log.AgentData.GetNPCsByID(TargetID.Cairn);
+            var cairns = log.AgentData.GetStableSpeciesByID(TargetID.Cairn);
             spatialManipulations.SortByTime();
             foreach (EffectEvent greenEffect in greenEffects)
             {

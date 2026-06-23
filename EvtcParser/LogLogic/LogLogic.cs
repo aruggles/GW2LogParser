@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.Exceptions;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
@@ -11,7 +9,6 @@ using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelper;
-using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
@@ -142,7 +139,7 @@ public abstract class LogLogic
         return new MechanicData(allMechs);
     }
 
-    internal virtual CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal virtual CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         return new CombatReplayMap((800, 800), (0, 0, 0, 0)/*, (0, 0, 0, 0), (0, 0, 0, 0)*/);
     }
@@ -273,10 +270,10 @@ public abstract class LogLogic
         var targetIDs = GetTargetsIDs();
         //NOTE(Rennorb): Even though this collection is used for contains tests, it is still faster to just iterate the 5 or so members this can have than
         // to build the hashset and hash the value each time.
-        _targets.AddRange(agentData.GetAgentByType(AgentItem.AgentType.NPC).Where(x => x.IsAnySpecies(targetIDs) && x.LastAware > 0).Select(a => new NPC(a)));
+        _targets.AddRange(agentData.GetAgentByType(AgentItem.AgentType.StableSpecies).Where(x => x.IsAnySpecies(targetIDs) && x.LastAware > 0).Select(a => new NPC(a)));
         if (IsInstance)
         {
-            _targets.AddRange(agentData.GetNPCsByID(TargetID.Instance).Select(a => new NPC(a)));
+            _targets.AddRange(agentData.GetStableSpeciesByID(TargetID.Instance).Select(a => new NPC(a)));
         }
         _targets.SortByFirstAware();
         var targetSortIDs = GetTargetsSortIDs();
@@ -300,7 +297,7 @@ public abstract class LogLogic
                 throw new InvalidDataException("ID collision between trash and targets: " + nameof(trash));
             }
         }
-        _trashMobs.AddRange(agentData.GetAgentByType(AgentItem.AgentType.NPC).Where(x => x.IsAnySpecies(trashIDs) && x.LastAware > 0).Select(a => new NPC(a)));
+        _trashMobs.AddRange(agentData.GetAgentByType(AgentItem.AgentType.StableSpecies).Where(x => x.IsAnySpecies(trashIDs) && x.LastAware > 0).Select(a => new NPC(a)));
         //aList.AddRange(agentData.GetAgentByType(AgentItem.AgentType.Gadget).Where(x => ids2.Contains(ParseEnum.GetTrashIDS(x.ID))));
 #if DEBUG2
         var unknownAList = agentData.GetAgentByType(AgentItem.AgentType.NPC).Where(x => x.InstID != 0 && x.LastAware - x.FirstAware > 1000 && !trashIDs.Contains(GetTargetID(x.ID)) && !targetIDs.Contains(GetTargetID(x.ID)) && !x.GetFinalMaster().IsPlayer).ToList();
@@ -315,7 +312,7 @@ public abstract class LogLogic
 
         // Build friendlies
         var friendlyIDs = GetFriendlyNPCIDs();
-        _nonSquadFriendlies.AddRange(agentData.GetAgentByType(AgentItem.AgentType.NPC).Where(x => x.IsAnySpecies(friendlyIDs) && x.LastAware > 0).Select(a => new NPC(a)));
+        _nonSquadFriendlies.AddRange(agentData.GetAgentByType(AgentItem.AgentType.StableSpecies).Where(x => x.IsAnySpecies(friendlyIDs) && x.LastAware > 0).Select(a => new NPC(a)));
         _nonSquadFriendlies.SortByFirstAware();
         NumericallyRenameSpecies(NonSquadFriendlies, ignoredSpeciesForRenaming);
 
@@ -631,7 +628,7 @@ public abstract class LogLogic
     {
         if (IsInstance)
         {
-            agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "Dummy Instance", Spec.NPC, TargetID.Instance, true);
+            agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "Dummy Instance", Spec.Gadget, TargetID.Instance, true);
         }
         ComputeLogTargets(agentData, combatData, extensions);
         if (IsInstance && Targets.Count == Targets.Count(x => x.IsSpecies(TargetID.Instance)))

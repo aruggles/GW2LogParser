@@ -5,6 +5,7 @@ namespace GW2EIEvtcParser.ParsedData;
 internal class StatusEventsContainer
 {
     public readonly Dictionary<AgentItem, List<TargetableEvent>> TargetableEventsBySrc = [];
+    public readonly Dictionary<AgentItem, List<VisibilityEvent>> VisibilityEventsBySrc = [];
 
     public readonly Dictionary<AgentItem, List<AliveEvent>> AliveEvents = [];
     public readonly Dictionary<AgentItem, List<DeadEvent>> DeadEvents = [];
@@ -21,6 +22,9 @@ internal class StatusEventsContainer
     public readonly Dictionary<long, List<MaxHealthUpdateEvent>> MaxHealthUpdateEventsByMaxHP = [];
 
     public readonly Dictionary<AgentItem, List<TeamChangeEvent>> TeamChangeEvents = [];
+
+    public readonly Dictionary<long, WvWObjectiveStatusEvent> WvWObjectiveStatusEventsByKey = [];
+    public readonly List<WvWObjectiveStatusEvent> WvWObjectiveStatusEvents = [];
 
     public readonly Dictionary<AgentItem, List<BreakbarStateEvent>> BreakbarStateEvents = [];
     public readonly Dictionary<AgentItem, List<BreakbarPercentEvent>> BreakbarPercentEvents = [];
@@ -39,6 +43,9 @@ internal class StatusEventsContainer
     public readonly Dictionary<AgentItem, List<MarkerEvent>> MarkerEventsBySrc = [];
     public readonly Dictionary<long, List<MarkerEvent>> MarkerEventsByID = [];
 
+    public readonly Dictionary<AgentItem, List<TransformationEvent>> TransformationEventsBySrc = [];
+    public readonly Dictionary<long, List<TransformationEvent>> TransformationEventsByTransformationID = [];
+
     public readonly Dictionary<SquadMarkerIndex, List<SquadMarkerEvent>> SquadMarkerEventsByIndex = [];
 
     public readonly Dictionary<AgentItem, List<Last90BeforeDownEvent>> Last90BeforeDownEventsBySrc = [];
@@ -46,6 +53,10 @@ internal class StatusEventsContainer
 
     public readonly Dictionary<AgentItem, List<GliderEvent>> GliderEventsBySrc = [];
 
+    public readonly Dictionary<AgentItem, List<GadgetCaptureEvent>> GadgetCaptureEventsBySrc = [];
+    public readonly List<GadgetCaptureEvent> GadgetCaptureEvents = [];
+
+    public readonly Dictionary<AgentItem, List<CombatItem>> GadgetCapturePointCombatItemsBySrc = [];
 
     public readonly List<MissileEvent> MissileEvents = [];
     public readonly Dictionary<AgentItem, List<MissileEvent>> MissileEventsBySrc = [];
@@ -53,5 +64,11 @@ internal class StatusEventsContainer
     public readonly Dictionary<AgentItem, List<MissileEvent>> MissileDamagingEventsBySrc = [];
     public readonly Dictionary<long, List<MissileEvent>> MissileEventsBySkillID = [];
     public readonly Dictionary<long, List<MissileEvent>> MissileEventsByTrackingID = [];
+
+
+    internal void CleanTemp()
+    {
+        GadgetCapturePointCombatItemsBySrc.Clear();
+    }
 
 }

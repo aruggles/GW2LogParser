@@ -57,12 +57,12 @@ internal class ConjuredAmalgamate : MythwrightGambit
         ChestID = ChestID.CAChest;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (544, 1000),
                         (-5064, -15030, -2864, -10830));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayConjuredAmalgamate, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayConjuredAmalgamate, crMap, parentMap);
         return crMap;
     }
 
@@ -87,24 +87,20 @@ internal class ConjuredAmalgamate : MythwrightGambit
             var atAgent = attackTargetEvent.AttackTarget;
             var agent = attackTargetEvent.Src;
             var atPos = position.GetPoint3D();
-            if (agent.Type == AgentItem.AgentType.Gadget)
+            if (agent.Type == AgentItem.AgentType.VolatileSpecies)
             {
                 if ((atPos - BodyAttackTargetPos).Length() < 5)
                 {
-                    agent.OverrideType(AgentItem.AgentType.NPC, agentData);
                     agent.OverrideID(TargetID.ConjuredAmalgamate, agentData);
                     atAgent.OverrideID(TargetID.CABodyAttackTarget, agentData);
-                    atAgent.OverrideType(AgentItem.AgentType.NPC, agentData);
                     atAgent.OverrideHitbox(500, atAgent.HitboxHeight);
                 }
                 else if ((atPos - LeftArmAttackTargetPosNoDamage).Length() < 5)
                 {
-                    agent.OverrideType(AgentItem.AgentType.NPC, agentData);
                     agent.OverrideID(TargetID.CALeftArm, agentData);
                 }
                 else if ((atPos - RightArmAttackTargetPosNoDamage).Length() < 5)
                 {
-                    agent.OverrideType(AgentItem.AgentType.NPC, agentData);
                     agent.OverrideID(TargetID.CARightArm, agentData);
                 }
             }
@@ -119,13 +115,11 @@ internal class ConjuredAmalgamate : MythwrightGambit
             if (agent.IsSpecies(TargetID.CALeftArm) && (atPos - LeftArmAttackTargetPosForDamage).Length() < 5)
             {
                 atAgent.OverrideID(TargetID.CALeftArmAttackTarget, agentData);
-                atAgent.OverrideType(AgentItem.AgentType.NPC, agentData);
                 atAgent.OverrideHitbox(500, atAgent.HitboxHeight);
             }
             else if (agent.IsSpecies(TargetID.CARightArm) && (atPos - RightArmAttackTargetPosForDamage).Length() < 5)
             {
                 atAgent.OverrideID(TargetID.CARightArmAttackTarget, agentData);
-                atAgent.OverrideType(AgentItem.AgentType.NPC, agentData);
                 atAgent.OverrideHitbox(500, atAgent.HitboxHeight);
             }
         }
@@ -152,7 +146,7 @@ internal class ConjuredAmalgamate : MythwrightGambit
                     if (logStartNPCUpdate != null)
                     {
                         // we couldn't have hit CA before the initial smash
-                        return firstArmSmash.Time > GetPostLogStartNPCUpdateDamageEventTime(logData, agentData, combatData, logStartNPCUpdate.Time, agentData.GetNPCsByID(TargetID.ConjuredAmalgamate).FirstOrDefault()) ? logStartNPCUpdate.Time : firstArmSmash.Time;
+                        return firstArmSmash.Time > GetPostLogStartNPCUpdateDamageEventTime(logData, agentData, combatData, logStartNPCUpdate.Time, agentData.GetStableSpeciesByID(TargetID.ConjuredAmalgamate).FirstOrDefault()) ? logStartNPCUpdate.Time : firstArmSmash.Time;
                     }
                     else
                     {
@@ -211,13 +205,9 @@ internal class ConjuredAmalgamate : MythwrightGambit
         ];
     }
 
-    internal static AgentItem CreateCustomSwordAgent(LogData logData, AgentData agentData)
+    internal static void CreateCustomSwordAgent(LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {    
-        return agentData.AddCustomNPCAgent(long.MinValue, long.MinValue, "Conjured Sword\0:Conjured Sword\051", ParserHelper.Spec.NPC, TargetID.ConjuredPlayerSword, true);
-    }
-
-    internal static void RedirectSwordDamageToSwordAgent(AgentItem sword, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
-    {
+        var sword = agentData.AddCustomNPCAgent(long.MinValue, long.MinValue, "Conjured Sword\0:Conjured Sword\051", ParserHelper.Spec.NPC, TargetID.ConjuredPlayerSword, true);
         foreach (CombatItem c in combatData)
         {
             if (c.IsDamageEvent(extensions) && c.SkillID == ConjuredSlashPlayer)
@@ -226,7 +216,8 @@ internal class ConjuredAmalgamate : MythwrightGambit
                 if (sword.FirstAware == long.MinValue)
                 {
                     sword.OverrideAwareTimes(c.Time, c.Time);
-                } else
+                }
+                else
                 {
                     sword.OverrideAwareTimes(sword.FirstAware, c.Time);
                 }
@@ -236,9 +227,8 @@ internal class ConjuredAmalgamate : MythwrightGambit
 
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
-        var sword = CreateCustomSwordAgent(logData, agentData);
+        CreateCustomSwordAgent(logData, agentData, combatData, extensions);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
-        RedirectSwordDamageToSwordAgent(sword, combatData, extensions);
     }
 
     internal override void ComputeNPCCombatReplayActors(NPC target, ParsedEvtcLog log, CombatReplay replay)
@@ -333,7 +323,7 @@ internal class ConjuredAmalgamate : MythwrightGambit
             {
                 throw new MissingKeyActorsException("Conjured Amalgamate not found");
             }
-            AgentItem? zommoros = agentData.GetNPCsByID(TargetID.ChillZommoros).LastOrDefault();
+            AgentItem? zommoros = agentData.GetStableSpeciesByID(TargetID.ChillZommoros).LastOrDefault();
             if (zommoros == null)
             {
                 return;

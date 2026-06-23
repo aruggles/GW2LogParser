@@ -566,6 +566,10 @@ internal static class SkillImages
     public const string LeylineVortexAetherHunter = "https://render.guildwars2.com/file/030E7AB1CB18A4B348FD17B54B2B68FDABDB1DBC/3124961.png";
     public const string LungeVortexAetherHunter = "https://render.guildwars2.com/file/B65ECEBB72F4F10C4144510777E899E477DEE5B2/3124960.png";
     public const string BumbleJanthiriBee = "https://render.guildwars2.com/file/DCA96000060D21F6E4A9600DB3D8A90CE8AB574B/3594073.png";
+    public const string InnocentDisplayOtter = "https://render.guildwars2.com/file/6548D0084D2F2D639EF62F60CBAA1712ABAA0127/3772574.png";
+    public const string JetOtter = "https://render.guildwars2.com/file/E839D32DEC66ACF974A59478370BA810C54CCC5D/3772575.png";
+    public const string TailWhipOtter = "https://render.guildwars2.com/file/A7179EB9654498EC366C0012246DCE91AD3D68B5/3772577.png";
+    public const string ScratchOtter = "https://assets.gw2dat.com/3772576.png";
     // Galeshot
     public const string Mistral = "https://render.guildwars2.com/file/10E31F10E7D84CABF0963FEA12B77EE0BD950E42/3680194.png";
     #endregion Ranger
@@ -610,6 +614,7 @@ internal static class SkillImages
     // Dwarf
     public const string VengefulHammers = "https://render.guildwars2.com/file/04E220E8A8B4BD682B6A7D780D98B80FEDF5B410/961436.png";
     public const string RiteOfTheGreatDwarf = "https://render.guildwars2.com/file/D8AEB219F1A057F3F4E47E5E54A12BBABFC8474F/961437.png";
+    public const string ForcedEngagement = "https://render.guildwars2.com/file/B244F19EA9F09D96D175BC0C2BC402A23D0EEFA5/961439.png";
     // Kalla
     public const string SoulcleavesSummit = "https://render.guildwars2.com/file/CFD1582E6B180CA2DE6AD205981CBBAFC7480294/1770589.png";
     public const string RazorclawsRage = "https://render.guildwars2.com/file/2449F064B1D3427FF311D3B4C101009C52250A0C/1770606.png";

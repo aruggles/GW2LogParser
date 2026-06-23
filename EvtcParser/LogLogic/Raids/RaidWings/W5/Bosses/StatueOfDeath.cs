@@ -1,7 +1,5 @@
-﻿using System.Numerics;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
-using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.ArcDPSEnums;
@@ -36,12 +34,12 @@ internal class StatueOfDeath : HallOfChains
         LogID |= 0x000004;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (710, 709),
                         (1306, -9381, 4720, -5968));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayStatueOfDeath, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayStatueOfDeath, crMap, parentMap);
         return crMap;
     }
     internal override List<InstantCastFinder> GetInstantCastFinders()
@@ -74,8 +72,8 @@ internal class StatueOfDeath : HallOfChains
         CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
         if (logStartNPCUpdate != null)
         {
-            var peasants = new List<AgentItem>(agentData.GetNPCsByID(TargetID.AscalonianPeasant1));
-            peasants.AddRange(agentData.GetNPCsByID(TargetID.AscalonianPeasant2));
+            var peasants = new List<AgentItem>(agentData.GetStableSpeciesByID(TargetID.AscalonianPeasant1));
+            peasants.AddRange(agentData.GetStableSpeciesByID(TargetID.AscalonianPeasant2));
             if (peasants.Count != 0)
             {
                 startToUse = peasants.Max(x => x.LastAware);
@@ -90,7 +88,7 @@ internal class StatueOfDeath : HallOfChains
 
     internal override LogData.StartStatus GetLogStartStatus(CombatData combatData, AgentData agentData, LogData logData)
     {
-        if (agentData.GetNPCsByIDs([TargetID.TwistedSpirit, TargetID.LostSpirit1, TargetID.LostSpirit2]).Any(x => x.FirstAware < 7000))
+        if (agentData.GetStableSpeciesByIDs([TargetID.TwistedSpirit, TargetID.LostSpirit1, TargetID.LostSpirit2]).Any(x => x.FirstAware < 7000))
         {
             return LogData.StartStatus.Late;
         }
@@ -100,8 +98,8 @@ internal class StatueOfDeath : HallOfChains
         {
             return baseStatus;
         }
-        var peasants = new List<AgentItem>(agentData.GetNPCsByID(TargetID.AscalonianPeasant1));
-        peasants.AddRange(agentData.GetNPCsByID(TargetID.AscalonianPeasant2));
+        var peasants = new List<AgentItem>(agentData.GetStableSpeciesByID(TargetID.AscalonianPeasant1));
+        peasants.AddRange(agentData.GetStableSpeciesByID(TargetID.AscalonianPeasant2));
         if (!peasants.Any(x => x.LastAware <= 0))
         {
             return LogData.StartStatus.Late;

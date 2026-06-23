@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Windows desktop tool that parses Guild Wars 2 arcDPS combat logs (`.evtc` / `.zevtc` / `.evtc.zip`) and produces per-fight HTML reports plus a custom multi-log summary (`index.html`). It is built on top of a vendored copy of the **GW2 Elite Insights Parser** (currently 3.22.0.0) and adds a WinForms front end, drag-and-drop queueing, and a rolled-up cross-fight player summary that upstream EI does not produce.
+A Windows desktop tool that parses Guild Wars 2 arcDPS combat logs (`.evtc` / `.zevtc` / `.evtc.zip`) and produces per-fight HTML reports plus a custom multi-log summary (`index.html`). It is built on top of a vendored copy of the **GW2 Elite Insights Parser** (currently 3.24.0.0) and adds a WinForms front end, drag-and-drop queueing, and a rolled-up cross-fight player summary that upstream EI does not produce.
 
 ## Build / run
 
@@ -76,6 +76,12 @@ When pulling a new EI version (the recent commits — `1df96fe`, `28d5daa` etc. 
 - `UploadResults` — old `(string, string)` ctor gone; use parameterless `new UploadResults()` for the no-upload case.
 - `LogDataDto.BuildLogData(log, cr, light, parserVersion, UploadResults)` — takes `UploadResults` directly now, not `string[]`. Removed `uploadResults.ToArray()` in `ExportModels/LogBuilder.cs`.
 - `LogData.Success` is `private`. Read fight success via `log.LogData.GetMainPhase(log).Success` (which returns the `EncounterPhaseData.Success` on the main encounter phase).
+
+Newer breakage during the **3.22 → 3.24 sync** (both now use an init-property pattern — only the size limits are ctor args, everything else is an object initializer):
+- `EvtcParserSettings(long tooShortLimit, long tooBigLimit)` — all the booleans (`AnonymousPlayers`, `SkipFailedTries`, `ComputePhases`, `ComputeCombatReplay`, `ComputeDamageModifiers`, `DetailedWvWParse`) moved to `init` properties. Fixed in `ProgramHelper.cs` and `ProcessManager.cs`.
+- `HTMLSettings(string externalHTMLScriptsPath, string externalHTMLScriptsCdn)` — `HTMLLightTheme`, `ExternalHTMLScripts`, `CompressJson` moved to `init` properties. Fixed in `ProgramHelper.cs` and `ProcessManager.cs`.
+- The fork's combination report (`ExportModels/LogBuilder.cs`) reads EI stats by **positional index** into `PhaseDto` arrays (`DefStats`/`OffensiveStats`/`SupportStats`/`DpsStats`/`GameplayStats`, the damage-distribution items, and the healing/barrier phase stats). After every sync, diff those DTO files (`git show HEAD:<file>` vs working) to confirm the documented column order in `Html/PhaseDto.cs` and the extension DTOs is unchanged — a reorder compiles fine but silently corrupts the leaderboard. (3.22 → 3.24: all unchanged, only additive fields.)
+- 3.24 split `PolygonDecoration` into `Custom`/`RegularPolygonDecoration` and moved `GadgetInteractEvent` under `CastEvents/Gadget/`; clean-replacing the `EvtcParser` `.cs` tree (delete-all then copy) handles such renames/removals automatically.
 
 ## Settings
 

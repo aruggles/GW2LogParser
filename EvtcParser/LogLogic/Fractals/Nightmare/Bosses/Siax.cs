@@ -41,12 +41,12 @@ internal class Siax : Nightmare
         LogID |= 0x000002;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (476, 548),
                         (663, -4127, 3515, -997));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplaySiax, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplaySiax, crMap, parentMap);
         return crMap;
     }
 
@@ -147,7 +147,7 @@ internal class Siax : Nightmare
 
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
     {
-        var siax = agentData.GetNPCsByID(TargetID.Siax).FirstOrDefault() ?? throw new MissingKeyActorsException("Siax not found");
+        var siax = agentData.GetStableSpeciesByID(TargetID.Siax).FirstOrDefault() ?? throw new MissingKeyActorsException("Siax not found");
         return GetLogOffsetBySpawn(logData, combatData, siax);
     }
 

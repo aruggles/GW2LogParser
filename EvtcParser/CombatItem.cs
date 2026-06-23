@@ -45,7 +45,7 @@ public class CombatItem
             IsStateChange == StateChange.Rotation ||
             IsStateChange == StateChange.Velocity;
 
-    public bool IsEffect => IsStateChange == StateChange.Effect_51 || IsStateChange == StateChange.Effect_45 || IsStateChange == StateChange.EffectAgentCreate || IsStateChange == StateChange.EffectAgentRemove || IsStateChange == StateChange.EffectGroundCreate || IsStateChange == StateChange.EffectGroundRemove;
+    public bool IsEffect => IsStateChange == StateChange.Effect_51 || IsStateChange == StateChange.Effect_45 || IsStateChange == StateChange.EffectAgentCreate || IsStateChange == StateChange.EffectAgentRemove || IsStateChange == StateChange.EffectGroundCreate || IsStateChange == StateChange.EffectGroundRemove || IsStateChange == StateChange.EffectMissileCreate;
     public bool IsMissile => IsStateChange == StateChange.MissileCreate || IsStateChange == StateChange.MissileLaunch || IsStateChange == StateChange.MissileRemove;
 
     public bool IsEssentialMetadata => IsStateChange == StateChange.IDToGUID || IsStateChange == StateChange.Language 
@@ -54,7 +54,7 @@ public class CombatItem
         || IsStateChange == StateChange.Language || IsStateChange == StateChange.MapID 
         || IsStateChange == StateChange.RuleSet
         || IsStateChange == StateChange.SquadCombatEnd || IsStateChange == StateChange.SquadCombatStart 
-        || IsStateChange == StateChange.TickRate;
+        || IsStateChange == StateChange.TickRate || IsStateChange == StateChange.WvWTeams;
 
     private readonly EvtcVersionEvent _version;
 
@@ -159,6 +159,7 @@ public class CombatItem
             || IsStateChange == StateChange.EffectGroundRemove
             || IsStateChange == StateChange.MapID
             || IsStateChange == StateChange.MapChange
+            || IsStateChange == StateChange.WvWObjectiveStatus
             ;
     }
 
@@ -276,6 +277,15 @@ public class CombatItem
             || IsStateChange == StateChange.BuffRemoveAll
             || IsStateChange == StateChange.BuffRemoveSingle
             || IsStateChange == StateChange.BuffApply
+            || IsStateChange == StateChange.Transformation
+            || IsStateChange == StateChange.StealthChange
+            || IsStateChange == StateChange.GadgetAnimation
+            || IsStateChange == StateChange.GadgetNameVisible
+            || IsStateChange == StateChange.EffectMissileCreate
+            || IsStateChange == StateChange.GadgetCaptureOutlineShow
+            || IsStateChange == StateChange.GadgetCaptureSplitPercent
+            || IsStateChange == StateChange.GadgetCaptureOutlineHide
+            || IsStateChange == StateChange.GadgetCaptureOutlinePoint
             ;
     }
 

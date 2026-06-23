@@ -1,13 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Numerics;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
-using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
@@ -46,19 +42,20 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
     {
         return "Bastion Of The Penitent";
     }
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap((1920, 1080), (-15414, -9216, 22648, 12288));
+        var parentCRMap = CombatReplayMap.CreateSquareMapFrom(crMap);
         arenaDecorations.Add(new ArenaDecoration((log.LogData.LogStart, log.LogData.LogEnd), CombatReplayBastionOfThePenitent, crMap));
         foreach (var subLogic in _subLogics)
         {
-            subLogic.GetCombatMapInternal(log, arenaDecorations);
+            subLogic.GetCombatMapInternal(log, arenaDecorations, parentCRMap);
         }
-        return CombatReplayMap.CreateSquareMapFrom(crMap);
+        return parentCRMap;
     }
     internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        var chest = agentData.GetGadgetsByID(_deimos.ChestID).FirstOrDefault();
+        var chest = agentData.GetStableSpeciesByID(_deimos.ChestID).FirstOrDefault();
         if (chest != null)
         {
             successHandler.SetSuccess(true, chest.FirstAware);
@@ -73,7 +70,7 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
         var mainPhase = phases[0];
         if (targetsByIDs.TryGetValue((int)TargetID.Cairn, out var cairns))
         {
-            var chest = log.AgentData.GetGadgetsByID(_cairn.ChestID).FirstOrDefault();
+            var chest = log.AgentData.GetStableSpeciesByID(_cairn.ChestID).FirstOrDefault();
             foreach (var cairn in cairns)
             {
                 var enterCombat = log.CombatData.GetEnterCombatEvents(cairn.AgentItem).FirstOrDefault();
@@ -124,7 +121,7 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
             var deimosDummy = dummies.FirstOrDefault(x => x.Character == "Deimos Pre Event");
             if (deimosDummy != null)
             {
-                var chest = log.AgentData.GetGadgetsByID(_deimos.ChestID).FirstOrDefault();
+                var chest = log.AgentData.GetStableSpeciesByID(_deimos.ChestID).FirstOrDefault();
                 var nonBlockingSubBosses = Targets.Where(x => x.IsAnySpecies([TargetID.Thief, TargetID.Gambler, TargetID.Drunkard]));
                 long encounterStartThreshold = 0;
                 var greenApplies = log.CombatData.GetBuffApplyData(DeimosSelectedByGreen);
@@ -189,12 +186,12 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
                         // Wiped during pre event
                         if (!target.IsSpecies(TargetID.Deimos))
                         {
-                            var prides = log.AgentData.GetNPCsByID(TargetID.Pride);
+                            var prides = log.AgentData.GetStableSpeciesByID(TargetID.Pride);
                             if (prides.Any())
                             {
                                 end = Math.Max(prides.Max(x => x.LastAware), end);
                             }
-                            var greeds = log.AgentData.GetNPCsByID(TargetID.Greed);
+                            var greeds = log.AgentData.GetStableSpeciesByID(TargetID.Greed);
                             if (greeds.Any())
                             {
                                 end = Math.Max(greeds.Max(x => x.LastAware), end);
@@ -225,7 +222,7 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
             {
                 if (handledDeimoss == null || handledDeimoss.Count != deimoss.Count)
                 {
-                    var chest = log.AgentData.GetGadgetsByID(_deimos.ChestID).FirstOrDefault();
+                    var chest = log.AgentData.GetStableSpeciesByID(_deimos.ChestID).FirstOrDefault();
                     var nonBlockingSubBosses = Targets.Where(x => x.IsAnySpecies([TargetID.Thief, TargetID.Gambler, TargetID.Drunkard]));
                     foreach (var deimos in deimoss)
                     {
@@ -356,7 +353,7 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
         Samarog.HandleSpears(evtcVersion, agentData, combatData);
         Deimos.HandleDemonicBonds(agentData, combatData);
         Deimos.HandleShackledPrisoners(agentData, combatData);
-        agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "Deimos Pre Event", Spec.NPC, TargetID.DummyTarget, true);
+        agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "Deimos Pre Event", Spec.Gadget, TargetID.DummyTarget, true);
         base.EIEvtcParse(gw2Build, evtcVersion, logData, agentData, combatData, extensions);
         Deimos.RenameTargetSauls(Targets);
         HandleDeimosAndItsGadgets(logData, agentData, combatData, extensions, evtcVersion);
@@ -458,7 +455,7 @@ internal class BastionOfThePenitentInstance : BastionOfThePenitent
     internal override IEnumerable<ErrorEvent> GetCustomWarningMessages(LogData logData, AgentData agentData, CombatData combatData, EvtcVersionEvent evtcVersion)
     {
         var res = base.GetCustomWarningMessages(logData, agentData, combatData, evtcVersion);
-        if (agentData.GetNPCsByID(TargetID.Deimos).Any(deimos =>
+        if (agentData.GetStableSpeciesByID(TargetID.Deimos).Any(deimos =>
         {
             var lastMaxHPUpdate = combatData.GetMaxHealthUpdateEventsBySrc(deimos).LastOrDefault(x => x.Time < deimos.HalfAware);
             if (lastMaxHPUpdate != null)

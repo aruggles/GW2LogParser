@@ -78,12 +78,12 @@ internal class Golem : LogLogic
         LogCategoryInformation.SubCategory = SubLogCategory.Golem;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (895, 629),
                         (18115.12, -13978.016, 22590.12, -10833.016));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayGolem, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayGolem, crMap, parentMap);
         return crMap;
     }
     internal override List<InstantCastFinder> GetInstantCastFinders()
@@ -95,7 +95,7 @@ internal class Golem : LogLogic
     }
     internal override void EIEvtcParse(ulong gw2Build, EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData, IReadOnlyDictionary<uint, ExtensionHandler> extensions)
     {
-        AgentItem target = agentData.GetNPCsByID(GenericTriggerID).FirstOrDefault() ?? throw new MissingKeyActorsException("Golem not found");
+        AgentItem target = agentData.GetStableSpeciesByID(GenericTriggerID).FirstOrDefault() ?? throw new MissingKeyActorsException("Golem not found");
         foreach (CombatItem c in combatData)
         {
             // redirect all attacks to the main golem
@@ -178,7 +178,7 @@ internal class Golem : LogLogic
         CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
         if (logStartNPCUpdate != null)
         {
-            AgentItem golem = (agentData.GetNPCsByIDAndAgent(GenericTriggerID, logStartNPCUpdate.DstAgent).FirstOrDefault() ?? agentData.GetNPCsByID(GenericTriggerID).FirstOrDefault()) ?? throw new MissingKeyActorsException("Golem not found");
+            AgentItem golem = (agentData.GetStableSpeciesByIDAndAgent(GenericTriggerID, logStartNPCUpdate.DstAgent).FirstOrDefault() ?? agentData.GetStableSpeciesByID(GenericTriggerID).FirstOrDefault()) ?? throw new MissingKeyActorsException("Golem not found");
             return GetFirstDamageEventTime(logData, agentData, combatData, golem);
         }
         return GetGenericLogOffset(logData);

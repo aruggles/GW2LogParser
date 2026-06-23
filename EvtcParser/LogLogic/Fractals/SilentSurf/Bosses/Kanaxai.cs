@@ -1,7 +1,5 @@
-﻿using System.Numerics;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
-using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
@@ -83,12 +81,12 @@ internal class Kanaxai : SilentSurf
         LogID |= 0x000001;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                        (334, 370),
                        (-6195, -295, -799, 5685));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayKanaxai, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayKanaxai, crMap, parentMap);
         return crMap;
     }
 
@@ -131,7 +129,7 @@ internal class Kanaxai : SilentSurf
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
     {
         // kanaxai spawns with invulnerability
-        var kanaxai = agentData.GetNPCsByID(TargetID.KanaxaiScytheOfHouseAurkusCM).FirstOrDefault() ?? throw new MissingKeyActorsException("Kanaxai not found");
+        var kanaxai = agentData.GetStableSpeciesByID(TargetID.KanaxaiScytheOfHouseAurkusCM).FirstOrDefault() ?? throw new MissingKeyActorsException("Kanaxai not found");
         return GetLogOffsetByInvulnStart(logData, combatData, kanaxai, Determined762);
     }
 

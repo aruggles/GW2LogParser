@@ -4,9 +4,7 @@ using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
-using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
-using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
@@ -103,12 +101,12 @@ internal class DecimaTheStormsinger : MountBalrior
         LogCategoryInformation.InSubCategoryOrder = 1;
         LogID |= 0x000002;
     }
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (1602, 1602),
                         (-13068, 10300, -7141, 16227));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayDecimaTheStormsinger, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayDecimaTheStormsinger, crMap, parentMap);
         return crMap;
     }
 
@@ -154,18 +152,16 @@ internal class DecimaTheStormsinger : MountBalrior
 
     internal static void FindConduits(AgentData agentData, List<CombatItem> combatData)
     {
-        var maxHPEventsAgents = combatData
-            .Where(x => x.IsStateChange == StateChange.MaxHealthUpdate && MaxHealthUpdateEvent.GetMaxHealth(x) == 15276)
-            .Select(x => agentData.GetAgent(x.SrcAgent, x.Time));
-        var conduitsGadgets = maxHPEventsAgents
-            .Where(x => x.Type == AgentItem.AgentType.Gadget && x.HitboxWidth == 100 && x.HitboxHeight == 200)
-            .Distinct();
+        var conduitsGadgets = combatData
+            .Where(x => x.IsBuffApplyEvent() && (x.SkillID == DecimaConduitBuffSomething || x.SkillID == DecimaConduitBuffSomething2 || x.SkillID == DecimaConduitBuffSomething3))
+            .Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Where(x => x.Type == AgentItem.AgentType.VolatileSpecies)
+            .Distinct()
+            .ToList();
         var effects = combatData.Where(x => x.IsEffect && agentData.GetAgent(x.SrcAgent, x.Time).IsSpecies(TargetID.EnlightenedConduitCM)).ToList();
         var effectSrcs = effects.Select(x => agentData.GetAgent(x.SrcAgent, x.Time)).Distinct().ToList();
         foreach (var conduitGadget in conduitsGadgets)
         {
             conduitGadget.OverrideID(TargetID.EnlightenedConduitGadget, agentData);
-            conduitGadget.OverrideType(AgentItem.AgentType.NPC, agentData);
             var effectByConduitOnGadget = effects
                 .FirstOrDefault(x => x.DstMatchesAgent(conduitGadget));
             if (effectByConduitOnGadget != null)

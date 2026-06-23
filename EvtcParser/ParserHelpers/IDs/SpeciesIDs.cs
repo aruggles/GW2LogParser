@@ -56,6 +56,14 @@ public static class SpeciesIDs
         Slubling2 = 16071,
         Slubling3 = 16077,
         Slubling4 = 16104,
+        EvolvedSlublingCave1 = 16079,
+        EvolvedSlublingCave2 = 16085,
+        EvolvedSlublingCave3 = 16124,
+        EvolvedSlublingCave4 = 16132,
+        SlublingCave1 = 16081,
+        SlublingCave2 = 16091,
+        SlublingCave3 = 16107,
+        SlublingCave4 = 16131,
         PoisonMushroom = SpeciesIDs.PoisonMushroom,
         PlayerSlubling = SpeciesIDs.PlayerSlubling,
         // - Bandit Trio
@@ -949,6 +957,7 @@ public static class SpeciesIDs
         JuvenileWarclaw = 26628,
         JuvenileJanthiriBee = 26851,
         JuvenileRaptorSwiftwing = 27259,
+        JuvenileRiverOtter = 27687,
         // Guardian Weapon Summons
         BowOfTruth = 6383,
         HammerOfWisdom = 5791,

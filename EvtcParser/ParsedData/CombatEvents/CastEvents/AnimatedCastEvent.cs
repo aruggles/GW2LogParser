@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using static GW2EIEvtcParser.ArcDPSEnums;
+﻿using static GW2EIEvtcParser.ArcDPSEnums;
 
 namespace GW2EIEvtcParser.ParsedData;
 
@@ -61,7 +60,6 @@ public class AnimatedCastEvent : CastEvent
             ExpectedDuration = startItem.BuffDmg > 0 ? startItem.BuffDmg : startItem.Value;
             if (startItem.IsStateChange == StateChange.AnimationStart)
             {
-
                 if (startItem.DstAgent != 0)
                 {
                     EffectTarget = agentData.GetAgent(startItem.DstAgent, startItem.Time);
@@ -153,10 +151,10 @@ public class AnimatedCastEvent : CastEvent
 
     public override long GetInterruptedByBuffTime(ParsedEvtcLog log, long buffID)
     {
-        var buffStatus = log.FindActor(Caster).GetBuffStatus(log, buffID, Time, ExpectedEndTime).FirstOrNull((in Segment x) => x.Value > 0);
+        var buffStatus = log.FindActor(Caster).GetBuffStatus(log, buffID, Time, Math.Max(ExpectedEndTime, EndTime)).FirstOrNull((in Segment x) => x.Value > 0);
         if (buffStatus != null)
         {
-            return Math.Max(buffStatus.Value.Start, Time);
+            return Math.Min(Math.Max(buffStatus.Value.Start, Time), EndTime);
         }
         return EndTime;
     }

@@ -78,12 +78,12 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         LogID |= 0x000001;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (1169, 1169),
                         (-1388, -779, 1991, 2610));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayCosmicObservatory, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayCosmicObservatory, crMap, parentMap);
         return crMap;
     }
 
@@ -199,7 +199,7 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         // The buff is applied by Dagda to the player and the Soul Feast follows that player until death.
         var buffAppliesAll = log.CombatData.GetBuffApplyData(Revealed).OfType<BuffApplyEvent>().Where(x => x.CreditedBy.IsSpecies(TargetID.Dagda));
         var buffAppliesPlayer = buffAppliesAll.Where(x => x.To.Is(p.AgentItem));
-        var agentsToTether = log.AgentData.GetNPCsByID(TargetID.SoulFeast);
+        var agentsToTether = log.AgentData.GetStableSpeciesByID(TargetID.SoulFeast);
 
         foreach (BuffApplyEvent buffApply in buffAppliesPlayer)
         {
@@ -376,7 +376,7 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         var tormentedAgents = new List<AgentItem>();
         foreach (TargetID tormentedID in tormentedIDs)
         {
-            tormentedAgents.AddRange(log.AgentData.GetNPCsByID(tormentedID));
+            tormentedAgents.AddRange(log.AgentData.GetStableSpeciesByID(tormentedID));
         }
         tormentedAgents.SortByFirstAware();
         var tormentedGroups = new List<List<AgentItem>>();

@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using GW2EIEvtcParser.EIData;
-using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.ParserHelper;
@@ -38,13 +37,47 @@ internal static class LogLogicUtils
         return TargetHPPercentUnderThreshold(target, time, combatData, expectedInitialPercent);
     }
 
-    internal static void AddArenaDecorationsPerEncounter(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, long logID, string image, CombatReplayMap crMap)
+    internal static void AddArenaDecorationsPerEncounter(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, long logID, string image, CombatReplayMap crMap, CombatReplayMap? parentMap)
     {
         var encounterPhases = log.LogData.GetEncounterPhases(log, logID);
         foreach (var encounterPhase in encounterPhases)
         {
             arenaDecorations.Add(new ArenaDecoration((encounterPhase.Start - 5000, encounterPhase.End + 5000), image, crMap));
         }
+        if (parentMap != null)
+        {
+            AddDefaultViewpointOnParentFromChild(crMap, parentMap, logID);
+        }
+    }
+
+    internal static void AddDefaultViewpointOnParentFromChild(CombatReplayMap crMap, CombatReplayMap parentMap, long logID)
+    {
+        var xStart = crMap.TopX;
+        var parentXStart = parentMap.TopX;
+        var parentXEnd = parentMap.BottomX;
+        var yStart = crMap.BottomY;
+        var parentYStart = parentMap.BottomY;
+        var parentYEnd = parentMap.TopY;
+
+        var xSize = crMap.BottomX - crMap.TopX;
+        var ySize = crMap.BottomY - crMap.TopY;
+        var delta = xSize - ySize;
+
+        if (delta > 0)
+        {
+            yStart -= delta * 0.5f;
+        } 
+        else if (delta < 0)
+        {
+            xStart += delta * 0.5f;
+        }
+
+        var percentX = (xStart - parentXStart) / (parentXEnd - parentXStart) * 100;
+        var percentY = (yStart - parentYStart) / (parentYEnd - parentYStart) * 100;
+        // scale
+        var scaleX = 1 / ((crMap.TopX - crMap.BottomX) / (parentMap.TopX - parentMap.BottomX));
+        var scaleY = 1 / ((crMap.TopY - crMap.BottomY) / (parentMap.TopY - parentMap.BottomY));
+        parentMap.AddDefaultViewpoint(percentX, percentY, Math.Min(scaleX, scaleY), logID);
     }
 
     internal static bool TargetHPPercentUnderThreshold(TargetID targetID, long time, CombatData combatData, IReadOnlyList<SingleActor> targets, double expectedInitialPercent = 100.0)
@@ -57,7 +90,7 @@ internal static class LogLogicUtils
         var agentItems = new List<AgentItem>();
         foreach (var targetID in targetIDs)
         {
-            agentItems.AddRange(agentData.GetNPCsByID(targetID));
+            agentItems.AddRange(agentData.GetStableSpeciesByID(targetID));
         }
         var dmgEvts = new List<HealthDamageEvent>();
         foreach (AgentItem agentItem in agentItems)
@@ -83,33 +116,7 @@ internal static class LogLogicUtils
     }
     internal static List<BuffEvent> GetBuffApplyRemoveSequence(CombatData combatData, long buffID, AgentItem target, bool beginWithApply, bool addDummyRemoveAllEventAtEnd)
     {
-        bool needStart = beginWithApply;
-        var main = combatData.GetBuffDataByIDByDst(buffID, target).Where(x => (x is BuffApplyEvent || x is BuffRemoveAllEvent)).ToList();
-        var filtered = new List<BuffEvent>();
-        for (int i = 0; i < main.Count; i++)
-        {
-            BuffEvent c = main[i];
-            if (needStart && c is BuffApplyEvent)
-            {
-                needStart = false;
-                filtered.Add(c);
-            }
-            else if (!needStart && c is BuffRemoveAllEvent)
-            {
-                // consider only last remove event before another application
-                if ((i == main.Count - 1) || (i < main.Count - 1 && main[i + 1] is BuffApplyEvent))
-                {
-                    needStart = true;
-                    filtered.Add(c);
-                }
-            }
-        }
-        if (addDummyRemoveAllEventAtEnd && filtered.Count != 0 && filtered.Last() is BuffApplyEvent)
-        {
-            BuffEvent last = filtered.Last();
-            filtered.Add(new BuffRemoveAllEvent(_unknownAgent, last.To, target.LastAware, int.MaxValue, last.BuffSkill, IFF.Unknown, BuffRemoveAllEvent.FullRemoval, int.MaxValue));
-        }
-        return filtered;
+        return CombatData.GetBuffApplyRemoveSequence(combatData.GetBuffDataByIDByDst(buffID, target), target, beginWithApply, addDummyRemoveAllEventAtEnd);
     }
 
     internal static List<List<BuffEvent>> GetBuffApplyRemoveSequencePerInstanceID(CombatData combatData, long buffID, AgentItem target, bool addDummyRemoveAllEventAtEnd)
@@ -221,10 +228,7 @@ internal static class LogLogicUtils
         }
     }
 
-
-    internal delegate bool ChestAgentChecker(AgentItem agent);
-
-    private static void FindChestGadget(ChestID chestID, AgentData agentData, IEnumerable<KeyValuePair<AgentItem, List<CombatItem>>> gadgetPositions, Vector3 chestPosition, ChestAgentChecker? chestChecker)
+    private static void FindChestGadget(ChestID chestID, AgentData agentData, IEnumerable<KeyValuePair<AgentItem, List<CombatItem>>> gadgetPositions, Vector3 chestPosition, int hitboxWidth)
     {
         if (chestID == ChestID.None)
         {
@@ -237,13 +241,13 @@ internal static class LogLogicUtils
         {
             return;
         }
-        var chest = gadgetMatchingPositions.FirstOrNull((in KeyValuePair<AgentItem, List<CombatItem>> x) => chestChecker == null || chestChecker(x.Key));
+        var chest = gadgetMatchingPositions.FirstOrNull((in KeyValuePair<AgentItem, List<CombatItem>> x) => x.Key.HitboxWidth == hitboxWidth);
         chest?.Key.OverrideID(chestID, agentData);
     }
 
-    internal static void FindChestGadgets(List<(ChestID chestID, Vector3 chestPosition, ChestAgentChecker? chestChecker)> chestIDs, AgentData agentData, IReadOnlyList<CombatItem> combatData)
+    internal static void FindChestGadgets(List<(ChestID chestID, Vector3 chestPosition, int hitboxWidth)> chestIDs, AgentData agentData, IReadOnlyList<CombatItem> combatData)
     {
-        var movementData = combatData.Where(x => x.IsGeographical);
+        var movementData = combatData.Where(x => x.IsGeographical).ToList();
 
         var nonZeroGadgetVelocities = movementData.Where(evt => {
             if (evt.IsStateChange == StateChange.Velocity)
@@ -253,7 +257,7 @@ internal static class LogLogicUtils
                     return false;
                 }
                 AgentItem agent = agentData.GetAgent(evt.SrcAgent, evt.Time);
-                if (agent.Type != AgentItem.AgentType.Gadget)
+                if (agent.Type != AgentItem.AgentType.VolatileSpecies)
                 {
                     return false;
                 }
@@ -267,7 +271,7 @@ internal static class LogLogicUtils
         var positionDict = movementData
             .Where(x => x.IsStateChange == StateChange.Position)
             .GroupBy(x => agentData.GetAgent(x.SrcAgent, x.Time))
-            .Where(x => x.Key.Type == AgentItem.AgentType.Gadget && x.Key.Master == null)
+            .Where(x => x.Key.Type == AgentItem.AgentType.VolatileSpecies && x.Key.Master == null)
             .ToDictionary(x => x.Key, x => x.ToList());
         var gadgetPositions = positionDict.Where(entry => {
 
@@ -283,7 +287,7 @@ internal static class LogLogicUtils
         }
         foreach (var chestID in chestIDs)
         {
-            FindChestGadget(chestID.chestID, agentData, gadgetPositions, chestID.chestPosition, chestID.chestChecker);
+            FindChestGadget(chestID.chestID, agentData, gadgetPositions, chestID.chestPosition, chestID.hitboxWidth);
         }
     }
 

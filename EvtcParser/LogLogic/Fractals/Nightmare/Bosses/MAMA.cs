@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
 using static GW2EIEvtcParser.ArcDPSEnums;
@@ -38,12 +37,12 @@ internal class MAMA : Nightmare
         LogID |= 0x000001;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (664, 407),
                         (1653, 4555, 5733, 7195));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayMAMA, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayMAMA, crMap, parentMap);
         return crMap;
     }
 
@@ -58,7 +57,7 @@ internal class MAMA : Nightmare
         if (evtcVersion.Build >= ArcDPSBuilds.NewLogStart)
         {
             // players may enter combat with knights or an invisible hitbox before
-            AgentItem? mama = agentData.GetNPCsByID(TargetID.MAMA).FirstOrDefault();
+            AgentItem? mama = agentData.GetStableSpeciesByID(TargetID.MAMA).FirstOrDefault();
             if (mama != null)
             {
                 // attempt to use mama combat enter to determine start

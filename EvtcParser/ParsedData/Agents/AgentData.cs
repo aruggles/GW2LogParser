@@ -12,8 +12,8 @@ public class AgentData
 #endif
     private Dictionary<ulong, List<AgentItem>> _allAgentsByAgent;
     private Dictionary<ushort, List<AgentItem>> _allAgentsByInstID;
-    private Dictionary<int, List<AgentItem>> _allNPCsByID;
-    private Dictionary<int, List<AgentItem>> _allGadgetsByID;
+    private Dictionary<int, List<AgentItem>> _allStableSpeciesByID;
+    private Dictionary<int, List<AgentItem>> _allVolatileSpeciesByID;
     private Dictionary<AgentItem.AgentType, List<AgentItem>> _allAgentsByType;
     [Flags]
     internal enum AgentDataDirtyStatus
@@ -22,7 +22,8 @@ public class AgentData
         SpeciesDirty = 1,
         TypesDirty = 2,
         AgentsDirty = 4,
-        AllDirty = SpeciesDirty | TypesDirty | AgentsDirty
+        TypesAndSpecies = SpeciesDirty | TypesDirty,
+        AllDirty = SpeciesDirty | TypesDirty | AgentsDirty,
     }
     private AgentDataDirtyStatus _dirty = AgentDataDirtyStatus.AllDirty;
 #if DEBUG
@@ -57,9 +58,9 @@ public class AgentData
         {
             instID = (ushort)rnd.Next(ushort.MaxValue / 2, ushort.MaxValue);
         }
-        var agent = new AgentItem(agentValue, name, spec, ID, AgentItem.AgentType.NPC, instID, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight, start, end, isFake);
+        var agent = new AgentItem(agentValue, name, spec, ID, AgentItem.AgentType.StableSpecies, instID, toughness, healing, condition, concentration, hitboxWidth, hitboxHeight, start, end, isFake);
         _allAgentsList.Add(agent);
-        _dirty |= AgentDataDirtyStatus.AgentsDirty;
+        _dirty |= AgentDataDirtyStatus.AllDirty;
         return agent;
     }
 
@@ -83,7 +84,7 @@ public class AgentData
         }
         var agent = new AgentItem(agentValue, from.Name, spec, 0, from.Type, instID, from.Toughness, from.Healing, from.Condition, from.Concentration, from.HitboxWidth, from.HitboxHeight, start, end, from.IsFake);
         _allAgentsList.Add(agent);
-        _dirty |= AgentDataDirtyStatus.AgentsDirty;
+        _dirty |= AgentDataDirtyStatus.AllDirty;
         return agent;
     }
 
@@ -109,80 +110,79 @@ public class AgentData
         return ParserHelper._unknownAgent;
     }
 
-    public IReadOnlyList<AgentItem> GetNPCsByID(int id)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByID(int id)
     {
-        if ((_dirty & AgentDataDirtyStatus.AllDirty) > 0)
+        if ((_dirty & AgentDataDirtyStatus.TypesAndSpecies) > 0)
         {
             Refresh();
         }
-        if (_allNPCsByID.TryGetValue(id, out var list))
+        if (_allStableSpeciesByID.TryGetValue(id, out var list))
         {
             return list;
         }
         return [];
     }
-    public IReadOnlyList<AgentItem> GetNPCsByIDAndAgent(int id, ulong agent)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByIDAndAgent(int id, ulong agent)
     {
         if (agent == 0)
         {
-            return GetNPCsByID(id);
+            return GetStableSpeciesByID(id);
         }
-        return GetNPCsByID(id).Where(x => x.Agent == agent).ToList();
+        return GetStableSpeciesByID(id).Where(x => x.Agent == agent).ToList();
     }
 
-    public IReadOnlyList<AgentItem> GetNPCsByID(TargetID id)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByID(TargetID id)
     {
-        return GetNPCsByID((int)id);
+        return GetStableSpeciesByID((int)id);
     }
-    public IReadOnlyList<AgentItem> GetNPCsByIDs(TargetID[] ids)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByIDs(TargetID[] ids)
     {
         var list = new List<AgentItem>();
         foreach (var id in ids)
         {
-            list.AddRange(GetNPCsByID(id));
+            list.AddRange(GetStableSpeciesByID(id));
         }
         return list;
     }
-    public IReadOnlyList<AgentItem> GetNPCsByIDAndAgent(TargetID id, ulong agent)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByIDAndAgent(TargetID id, ulong agent)
     {
-        return GetNPCsByIDAndAgent((int)id, agent);
+        return GetStableSpeciesByIDAndAgent((int)id, agent);
+    }
+    public IReadOnlyList<AgentItem> GetStableSpeciesByID(ChestID id)
+    {
+        return GetStableSpeciesByID((int)id);
     }
 
-    public IReadOnlyList<AgentItem> GetNPCsByID(MinionID id)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByID(MinionID id)
     {
-        return GetNPCsByID((int)id);
+        return GetStableSpeciesByID((int)id);
     }
-    public IReadOnlyList<AgentItem> GetNPCsByIDAndAgent(MinionID id, ulong agent)
+    public IReadOnlyList<AgentItem> GetStableSpeciesByIDAndAgent(MinionID id, ulong agent)
     {
-        return GetNPCsByIDAndAgent((int)id, agent);
+        return GetStableSpeciesByIDAndAgent((int)id, agent);
     }
 
 
-    public IReadOnlyList<AgentItem> GetGadgetsByID(int id)
+    public IReadOnlyList<AgentItem> GetVolatileSpeciesByID(int id)
     {
-        if ((_dirty & AgentDataDirtyStatus.AllDirty) > 0)
+        if ((_dirty & AgentDataDirtyStatus.TypesAndSpecies) > 0)
         {
             Refresh();
         }
-        if (_allGadgetsByID.TryGetValue(id, out var list))
+        if (_allVolatileSpeciesByID.TryGetValue(id, out var list))
         {
             return list;
         }
         return new List<AgentItem>();
     }
 
-    public IReadOnlyList<AgentItem> GetGadgetsByID(TargetID id)
+    public IReadOnlyList<AgentItem> GetVolatileSpeciesByID(TargetID id)
     {
-        return GetGadgetsByID((int)id);
+        return GetVolatileSpeciesByID((int)id);
     }
-    public IReadOnlyList<AgentItem> GetGadgetsByID(MinionID id)
+    public IReadOnlyList<AgentItem> GetVolatileSpeciesByID(MinionID id)
     {
-        return GetGadgetsByID((int)id);
-    }
-
-    public IReadOnlyList<AgentItem> GetGadgetsByID(ChestID id)
-    {
-        return GetGadgetsByID((int)id);
+        return GetVolatileSpeciesByID((int)id);
     }
 
 
@@ -215,7 +215,7 @@ public class AgentData
 
     public bool HasSpawnedMinion(MinionID minion, AgentItem master, long time, long epsilon = ParserHelper.ServerDelayConstant)
     {
-        return GetNPCsByID(minion)
+        return GetStableSpeciesByID(minion)
             .Any(agent => master.IsMasterOf(agent) && Math.Abs(agent.FirstAware - time) < epsilon);
     }
 
@@ -225,7 +225,7 @@ public class AgentData
         {
             _allAgentsList.RemoveAll(toRemove.Contains);
             _allAgentsList.AddRange(toAdd);
-            _dirty |= AgentDataDirtyStatus.AgentsDirty;
+            _dirty |= AgentDataDirtyStatus.AllDirty;
         }
     }
 
@@ -249,7 +249,7 @@ public class AgentData
             return;
         }
         _allAgentsList.RemoveAll(x => agents.Contains(x));
-        _dirty |= AgentDataDirtyStatus.AgentsDirty;
+        _dirty |= AgentDataDirtyStatus.AllDirty;
     }
 
     private void Refresh()
@@ -257,8 +257,8 @@ public class AgentData
         _allAgentsList.SortByFirstAware();
         var notEnglobingAgents = _allAgentsList.Where(x => !x.IsEnglobingAgent).ToList();
         _allAgentsByAgent = _allAgentsList.GroupBy(x => x.Agent).ToDictionary(x => x.Key, x => x.ToList());
-        _allNPCsByID = notEnglobingAgents.Where(x => x.Type == AgentItem.AgentType.NPC).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
-        _allGadgetsByID = notEnglobingAgents.Where(x => x.Type == AgentItem.AgentType.Gadget).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
+        _allStableSpeciesByID = notEnglobingAgents.Where(x => x.Type == AgentItem.AgentType.StableSpecies).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
+        _allVolatileSpeciesByID = notEnglobingAgents.Where(x => x.Type == AgentItem.AgentType.VolatileSpecies).GroupBy(x => x.ID).ToDictionary(x => x.Key, x => x.ToList());
         _allAgentsByInstID = _allAgentsList.GroupBy(x => x.InstID).ToDictionary(x => x.Key, x => x.ToList());
         _allAgentsByType = notEnglobingAgents.GroupBy(x => x.Type).ToDictionary(x => x.Key, x => x.ToList());
 #if DEBUG
@@ -306,14 +306,14 @@ public class AgentData
 
     internal void SwapMasters(HashSet<AgentItem> froms, AgentItem to)
     {
-        foreach (AgentItem a in GetAgentByType(AgentItem.AgentType.NPC))
+        foreach (AgentItem a in GetAgentByType(AgentItem.AgentType.StableSpecies))
         {
             if (a.Master != null && froms.Any(a.Is))
             {
                 a.SetMaster(to);
             }
         }
-        foreach (AgentItem a in GetAgentByType(AgentItem.AgentType.Gadget))
+        foreach (AgentItem a in GetAgentByType(AgentItem.AgentType.VolatileSpecies))
         {
             if (a.Master != null && froms.Any(a.Is))
             {
@@ -357,7 +357,7 @@ public class AgentData
     /// <returns><see langword="true"/> if an <see cref="AgentItem"/> was found for the given <see cref="ChestID"/>; otherwise,  <see langword="false"/>.</returns>
     public bool TryGetFirstAgentItem(ChestID chestID, [NotNullWhen(returnValue: true)] out AgentItem? agentItem)
     {
-        agentItem = GetGadgetsByID(chestID).FirstOrDefault();
+        agentItem = GetStableSpeciesByID(chestID).FirstOrDefault();
         return agentItem != null;
     }
 
@@ -369,7 +369,7 @@ public class AgentData
     /// <returns><see langword="true"/> if an <see cref="AgentItem"/> was found for the given <paramref name="speciesID"/>; otherwise, <see langword="false"/>.</returns>
     public bool TryGetFirstAgentItem(int speciesID, [NotNullWhen(returnValue: true)] out AgentItem? agentItem)
     {
-        agentItem = GetNPCsByID(speciesID).FirstOrDefault();
+        agentItem = GetStableSpeciesByID(speciesID).FirstOrDefault();
         return agentItem != null;
     }
 }

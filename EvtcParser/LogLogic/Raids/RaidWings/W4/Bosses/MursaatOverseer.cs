@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
@@ -46,12 +45,12 @@ internal class MursaatOverseer : BastionOfThePenitent
         ChestID = ChestID.RecreationRoomChest;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (889, 889),
                         (1360, 2701, 3911, 5258));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayMursaatOverseer, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayMursaatOverseer, crMap, parentMap);
         return crMap;
     }
 

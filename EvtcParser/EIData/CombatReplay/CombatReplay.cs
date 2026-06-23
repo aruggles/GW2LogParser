@@ -1,8 +1,8 @@
-﻿using System.Drawing;
-using System.Numerics;
+﻿using System.Numerics;
+#if DEBUG
 using GW2EIEvtcParser.ParsedData;
+#endif
 using static GW2EIEvtcParser.ArcDPSEnums;
-using static GW2EIEvtcParser.SpeciesIDs;
 
 namespace GW2EIEvtcParser.EIData;
 

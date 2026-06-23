@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using GW2EIEvtcParser.EIData;
+﻿using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.Exceptions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIEvtcParser.ParserHelpers;
@@ -90,12 +89,12 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
         LogID |= 0x000005;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (1008, 1008),
                         (-1420, 3010, 1580, 6010));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayOldLionsCourt, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayOldLionsCourt, crMap, parentMap);
         return crMap;
     }
     internal override IReadOnlyList<TargetID> GetTargetsIDs()
@@ -248,7 +247,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
     internal override long GetLogOffset(EvtcVersionEvent evtcVersion, LogData logData, AgentData agentData, List<CombatItem> combatData)
     {
         long startToUse = base.GetLogOffset(evtcVersion, logData, agentData, combatData);
-        AgentItem? vermilion = agentData.GetNPCsByID(TargetID.PrototypeVermilionCM).FirstOrDefault() ?? agentData.GetNPCsByID(TargetID.PrototypeVermilion).FirstOrDefault();
+        AgentItem? vermilion = agentData.GetStableSpeciesByID(TargetID.PrototypeVermilionCM).FirstOrDefault() ?? agentData.GetStableSpeciesByID(TargetID.PrototypeVermilion).FirstOrDefault();
         if (vermilion != null)
         {
             CombatItem? breakbarStateActive = combatData.FirstOrDefault(x => x.SrcMatchesAgent(vermilion) && x.IsStateChange == StateChange.BreakbarState && BreakbarStateEvent.GetBreakbarState(x) == BreakbarState.Active);
@@ -492,7 +491,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                         replay.Decorations.AddWithGrowing(circle, lifespan.end);
                     }
                 }
-
+                // TODO: check if still necessary with visibility events
                 // Hide when inactive
                 replay.AddHideByBuff(target, log, Determined762);
                 break;
@@ -567,7 +566,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                         replay.Decorations.AddWithGrowing(circle, lifespan.end);
                     }
                 }
-
+                // TODO: check if still necessary with visibility events
                 // Hide when inactive
                 replay.AddHideByBuff(target, log, Determined762);
                 break;
@@ -636,7 +635,7 @@ internal class OldLionsCourt : EndOfDragonsRaidEncounter
                         replay.Decorations.Add(doughnut);
                     }
                 }
-
+                // TODO: check if still necessary with visibility events
                 // Hide when inactive
                 replay.AddHideByBuff(target, log, Determined762);
                 break;

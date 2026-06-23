@@ -2,12 +2,8 @@
 using GW2EIEvtcParser.Extensions;
 using GW2EIEvtcParser.ParsedData;
 using GW2EIGW2API;
-using static GW2EIEvtcParser.ArcDPSEnums;
-using static GW2EIEvtcParser.LogLogic.LogLogic;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
-using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
-using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SpeciesIDs;
 
@@ -36,20 +32,21 @@ internal class NightmareInstance : Nightmare
         MechanicList.Add(_ensolyss.Mechanics);
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap((800, 800), (-6144, -6144, 9216, 9216));
+        var parentCRMap = CombatReplayMap.CreateSquareMapFrom(crMap);
         arenaDecorations.Add(new ArenaDecoration((log.LogData.LogStart, log.LogData.LogEnd), CombatReplayNightmare, crMap));
         foreach (var subLogic in _subLogics)
         {
-            subLogic.GetCombatMapInternal(log, arenaDecorations);
+            subLogic.GetCombatMapInternal(log, arenaDecorations, parentCRMap);
         }
-        return CombatReplayMap.CreateSquareMapFrom(crMap);
+        return parentCRMap;
     }
 
     internal override void CheckSuccess(CombatData combatData, AgentData agentData, LogData logData, IReadOnlyCollection<AgentItem> playerAgents, LogData.LogSuccessHandler successHandler)
     {
-        var lastEnsolyss = agentData.GetNPCsByID(TargetID.Ensolyss).LastOrDefault();
+        var lastEnsolyss = agentData.GetStableSpeciesByID(TargetID.Ensolyss).LastOrDefault();
         if (lastEnsolyss != null)
         {
             var death = combatData.GetDeadEvents(lastEnsolyss).FirstOrDefault();

@@ -18,6 +18,15 @@ internal static class ParserIcons
     /// </summary>
     public const string GenericEnemyIcon = "https://i.imgur.com/ZnFcOIA.png";
 
+
+    internal const string Might25 = "https://i.imgur.com/aXVbVl6.png";
+    internal const string MightAbove20 = "https://i.imgur.com/HbDL75f.png";
+    internal const string MightBelow15 = "https://i.imgur.com/IimHVxe.png";
+    internal const string StabilityAbove1 = "https://i.imgur.com/ArLGcWu.png";
+    internal const string StabilityAbove3 = "https://i.imgur.com/byOtZxM.png";
+    internal const string StabilityAbove5 = "https://i.imgur.com/Z4YUAvW.png";
+    internal const string StabilityAbove10 = "https://i.imgur.com/nAaynHA.png";
+
     #region Misc
     public const string Breakbar = "https://wiki.guildwars2.com/images/a/ae/Unshakable.png";
     public const string LevelUp = "https://i.imgur.com/uf1VZEJ.png";
@@ -581,6 +590,7 @@ internal static class ParserIcons
     private const string MinionJuvenileWarclaw = "https://i.imgur.com/dYuiG3W.png";
     private const string MinionJuvenileJanthiriBee = "https://i.imgur.com/WymxKGX.png";
     private const string MinionJuvenileRaptorSwiftwing = "https://i.imgur.com/F33rSgz.png";
+    private const string MinionJuvenileRiverOtter = "https://i.imgur.com/3la7Fjc.png";
     private const string MinionBloodFiend = "https://i.imgur.com/PrOpULe.png";
     private const string MinionBoneFiend = "https://i.imgur.com/BEntBIt.png";
     private const string MinionFleshGolem = "https://i.imgur.com/JkYUNug.png";
@@ -1063,6 +1073,14 @@ internal static class ParserIcons
         { TargetID.Slubling2, TrashSlubling },
         { TargetID.Slubling3, TrashSlubling },
         { TargetID.Slubling4, TrashSlubling },
+        { TargetID.EvolvedSlublingCave1, TrashSlubling },
+        { TargetID.EvolvedSlublingCave2, TrashSlubling },
+        { TargetID.EvolvedSlublingCave3, TrashSlubling },
+        { TargetID.EvolvedSlublingCave4, TrashSlubling },
+        { TargetID.SlublingCave1, TrashSlubling },
+        { TargetID.SlublingCave2, TrashSlubling },
+        { TargetID.SlublingCave3, TrashSlubling },
+        { TargetID.SlublingCave4, TrashSlubling },
         { TargetID.SpearAggressionRevulsion, TrashSpearAggressionRevulsion },
         { TargetID.QadimLamp, TrashQadimLamp },
         { TargetID.PyreGuardianRetal, TrashPyreGuardianRetal },
@@ -1546,6 +1564,7 @@ internal static class ParserIcons
         { MinionID.JuvenileWarclaw, MinionJuvenileWarclaw },
         { MinionID.JuvenileJanthiriBee, MinionJuvenileJanthiriBee },
         { MinionID.JuvenileRaptorSwiftwing, MinionJuvenileRaptorSwiftwing },
+        { MinionID.JuvenileRiverOtter, MinionJuvenileRiverOtter},
         { MinionID.BloodFiend, MinionBloodFiend },
         { MinionID.BoneFiend, MinionBoneFiend },
         { MinionID.FleshGolem, MinionFleshGolem },

@@ -2,21 +2,22 @@
 
 internal class MetaEventsContainer
 {
-    public GW2BuildEvent? GW2BuildEvent { get; set; }
-    public InstanceStartEvent? InstanceStartEvent { get; set; }
-    public LanguageEvent? LanguageEvent { get; set; }
-    public SquadCombatEndEvent? LogEndEvent { get; set; }
-    public SquadCombatStartEvent? LogStartEvent { get; set; }
+    public GW2BuildEvent? GW2BuildEvent;
+    public InstanceStartEvent? InstanceStartEvent;
+    public LanguageEvent? LanguageEvent;
+    public SquadCombatEndEvent? LogEndEvent;
+    public SquadCombatStartEvent? LogStartEvent;
     public List<SquadCombatEndEvent> SquadCombatEndEvents { get; } = [];
     public List<SquadCombatStartEvent> SquadCombatStartEvents { get; } = [];
     public readonly List<LogNPCUpdateEvent> LogNPCUpdateEvents = [];
-    public readonly List<MapIDEvent> MapIDEvents = [];
+    public MapIDEvent? MapIDEvent;
     public readonly List<MapChangeEvent> MapChangeEvents = [];
-    public readonly List<ShardEvent> ShardEvents = [];
+    public ShardEvent? ShardEvent;
     public readonly List<TickRateEvent> TickRateEvents = [];
-    public PointOfViewEvent? PointOfViewEvent { get; set; }
-    public FractalScaleEvent? FractalScaleEvent { get; set; }
-    public EvtcVersionEvent? EvtcVersionEvent { get; set; }
+    public PointOfViewEvent? PointOfViewEvent;
+    public FractalScaleEvent? FractalScaleEvent;
+    public EvtcVersionEvent? EvtcVersionEvent;
+    public WvWTeamsEvent? WvWTeamsEvent;
 
     public readonly Dictionary<AgentItem, List<GuildEvent>> GuildEvents = [];
 
@@ -44,6 +45,9 @@ internal class MetaEventsContainer
 
     public readonly Dictionary<ulong, TeamGUIDEvent> TeamGUIDEventsByTeamID = [];
     public readonly Dictionary<GUID, TeamGUIDEvent> TeamGUIDEventsByGUID = [];
+
+    public readonly Dictionary<long, TransformationGUIDEvent> TransformationGUIDEventsByTransformationID = [];
+    public readonly Dictionary<GUID, TransformationGUIDEvent> TransformationGUIDEventsByGUID = [];
 
     public readonly List<AttackTargetEvent> AttackTargetEvents = [];
     public readonly Dictionary<AgentItem, List<AttackTargetEvent>> AttackTargetEventsBySrc = [];

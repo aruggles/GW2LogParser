@@ -8,7 +8,6 @@ using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
-using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
@@ -89,12 +88,12 @@ internal class GreerTheBlightbringer : MountBalrior
         LogCategoryInformation.InSubCategoryOrder = 0;
         LogID |= 0x000001;
     }
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (1912, 1845),
                         (11300, -10621, 18374, -3794));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayGreerTheBlightbringer, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplayGreerTheBlightbringer, crMap, parentMap);
         return crMap;
     }
 
@@ -375,6 +374,8 @@ internal class GreerTheBlightbringer : MountBalrior
                 AddRainOfSpores(target, log, replay);
                 AddBlobOfBlight(target, log, replay);
                 AddCageOfDecayOrNoxiousBlight(target, log, replay);
+                // During main boss phases Reeg can use Sweep the Mold but he will not use Rake the Rot and Stomp the Growth
+                AddSweepTheMoldRakeTheRot(target, log, replay);
                 break;
             case (int)TargetID.Gree:
                 AddEmpoweringBlast(target, log, replay);
@@ -390,6 +391,9 @@ internal class GreerTheBlightbringer : MountBalrior
                 AddEnfeeblingMiasma(target, log, replay);
                 AddRainOfSpores(target, log, replay);
                 AddBlobOfBlight(target, log, replay);
+                // Rare edge case, sometimes Ereg can cast these
+                AddSweepTheMoldRakeTheRot(target, log, replay);
+                AddStompTheGrowth(target, log, replay);
                 break;
             case (int)TargetID.ProtoGreerling:
                 AddSweepTheMoldRakeTheRot(target, log, replay);

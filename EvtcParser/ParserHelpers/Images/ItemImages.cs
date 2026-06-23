@@ -151,6 +151,10 @@ internal static class ItemImages
     public const string RelicOfTheForestDweller = "https://render.guildwars2.com/file/DC19DA3EC27F49593B93F9042264F5DD36FED4ED/3745067.png";
     public const string RelicOfTheNauticalBeast = "https://render.guildwars2.com/file/0EE97FA7FB5DC098447AAF6401DF5A09C47B33AD/3745068.png";
     public const string RelicOfShackles = "https://render.guildwars2.com/file/7946A50DBDC2E45E004AAA801904015C50CC22B3/3745069.png";
+    public const string RelicOfTheDirector = "https://render.guildwars2.com/file/6FD76BA11105EC67451D9E7E1DE938C91DB3AD68/3770711.png";
+    public const string RelicOfTheCruelOverseer = "https://render.guildwars2.com/file/AECE9B16DE04F756C501743BA863B00A377CE70B/3770710.png";
+    public const string RelicOfGaldra = "https://render.guildwars2.com/file/CE07976D4420779EC0082AFE06B73F3AA6AE2348/3770713.png";
+    public const string RelicOfTheDoyen = "https://render.guildwars2.com/file/EF797D16D0D211064031129135C864311856CDB1/3770712.png";
     #endregion Relic
     #region Food
     public const string NourishmentEffect = "https://render.guildwars2.com/file/779D3F0ABE5B46C09CFC57374DA8CC3A495F291C/436367.png";
@@ -518,6 +522,7 @@ internal static class ItemImages
     public const string CanOfMangoSalsa = "https://render.guildwars2.com/file/25383F3B679315C953113D95F1CA74C4A2C70A65/1423802.png";
     public const string BagOfPoppedCandyCorn = "https://render.guildwars2.com/file/733A17080051D7B32461CCE338A6DF59A80C690E/3695518.png";
     public const string NewYearRiceCake = "https://render.guildwars2.com/file/E8E42A78077CD20CC2210D7F1F9E510C24446042/3744657.png";
+    public const string ElderDracoPop = "https://render.guildwars2.com/file/F631C3C301017DA7A49FF9DE76E9B9630F6E5F0A/3780224.png";
     #endregion Food
     #region AscendedFood
     public const string BowlOfFruitSaladWithCilantroGarnish = "https://render.guildwars2.com/file/9A19E7B6126064510FE3E8F8BB60F1E23FAA7B3D/2191058.png";

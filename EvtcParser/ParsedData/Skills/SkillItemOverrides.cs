@@ -1,5 +1,4 @@
 ﻿using GW2EIEvtcParser.ParserHelpers;
-using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.SkillIDs;
 
 namespace GW2EIEvtcParser.ParsedData;
@@ -95,6 +94,8 @@ public static class SkillItemOverrides
         { RelicPrivateerSpawn, "Relic of the Privateer (Spawn Minion)" },
         { RelicOfTheSteamshrieker, "Relic of the Steamshrieker" },
         { RelicOfShacklesDamageSkill, "Relic of Shackles (Damage)" },
+        { RelicOfGaldraSkill, "Relic of Galdra" },
+        { RelicOfTheCruelOverseer, "Relic of the Cruel Overseer" },
         #endregion Relics
         #region Elementalist
         { ShatteringIceDamage, "Shattering Ice (Hit)" },
@@ -306,6 +307,7 @@ public static class SkillItemOverrides
         { BigMagmaDrop, "Big Magma Drop" },
         // Ura
         { UraDispelSAK, "Dispel" },
+        { UraBloodstoneShardPickUp, "Bloodstone Shard Pick Up" },
         // Kela
         { KelaBurrow, "Burrow" },
         { KelaAura, "Aura (Kela)" },
@@ -576,6 +578,8 @@ public static class SkillItemOverrides
         { RelicOfTheNauticalBeastDamageHealing, ItemImages.RelicOfTheNauticalBeast },
         { RelicOfShacklesDamageSkill, ItemImages.RelicOfShackles },
         { RelicOfTheForestDwellerMissileDamage, ItemImages.RelicOfTheForestDweller },
+        { RelicOfGaldraSkill, ItemImages.RelicOfGaldra },
+        { RelicOfTheCruelOverseer, ItemImages.RelicOfTheCruelOverseer },
 #endregion RelicIcons
         #region ElementalistIcons
         { EarthenBlast, TraitImages.EarthenBlast },
@@ -952,6 +956,9 @@ public static class SkillItemOverrides
             { LeyLineVortexAetherHunterPet, SkillImages.LeylineVortexAetherHunter },
             { LungeAetherHunterPet, SkillImages.LungeVortexAetherHunter },
             { BumbleJanthiriBee, SkillImages.BumbleJanthiriBee },
+            { JetJuvenileRiverOtter, SkillImages.JetOtter },
+            { ScratchJuvenileRiverOtter, SkillImages.ScratchOtter },
+            { TailWhipJuvenileRiverOtter, SkillImages.TailWhipOtter  },
             #endregion RangerIcons
             #region RevenantIcons
             { RiftSlashRiftHit, SkillImages.RiftSlash },

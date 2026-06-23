@@ -45,12 +45,12 @@ internal class Skorvald : ShatteredObservatory
         LogID |= 0x000001;
     }
 
-    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations)
+    internal override CombatReplayMap GetCombatMapInternal(ParsedEvtcLog log, CombatReplayDecorationContainer arenaDecorations, CombatReplayMap? parentMap = null)
     {
         var crMap = new CombatReplayMap(
                         (987, 1000),
                         (-22267, 15295, -17227, 20275));
-        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplaySkorvald, crMap);
+        AddArenaDecorationsPerEncounter(log, arenaDecorations, LogID, CombatReplaySkorvald, crMap, parentMap);
         return crMap;
     }
 
@@ -112,7 +112,7 @@ internal class Skorvald : ShatteredObservatory
         var fluxAnomalies = new List<AgentItem>();
         for (int i = 0; i < FluxAnomalies.Count; i++)
         {
-            fluxAnomalies.AddRange(agentData.GetNPCsByID(FluxAnomalies[i]));
+            fluxAnomalies.AddRange(agentData.GetStableSpeciesByID(FluxAnomalies[i]));
         }
         foreach (AgentItem fluxAnomaly in fluxAnomalies)
         {
@@ -190,7 +190,7 @@ internal class Skorvald : ShatteredObservatory
         CombatItem? logStartNPCUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.LogNPCUpdate);
         if (logStartNPCUpdate != null)
         {
-            AgentItem skorvald = agentData.GetNPCsByID(TargetID.Skorvald).FirstOrDefault() ?? throw new MissingKeyActorsException("Skorvald not found");
+            AgentItem skorvald = agentData.GetStableSpeciesByID(TargetID.Skorvald).FirstOrDefault() ?? throw new MissingKeyActorsException("Skorvald not found");
             long upperLimit = GetPostLogStartNPCUpdateDamageEventTime(logData, agentData, combatData, logStartNPCUpdate.Time, skorvald);
             // Skorvald may spawns with 0% hp
             CombatItem? firstNonZeroHPUpdate = combatData.FirstOrDefault(x => x.IsStateChange == StateChange.HealthUpdate && x.SrcMatchesAgent(skorvald) && HealthUpdateEvent.GetHealthPercent(x) > 0);
@@ -218,10 +218,10 @@ internal class Skorvald : ShatteredObservatory
                 //SupernovaCM,
             };
             if (cmSkills.Any(x => combatData.GetAnimatedCastData(x).Count > 0 || combatData.GetDamageData(x).Count > 0) ||
-                agentData.GetNPCsByID(TargetID.FluxAnomalyCM1).Any(x => x.FirstAware >= target.FirstAware) ||
-                agentData.GetNPCsByID(TargetID.FluxAnomalyCM2).Any(x => x.FirstAware >= target.FirstAware) ||
-                agentData.GetNPCsByID(TargetID.FluxAnomalyCM3).Any(x => x.FirstAware >= target.FirstAware) ||
-                agentData.GetNPCsByID(TargetID.FluxAnomalyCM4).Any(x => x.FirstAware >= target.FirstAware))
+                agentData.GetStableSpeciesByID(TargetID.FluxAnomalyCM1).Any(x => x.FirstAware >= target.FirstAware) ||
+                agentData.GetStableSpeciesByID(TargetID.FluxAnomalyCM2).Any(x => x.FirstAware >= target.FirstAware) ||
+                agentData.GetStableSpeciesByID(TargetID.FluxAnomalyCM3).Any(x => x.FirstAware >= target.FirstAware) ||
+                agentData.GetStableSpeciesByID(TargetID.FluxAnomalyCM4).Any(x => x.FirstAware >= target.FirstAware))
             {
                 return LogData.Mode.CM;
             }

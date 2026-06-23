@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
+﻿using System.Diagnostics.CodeAnalysis;
 using GW2EIEvtcParser.Exceptions;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.ParserHelper;
@@ -19,7 +17,7 @@ partial class CombatData
     {
         if (agent.IsEnglobedAgent)
         {
-            return dict.GetValueOrEmpty(agent.EnglobingAgentItem).Where(x => x.Time >= agent.FirstAware && x.Time <= agent.LastAware).ToList();
+            return dict.GetValueOrEmpty(agent.EnglobingAgentItem).Where(x => agent.InAwareTimes(x.Time)).ToList();
         }
         return dict.GetValueOrEmpty(agent);
     }
@@ -94,9 +92,24 @@ partial class CombatData
         }
         return null;
     }
-    public IReadOnlyList<TargetableEvent> GetTargetableEventsBySrc(AgentItem attackTarget)
+    public IReadOnlyList<TargetableEvent> GetTargetableEventsBySrc(AgentItem agent)
     {
-        return _statusEvents.TargetableEventsBySrc.GetValueOrEmpty(attackTarget.EnglobingAgentItem);
+        // Ignore targetable events for agent that have attack targets, targetable should be checked on their attack targets.
+        if (GetAttackTargetEventsBySrc(agent).Count > 0)
+        {
+            return [];
+        }
+        return _statusEvents.TargetableEventsBySrc.GetValueOrEmpty(agent.EnglobingAgentItem);
+    }
+
+    public IReadOnlyList<VisibilityEvent> GetVisibilityEventsBySrc(AgentItem agent)
+    {
+        // Ignore visibility events for agent that have attack targets, visibility should be checked on their attack targets.
+        if (GetAttackTargetEventsBySrc(agent).Count > 0)
+        {
+            return [];
+        }
+        return _statusEvents.VisibilityEventsBySrc.GetValueOrEmpty(agent.EnglobingAgentItem);
     }
     #endregion ATTACKTARGETS
     #region DATE
@@ -130,6 +143,40 @@ partial class CombatData
     }
     #endregion DATE
 
+    #region WvW
+    public WvWTeamsEvent? GetWvWTeamsEvent()
+    {
+        return _metaDataEvents.WvWTeamsEvent;
+    }
+    public IReadOnlyList<WvWObjectiveStatusEvent> GetWvWObjectStatusEvents()
+    {
+        return _statusEvents.WvWObjectiveStatusEvents;
+    }
+    #endregion WvW
+
+    #region MAP
+
+    public MapIDEvent? GetMapIDEvent()
+    {
+        return _metaDataEvents.MapIDEvent;
+    }
+
+    public IReadOnlyList<MapChangeEvent> GetMapChangeEvents()
+    {
+        return _metaDataEvents.MapChangeEvents;
+    }
+
+    public ShardEvent? GetShardEvent()
+    {
+        return _metaDataEvents.ShardEvent;
+    }
+    public FractalScaleEvent? GetFractalScaleEvent()
+    {
+        return _metaDataEvents.FractalScaleEvent;
+    }
+
+    #endregion MAP
+
     public IReadOnlyList<GuildEvent> GetGuildEvents(AgentItem src)
     {
         return GetValueOrEmpty(_metaDataEvents.GuildEvents, src);
@@ -139,22 +186,9 @@ partial class CombatData
     {
         return _metaDataEvents.PointOfViewEvent;
     }
-    public FractalScaleEvent? GetFractalScaleEvent()
-    {
-        return _metaDataEvents.FractalScaleEvent;
-    }
     public LanguageEvent? GetLanguageEvent()
     {
         return _metaDataEvents.LanguageEvent;
-    }
-    public IReadOnlyList<MapIDEvent> GetMapIDEvents()
-    {
-        return _metaDataEvents.MapIDEvents;
-    }
-
-    public IReadOnlyList<MapChangeEvent> GetMapChangeEvents()
-    {
-        return _metaDataEvents.MapChangeEvents;
     }
 
     public IReadOnlyList<RewardEvent> GetRewardEvents()
@@ -165,11 +199,6 @@ partial class CombatData
     public IReadOnlyList<ErrorEvent> GetErrorEvents()
     {
         return _metaDataEvents.ErrorEvents;
-    }
-
-    public IReadOnlyList<ShardEvent> GetShardEvents()
-    {
-        return _metaDataEvents.ShardEvents;
     }
 
     public IReadOnlyList<TickRateEvent> GetTickRateEvents()
@@ -232,7 +261,14 @@ partial class CombatData
     {
         if (TryGetMarkerEventsByGUID(marker, out var markers))
         {
-            markerEvents = markers.Where(effect => effect.Src.Is(agent)).ToList();
+            if (agent.IsEnglobedAgent)
+            {
+                markerEvents = markers.Where(marker => marker.Src.Is(agent) && agent.InAwareTimes(marker.Time)).ToList();
+            }
+            else
+            {
+                markerEvents = markers.Where(marker => marker.Src.Is(agent)).ToList();
+            }
             return true;
         }
         markerEvents = null;
@@ -240,7 +276,68 @@ partial class CombatData
     }
 
     #endregion MARKERS
-    
+
+    #region TRANSFORMATIONS
+
+    /// <summary>
+    /// Returns transformation events owned by agent
+    /// </summary>
+    /// <param name="agent"></param>
+    /// <returns></returns>
+    public IReadOnlyList<TransformationEvent> GetTransformationEvents(AgentItem agent)
+    {
+        return GetTimeValueOrEmpty(_statusEvents.TransformationEventsBySrc, agent);
+    }
+    /// <summary>
+    /// Returns transformation events of transformation marker ID
+    /// </summary>
+    /// <param name="transformationID">transformation ID</param>
+    /// <returns></returns>
+    public IReadOnlyList<TransformationEvent> GetTransformationEventsByTransformationID(long transformationID)
+    {
+        return _statusEvents.TransformationEventsByTransformationID.GetValueOrEmpty(transformationID);
+    }
+    /// <summary>
+    /// True if transformation events of given transformation GUID has been found
+    /// </summary>
+    /// <param name="transformation">transformation GUID</param>
+    /// <param name="transformationEvents">Found transformation events</param>
+    public bool TryGetTransformationEventsByGUID(GUID transformation, [NotNullWhen(true)] out IReadOnlyList<TransformationEvent>? transformationEvents)
+    {
+        var transformationGUIDEvent = GetTransformationGUIDEventByGUID(transformation);
+        transformationEvents = GetTransformationEventsByTransformationID(transformationGUIDEvent.TransformationID);
+        if (transformationEvents.Count > 0)
+        {
+            return true;
+        }
+        transformationEvents = null;
+        return false;
+    }
+    /// <summary>
+    /// True if transformation events of given transformation GUID has been found on given agent
+    /// </summary>
+    /// <param name="agent">transformation owner</param>
+    /// <param name="transformation">transformation GUID</param>
+    /// <param name="transformationEvents">Found transformation events</param>
+    public bool TryGetTransformationEventsBySrcWithGUID(AgentItem agent, GUID transformation, [NotNullWhen(true)] out IReadOnlyList<TransformationEvent>? transformationEvents)
+    {
+        if (TryGetTransformationEventsByGUID(transformation, out var transformations))
+        {
+            if (agent.IsEnglobedAgent)
+            {
+                transformationEvents = transformations.Where(transformation => transformation.Src.Is(agent) && agent.InAwareTimes(transformation.Time)).ToList();
+            } 
+            else
+            {
+                transformationEvents = transformations.Where(transformation => transformation.Src.Is(agent)).ToList();
+            }
+            return true;
+        }
+        transformationEvents = null;
+        return false;
+    }
+    #endregion TRANSFORMATIONS
+
     #region UPDATES
 
     public IReadOnlyList<BarrierUpdateEvent> GetBarrierUpdateEvents(AgentItem src)
@@ -511,6 +608,13 @@ partial class CombatData
     {
         return GetTimeValueOrEmpty(_animatedCastData, caster);
     }
+    /// <summary>
+    /// Returns list of cast events from skill
+    /// </summary>
+    public IReadOnlyList<AnimatedCastEvent> GetAnimatedCastData(long skillID)
+    {
+        return _animatedCastDataByID.GetValueOrEmpty(skillID);
+    }
 
     /// <summary>
     /// Returns list of instant cast events done by Agent
@@ -533,13 +637,6 @@ partial class CombatData
     public IReadOnlyList<WeaponSwapEvent> GetWeaponSwapData(AgentItem caster)
     {
         return GetTimeValueOrEmpty(_weaponSwapData, caster);
-    }
-    /// <summary>
-    /// Returns list of cast events from skill
-    /// </summary>
-    public IReadOnlyList<AnimatedCastEvent> GetAnimatedCastData(long skillID)
-    {
-        return _animatedCastDataByID.GetValueOrEmpty(skillID);
     }
     #region GADGET INTERACT
     /// <summary>
@@ -614,7 +711,7 @@ partial class CombatData
         List<EmoteEvent> result;
         if (agent.IsEnglobedAgent)
         {
-            result = emotes.Where(emote => emote.Caster.Is(agent) && emote.Time >= agent.FirstAware && emote.Time <= agent.LastAware).ToList();
+            result = emotes.Where(emote => emote.Caster.Is(agent) && agent.InAwareTimes(emote.Time)).ToList();
         }
         else
         {
@@ -629,7 +726,7 @@ partial class CombatData
         if (agent.IsEnglobedAgent)
         {
             var parentAgent = agent.EnglobingAgentItem;
-            result = emotes.Where(emote => parentAgent.IsMasterOf(emote.Caster) && emote.Time >= agent.FirstAware && emote.Time <= agent.LastAware).ToList();
+            result = emotes.Where(emote => parentAgent.IsMasterOf(emote.Caster) && agent.InAwareTimes(emote.Time)).ToList();
         }
         else
         {
@@ -694,6 +791,22 @@ partial class CombatData
         return emoteEvents.Count > 0;
     }
     #endregion EMOTES
+    #region GADGET ANIMATION
+    /// <summary>
+    /// Returns list of gadget animation events done by Agent
+    /// </summary>
+    public IReadOnlyList<GadgetAnimationEvent> GetGadgetAnimationData(AgentItem caster)
+    {
+        return GetTimeValueOrEmpty(_gadgetAnimationEventsByGadget, caster);
+    }
+    /// <summary>
+    /// Returns list of gadget animation events from token 
+    /// </summary>
+    public IReadOnlyList<GadgetAnimationEvent> GetGadgetAnimationData(ulong token)
+    {
+        return _gadgetAnimationEventsByToken.GetValueOrEmpty(token);
+    }
+    #endregion GADGET ANIMATION
     #endregion CAST
     #region MOVEMENTS
     public IReadOnlyList<MovementEvent> GetMovementData(AgentItem src)
@@ -755,7 +868,7 @@ partial class CombatData
         List<EffectEvent> result;
         if (agent.IsEnglobedAgent)
         {
-            result = effects.Where(effect => effect.Src.Is(agent) && effect.Time >= agent.FirstAware && effect.Time <= agent.LastAware).ToList();
+            result = effects.Where(effect => effect.Src.Is(agent) && agent.InAwareTimes(effect.Time)).ToList();
         }
         else
         {
@@ -770,7 +883,7 @@ partial class CombatData
         if (agent.IsEnglobedAgent)
         {
             var parentAgent = agent.EnglobingAgentItem;
-            result = effects.Where(effect => parentAgent.IsMasterOf(effect.Src) && effect.Time >= agent.FirstAware && effect.Time <= agent.LastAware).ToList();
+            result = effects.Where(effect => parentAgent.IsMasterOf(effect.Src) && agent.InAwareTimes(effect.Time)).ToList();
         }
         else
         {
@@ -784,7 +897,7 @@ partial class CombatData
         List<EffectEvent> result;
         if (agent.IsEnglobedAgent)
         {
-            result = effects.Where(effect => effect.Dst.Is(agent) && effect.Time >= agent.FirstAware && effect.Time <= agent.LastAware).ToList();
+            result = effects.Where(effect => effect.Dst.Is(agent) && agent.InAwareTimes(effect.Time)).ToList();
         }
         else
         {
@@ -1067,6 +1180,15 @@ partial class CombatData
     {
         return _metaDataEvents.EmoteGUIDEventsByEmoteID.TryGetValue(emoteID, out var evt) ? evt : EmoteGUIDEvent.DummyEmoteGUID;
     }
+    public TransformationGUIDEvent GetTransformationGUIDEventByGUID(GUID transformation)
+    {
+        return _metaDataEvents.TransformationGUIDEventsByGUID.TryGetValue(transformation, out var evt) ? evt : TransformationGUIDEvent.DummyTransformationGUID;
+    }
+
+    public TransformationGUIDEvent GetTransformationGUIDEventByTransformationID(long transformationID)
+    {
+        return _metaDataEvents.TransformationGUIDEventsByTransformationID.TryGetValue(transformationID, out var evt) ? evt : TransformationGUIDEvent.DummyTransformationGUID;
+    }
 
     public MarkerGUIDEvent GetMarkerGUIDEventByGUID(GUID marker)
     {
@@ -1134,4 +1256,16 @@ partial class CombatData
         return GetTimeValueOrEmpty(_statusEvents.MissileDamagingEventsBySrc, src);
     }
     #endregion MISSILE
+
+    #region GADGET_CAPTURE
+    public IReadOnlyList<GadgetCaptureEvent> GetGadgetCaptureEvents()
+    {
+        return _statusEvents.GadgetCaptureEvents;
+    }
+    public IReadOnlyList<GadgetCaptureEvent> GetGadgetCaptureEventsBySrc(AgentItem src)
+    {
+        return GetTimeValueOrEmpty(_statusEvents.GadgetCaptureEventsBySrc, src);
+    }
+
+    #endregion GADGET_CAPTURE
 }

@@ -86,14 +86,16 @@ public static class ProcessManager
             {
                 throw new FileNotFoundException("File " + fInfo.FullName + " does not exist");
             }
-            var parser = new EvtcParser(new EvtcParserSettings(Properties.Settings.Default.Anonymous,
-                                            Properties.Settings.Default.SkipFailedTries,
-                                            Properties.Settings.Default.ParsePhases,
-                                            Properties.Settings.Default.ParseCombatReplay,
-                                            Properties.Settings.Default.ComputeDamageModifiers,
-                                            Properties.Settings.Default.CustomTooShort,
-                                            ProgramHelper.DefaultTooBigLimitMB,
-                                            Properties.Settings.Default.DetailledWvW), apiController);
+            var parser = new EvtcParser(new EvtcParserSettings(Properties.Settings.Default.CustomTooShort,
+                                            ProgramHelper.DefaultTooBigLimitMB)
+                                        {
+                                            AnonymousPlayers = Properties.Settings.Default.Anonymous,
+                                            SkipFailedTries = Properties.Settings.Default.SkipFailedTries,
+                                            ComputePhases = Properties.Settings.Default.ParsePhases,
+                                            ComputeCombatReplay = Properties.Settings.Default.ParseCombatReplay,
+                                            ComputeDamageModifiers = Properties.Settings.Default.ComputeDamageModifiers,
+                                            DetailedWvWParse = Properties.Settings.Default.DetailledWvW,
+                                        }, apiController);
             //Process evtc here
             ParsedEvtcLog? parsedLog = parser.ParseLog(operation, fInfo, out var failureReason);
             if (failureReason != null)
@@ -165,11 +167,13 @@ public static class ProcessManager
         {
             var builder = new HTMLBuilder(log,
                 new HTMLSettings(
-                    Properties.Settings.Default.LightTheme,
-                    Properties.Settings.Default.HtmlExternalScripts,
                     Properties.Settings.Default.HtmlExternalScriptsPath,
-                    Properties.Settings.Default.HtmlExternalScriptsCdn,
-                    Properties.Settings.Default.HtmlCompressJson),
+                    Properties.Settings.Default.HtmlExternalScriptsCdn)
+                {
+                    HTMLLightTheme = Properties.Settings.Default.LightTheme,
+                    ExternalHTMLScripts = Properties.Settings.Default.HtmlExternalScripts,
+                    CompressJson = Properties.Settings.Default.HtmlCompressJson,
+                },
                 htmlAssets, ParserVersion, uploadResults);
             builder.CreateHTML(sw, saveFolder.FullName);
         }
