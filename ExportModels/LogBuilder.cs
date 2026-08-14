@@ -434,17 +434,64 @@ namespace Gw2LogParser.ExportModels
             report.SquadSize = report.players.Count;
             report.AlliesOutsideSquad = alliesOutside;
             report.TotalEnemies = data.Targets?.Count ?? 0;
+            // Damage / barrier totals are squad-scoped (this summary is a squad report),
+            // so they sum only the squad players collected above.
             foreach (var p in report.players.Values)
             {
                 report.OutgoingDamage += p.Damage.AllDamage;
                 report.IncomingDamage += p.Defense.DamageTaken;
                 report.SquadBarrierAbsorbed += p.Defense.DamageBarrier;
-                report.AlliesDowned += p.Defense.Downed;
-                report.AlliesDead += p.Defense.Dead;
-                report.AlliesRevived += p.Support.Resurrects;
-                report.EnemyDowns += p.Gameplay.Downed;
-                report.EnemyDeaths += p.Gameplay.Killed;
             }
+            // Allied down / death / revive counts must match the single-fight report's
+            // overview totals. Those totals (the DataTables "Total" footer rows in the
+            // Defense / Support tables) sum over EVERY non-fake friendly actor for the
+            // full-fight phase — squad players AND non-squad allies/NPCs — not just the
+            // squad. Summing them from report.players (squad only) under-counts whenever
+            // allied blob members or NPCs are present, and reading them off the per-player
+            // loop above would also pick up only the last phase rather than the full fight.
+            // Read them straight from the full-fight phase (index 0) over all friendlies.
+            //   DefStats:     [12] own down count, [14] own dead count
+            //   SupportStats: [6]  resurrect (revive) count
+            if (data.Phases != null && data.Phases.Count > 0 && data.Players != null)
+            {
+                var fullFight = data.Phases[0];
+                for (int i = 0; i < data.Players.Count; i++)
+                {
+                    if (data.Players[i].IsFake) { continue; }
+                    report.AlliesDowned += Parse<int>(fullFight.DefStats[i][12]);
+                    report.AlliesDead += Parse<int>(fullFight.DefStats[i][14]);
+                    report.AlliesRevived += Parse<int>(fullFight.SupportStats[i][6]);
+                }
+            }
+            // Enemy downs / deaths: the number of DISTINCT enemy players our side downed /
+            // killed. Neither of the obvious sources is right:
+            //   * Kill-credit event counts (OffensiveStatistics.Downed/Killed, shown in
+            //     fight_x.html's WvW offensive table) OVER-count, because cleave flags the
+            //     same downing/killing moment on several simultaneous damage events.
+            //   * Total down/dead status events on enemies count map-wide outcomes our
+            //     squad had no part in (enemies downed/killed by other allied parties).
+            // Counting the distinct enemy agents that took a downing / killing blow from a
+            // friendly gives the true "enemies we downed / killed" (verified against real
+            // logs: 9 downs / 6 deaths and 6 downs / 2 deaths).
+            var friendlyAgents = new HashSet<AgentItem>(log.FriendlyAgents);
+            long fightStart = log.LogData.LogStart;
+            long fightEnd = log.LogData.LogEnd;
+            var enemiesDowned = new HashSet<AgentItem>();
+            var enemiesKilled = new HashSet<AgentItem>();
+            foreach (SingleActor friendly in log.Friendlies)
+            {
+                foreach (var dmg in friendly.GetDamageEvents(null, log, fightStart, fightEnd))
+                {
+                    // Only count blows landed on enemy players (NonSquadPlayer agents that
+                    // aren't on our side); skip friendlies, NPCs, siege, pets, etc.
+                    AgentItem victim = dmg.To;
+                    if (victim.Type != AgentItem.AgentType.NonSquadPlayer || friendlyAgents.Contains(victim)) { continue; }
+                    if (dmg.HasDowned) { enemiesDowned.Add(victim); }
+                    if (dmg.HasKilled) { enemiesKilled.Add(victim); }
+                }
+            }
+            report.EnemyDowns = enemiesDowned.Count;
+            report.EnemyDeaths = enemiesKilled.Count;
             report.EnemyBarrierAbsorbed = outBarrier;
             report.DamageDelta = report.OutgoingDamage - report.IncomingDamage;
             report.BarrierDelta = report.SquadBarrierAbsorbed - report.EnemyBarrierAbsorbed;

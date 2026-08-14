@@ -1140,10 +1140,18 @@
                 if (p.healing) { T.heal += p.healing.outgoingAll || 0; T.barrier += p.healing.outgoingBarrier || 0; }
                 T.cleanse += (p.support.cleanseOnOther || 0);
                 T.strips += (p.support.boonStrips || 0);
-                T.res += (p.support.resurrects || 0);
-                T.downs += (p.gameplay.downed || 0);
-                T.kills += (p.gameplay.killed || 0);
                 T.deaths += (p.defense.dead || 0);
+            });
+            // Resurrects and enemy downs/kills are per-fight outcome counts, not simple
+            // per-player sums: enemy downs/deaths are DISTINCT enemies our side downed/killed
+            // (deduped within each fight) and resurrects are the all-friendlies per-fight
+            // total. Summing the per-player leaderboard stats (kill-credit, squad-only) would
+            // NOT equal the Fights table. Derive these straight from report.fights so the
+            // overview is exactly the sum of the per-fight rows.
+            (report && report.fights ? report.fights : []).forEach(function (f) {
+                T.res += (f.alliesRevived || 0);
+                T.downs += (f.enemyDowns || 0);
+                T.kills += (f.enemyDeaths || 0);
             });
             // People-based counts: each account counted once, represented by its most-played build.
             var groups = {}, profs = {};
