@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Windows desktop tool that parses Guild Wars 2 arcDPS combat logs (`.evtc` / `.zevtc` / `.evtc.zip`) and produces per-fight HTML reports plus a custom multi-log summary (`index.html`). It is built on top of a vendored copy of the **GW2 Elite Insights Parser** (currently 3.24.0.0) and adds a WinForms front end, drag-and-drop queueing, and a rolled-up cross-fight player summary that upstream EI does not produce.
+A Windows desktop tool that parses Guild Wars 2 arcDPS combat logs (`.evtc` / `.zevtc` / `.evtc.zip`) and produces per-fight HTML reports plus a custom multi-log summary (`index.html`). It is built on top of a vendored copy of the **GW2 Elite Insights Parser** (currently 3.26.0.0) and adds a WinForms front end, drag-and-drop queueing, and a rolled-up cross-fight player summary that upstream EI does not produce.
 
 ## Build / run
 
 - **Solution:** `Gw2LogParser.sln` — one project (`Gw2LogParser.csproj`).
 - **Target:** `net8-windows`, `WinExe`, `UseWindowsForms=true`, `Nullable=enable`, `AllowUnsafeBlocks=true`, `LangVersion=12.0`.
-- **Build:** `dotnet build Gw2LogParser.sln -c Debug` (or open in Visual Studio 2022+).
-- **Run:** launch the built `Gw2LogParser.exe` from `bin\Debug\net8-windows\` (or F5 from VS). The app is GUI-only — entry is `Program.Main` in `Program.cs`, which constructs `ProgramHelper` and `MainForm`.
+- **Build:** `dotnet build Gw2LogParser.sln -c Release` for actual use; `-c Debug` for debugging (or open in Visual Studio 2022+).
+- **Run:** launch the built `Gw2LogParser.exe` from `bin\Release\net8-windows\`. The app is GUI-only — entry is `Program.Main` in `Program.cs`, which constructs `ProgramHelper` and `MainForm`.
+- **IMPORTANT — run Release, not Debug, to actually parse logs.** The vendored EI parser is peppered with `#if DEBUG` developer assertions that `throw` on data EI's static models don't perfectly match (e.g. `Buff.VerifyBuffInfoEvent` throws `InvalidDataException` "Incoherent stack type for &lt;buff&gt;" when arcDPS reports a different `BuffStackType` than EI hardcodes, for logs from GW2 builds newer than EI's balance data). EI ships **Release**, which compiles all 19 of these assertions out; a **Debug** build surfaces them to the end user as `ProgramException: Operation aborted` and kills the whole parse. This is not a one-off — each new game balance patch can introduce a fresh buff-info mismatch, so any log newer than the vendored EI version will abort under Debug. All `#if DEBUG` blocks are in vendored EI code; no fork code uses the DEBUG symbol, so Release is strictly safer for users. (If a Debug run is ever needed on such logs, the alternative is stripping `DEBUG` from `<DefineConstants>` in the Debug `PropertyGroup`.)
 - **No test project exists.** Don't invent test commands.
 - **Dependencies:** only `Newtonsoft.Json` (NuGet). All parser/builder code is vendored in-tree, not referenced as packages.
 
@@ -80,8 +81,21 @@ When pulling a new EI version (the recent commits — `1df96fe`, `28d5daa` etc. 
 Newer breakage during the **3.22 → 3.24 sync** (both now use an init-property pattern — only the size limits are ctor args, everything else is an object initializer):
 - `EvtcParserSettings(long tooShortLimit, long tooBigLimit)` — all the booleans (`AnonymousPlayers`, `SkipFailedTries`, `ComputePhases`, `ComputeCombatReplay`, `ComputeDamageModifiers`, `DetailedWvWParse`) moved to `init` properties. Fixed in `ProgramHelper.cs` and `ProcessManager.cs`.
 - `HTMLSettings(string externalHTMLScriptsPath, string externalHTMLScriptsCdn)` — `HTMLLightTheme`, `ExternalHTMLScripts`, `CompressJson` moved to `init` properties. Fixed in `ProgramHelper.cs` and `ProcessManager.cs`.
-- The fork's combination report (`ExportModels/LogBuilder.cs`) reads EI stats by **positional index** into `PhaseDto` arrays (`DefStats`/`OffensiveStats`/`SupportStats`/`DpsStats`/`GameplayStats`, the damage-distribution items, and the healing/barrier phase stats). After every sync, diff those DTO files (`git show HEAD:<file>` vs working) to confirm the documented column order in `Html/PhaseDto.cs` and the extension DTOs is unchanged — a reorder compiles fine but silently corrupts the leaderboard. (3.22 → 3.24: all unchanged, only additive fields.)
+- The fork's combination report (`ExportModels/LogBuilder.cs`) reads EI stats by **positional index** into `PhaseDto` arrays (`DefStats`/`OffensiveStats`/`SupportStats`/`DpsStats`/`GameplayStats`, the damage-distribution items, and the healing/barrier phase stats). After every sync, diff those DTO files (`git show HEAD:<file>` vs working) to confirm the documented column order in `Html/PhaseDto.cs` and the extension DTOs is unchanged — a reorder compiles fine but silently corrupts the leaderboard. (3.22 → 3.24 and 3.24 → 3.26: all unchanged, only additive fields.)
 - 3.24 split `PolygonDecoration` into `Custom`/`RegularPolygonDecoration` and moved `GadgetInteractEvent` under `CastEvents/Gadget/`; clean-replacing the `EvtcParser` `.cs` tree (delete-all then copy) handles such renames/removals automatically.
+
+The **3.24 → 3.26 sync** broke *no* glue APIs — after the mechanical copy plus the standard patches (`Properties.Resources` redirect, duplicate `[assembly: CLSCompliant]` removal) the build was clean with zero fork-code changes. What it *did* change was the resource template set, which must be mirrored in three places or the build/runtime breaks:
+- Removed `tmplCombatReplay{Player,Target}{Stats,Status}` (the `ActorStatus/Player` and `ActorStatus/Target` subfolders are gone), replaced by unified `ActorStatus/tmplCombatReplayActor{Stats,Status,Breakbars}`.
+- `htmlTemplates/tmplSimpleRotation.html` moved into a new `htmlTemplates/SimpleRotation/` folder and gained `tmplSimpleRotationSelector.html`.
+- EI's `Spec` enum is unchanged in 3.26, so the fork's profession→core-class map and icon fallback in `Resources/template.html` needed no edit.
+
+**Resource-set sync recipe** (the fiddly part of any upgrade — all three must agree, and only the resx is checked at build time):
+1. `Properties/Resources.resx` — regenerate wholesale from upstream `GW2EIBuilders/Properties/Resources.resx`, replacing `..\Resources\` with `..\Resources\eiparser\`, then re-append the fork-only `template_html` entry (which points at `..\Resources\template.html`, the fork's *own* summary shell used by `ExportModels/Report/HTMLReportBuilder.cs` — not EI's `eiparser\template.html`, which upstream names `tmplMain`). Note the resx header comment contains 4 example `<data name=...>` lines, so a raw grep count reads 4 higher than the real entry count.
+2. `Properties/Resources.Designer.cs` — regenerate one `public static string X => ResourceManager.GetString("X", resourceCulture);` accessor per resx entry (VS only refreshes this on .resx save; `dotnet build` will not).
+3. `Gw2LogParser.csproj` `<Content Include="...">` block — regenerate from the files actually on disk under `Resources\eiparser\`, plus `Resources\template.html`.
+A missing/renamed template surfaces as a build error from the resx file-ref, so a clean build proves all three lists resolve.
+
+**Verifying a sync end-to-end**: the app is GUI-only (`Program.Main` takes no args), but `ProgramHelper.DoWork(OperationController)` and `ProgramHelper.GenerateSummary(Version)` are both public and `OperationController` is an abstract class with no abstract members — so a throwaway console harness referencing `bin\Debug\net8-windows\Gw2LogParser.dll` (with `Content\*.json` copied alongside, since the API cache path is resolved from the assembly location) can parse real `.zevtc` files and emit both the per-fight HTML and `index.html` headlessly. To inspect the summary payload, gunzip+base64-decode the long quoted string that `${logDataJson}` is replaced with. Good invariants to assert on the decoded JSON: `power + condi == allDamage`, `targetPower + targetCondi == targetDamage`, `healingPower + conversion == all` for both incoming and outgoing, and `boonStats[].id` matching real GW2 buff IDs (740 Might, 725 Fury, 1187 Quickness, 717 Protection, 1122 Stability, …). These catch exactly the positional-index corruption that compiles cleanly.
 
 ## Settings
 

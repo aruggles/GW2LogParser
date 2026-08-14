@@ -46,13 +46,12 @@
     <Folder Include="Content\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Player\tmplCombatReplayPlayerStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Player\tmplCombatReplayPlayerStatus.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Target\tmplCombatReplayTargetStats.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\Target\tmplCombatReplayTargetStatus.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorBreakbars.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorBuffStats.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorRotation.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorsStats.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorStats.html" />
+    <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorStatus.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageData.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageTable.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayAnimationControl.html" />
@@ -121,6 +120,8 @@
     <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplPhase.html" />
     <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplPlayers.html" />
     <Content Include="Resources\eiparser\htmlTemplates\Headers\tmplTargets.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\SimpleRotation\tmplSimpleRotation.html" />
+    <Content Include="Resources\eiparser\htmlTemplates\SimpleRotation\tmplSimpleRotationSelector.html" />
     <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplDamageTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplDefenseTable.html" />
     <Content Include="Resources\eiparser\htmlTemplates\Statistics\tmplGameplayTable.html" />
@@ -140,7 +141,6 @@
     <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerStats.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplPlayerTab.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplRotationLegend.html" />
-    <Content Include="Resources\eiparser\htmlTemplates\tmplSimpleRotation.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetBuffTab.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetData.html" />
     <Content Include="Resources\eiparser\htmlTemplates\tmplTargetStats.html" />

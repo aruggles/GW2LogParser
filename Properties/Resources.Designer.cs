@@ -147,6 +147,10 @@ namespace Gw2LogParser.Properties {
             get { return ResourceManager.GetString("tmplBuffVolumeTables", resourceCulture); }
         }
 
+        public static string tmplCombatReplayActorBreakbars {
+            get { return ResourceManager.GetString("tmplCombatReplayActorBreakbars", resourceCulture); }
+        }
+
         public static string tmplCombatReplayActorBuffStats {
             get { return ResourceManager.GetString("tmplCombatReplayActorBuffStats", resourceCulture); }
         }
@@ -157,6 +161,14 @@ namespace Gw2LogParser.Properties {
 
         public static string tmplCombatReplayActorsStats {
             get { return ResourceManager.GetString("tmplCombatReplayActorsStats", resourceCulture); }
+        }
+
+        public static string tmplCombatReplayActorStats {
+            get { return ResourceManager.GetString("tmplCombatReplayActorStats", resourceCulture); }
+        }
+
+        public static string tmplCombatReplayActorStatus {
+            get { return ResourceManager.GetString("tmplCombatReplayActorStatus", resourceCulture); }
         }
 
         public static string tmplCombatReplayAnimationControl {
@@ -179,24 +191,8 @@ namespace Gw2LogParser.Properties {
             get { return ResourceManager.GetString("tmplCombatReplayMechanicsList", resourceCulture); }
         }
 
-        public static string tmplCombatReplayPlayerStats {
-            get { return ResourceManager.GetString("tmplCombatReplayPlayerStats", resourceCulture); }
-        }
-
-        public static string tmplCombatReplayPlayerStatus {
-            get { return ResourceManager.GetString("tmplCombatReplayPlayerStatus", resourceCulture); }
-        }
-
         public static string tmplCombatReplayStatusData {
             get { return ResourceManager.GetString("tmplCombatReplayStatusData", resourceCulture); }
-        }
-
-        public static string tmplCombatReplayTargetStats {
-            get { return ResourceManager.GetString("tmplCombatReplayTargetStats", resourceCulture); }
-        }
-
-        public static string tmplCombatReplayTargetStatus {
-            get { return ResourceManager.GetString("tmplCombatReplayTargetStatus", resourceCulture); }
         }
 
         public static string tmplCombatReplayUI {
@@ -435,6 +431,10 @@ namespace Gw2LogParser.Properties {
             get { return ResourceManager.GetString("tmplSimpleRotation", resourceCulture); }
         }
 
+        public static string tmplSimpleRotationSelector {
+            get { return ResourceManager.GetString("tmplSimpleRotationSelector", resourceCulture); }
+        }
+
         public static string tmplStatTables {
             get { return ResourceManager.GetString("tmplStatTables", resourceCulture); }
         }
@@ -477,4 +477,3 @@ namespace Gw2LogParser.Properties {
 
     }
 }
-

@@ -157,8 +157,16 @@ public class LogData
                         return new KeepConstruct(id);
                     case TargetID.Xera:
                         // some TC logs are registered as Xera
-                        if (agentData.GetStableSpeciesByID(TargetID.HauntingStatue).Count > 0)
+                        var statues = agentData.GetStableSpeciesByID(TargetID.HauntingStatue);
+                        if (statues.Count > 0)
                         {
+                            var maxLastAware = statues.Max(x => x.LastAware);
+                            var xeras = agentData.GetStableSpeciesByID(TargetID.Xera);
+                            if (xeras.Any(x => x.FirstAware > maxLastAware))
+                            {
+                                // There is a Xera after statues
+                                return new Xera(id);
+                            }
                             return new TwistedCastle((int)TargetID.DummyTarget);
                         }
                         else
@@ -390,7 +398,7 @@ public class LogData
                 }
             }
             var encounterPhases = _phases.OfType<EncounterPhaseData>().ToList();
-            var breakbarPhases = Logic.GetBreakbarPhases(log, log.ParserSettings.ComputePhases);
+            var breakbarPhases = Logic.GetBreakbarPhases(log, log.ParserSettings.ComputePhases, encounterPhases);
             _phases.AddRange(breakbarPhases);
             var removed = _phases.RemoveAll(x => x.Targets.Count == 0);
             if (_phases.Count == 0 && removed > 0)
