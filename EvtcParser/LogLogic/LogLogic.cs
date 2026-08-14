@@ -10,12 +10,12 @@ using GW2EIGW2API;
 using static GW2EIEvtcParser.ArcDPSEnums;
 using static GW2EIEvtcParser.EIData.Decoration;
 using static GW2EIEvtcParser.EIData.Mechanic;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
 using static GW2EIEvtcParser.LogLogic.LogLogicPhaseUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -529,11 +529,15 @@ public abstract class LogLogic
         }
         foreach (var gadgetCapture in log.CombatData.GetGadgetCaptureEvents())
         {
+            if (!gadgetCapture.IsValid)
+            {
+                continue;
+            }
             var src = gadgetCapture.Src;
             if (src.TryGetCurrentPosition(log, gadgetCapture.Time, out var position))
             {
                 var positionConnector = new PositionConnector(position.Value);
-                if (gadgetCapture.Progress.Count > 0)
+                if (gadgetCapture.ProgressStates.Count > 0)
                 {
                     uint barSize = 0;
                     IReadOnlyList<Vector3> relativePositions = new List<Vector3>();
@@ -548,8 +552,8 @@ public abstract class LogLogic
                     }
                     // Initial state to first progress
                     {
-                        var lifespan = (gadgetCapture.Time, gadgetCapture.Progress[0].Time);
-                        var color = GadgetCaptureEvent.GetColor(gadgetCapture.OriginalOwner);
+                        var lifespan = (gadgetCapture.Time, gadgetCapture.OwnerStates[0].Time);
+                        var color = gadgetCapture.GetOriginalOwnerColor();
                         if (gadgetCapture.IsCircle)
                         {
                             environmentDecorations.Add(new CircleDecoration((uint)gadgetCapture.Radius, lifespan, color, 0.3, positionConnector).UsingFilled(false));
@@ -560,27 +564,11 @@ public abstract class LogLogic
                         }
                     }
                     // Progresses
-                    for (var i = 0; i < gadgetCapture.Progress.Count; i++)
+                    for (var i = 0; i < gadgetCapture.OwnerStates.Count; i++)
                     {
-                        var progress = gadgetCapture.Progress[i];
-                        var color = GadgetCaptureEvent.GetColor(progress.By);
-                        var fromColor = GadgetCaptureEvent.GetColor(progress.From);
-                        double progressValue = progress.Progress;
-                        var addProgressBar = true;
-                        if (progressValue == 100)
-                        {
-                            // Not being capped
-                            color = fromColor;
-                            addProgressBar = false;
-                        }
-                        else if (progressValue == 0)
-                        {
-                            // Capped
-                            fromColor = color;
-                            addProgressBar = false;
-                        }
-
-                        var lifespan = (progress.Time, i < gadgetCapture.Progress.Count - 1 ? gadgetCapture.Progress[i + 1].Time : gadgetCapture.EndTime);
+                        var ownerState = gadgetCapture.OwnerStates[i];
+                        var color = ownerState.GetFromColor();
+                        var lifespan = (ownerState.Time, i < gadgetCapture.OwnerStates.Count - 1 ? gadgetCapture.OwnerStates[i + 1].Time : gadgetCapture.EndTime);
                         if (gadgetCapture.IsCircle)
                         {
                             environmentDecorations.Add(new CircleDecoration((uint)gadgetCapture.Radius, lifespan, color, 0.3, positionConnector).UsingFilled(false));
@@ -589,10 +577,27 @@ public abstract class LogLogic
                         {
                             environmentDecorations.Add(new CustomPolygonDecoration(relativePositions, lifespan, color, 0.3, positionConnector).UsingFilled(false));
                         }
-                        if (addProgressBar)
+                    }
+                    for (var i = 0; i < gadgetCapture.ProgressStates.Count; i++)
+                    {
+                        var progressState = gadgetCapture.ProgressStates[i];
+                        var color = progressState.GetByColor();
+                        var fromColor = progressState.GetFromColor();
+                        var (start, end) = (
+                            progressState.Progresses.First().Time,
+                            progressState.Progresses.Count == 1 ?
+                                progressState.Progresses.First().Time :
+                                i < gadgetCapture.ProgressStates.Count - 1 ? 
+                                    gadgetCapture.ProgressStates[i + 1].Progresses.First().Time 
+                                    : 
+                                    gadgetCapture.EndTime);
+                        if (progressState.IsDecaying)
                         {
-                            environmentDecorations.Add(new ProgressBarDecoration(barSize, 30, lifespan, fromColor, 0.2, color, 0.6, [(progress.Time, progressValue)], positionConnector));
-
+                            environmentDecorations.Add(new ProgressBarDecoration(barSize, 30, (start, end), fromColor, 0.3, color, 0.6, progressState.Progresses, positionConnector));
+                        } 
+                        else
+                        {
+                            environmentDecorations.Add(new ProgressBarDecoration(barSize, 30, (start, end), color, 0.3, fromColor, 0.6, progressState.Progresses, positionConnector));
                         }
                     }
                 }
@@ -600,7 +605,7 @@ public abstract class LogLogic
                 {
                     // should not happen, but as a safety net
                     var lifespan = (gadgetCapture.Time, gadgetCapture.EndTime);
-                    var color = GadgetCaptureEvent.GetColor(gadgetCapture.OriginalOwner);
+                    var color = gadgetCapture.GetOriginalOwnerColor();
                     if (gadgetCapture.IsCircle)
                     {
                         environmentDecorations.Add(new CircleDecoration((uint)gadgetCapture.Radius, lifespan, color, 0.3, positionConnector).UsingFilled(false));

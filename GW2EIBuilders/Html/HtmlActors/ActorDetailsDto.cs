@@ -129,7 +129,7 @@ internal class ActorDetailsDto
             // rotation + buff graph for CR
             else
             {
-                if (i == 0 && cr)
+                if (cr && phase is PhaseDataWithMetaData && phase.IntersectsWindow(target.FirstAware, target.LastAware))
                 {
                     dto.Rotation.Add(SkillDto.BuildRotationData(log, target, phase, usedSkills));
                     dto.BoonGraph.Add(BuffChartDataDto.BuildBuffGraphData(log, target, phase, usedBuffs));

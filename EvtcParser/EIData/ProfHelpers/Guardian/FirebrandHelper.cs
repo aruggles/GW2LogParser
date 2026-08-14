@@ -16,7 +16,7 @@ internal static class FirebrandHelper
     [
         // Mantra of Solace
         new EXTHealingCastFinder(MantraOfSolace, MantraOfSolace)
-            .WithBuilds(GW2Builds.May2021Balance)
+            .WithBuilds(GW2Builds.May2021Balance, GW2Builds.February2023Balance)
             .UsingDisableWithEffectData(),
         new EffectCastFinderByDst(MantraOfSolace, EffectGUIDs.FirebrandMantraOfSolaceSymbol)
             .UsingDstSpecChecker(Spec.Firebrand)
@@ -27,15 +27,30 @@ internal static class FirebrandHelper
 
         // Mantra of Flame
         new DamageCastFinder(FlameRushOld, FlameRushOld)
-            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance)
-            .UsingDisableWithEffectData(),
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance),
         new DamageCastFinder(FlameRush, FlameRush)
-            .WithBuilds(GW2Builds.February2023Balance),
-        new DamageCastFinder(FlameSurgeOld, FlameSurgeOld)
-            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance)
+            .WithBuilds(GW2Builds.February2023Balance)
             .UsingDisableWithEffectData(),
-        new DamageCastFinder(FlameSurge, FlameSurge)
+        new EffectCastFinderByDst(FlameRush, EffectGUIDs.FirebrandMantraOfFlameSymbol)
+            .UsingDstSpecChecker(Spec.Firebrand)
+            .UsingChecker((evt, combatData, agentData, skillData) => combatData.HasRelatedHit(FlameRush, evt.Dst, evt.Time))
             .WithBuilds(GW2Builds.February2023Balance),
+
+        new DamageCastFinder(FlameSurgeOld, FlameSurgeOld)
+            .WithBuilds(GW2Builds.StartOfLife, GW2Builds.May2021Balance),
+        new DamageCastFinder(FlameSurge, FlameSurge)
+            .WithBuilds(GW2Builds.February2023Balance)
+            .UsingDisableWithEffectData(),
+        new EffectCastFinderByDst(FlameSurge, EffectGUIDs.FirebrandMantraOfFlameSymbol)
+            .UsingDstSpecChecker(Spec.Firebrand)
+            .UsingChecker((evt, combatData, agentData, skillData) => combatData.HasRelatedHit(FlameSurge, evt.Dst, evt.Time))
+            .WithBuilds(GW2Builds.February2023Balance),
+
+        new EffectCastFinderByDst(FlameRushOrFlameSurge, EffectGUIDs.FirebrandMantraOfFlameSymbol)
+            .UsingDstSpecChecker(Spec.Firebrand)
+            .UsingChecker((evt, combatData, agentData, skillData) => !combatData.HasRelatedHit(FlameSurge, evt.Dst, evt.Time) && !combatData.HasRelatedHit(FlameRush, evt.Dst, evt.Time))
+            .WithBuilds(GW2Builds.February2023Balance),
+
         new DamageCastFinder(MantraOfFlameCast, MantraOfFlameDamage)
             .WithBuilds(GW2Builds.May2021Balance, GW2Builds.February2023Balance)
             .UsingDisableWithEffectData(),
@@ -61,9 +76,26 @@ internal static class FirebrandHelper
 
         // Mantra of Truth
         new DamageCastFinder(EchoOfTruth, EchoOfTruth)
+            .WithBuilds(GW2Builds.February2023Balance)
+            .UsingDisableWithEffectData(),
+        new EffectCastFinderByDst(EchoOfTruth, EffectGUIDs.FirebrandMantraOfTruthSymbol)
+            .UsingDstSpecChecker(Spec.Firebrand)
+            .UsingChecker((evt, combatData, agentData, skillData) => combatData.HasRelatedHit(EchoOfTruth, evt.Dst, evt.Time))
             .WithBuilds(GW2Builds.February2023Balance),
+
         new DamageCastFinder(VoiceOfTruth, VoiceOfTruth)
+            .WithBuilds(GW2Builds.February2023Balance)
+            .UsingDisableWithEffectData(),
+        new EffectCastFinderByDst(VoiceOfTruth, EffectGUIDs.FirebrandMantraOfTruthSymbol)
+            .UsingDstSpecChecker(Spec.Firebrand)
+            .UsingChecker((evt, combatData, agentData, skillData) => combatData.HasRelatedHit(VoiceOfTruth, evt.Dst, evt.Time))
             .WithBuilds(GW2Builds.February2023Balance),
+
+        new EffectCastFinderByDst(EchoOfTruthOrVoiceOfTruth, EffectGUIDs.FirebrandMantraOfTruthSymbol)
+            .UsingDstSpecChecker(Spec.Firebrand)
+            .UsingChecker((evt, combatData, agentData, skillData) => !combatData.HasRelatedHit(VoiceOfTruth, evt.Dst, evt.Time) && !combatData.HasRelatedHit(EchoOfTruth, evt.Dst, evt.Time))
+            .WithBuilds(GW2Builds.February2023Balance),
+
         new DamageCastFinder(MantraOfTruthCast, MantraOfTruthDamage)
             .WithBuilds(GW2Builds.May2021Balance, GW2Builds.February2023Balance)
             .UsingDisableWithEffectData(),

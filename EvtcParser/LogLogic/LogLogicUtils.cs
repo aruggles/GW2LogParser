@@ -235,7 +235,7 @@ internal static class LogLogicUtils
             return;
         }
         var gadgetMatchingPositions = gadgetPositions.Where(entry => {
-            return entry.Value.Any(x => (MovementEvent.GetPoint3D(x) - chestPosition).XY().Length() < InchDistanceThreshold);
+            return entry.Value.Any(x => (MovementEvent.GetPoint3D(x) - chestPosition).XY().LengthSquared() < InchDistanceThresholdSquared);
         });
         if (!gadgetMatchingPositions.Any())
         {
@@ -279,7 +279,7 @@ internal static class LogLogicUtils
             {
                 return false;
             }
-            return entry.Value.Any(x => chestIDs.Any(y => (MovementEvent.GetPoint3D(x) - y.chestPosition).XY().Length() < InchDistanceThreshold));
+            return entry.Value.Any(x => chestIDs.Any(y => (MovementEvent.GetPoint3D(x) - y.chestPosition).XY().LengthSquared() < InchDistanceThresholdSquared));
         }).ToList();
         if (gadgetPositions.Count == 0)
         {
@@ -291,7 +291,7 @@ internal static class LogLogicUtils
         }
     }
 
-    internal static string? AddNameSuffixBasedOnInitialPosition(SingleActor target, IReadOnlyList<CombatItem> combatData, IReadOnlyCollection<(string, Vector2)> positionData, float maxDiff = InchDistanceThreshold)
+    internal static string? AddNameSuffixBasedOnInitialPosition(SingleActor target, IReadOnlyList<CombatItem> combatData, IReadOnlyCollection<(string, Vector2)> positionData, float maxDiff = InchDistanceThresholdSquared)
     {
         var positionEvts = combatData.Where(x => x.SrcMatchesAgent(target.AgentItem.EnglobingAgentItem) && x.IsStateChange == StateChange.Position).Take(5);
         foreach (var positionEvt in positionEvts)
@@ -299,7 +299,7 @@ internal static class LogLogicUtils
             var position = MovementEvent.GetPoint3D(positionEvt).XY();
             foreach (var (suffix, expectedPosition) in positionData)
             {
-                if ((position - expectedPosition).Length() < maxDiff)
+                if ((position - expectedPosition).LengthSquared() < maxDiff)
                 {
                     target.OverrideName(target.Character + " " + suffix);
                     return suffix;

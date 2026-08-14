@@ -28,7 +28,7 @@ internal class PhaseChartDataDto
             foreach (SingleActor target in log.LogData.Logic.Targets)
             {
                 // If already a target for the encounter, states are present, we don't need to duplicate them
-                if (log.LogData.GetEncounterPhases(log).Any(x => x.Targets.ContainsKey(target)))
+                if (log.LogData.GetPhases(log)[0].Targets.ContainsKey(target))
                 {
                     TargetsHealthStatesForCR.Add([]);
                     TargetsBreakbarPercentStatesForCR.Add(null);

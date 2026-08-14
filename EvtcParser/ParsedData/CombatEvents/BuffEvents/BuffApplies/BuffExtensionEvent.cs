@@ -32,11 +32,12 @@ public class BuffExtensionEvent : AbstractBuffApplyEvent
         }
     }
 
-    internal void OffsetNewDuration(IReadOnlyList<BuffEvent> events, EvtcVersionEvent evtcVersion)
+    internal void OffsetNewDuration(IReadOnlyList<BuffEvent> events, EvtcVersionEvent evtcVersion, bool forceActive)
     {
         long activeTime = 0;
         long previousTime = long.MinValue;
         long originalStackDuration = 0;
+        long addedExtension = 0;
         for (int i = 0; i < events.Count; i++)
         {
             BuffEvent cur = events[i];
@@ -59,8 +60,12 @@ public class BuffExtensionEvent : AbstractBuffApplyEvent
             {
                 if (cur is BuffStackActiveEvent)
                 {
-                    // means stack was not active between previous and cur
-                    activeTime = 0;
+                    // means stack was not active between previous and cur, except for stack type 4
+                    if (forceActive)
+                    {
+                        addedExtension += cur.Time - previousTime;
+                        activeTime += cur.Time - previousTime;
+                    }
                 }
                 else if (cur is BuffStackDeactiveEvent bsre)
                 {
@@ -95,6 +100,7 @@ public class BuffExtensionEvent : AbstractBuffApplyEvent
             return;
         }
         NewDuration -= activeTime;
+        ExtendedDuration += addedExtension;
         if (evtcVersion.Build < ArcDPSBuilds.BuffExtensionOverstackValueChanged && evtcVersion.Build >= ArcDPSBuilds.BuffExtensionBroken)
         {
             ExtendedDuration = Math.Max(ExtendedDuration - activeTime, 0);

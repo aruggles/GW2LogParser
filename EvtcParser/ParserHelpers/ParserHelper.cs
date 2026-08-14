@@ -33,7 +33,8 @@ public static class ParserHelper
     internal const long WeaponSwapDelayConstant = 75;
     internal const long TimeThresholdConstant = 150;
 
-    internal const float InchDistanceThreshold = 0.1f;
+    internal const float InchDistanceThreshold = 1.41421356237f; // sqrt(2)
+    internal const float InchDistanceThresholdSquared = InchDistanceThreshold * InchDistanceThreshold;
 
     public const long MinimumInCombatDuration = 2200;
     public const int MinimumFileSizeMB = 100;

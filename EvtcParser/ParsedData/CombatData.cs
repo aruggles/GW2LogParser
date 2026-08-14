@@ -493,6 +493,8 @@ public partial class CombatData
                     {
                         if (!appliesPerBuffID.TryGetValue(extensionEvents.Key, out var applies)) { continue; }
 
+                        var buffDesc = GetBuffInfoEvent(applies.First().BuffID);
+
                         BuffExtensionEvent? previousExtension = null;
                         foreach (BuffExtensionEvent extensionEvent in extensionEvents)
                         {
@@ -515,7 +517,7 @@ public partial class CombatData
 
                             previousExtension = extensionEvent;
                             sequence.SortByTime();
-                            extensionEvent.OffsetNewDuration(sequence, evtcVersion);
+                            extensionEvent.OffsetNewDuration(sequence, evtcVersion, buffDesc?.StackingType == BuffStackType.StackingConditionalLoss);
                         }
                     }
                 }

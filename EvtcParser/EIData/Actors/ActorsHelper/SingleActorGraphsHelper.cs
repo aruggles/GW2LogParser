@@ -242,11 +242,14 @@ partial class SingleActor
 
     private static double GetPercentValue(IReadOnlyList<Segment> segments, long time)
     {
-        int foundIndex = segments.BinarySearchRecursive(time, 0, segments.Count - 1);
-        Segment found = segments[foundIndex];
-        if (found.ContainsPoint(time))
+        int foundIndex = segments.BinarySearchSegments(time, 0, segments.Count - 1);
+        if (foundIndex >= 0)
         {
-            return found.Value;
+            Segment found = segments[foundIndex];
+            if (found.ContainsPoint(time))
+            {
+                return found.Value;
+            }
         }
 
         return -1.0;
@@ -255,7 +258,7 @@ partial class SingleActor
     public double GetCurrentHealthPercent(ParsedEvtcLog log, long time)
     {
         IReadOnlyList<Segment> hps = GetHealthUpdates(log);
-        if (!hps.Any())
+        if (hps.Count == 0)
         {
             return -1.0;
         }
@@ -266,7 +269,7 @@ partial class SingleActor
     public double GetCurrentBarrierPercent(ParsedEvtcLog log, long time)
     {
         IReadOnlyList<Segment> barriers = GetBarrierUpdates(log);
-        if (!barriers.Any())
+        if (barriers.Count == 0)
         {
             return -1.0;
         }

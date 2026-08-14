@@ -62,8 +62,12 @@ public static class SegmentExt {
 
     //TODO(Rennorb) @cleanup
     // https://www.c-sharpcorner.com/blogs/binary-search-implementation-using-c-sharp1
-    public static int BinarySearchRecursive(this IReadOnlyList<Segment> segments, long time, int minIndex, int maxIndex)
+    public static int BinarySearchSegments(this IReadOnlyList<Segment> segments, long time, int minIndex, int maxIndex)
     {
+        if (segments.Count == 0)
+        {
+            return -1;
+        }
         if (segments[minIndex].Start > time)
         {
             return minIndex;
@@ -85,11 +89,11 @@ public static class SegmentExt {
             }
             else if (time < segments[midIndex].Start)
             {
-                return BinarySearchRecursive(segments, time, minIndex, midIndex - 1);
+                return BinarySearchSegments(segments, time, minIndex, midIndex - 1);
             }
             else
             {
-                return BinarySearchRecursive(segments, time, midIndex + 1, maxIndex);
+                return BinarySearchSegments(segments, time, midIndex + 1, maxIndex);
             }
         }
     }

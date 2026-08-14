@@ -40,11 +40,14 @@ public class BuffGraph
             return new Segment(long.MinValue, long.MaxValue, 0);
         }
         
-        int foundIndex = Values.BinarySearchRecursive(time, 0, Values.Count - 1);
-        Segment found = Values[foundIndex];
-        if (found.ContainsPoint(time))
+        int foundIndex = Values.BinarySearchSegments(time, 0, Values.Count - 1);
+        if (foundIndex >= 0)
         {
-            return found;
+            Segment found = Values[foundIndex];
+            if (found.ContainsPoint(time))
+            {
+                return found;
+            }
         }
 
         return new Segment(long.MinValue, long.MaxValue, 0);

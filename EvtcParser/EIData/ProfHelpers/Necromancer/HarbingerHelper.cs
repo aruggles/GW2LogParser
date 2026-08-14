@@ -93,8 +93,8 @@ internal static class HarbingerHelper
         new Buff("Harbinger Shroud", HarbingerShroud, Source.Harbinger, BuffClassification.Other, SkillImages.HarbingerShroud),
         new Buff("Blight", Blight, Source.Harbinger, BuffStackType.Stacking, 25, BuffClassification.Other, TraitImages.Blight),
         new Buff("Implacable Foe", ImplacableFoe, Source.Harbinger, BuffClassification.Other, TraitImages.ImplacableFoe),
-        new Buff("Cascading Corruption", CascadingCorruptionStackBuff, Source.Harbinger, BuffStackType.Stacking, 20, BuffClassification.Other, TraitImages.CascadingCorruptionStackBuff),
-        new Buff("Meltdown", Meltdown, Source.Harbinger, BuffClassification.Other, TraitImages.Meltdown),
+        new Buff("Cascading Corruption", CascadingCorruptionStackBuff, Source.Harbinger, BuffStackType.StackingConditionalLoss, 20, BuffClassification.Other, TraitImages.CascadingCorruptionStackBuff),
+        new Buff("Meltdown", Meltdown, Source.Harbinger, BuffStackType.Queue, 9, BuffClassification.Other, TraitImages.Meltdown),
     ];
 
     private static readonly HashSet<long> _harbingerShroudTransform =

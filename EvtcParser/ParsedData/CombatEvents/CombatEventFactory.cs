@@ -597,6 +597,11 @@ partial class CombatData
             case StateChange.GadgetCaptureOutlineShow:
                 var gadgetCaptureEvent = new GadgetCaptureEvent(stateChangeEvent, agentData);
                 statusEvents.GadgetCaptureEvents.Add(gadgetCaptureEvent);
+                if (statusEvents.GadgetCaptureEventsBySrc.TryGetValue(gadgetCaptureEvent.Src, out var gadgetCaptureShows))
+                {
+                    var last = gadgetCaptureShows[^1];
+                    last.SetEnd(stateChangeEvent);
+                }
                 Add(statusEvents.GadgetCaptureEventsBySrc, gadgetCaptureEvent.Src, gadgetCaptureEvent);
                 if (statusEvents.GadgetCapturePointCombatItemsBySrc.TryGetValue(gadgetCaptureEvent.Src, out var gadgetCapturePoints))
                 {
@@ -611,14 +616,16 @@ partial class CombatData
                 var progressingGadgetCapture = agentData.GetAgent(stateChangeEvent.SrcAgent, stateChangeEvent.Time);
                 if (statusEvents.GadgetCaptureEventsBySrc.TryGetValue(progressingGadgetCapture, out var captureEventsToProgress))
                 {
-                    captureEventsToProgress.Last().AddProgress(stateChangeEvent);
+                    var last = captureEventsToProgress[^1];
+                    last.AddProgress(stateChangeEvent);
                 }
                 break;
             case StateChange.GadgetCaptureOutlineHide:
                 var removedGadgetCapture = agentData.GetAgent(stateChangeEvent.SrcAgent, stateChangeEvent.Time);
                 if (statusEvents.GadgetCaptureEventsBySrc.TryGetValue(removedGadgetCapture, out var captureEventsToRemove))
                 {
-                    captureEventsToRemove.Last().SetEnd(stateChangeEvent);
+                    var last = captureEventsToRemove[^1];
+                    last.SetEnd(stateChangeEvent);
                 }
                 break;
             case StateChange.GadgetCaptureOutlinePoint:

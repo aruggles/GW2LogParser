@@ -453,8 +453,13 @@ public abstract partial class SingleActor : Actor
 
     public abstract SingleActorCombatReplayDescription GetCombatReplayDescription(CombatReplayMap map, ParsedEvtcLog log);
 
-    private static bool TryGetCurrentPoint(IReadOnlyList<ParametricPoint3D> points, long time, [NotNullWhen(true)] out Vector3? point, long forwardWindow = 0)
+    private bool TryGetCurrentPoint(IReadOnlyList<ParametricPoint3D> points, long time, [NotNullWhen(true)] out Vector3? point, long forwardWindow = 0)
     {
+        if (!InAwareTimes(time) || points.Count == 0)
+        {
+            point = default;
+            return false;
+        }
         if (forwardWindow != 0)
         {
             var parametric = points.FirstOrNull((in ParametricPoint3D x) => x.Time >= time && x.Time <= time + forwardWindow)
@@ -469,19 +474,9 @@ public abstract partial class SingleActor : Actor
             return false;
         }
 
-        int foundIndex = BinarySearchRecursive(points, time, 0, points.Count - 1);
-        if (foundIndex < 0)
-        {
-            point = default;
-            return false;
-        }
+        int foundIndex = BinarySearchParametricPoints(points, time, 0, points.Count - 1);
 
         ParametricPoint3D position = points[foundIndex];
-        if (position.Time > time)
-        {
-            point = default;
-            return false;
-        }
 
         point = position.XYZ;
         return true;
@@ -957,7 +952,7 @@ public abstract partial class SingleActor : Actor
 
 
     // https://www.c-sharpcorner.com/blogs/binary-search-implementation-using-c-sharp1
-    private static int BinarySearchRecursive(IReadOnlyList<ParametricPoint3D> position, long time, int minIndex, int maxIndex)
+    private static int BinarySearchParametricPoints(IReadOnlyList<ParametricPoint3D> position, long time, int minIndex, int maxIndex)
     {
         if (position.Count == 0)
         {
@@ -966,7 +961,7 @@ public abstract partial class SingleActor : Actor
 
         if (position[minIndex].Time > time)
         {
-            return minIndex - 1;
+            return minIndex;
         }
 
         if (position[maxIndex].Time < time)
@@ -976,7 +971,7 @@ public abstract partial class SingleActor : Actor
 
         if (minIndex > maxIndex)
         {
-            return minIndex - 1;
+            return minIndex;
         }
         else
         {
@@ -987,11 +982,11 @@ public abstract partial class SingleActor : Actor
             }
             else if (time < position[midIndex].Time)
             {
-                return BinarySearchRecursive(position, time, minIndex, midIndex - 1);
+                return BinarySearchParametricPoints(position, time, minIndex, midIndex - 1);
             }
             else
             {
-                return BinarySearchRecursive(position, time, midIndex + 1, maxIndex);
+                return BinarySearchParametricPoints(position, time, midIndex + 1, maxIndex);
             }
         }
     }

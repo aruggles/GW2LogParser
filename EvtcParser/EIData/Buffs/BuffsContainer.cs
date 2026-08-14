@@ -206,8 +206,8 @@ public class BuffsContainer
                     {
                         var buffs = group.ToList();
                         var appliesPerInstanceID = buffs.OfType<BuffApplyEvent>().GroupBy(x => x.BuffInstance).ToDictionary(x => x.Key, x => x.ToList());
-                        var extensionsPerInstanceID = buffs.OfType<BuffExtensionEvent>().GroupBy(x => x.BuffInstance).ToDictionary(x => x.Key, x => x.ToList());
-                        var removeSinglesPerInstanceID = buffs.OfType<BuffRemoveSingleEvent>().Where(x => !x.OverstackOrNaturalEnd).GroupBy(x => x.BuffInstance);
+                        var othersPerInstanceID = buffs.Where(x => x is BuffExtensionEvent || x is BuffStackEvent).GroupBy(x => x is BuffExtensionEvent bee ? bee.BuffInstance : ((BuffStackEvent)x).BuffInstance).ToDictionary(x => x.Key, x => x.ToList());
+                        var removeSinglesPerInstanceID = buffs.OfType<BuffRemoveSingleEvent>().Where(x => !x.OverstackOrNaturalEnd && (buff.StackType == BuffStackType.StackingConditionalLoss || x.RemovedDuration == int.MaxValue)).GroupBy(x => x.BuffInstance);
                         foreach (var removePair in removeSinglesPerInstanceID)
                         {
                             if (appliesPerInstanceID.TryGetValue(removePair.Key, out var applyList))
@@ -218,14 +218,23 @@ public class BuffsContainer
                                     if (apply != null)
                                     {
                                         var totalDuration = apply.OriginalAppliedDuration;
-                                        if (extensionsPerInstanceID.TryGetValue(apply.BuffInstance, out var extensions))
+                                        var previousTime = apply.Time;
+                                        if (othersPerInstanceID.TryGetValue(apply.BuffInstance, out var others))
                                         {
-                                            foreach (var extension in extensions)
+                                            foreach (var other in others)
                                             {
-                                                if (extension.Time >= apply.Time && extension.Time <= remove.Time)
+                                                if (other.Time >= apply.Time && other.Time <= remove.Time)
                                                 {
-                                                    totalDuration += (int)extension.ExtendedDuration;
+                                                    if (other is BuffExtensionEvent bee)
+                                                    {
+                                                        totalDuration += (int)bee.ExtendedDuration;
+                                                    } 
+                                                    else if (other is BuffStackActiveEvent bsae)
+                                                    {
+                                                        totalDuration -= (int)(other.Time - previousTime);
+                                                    }
                                                 }
+                                                previousTime = other.Time;
                                             }
                                         }
                                         if (totalDuration == remove.RemovedDuration)

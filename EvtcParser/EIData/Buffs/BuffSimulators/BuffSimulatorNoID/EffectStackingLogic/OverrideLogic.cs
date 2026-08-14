@@ -33,7 +33,8 @@ internal class OverrideLogic : StackingLogic
     }
 
     // https://www.c-sharpcorner.com/blogs/binary-search-implementation-using-c-sharp1
-    private static int BinarySearchRecursive(List<BuffStackItem> stacks, long totalDuration, int minIndex, int maxIndex)
+    // No need to check for Count, private method used only in Add, which does a count check
+    private static int BinarySearchBuffStackItem(List<BuffStackItem> stacks, long totalDuration, int minIndex, int maxIndex)
     {
         if (stacks[minIndex].TotalDuration > totalDuration)
         {
@@ -56,11 +57,11 @@ internal class OverrideLogic : StackingLogic
             }
             else if (totalDuration < stacks[midIndex].TotalDuration)
             {
-                return BinarySearchRecursive(stacks, totalDuration, minIndex, midIndex - 1);
+                return BinarySearchBuffStackItem(stacks, totalDuration, minIndex, midIndex - 1);
             }
             else
             {
-                return BinarySearchRecursive(stacks, totalDuration, midIndex + 1, maxIndex);
+                return BinarySearchBuffStackItem(stacks, totalDuration, midIndex + 1, maxIndex);
             }
         }
     }
@@ -72,7 +73,7 @@ internal class OverrideLogic : StackingLogic
             stacks.Add(stackItem);
             return;
         }
-        int insertIndex = BinarySearchRecursive(stacks, stackItem.TotalDuration, 0, stacks.Count - 1);
+        int insertIndex = BinarySearchBuffStackItem(stacks, stackItem.TotalDuration, 0, stacks.Count - 1);
         if (insertIndex > stacks.Count - 1)
         {
             stacks.Add(stackItem);

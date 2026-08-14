@@ -300,6 +300,8 @@ internal static class SkillImages
     public const string FlameSurge_Old = "https://render.guildwars2.com/file/65805967085DEC9915FB2AB77690DEEDCF24B244/1770486.png";
     public const string EchoOfTruth = "https://render.guildwars2.com/file/44E806054B684DE2914C3EC9010598406F039509/1770494.png";
     public const string RestoringReprieveOrRejunevatingRespite = "https://i.imgur.com/RUJNIoM.png";
+    public const string FlameRushOrFlameSurge = "https://i.imgur.com/PqpKFyC.jpg";
+    public const string EchoOfTruthOrVoiceOfTruth = "https://i.imgur.com/RFV4FPF.jpg";
     public const string OpeningPassageOrClarifiedConclusion = "https://i.imgur.com/2M93tOd.png";
     public const string PotentHasteOrOverwhelmingCelerity = "https://i.imgur.com/vBBKfGz.png";
     public const string PortentOfFreedomOrUnhinderedDelivery = "https://i.imgur.com/b6RUVTr.png";

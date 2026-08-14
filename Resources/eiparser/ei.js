@@ -112,6 +112,14 @@ function getDefaultEncounter() {
     return parseInt(setting);
 }
 
+function getDefaultPlayer() {
+    const setting = EIUrlParams.get("player");
+    if (!setting) {
+        return -1;
+    }
+    return parseInt(setting);
+}
+
 function mainLoad() {
     for (let key in WeaponIcons) {
         WeaponIcons[key] = _buildFallBackURL(WeaponIcons[key]);
@@ -154,7 +162,7 @@ function mainLoad() {
         }
     }
     IsMultiEncounterLog = reactiveLogdata.encounters.length > 1;
-    const activeEncounterIndex = getDefaultEncounter();
+    const activeEncounterIndex = getDefaultEncounter() >= reactiveLogdata.encounters.length ? 0 : getDefaultEncounter();
     for (let i = 0; i < reactiveLogdata.encounters.length; i++) {
         reactiveLogdata.encounters[i].active = i === activeEncounterIndex;
     }
@@ -162,7 +170,7 @@ function mainLoad() {
         const logPhase = logData.phases[x.index];
         return !logPhase.breakbarPhase;
     });
-    const activePhaseIndex = getDefaultPhase();
+    const activePhaseIndex = getDefaultPhase() >= encounterPhases.length ? 0 : getDefaultPhase();
     for (let i = 0; i < encounterPhases.length; i++) {
         encounterPhases[i].active = i === activePhaseIndex;
         if (encounterPhases[i].active) {
@@ -188,9 +196,10 @@ function mainLoad() {
         target.dpsGraphCache = new Map();
     }
     let activeFound = false;
+    let activePlayerRequest = getDefaultPlayer() >= logData.players.length ? -1 : getDefaultPlayer();
     for (let i = 0; i < logData.players.length; i++) {
         const playerData = logData.players[i];
-        const active = !activeFound && !!playerData.isPoV;
+        const active = activePlayerRequest >= 0 ? i == activePlayerRequest : !activeFound && !!playerData.isPoV;
         reactiveLogdata.players.push({
             active: active,
             index: i,

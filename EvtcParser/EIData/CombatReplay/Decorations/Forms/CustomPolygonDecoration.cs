@@ -25,6 +25,10 @@ internal class CustomPolygonDecoration : FormDecoration
         public readonly IReadOnlyList<Vector3> Points;
         public CustomPolygonDecorationRenderingData(IReadOnlyList<Vector3> points, (long, long) lifespan, GeographicalConnector connector) : base(lifespan, connector)
         {
+            if (points.Count < 2)
+            {
+                throw new InvalidOperationException("Custom Polygons must have at least 2 points");
+            }
             Points = points;
         }
 

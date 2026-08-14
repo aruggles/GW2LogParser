@@ -42,7 +42,7 @@ internal static class WvWBuffs
         new Buff("Presence of the Keep VII", PresenceOfTheKeepVII, Source.Common, BuffClassification.Support, BuffImages.PresenceOfTheKeep),
         new Buff("Presence of the Keep VIII", PresenceOfTheKeepVIII, Source.Common, BuffClassification.Support, BuffImages.PresenceOfTheKeep),
         new Buff("Oil Mastery III (Increased Armor)",IncreasedArmorOilMasteryIII, Source.Common, BuffClassification.Defensive, BuffImages.BurningOilMastery),
-        new Buff("Chain Attached", ChainAttached, Source.Common, BuffStackType.Stacking, 25, BuffClassification.Other, BuffImages.ChainPull),
+        new Buff("Chain Attached", ChainAttached, Source.Common, BuffStackType.StackingConditionalLoss, 25, BuffClassification.Other, BuffImages.ChainPull),
         new Buff("Hardened Gates", HardenedGates, Source.Common, BuffClassification.Other, BuffImages.HardenedGates),
         new Buff("Siege Deployment Blocked", SiegeDeploymentBlocked, Source.Common, BuffClassification.Debuff, BuffImages.SiegeDeploymentBlocked),
         new Buff("Outnumbered", Outnumbered, Source.Common, BuffClassification.Other, BuffImages.Bombard),

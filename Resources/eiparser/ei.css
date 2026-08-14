@@ -25,12 +25,20 @@
 }
 
 .scrollable-y {
+    overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
 }
 
 .scrollable-x {
     overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+
+.scrollable-x-y {
+    overflow-x: auto;
+    overflow-y: auto;
     scrollbar-width: thin;
 }
 
@@ -736,7 +744,6 @@ canvas {
 .combat-replay-mechanics-list-container {
     max-height: 800px;
     max-width:450px; 
-    overflow-y:auto;
 }
 
 .combat-actor-status-container {
