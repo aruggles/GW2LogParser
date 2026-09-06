@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build and release (e.g. 1.4.0). A tag v<version> will be created if it does not exist.'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark the release as a pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $version = '${{ inputs.version }}'.TrimStart('v')
+          } else {
+            $version = '${{ github.ref_name }}'.TrimStart('v')
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+(\.\d+)?(-[0-9A-Za-z.-]+)?$') {
+            Write-Error "Version '$version' is not in the form MAJOR.MINOR.PATCH[.REV][-suffix]"
+            exit 1
+          }
+          # AssemblyVersion/FileVersion only accept numeric parts, so strip any -suffix.
+          $numeric = ($version -split '-')[0]
+          if (($numeric -split '\.').Count -eq 3) { $numeric = "$numeric.0" }
+          $prerelease = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.prerelease }}' } elseif ($version -like '*-*') { 'true' } else { 'false' }
+          "version=$version"       | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "numeric=$numeric"       | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=v$version"          | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "prerelease=$prerelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Building version $version (assembly $numeric), prerelease=$prerelease"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore Gw2LogParser.sln
+
+      # Release, never Debug: the vendored Elite Insights parser has #if DEBUG
+      # assertions that abort parses on logs newer than its balance data.
+      - name: Publish (framework-dependent)
+        run: >
+          dotnet publish Gw2LogParser.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:AssemblyVersion=${{ steps.version.outputs.numeric }}
+          -p:FileVersion=${{ steps.version.outputs.numeric }}
+          -p:InformationalVersion=${{ steps.version.outputs.version }}
+          -p:PublishReadyToRun=false
+          -o publish/framework-dependent
+
+      - name: Publish (self-contained)
+        run: >
+          dotnet publish Gw2LogParser.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:AssemblyVersion=${{ steps.version.outputs.numeric }}
+          -p:FileVersion=${{ steps.version.outputs.numeric }}
+          -p:InformationalVersion=${{ steps.version.outputs.version }}
+          -p:PublishReadyToRun=false
+          -p:PublishSingleFile=false
+          -o publish/self-contained
+
+      # Sanity check: the app resolves Content/ and its HTML templates relative to
+      # the assembly location, so the exe must actually be there.
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          foreach ($dir in 'publish/framework-dependent', 'publish/self-contained') {
+            $exe = Join-Path $dir 'Gw2LogParser.exe'
+            if (-not (Test-Path $exe)) { Write-Error "Missing $exe"; exit 1 }
+            $size = [math]::Round((Get-ChildItem $dir -Recurse -File | Measure-Object Length -Sum).Sum / 1MB, 1)
+            Write-Host "$dir -> $size MB"
+          }
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          Compress-Archive -Path 'publish/framework-dependent/*' -DestinationPath "artifacts/Gw2LogParser-$v-win-x64.zip"
+          Compress-Archive -Path 'publish/self-contained/*'      -DestinationPath "artifacts/Gw2LogParser-$v-win-x64-self-contained.zip"
+          Get-FileHash artifacts/*.zip -Algorithm SHA256 |
+            ForEach-Object { "{0}  {1}" -f $_.Hash.ToLower(), (Split-Path $_.Path -Leaf) } |
+            Out-File -FilePath artifacts/SHA256SUMS.txt -Encoding ascii
+          Get-Content artifacts/SHA256SUMS.txt
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gw2LogParser-${{ steps.version.outputs.version }}
+          path: artifacts/*
+
+      - name: Create tag (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          $tag = '${{ steps.version.outputs.tag }}'
+          if (git ls-remote --tags origin "refs/tags/$tag") {
+            Write-Host "Tag $tag already exists on origin; reusing it."
+          } else {
+            git config user.name  'github-actions[bot]'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
+            git tag -a $tag -m "Release $tag"
+            git push origin $tag
+          }
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Gw2LogParser ${{ steps.version.outputs.version }}
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            artifacts/Gw2LogParser-${{ steps.version.outputs.version }}-win-x64.zip
+            artifacts/Gw2LogParser-${{ steps.version.outputs.version }}-win-x64-self-contained.zip
+            artifacts/SHA256SUMS.txt
+          body: |
+            ## Downloads
+
+            | File | Who it's for |
+            |---|---|
+            | `Gw2LogParser-${{ steps.version.outputs.version }}-win-x64.zip` | Smallest download. Requires the [.NET 8 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0/runtime) to be installed. |
+            | `Gw2LogParser-${{ steps.version.outputs.version }}-win-x64-self-contained.zip` | Larger, but runs with nothing else installed. |
+            | Source code (zip / tar.gz) | The tagged source, attached automatically by GitHub. |
+
+            Unzip anywhere and run `Gw2LogParser.exe`. Windows 64-bit only.
+
+            `SHA256SUMS.txt` lists the checksums of both zips.

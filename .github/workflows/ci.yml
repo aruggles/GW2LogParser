@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    # Tag pushes are handled by release.yml; don't build them twice.
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore Gw2LogParser.sln
+
+      # Release, never Debug: the vendored Elite Insights parser has #if DEBUG
+      # assertions that abort parses on logs newer than its balance data.
+      - name: Build
+        run: dotnet build Gw2LogParser.sln -c Release --no-restore
+
+      # Publishing is what the release workflow actually ships, and it can break
+      # independently of `build` (runtime identifier, resource copying), so prove
+      # it works on every push rather than only at tag time.
+      - name: Publish smoke test
+        run: >
+          dotnet publish Gw2LogParser.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          -p:PublishReadyToRun=false
+          -o publish/ci
+
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          $exe = 'publish/ci/Gw2LogParser.exe'
+          if (-not (Test-Path $exe)) { Write-Error "Missing $exe"; exit 1 }
+          Write-Host "OK: $exe"
+
+      # There is no test project in this repo; nothing to run here.
