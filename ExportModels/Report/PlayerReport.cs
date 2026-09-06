@@ -67,6 +67,9 @@ internal class PlayerReport : IComparer<PlayerReport>
     {
         get
         {
+            // A player with no active time (dead/disconnected for the whole fight) would
+            // otherwise produce NaN or Infinity, which Newtonsoft serialises as a string.
+            if (TimeInCombat <= 0) { return 0; }
             return Math.Round(Damage.AllDamage / TimeSpan.FromMilliseconds(TimeInCombat).TotalSeconds, 0);
         }
     }
@@ -93,6 +96,34 @@ internal class PlayerReport : IComparer<PlayerReport>
     public PlayerReport()
     {
 
+    }
+
+    // Deep copy. Per-fight reports are retained (ProgramHelper.CompletedLogs) so the summary can
+    // be regenerated as more fights arrive; the merge must therefore start from a copy rather
+    // than accumulate into the first fight's own object.
+    public PlayerReport(PlayerReport other)
+    {
+        Name = other.Name;
+        Group = other.Group;
+        GroupCounts = new Dictionary<int, int>(other.GroupCounts);
+        Account = other.Account;
+        Profession = other.Profession;
+        Icon = other.Icon;
+        TimeInCombat = other.TimeInCombat;
+        Damage = new DamageReport(other.Damage);
+        Defense = new DefenseReport(other.Defense);
+        Support = new SupportReport(other.Support);
+        Gameplay = new GameplayReport(other.Gameplay);
+        DamageSummary = other.DamageSummary.ConvertAll(s => new SummaryItem(s));
+        TakenSummary = other.TakenSummary.ConvertAll(s => new SummaryItem(s));
+        BoonStats = other.BoonStats.ConvertAll(b => new BoonReport(b));
+        BoonGenSelfStats = other.BoonGenSelfStats.ConvertAll(b => new BoonReport(b));
+        BoonGenGroupStats = other.BoonGenGroupStats.ConvertAll(b => new BoonReport(b));
+        BoonGenOGroupStats = other.BoonGenOGroupStats.ConvertAll(b => new BoonReport(b));
+        BoonGenSquadStats = other.BoonGenSquadStats.ConvertAll(b => new BoonReport(b));
+        healing = other.healing == null ? null : new HealingReport(other.healing);
+        SkillCasts = new Dictionary<long, int>(other.SkillCasts);
+        numberOfFights = other.numberOfFights;
     }
 
     public int Compare(PlayerReport x, PlayerReport y)

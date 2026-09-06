@@ -57,6 +57,9 @@ internal class HTMLReportBuilder
             fights = Report.Logs.Select((log, i) => new
             {
                 index = i + 1,
+                // Link target for the per-fight report. Not derivable from `index`: files are
+                // numbered by grid row, and a failed or differently-sorted log breaks that mapping.
+                file = log.FileName,
                 name = log.Name,
                 startTime = log.StartTime,
                 mapName = log.MapName,

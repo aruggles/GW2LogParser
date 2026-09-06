@@ -105,11 +105,18 @@ public sealed class ProgramHelper : IDisposable
                 throw new ProgramException("Parsed log is null");
             }
             operation.BasicMetaData = new OperationController.OperationBasicMetaData(log);
-            
+
             //Creating File
-            GenerateFiles(log, operation, fInfo);
-            LogContainer logContainer = new LogContainer(log, fInfo);
-            CompletedLogs.Add(logContainer);
+            string fightFile = GenerateFiles(log, operation, fInfo);
+            // Build this fight's slice of the cross-fight summary here, on the worker thread,
+            // so GenerateSummary only has to merge (and the ParsedEvtcLog can be collected).
+            operation.UpdateProgressWithCancellationCheck("Program: Building summary data");
+            LogReport logReport = BuildLogReport(log, fInfo, fightFile, ParserVersion);
+            // A cancel requested while this parse was in flight must not leak the log into the
+            // batch: Cancel clears CompletedLogs, and anything added afterwards would produce a
+            // summary from a partial set.
+            operation.UpdateProgressWithCancellationCheck("Program: Summary data ready");
+            CompletedLogs.Add(new LogContainer(logReport, fInfo, log.LogMetadata.DateStart, log.LogMetadata.DateEnd));
         }
         catch (Exception ex)
         {
@@ -122,7 +129,8 @@ public sealed class ProgramHelper : IDisposable
         }
     }
 
-    private void GenerateFiles(ParsedEvtcLog log, OperationController operation, FileInfo fInfo)
+    /// <summary>Writes the per-fight HTML and returns its file name (fight_&lt;n&gt;.html).</summary>
+    private string GenerateFiles(ParsedEvtcLog log, OperationController operation, FileInfo fInfo)
     {
         using var _t = new AutoTrace("Generate files");
         operation.UpdateProgressWithCancellationCheck("Program: Creating File(s)");
@@ -155,6 +163,39 @@ public sealed class ProgramHelper : IDisposable
         }
         operation.UpdateProgressWithCancellationCheck("Program: HTML created");
         operation.UpdateProgressWithCancellationCheck($"Completed for {result}ed {log.LogData.Logic.Extension}");
+        return Path.GetFileName(outputFile);
+    }
+
+    /// <summary>
+    /// Reduces one parsed log to the per-fight <see cref="LogReport"/> the summary merges.
+    /// Runs on the parse worker thread; must not touch UI state.
+    /// </summary>
+    internal static LogReport BuildLogReport(ParsedEvtcLog log, FileInfo fInfo, string fightFile, Version parserVersion)
+    {
+        var logReport = new LogReport();
+        var exporter = new LogBuilder(log);
+        var data = exporter.BuildLogData(parserVersion, new UploadResults());
+        logReport.Name = fInfo.Name;
+        logReport.FileName = fightFile;
+        logReport.LogsStart = log.LogData.LogStart;
+        // Same quantity DurationString formats (fight end, trimmed at success), so the numeric
+        // cell and its tooltip agree. EvtcLogEnd is the raw recording end and can differ.
+        logReport.Duration = log.LogData.LogDuration;
+        logReport.DurationString = log.LogData.DurationString;
+        logReport.LogsEnd = log.LogData.LogEnd;
+        logReport.PointOfView = data.RecordedBy;
+        logReport.StartTime = log.LogMetadata.DateStart;
+        logReport.MapName = data.Wvw ? data.LogName : "";
+        logReport.Success = log.LogData.GetMainPhase(log).Success;
+        exporter.UpdateLogReport(logReport, data);
+        // WvW logs have no real victory condition — EI hardcodes Success = true (see
+        // WvWLogic.CheckSuccess). Derive a meaningful outcome from the squad's kills vs deaths:
+        // a win means we killed more enemies than we lost squad members.
+        if (data.Wvw)
+        {
+            logReport.Success = logReport.EnemyDeaths > logReport.AlliesDead;
+        }
+        return logReport;
     }
 
     public static DirectoryInfo GetSaveDirectory(FileInfo fInfo)
@@ -185,52 +226,27 @@ public sealed class ProgramHelper : IDisposable
             return;
         }
         var report = new Report();
-        var uploadResults = new UploadResults();
-        
-        FileInfo? fileInfo = null;
-        DirectoryInfo? saveDirectory = null;
 
-        var sorted = CompletedLogs.OrderBy(c => c.Log.LogMetadata.DateEnd);
-        var _firstLog = sorted.First<LogContainer>();
-        var _lastLog = sorted.Last<LogContainer>();
+        // Snapshot: with AutoParse a new drop can start parsing while this runs.
+        var sorted = CompletedLogs.ToList().OrderBy(c => c.DateEnd).ToList();
+        if (sorted.Count == 0)
+        {
+            return;
+        }
+        LogContainer firstLog = sorted[0];
+        LogContainer lastLog = sorted[sorted.Count - 1];
 
-        if (_firstLog != null)
-        {
-            report.LogsStart = _firstLog.Log.LogMetadata.DateStart;
-            fileInfo = _firstLog.evctFile;
-            saveDirectory = GetSaveDirectory(fileInfo);
-        }
-        if (_lastLog != null)
-        {
-            report.LogsEnd = _lastLog.Log.LogMetadata.DateEnd;
-        }
+        report.LogsStart = firstLog.DateStart;
+        report.LogsEnd = lastLog.DateEnd;
+        DirectoryInfo saveDirectory = GetSaveDirectory(firstLog.evctFile);
 
         foreach (LogContainer parsedLog in sorted)
         {
-            var logReport = new LogReport();
-            var exporter = new LogBuilder(parsedLog);
-            var data = exporter.BuildLogData(parserVersion, uploadResults);
-            logReport.Name = parsedLog.evctFile.Name;
-            fileInfo = parsedLog.evctFile;
-            logReport.LogsStart = parsedLog.Log.LogData.LogStart;
-            logReport.Duration = parsedLog.Log.LogData.EvtcLogEnd;
-            logReport.DurationString = parsedLog.Log.LogData.DurationString;
-            logReport.LogsEnd = parsedLog.Log.LogData.LogEnd;
-            logReport.PointOfView = data.RecordedBy;
-            logReport.StartTime = parsedLog.Log.LogMetadata.DateStart;
-            logReport.MapName = data.Wvw ? data.LogName : "";
-            logReport.Success = parsedLog.Log.LogData.GetMainPhase(parsedLog.Log).Success;
-            exporter.UpdateLogReport(logReport, data);
-            // WvW logs have no real victory condition — EI hardcodes Success = true (see
-            // WvWLogic.CheckSuccess). Derive a meaningful outcome from the squad's kills vs deaths:
-            // a win means we killed more enemies than we lost squad members.
-            if (data.Wvw)
-            {
-                logReport.Success = logReport.EnemyDeaths > logReport.AlliesDead;
-            }
-
+            // Per-fight data was built on the parse worker (ProgramHelper.DoWork); this is a
+            // pure merge so the UI isn't blocked re-deriving every log's stats.
+            LogReport logReport = parsedLog.Report;
             report.Logs.Add(logReport);
-            report.PointOfView = data.RecordedBy;
+            report.PointOfView = logReport.PointOfView;
             // Skill metadata is identical for the same ID across fights; first one wins.
             foreach (var kv in logReport.Skills)
             {
@@ -245,11 +261,13 @@ public sealed class ProgramHelper : IDisposable
                 {
                     if (report.players.TryGetValue(player.Key, out PlayerReport? playerValue))
                     {
-                        exporter.SumPlayerStats(playerValue, player);
+                        LogBuilder.SumPlayerStats(playerValue, player);
                     }
                     else
                     {
-                        report.players[player.Key] = player;
+                        // Copy: the per-fight report is retained in CompletedLogs and must
+                        // not be mutated by later merges (the summary can be regenerated).
+                        report.players[player.Key] = new PlayerReport(player);
                     }
                 }
             }

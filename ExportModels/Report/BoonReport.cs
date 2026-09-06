@@ -17,6 +17,15 @@ public class BoonReport
     public double Wasted { get; set; }
     public double Overstack {  get; set; }
     public BoonReport() { }
+    public BoonReport(BoonReport other)
+    {
+        Id = other.Id;
+        Value = other.Value;
+        Uptime = other.Uptime;
+        Extended = other.Extended;
+        Wasted = other.Wasted;
+        Overstack = other.Overstack;
+    }
     public BoonReport(List<double> data)
     {
         Value = 0;

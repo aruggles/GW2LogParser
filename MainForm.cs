@@ -14,6 +14,12 @@ public partial class MainForm : Form
     private readonly Queue<FormOperationController> _logQueue = new();
     private readonly string _traceFileName;
     private int _fileNameSorting = 1;
+    // Next fight number. Assigned once per row at creation and never re-assigned by sorting:
+    // it names the row's fight_<n>.html, so renumbering an already-parsed row would let a
+    // later parse overwrite its report. Reset together with the batch (Clear).
+    private int _nextIndex = 0;
+    private bool _summaryRunning = false;
+    private bool _summaryRequested = false;
 
     public MainForm(ProgramHelper programHelper)
     {
@@ -79,7 +85,7 @@ public partial class MainForm : Form
             _logFiles.Add(file);
             AddTraceMessage("UI: Added " + file);
 
-            var operation = new FormOperationController(file, "Ready to parse", dataGridView, gridBindingSource, _logFiles.Count);
+            var operation = new FormOperationController(file, "Ready to parse", dataGridView, gridBindingSource, ++_nextIndex);
 
             if (Properties.Settings.Default.AutoParse)
             {
@@ -113,10 +119,9 @@ public partial class MainForm : Form
             return _fileNameSorting * string.Compare(left, right, StringComparison.Ordinal);
         });
         gridBindingSource.Clear();
-        var i = 0;
+        // Reorder only. Index stays as assigned at creation (see _nextIndex).
         foreach (FormOperationController val in auxList)
         {
-            val.Index = ++i;
             gridBindingSource.Add(val);
         }
     }
@@ -223,13 +228,61 @@ public partial class MainForm : Form
         {
             if (!_anyRunning)
             {
-                ProgramHelper.GenerateSummary(_programHelper.ParserVersion);
-                btnParse.Enabled = true;
-                btnClear.Enabled = true;
-                btnCancel.Enabled = false;
-                // _settingsForm.ConditionalSettingDisable(_anyRunning);
+                _GenerateSummary();
             }
         }
+    }
+
+    /// <summary>
+    /// Builds index.html from every completed log, off the UI thread. This used to run
+    /// synchronously inside the parse-completion callback: any exception there was unhandled
+    /// (and killed the app after all the parsing had succeeded), and the UI froze meanwhile.
+    /// If a new batch finishes while a summary is still being written, one more run is
+    /// queued so the final index.html always reflects every completed log.
+    /// </summary>
+    private void _GenerateSummary()
+    {
+        if (_summaryRunning)
+        {
+            _summaryRequested = true;
+            return;
+        }
+        _summaryRunning = true;
+        btnParse.Enabled = false;
+        btnClear.Enabled = false;
+        btnCancel.Enabled = false;
+        AddTraceMessage("Summary: generating");
+        Version parserVersion = _programHelper.ParserVersion;
+        Task.Run(() => ProgramHelper.GenerateSummary(parserVersion)).ContinueWith(t =>
+        {
+            _summaryRunning = false;
+            if (t.IsFaulted && t.Exception != null)
+            {
+                Exception ex = ParserHelper.GetFinalException(t.Exception);
+                AddTraceMessage("Summary: failed - " + ex);
+                MessageBox.Show(this, "The per-fight reports were written, but the combined summary (index.html) could not be generated:\n\n" + ex.Message,
+                    "Summary failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else
+            {
+                AddTraceMessage("Summary: generated");
+            }
+            if (_anyRunning)
+            {
+                // A new batch started meanwhile; its own completion will regenerate.
+                _summaryRequested = false;
+                return;
+            }
+            if (_summaryRequested)
+            {
+                _summaryRequested = false;
+                _GenerateSummary();
+                return;
+            }
+            btnParse.Enabled = true;
+            btnClear.Enabled = true;
+            btnCancel.Enabled = false;
+        }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
     /// <summary>
@@ -317,6 +370,13 @@ public partial class MainForm : Form
         //Clear the queue so that cancelled workers don't invoke queued workers
         _logQueue.Clear();
         _logFiles.Clear();
+        // Clear ends the batch: drop its completed logs so they don't bleed into the next
+        // summary, restart fight numbering, and send the next batch to a fresh folder so
+        // re-used numbers can't overwrite the reports just produced. (Parse only resets the
+        // first two when starting a batch; with AutoParse this was the only reset point.)
+        ProgramHelper.CompletedLogs.Clear();
+        ProgramHelper.timestamp = DateTime.Now.ToFileTime();
+        _nextIndex = 0;
 
         for (int i = gridBindingSource.Count - 1; i >= 0; i--)
         {

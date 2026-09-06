@@ -5,6 +5,10 @@ namespace Gw2LogParser.ExportModels.Report;
 internal class LogReport
 {
     public string Name { get; set; } = "";
+    // File name of this fight's own report (fight_<n>.html) inside the report folder. The
+    // number is the grid row's stable index, NOT the fight's chronological position in the
+    // summary, so the summary must link through this rather than its own row index.
+    public string FileName { get; set; } = "";
     public Dictionary<string, PlayerReport> players { get; set; } = new Dictionary<string, PlayerReport>();
     // Skills referenced by any player's SkillCasts in this fight, keyed by skill ID.
     public Dictionary<long, SkillUsageReport> Skills { get; set; } = new Dictionary<long, SkillUsageReport>();

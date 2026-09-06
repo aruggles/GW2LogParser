@@ -1107,9 +1107,11 @@
                 console.error('MIssing gameplay');
                 value.gameplay = { critPercent: 0, flankPercent: 0, glancePercent: 0, avgToSquad: 0, avgToTag: 0 }
             } else {
-                value.gameplay.critPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.critableHits / value.gameplay.criticalHits) * 100.0) + '%';
-                value.gameplay.flankPercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.flanking / value.gameplay.criticalHits) * 100.0) + '%';
-                value.gameplay.glancePercent = (value.gameplay.criticalHits == 0) ? 0 : formatPercent((value.gameplay.glancing / value.gameplay.criticalHits) * 100.0) + '%';
+                // Rates over critable direct hits (EI's own denominator for these columns).
+                var critable = value.gameplay.critableHits;
+                value.gameplay.critPercent = (critable == 0) ? 0 : formatPercent((value.gameplay.criticalHits / critable) * 100.0) + '%';
+                value.gameplay.flankPercent = (critable == 0) ? 0 : formatPercent((value.gameplay.flanking / critable) * 100.0) + '%';
+                value.gameplay.glancePercent = (critable == 0) ? 0 : formatPercent((value.gameplay.glancing / critable) * 100.0) + '%';
                 value.gameplay.avgToSquad = formatPercent(value.gameplay.avgDistanceToSquad / value.numberOfFights);
                 value.gameplay.avgToTag = formatPercent(value.gameplay.avgDistanceToTag / value.numberOfFights);
             }
@@ -1433,7 +1435,10 @@
             var label = formatFightTime(row.startTime) || ('Report ' + row.index);
             var map = wvwMapLabel(row.mapName);
             var text = esc(label) + (map ? ' <span class="fight-map">' + esc(map) + '</span>' : '');
-            return '<a class="player-link" href="fight_' + row.index + '.html" target="_blank">' + text + '</a>';
+            // Per-fight files are numbered by grid row, not by summary position, so the
+            // builder supplies the actual file name; the index form is only a legacy fallback.
+            var href = row.file || ('fight_' + row.index + '.html');
+            return '<a class="player-link" href="' + esc(href) + '" target="_blank">' + text + '</a>';
         }
         function outcomeCell(win, type) {
             if (type !== 'display') { return win ? 1 : 0; }
@@ -1865,7 +1870,7 @@
                         data: 'gameplay.critPercent',
                         render: function (data, type, row) {
                             if (type === "display") {
-                                return '<span data-toggle="tooltip" title="' + row.gameplay.critableHits + ' out of ' + row.gameplay.criticalHits + ' critable hit(s) ">' + data + '</span>';
+                                return '<span data-toggle="tooltip" title="' + row.gameplay.criticalHits + ' out of ' + row.gameplay.critableHits + ' critable hit(s) ">' + data + '</span>';
                             }
                             return data;
                         }

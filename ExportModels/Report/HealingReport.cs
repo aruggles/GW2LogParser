@@ -22,4 +22,24 @@ public class HealingReport
     public int IncomingBarrier { get; set; }
     public int OutgoingBarrier { get; set; }
     public int OutgoingTargetBarrier { get; set; }
+
+    public HealingReport() { }
+    public HealingReport(HealingReport other)
+    {
+        OutgoingTargetAll = other.OutgoingTargetAll;
+        OutgoingTargetHealingPower = other.OutgoingTargetHealingPower;
+        OutgoingTargetConversion = other.OutgoingTargetConversion;
+        OutgoingTargetDowned = other.OutgoingTargetDowned;
+        OutgoingAll = other.OutgoingAll;
+        OutgoingAllHealingPower = other.OutgoingAllHealingPower;
+        OutgoingAllConversion = other.OutgoingAllConversion;
+        OutgoingAllDowned = other.OutgoingAllDowned;
+        IncomingHealed = other.IncomingHealed;
+        IncomingHealingPower = other.IncomingHealingPower;
+        IncomingConversion = other.IncomingConversion;
+        IncomingDowned = other.IncomingDowned;
+        IncomingBarrier = other.IncomingBarrier;
+        OutgoingBarrier = other.OutgoingBarrier;
+        OutgoingTargetBarrier = other.OutgoingTargetBarrier;
+    }
 }

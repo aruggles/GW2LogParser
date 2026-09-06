@@ -4,6 +4,7 @@ using GW2EIBuilders.HtmlModels.EXTHealing;
 using GW2EIEvtcParser;
 using GW2EIEvtcParser.EIData;
 using GW2EIEvtcParser.ParsedData;
+using static GW2EIEvtcParser.SpeciesIDs;
 using Gw2LogParser.EvtcParserExtensions;
 using Gw2LogParser.ExportModels.Report;
 
@@ -19,9 +20,9 @@ namespace Gw2LogParser.ExportModels
         public bool light = false;
         public string[] uploadLinks = new string[] {};
 
-        public LogBuilder(LogContainer parsedLog)
+        public LogBuilder(ParsedEvtcLog parsedLog)
         {
-            log = parsedLog.Log;
+            log = parsedLog;
         }
 
         // arcDPS records reviving a downed ally under the generic "Resurrect" skill (id 1006)
@@ -106,7 +107,7 @@ namespace Gw2LogParser.ExportModels
             return summaryItem;
         }
 
-        public void SumSummaryStats(SummaryItem original, SummaryItem item)
+        public static void SumSummaryStats(SummaryItem original, SummaryItem item)
         {
             original.Avg += item.Avg;
             original.BarrierDamage += item.BarrierDamage;
@@ -116,9 +117,13 @@ namespace Gw2LogParser.ExportModels
             original.Flank += item.Flank;
             original.Glance += item.Glance;
             original.Hits += item.Hits;
-            original.HitsPerCast += (original.Casts == 0) ? 0 : (float)original.Hits / (float)original.Casts;
+            // Ratio over the merged totals; accumulating it (+=) grew with every fight merged.
+            original.HitsPerCast = (original.Casts == 0) ? 0 : (float)original.Hits / (float)original.Casts;
             original.Max = Math.Max(original.Max, item.Max);
-            original.Min = Math.Min(original.Min, item.Min);
+            // EI reports Min = 0 when a skill had no connected hits in a fight; that isn't a
+            // real minimum, so don't let it drag the merged minimum down to zero.
+            if (original.Min <= 0) { original.Min = item.Min; }
+            else if (item.Min > 0) { original.Min = Math.Min(original.Min, item.Min); }
             original.Saved += item.Saved;
             original.Wasted += item.Wasted;
         }
@@ -147,7 +152,7 @@ namespace Gw2LogParser.ExportModels
             }
         }
 
-        public void SumPlayerStats(PlayerReport original, PlayerReport report)
+        public static void SumPlayerStats(PlayerReport original, PlayerReport report)
         {
             original.numberOfFights++;
             // Fold this fight's subgroup into the running tally so original.Group ends up
@@ -255,7 +260,8 @@ namespace Gw2LogParser.ExportModels
             {
                 if (original.healing == null)
                 {
-                    original.healing = report.healing;
+                    // Copy, not alias: the per-fight report is retained for later regenerations.
+                    original.healing = new HealingReport(report.healing);
                 } else
                 {
                     original.healing.IncomingConversion += report.healing.IncomingConversion;
@@ -317,9 +323,12 @@ namespace Gw2LogParser.ExportModels
                 }
                 // Squad outgoing barrier damage (damage absorbed by enemy barrier).
                 foreach (var s in playerReport.DamageSummary) { outBarrier += s.BarrierDamage; }
-                //var count = data.Wvw ? 1 : data.Phases.Count;
-                for (int phaseIndex = 0; phaseIndex < data.Phases.Count; phaseIndex++)
+                // Full-fight phase only (index 0). EI splits boss logs (and WvW instance logs)
+                // into sub-phases; looping over them left the LAST phase's numbers in the
+                // report. Phase 0 is "Full Fight" (or "Detailed Full Fight" in WvW).
+                if (data.Phases != null && data.Phases.Count > 0)
                 {
+                    const int phaseIndex = 0;
                     var phase = data.Phases[phaseIndex];
                     playerReport.TimeInCombat = phase.PlayerActiveTimes[playerIndex];
 
@@ -442,7 +451,9 @@ namespace Gw2LogParser.ExportModels
             // Roll up per-fight aggregates for the "Fights In This Report" table.
             report.SquadSize = report.players.Count;
             report.AlliesOutsideSquad = alliesOutside;
-            report.TotalEnemies = data.Targets?.Count ?? 0;
+            // Real targets only: in WvW, EI's target list also contains a synthetic
+            // "World vs World" / "Enemy Players" dummy agent that isn't an enemy.
+            report.TotalEnemies = log.LogData.Logic.Targets.Count(t => !t.IsSpecies(TargetID.WorldVersusWorld));
             // Damage / barrier totals are squad-scoped (this summary is a squad report),
             // so they sum only the squad players collected above.
             foreach (var p in report.players.Values)
@@ -559,8 +570,10 @@ namespace Gw2LogParser.ExportModels
             report.AvgDistanceToSquad = Parse<double>(DmgStats[5]);
             report.AvgDistanceToTag = Parse<double>(DmgStats[6]);
 
-            report.CriticalHits = Parse<int>(OffStats[1]);
-            report.CritableHits = Parse<int>(OffStats[2]);
+            // OffensiveStats layout (Html/PhaseDto.cs): [1] critable direct hits, [2] critical hits.
+            // These were previously read swapped (and swapped back in template.html).
+            report.CritableHits = Parse<int>(OffStats[1]);
+            report.CriticalHits = Parse<int>(OffStats[2]);
             report.Flanking = Parse<int>(OffStats[4]);
             report.Glancing = Parse<int>(OffStats[5]);
             report.ConnectedHits = Parse<int>(OffStats[11]);
