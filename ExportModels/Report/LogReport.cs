@@ -6,6 +6,8 @@ internal class LogReport
 {
     public string Name { get; set; } = "";
     public Dictionary<string, PlayerReport> players { get; set; } = new Dictionary<string, PlayerReport>();
+    // Skills referenced by any player's SkillCasts in this fight, keyed by skill ID.
+    public Dictionary<long, SkillUsageReport> Skills { get; set; } = new Dictionary<long, SkillUsageReport>();
     public long LogsStart { get; set; }
     public long LogsEnd { get; set; }
     public long Duration { get; set; }

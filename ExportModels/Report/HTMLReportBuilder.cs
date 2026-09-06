@@ -78,7 +78,10 @@ internal class HTMLReportBuilder
                 enemyBarrierAbsorbed = log.EnemyBarrierAbsorbed,
                 barrierDelta = log.BarrierDelta
             }),
-            players = Report.players
+            players = Report.players,
+            // Skill Usage report: id -> { name, icon, autoAttack, swap, dodge }. Player rows
+            // reference these via players[].skillCasts (id -> cast count).
+            skills = Report.Skills
         };
         var json = ToJson(payload);
 

@@ -207,6 +207,11 @@ public sealed class ProgramHelper : IDisposable
 
             report.Logs.Add(logReport);
             report.PointOfView = data.RecordedBy;
+            // Skill metadata is identical for the same ID across fights; first one wins.
+            foreach (var kv in logReport.Skills)
+            {
+                report.Skills.TryAdd(kv.Key, kv.Value);
+            }
             foreach (PlayerReport player in logReport.players.Values)
             {
                 // Aggregate by account + character + class so each distinct combination is

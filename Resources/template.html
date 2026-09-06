@@ -350,6 +350,12 @@
         }
         .subnav .nav-link:hover { color: var(--text); }
         .subnav .nav-link.active { color: #fff; background: rgba(255,122,47,.12); border-color: rgba(255,138,61,.5); }
+        /* Skill Usage: profession tabs carry the class icon + player count; skill columns are icon-only. */
+        #skill-prof-tabs .nav-link img.icon { width: 18px; height: 18px; margin: 0 6px 0 0; }
+        #skill-prof-tabs .nav-link .count { margin-left: 6px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+        .skill-usage-table th.skill-col { padding-left: 4px; padding-right: 4px; text-align: center; }
+        .skill-usage-table th.skill-col img.icon { width: 26px; height: 26px; }
+        .skill-usage-table tbody td { white-space: nowrap; }
 
         /* ---------------- PLAYER CARDS ---------------- */
         #nav-players .card {
@@ -450,6 +456,7 @@
                 <button class="side-link" data-section="nav-gameplay" title="Gameplay"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span><span class="lbl">Gameplay</span></button>
                 <button class="side-link" data-section="nav-boons" title="Boons"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg></span><span class="lbl">Boons</span></button>
                 <button class="side-link" data-section="nav-healing" title="Healing"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/></svg></span><span class="lbl">Healing</span></button>
+                <button class="side-link" data-section="nav-skillusage" title="Skill Usage"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20L14 10M14 4h6v6M20 4L11 13M6 6l2 2M4 12l2 2"/></svg></span><span class="lbl">Skill Usage</span></button>
                 <button class="side-link" data-section="nav-players" title="Players"><span class="ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></svg></span><span class="lbl">Players</span></button>
             </nav>
         </aside>
@@ -919,6 +926,15 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- ===================== SKILL USAGE ===================== -->
+                <div class="section" id="nav-skillusage" role="tabpanel">
+                    <div class="section-head"><span class="eyebrow">Rotation</span><h2>Skill Usage</h2><span class="hint">Casts per minute of combat time, one tab per specialization. Hover a cell for the raw cast count.</span></div>
+                    <nav id="skill-prof-nav">
+                        <div class="nav subnav" role="tablist" id="skill-prof-tabs"></div>
+                    </nav>
+                    <div class="tab-content" id="skill-prof-panes"></div>
                 </div>
 
                 <!-- ===================== PLAYERS ===================== -->
@@ -1512,6 +1528,121 @@
             });
         }
 
+        // Combat time as shown in the Damage table: "42s", "3m 12s", "1h 4m 9s" with the raw ms in a tooltip.
+        function combatTimeHtml(ms) {
+            ms = ms || 0;
+            var seconds = Math.floor(ms / 1000), text;
+            if (seconds < 60) {
+                text = seconds + 's';
+            } else {
+                var minutes = Math.floor(seconds / 60);
+                seconds = seconds % 60;
+                if (minutes < 60) {
+                    text = minutes + 'm ' + seconds + 's';
+                } else {
+                    var hours = Math.floor(minutes / 60);
+                    minutes = minutes % 60;
+                    text = hours + 'h ' + minutes + 'm ' + seconds + 's';
+                }
+            }
+            return '<span title="' + ms + 'ms" data-toggle="tooltip">' + text + '</span>';
+        }
+        function combatTimeCell(data, type) { return type === 'display' ? combatTimeHtml(data) : data; }
+
+        /* ============================================================
+           SKILL USAGE - one tab per profession / elite spec, every skill anyone on
+           that spec cast, as casts per minute of combat time. report.skills holds
+           the id -> { name, icon, autoAttack, swap, dodge } metadata; each player
+           row carries skillCasts (id -> count) summed across fights.
+           ============================================================ */
+        var SKILL_META = (report && report.skills) ? report.skills : {};
+        function skillMeta(id) {
+            return SKILL_META[id] || { id: Number(id), name: 'Skill ' + id, icon: '', autoAttack: false, swap: false, dodge: false };
+        }
+        function combatMinutes(p) { return (p.timeInCombat || 0) / 60000; }
+        // Total actions and actions excluding auto-attacks. Weapon swaps count in both.
+        function castTotals(p) {
+            var all = 0, noAA = 0, casts = p.skillCasts || {};
+            Object.keys(casts).forEach(function (id) {
+                var n = casts[id] || 0;
+                all += n;
+                if (!skillMeta(id).autoAttack) { noAA += n; }
+            });
+            return { all: all, noAA: noAA };
+        }
+        function perMinuteCell(count, minutes, tip) {
+            var v = minutes > 0 ? count / minutes : 0;
+            var text = count > 0 ? v.toFixed(2) : '-';
+            return '<td data-order="' + v + '" data-toggle="tooltip" title="' + esc(tip) + '">' + text + '</td>';
+        }
+        // Column order: Weapon Swap, then auto-attacks, then dodges, then everything else
+        // by spec-wide usage (ties broken by name so the order is stable).
+        function orderSkillColumns(ids, totals) {
+            function bucket(id) { var m = skillMeta(id); return m.swap ? 0 : (m.autoAttack ? 1 : (m.dodge ? 2 : 3)); }
+            return ids.slice().sort(function (a, b) {
+                var ba = bucket(a), bb = bucket(b);
+                if (ba !== bb) { return ba - bb; }
+                if (totals[b] !== totals[a]) { return totals[b] - totals[a]; }
+                return skillMeta(a).name.localeCompare(skillMeta(b).name);
+            });
+        }
+        function renderSkillUsage() {
+            var tabsEl = document.getElementById('skill-prof-tabs');
+            var panesEl = document.getElementById('skill-prof-panes');
+            if (!tabsEl || !panesEl) { return; }
+            var byProf = {};
+            playerArray.forEach(function (p) {
+                var prof = p.profession || 'Unknown';
+                (byProf[prof] = byProf[prof] || []).push(p);
+            });
+            var profs = Object.keys(byProf).sort(function (a, b) { return a.localeCompare(b); });
+            if (!profs.length) {
+                panesEl.innerHTML = '<div class="panel">No skill casts were recorded.</div>';
+                return;
+            }
+            tabsEl.innerHTML = profs.map(function (prof, i) {
+                return '<a class="nav-item nav-link' + (i === 0 ? ' active' : '') + '" data-toggle="tab" href="#skills-' + slugId(prof) + '" role="tab">' +
+                    '<img src="' + getProfIcon(prof) + '" alt="" class="icon">' + esc(prof) +
+                    '<span class="count">' + byProf[prof].length + '</span></a>';
+            }).join('');
+            panesEl.innerHTML = profs.map(function (prof, i) {
+                var slug = slugId(prof);
+                var players = byProf[prof].slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+                var totals = {};
+                players.forEach(function (p) {
+                    var casts = p.skillCasts || {};
+                    Object.keys(casts).forEach(function (id) { totals[id] = (totals[id] || 0) + (casts[id] || 0); });
+                });
+                var cols = orderSkillColumns(Object.keys(totals), totals);
+                var head = '<tr>' +
+                    '<th data-toggle="tooltip" title="Most-played group across all fights" style="width: 32px;">Grp</th>' +
+                    '<th style="width: 32px;">&nbsp;</th><th>Name</th><th>Account</th>' +
+                    '<th data-toggle="tooltip" title="Time in combat, summed across fights">Combat Time</th>' +
+                    '<th data-toggle="tooltip" title="Actions per minute of combat time, including auto-attacks and weapon swaps">APM</th>' +
+                    '<th data-toggle="tooltip" title="Actions per minute of combat time, excluding auto-attacks">APM (no AA)</th>' +
+                    cols.map(function (id) {
+                        var m = skillMeta(id);
+                        return '<th class="skill-col" data-toggle="tooltip" title="' + esc(m.name) + '"><img src="' + m.icon + '" alt="' + esc(m.name) + '" class="icon icon-hover"></th>';
+                    }).join('') + '</tr>';
+                var body = players.map(function (p) {
+                    var minutes = combatMinutes(p);
+                    var t = castTotals(p);
+                    var row = boonRowStart(p) +
+                        '<td data-order="' + (p.timeInCombat || 0) + '">' + combatTimeHtml(p.timeInCombat) + '</td>' +
+                        perMinuteCell(t.all, minutes, t.all + ' actions') +
+                        perMinuteCell(t.noAA, minutes, t.noAA + ' actions excluding auto-attacks');
+                    cols.forEach(function (id) {
+                        var n = (p.skillCasts && p.skillCasts[id]) || 0;
+                        row += perMinuteCell(n, minutes, skillMeta(id).name + ': ' + n + ' cast' + (n === 1 ? '' : 's'));
+                    });
+                    return row + '</tr>';
+                }).join('');
+                return '<div class="tab-pane fade' + (i === 0 ? ' show active' : '') + '" id="skills-' + slug + '" role="tabpanel">' +
+                    '<div class="panel table-panel"><table class="table table-striped skill-usage-table" id="table-skills-' + slug + '">' +
+                    '<thead>' + head + '</thead><tbody>' + body + '</tbody></table></div></div>';
+            }).join('');
+        }
+
         // The Outgoing/Incoming skill tables for one build, keyed by that build's identifier.
         // The per-build DataTable init loop later fills these by id, so ids must stay unique.
         function buildSkillTables(id) {
@@ -1618,6 +1749,7 @@
             renderMeta();
             renderPlayerCards();
             renderBoonTables();
+            renderSkillUsage();
             $.extend($.fn.dataTable.defaults, {
                 searching: false,
                 ordering: true,
@@ -1637,26 +1769,7 @@
                     { data: 'profession', render: professionFunction },
                     { data: 'name', render: nameFunction },
                     { data: 'account' },
-                    {
-                        data: 'timeInCombat',
-                        render: function (data, type) {
-                            if (type === 'display') {
-                                var seconds = Math.floor(data / 1000);
-                                if (seconds < 60) {
-                                    return '<span title="' + data + 'ms" data-toggle="tooltip">' + seconds + 's</span>';
-                                }
-                                var minutes = Math.floor(seconds / 60);
-                                seconds = seconds % 60;
-                                if (minutes < 60) {
-                                    return '<span title="' + data + 'ms" data-toggle="tooltip">' + minutes + 'm ' + seconds + 's</span>';
-                                }
-                                hours = Math.floor(minutes / 60);
-                                minutes = minutes % 60;
-                                return '<span title="' + data + 'ms" data-toggle="tooltip">' + hours + 'h ' + minutes + 'm ' + seconds + 's</span>';
-                            }
-                            return data;
-                        }
-                    },
+                    { data: 'timeInCombat', render: combatTimeCell },
                     { data: 'dps', render: compactCell },
                     { data: 'damage.allDamage', render: compactCell },
                     { data: 'damage.power', render: compactCell },
@@ -1910,6 +2023,13 @@
                 });
             }
             $('.oldtable').DataTable();
+            // Skill Usage tables: default to highest APM first; realign columns when a hidden tab is shown.
+            $('.skill-usage-table').DataTable({ order: [[5, 'desc']] });
+            $('#skill-prof-tabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                $($(e.target).attr('href')).find('table.dataTable').each(function () {
+                    try { $(this).DataTable().columns.adjust(); } catch (err) { }
+                });
+            });
             $('.dataTables_length').addClass('bs-select');
 
             // Build the fork's custom Overview + Leaderboard views.

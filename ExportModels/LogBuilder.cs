@@ -245,6 +245,12 @@ namespace Gw2LogParser.ExportModels
             MergeBoons(original.BoonGenGroupStats, report.BoonGenGroupStats);
             MergeBoons(original.BoonGenOGroupStats, report.BoonGenOGroupStats);
             MergeBoons(original.BoonGenSquadStats, report.BoonGenSquadStats);
+            // Skill Usage - casts are keyed by skill ID, so a straight per-ID sum is safe.
+            foreach (var kv in report.SkillCasts)
+            {
+                original.SkillCasts.TryGetValue(kv.Key, out int casts);
+                original.SkillCasts[kv.Key] = casts + kv.Value;
+            }
             if (report.healing != null)
             {
                 if (original.healing == null)
@@ -298,6 +304,9 @@ namespace Gw2LogParser.ExportModels
                 };
                 // Seed this account's group tally with the subgroup it was in this fight.
                 playerReport.RecordGroup(player.Group);
+                // data.Players is built from log.Friendlies in order (LogDataDto.BuildLogData),
+                // so the same index resolves the parsed actor behind this DTO.
+                CountSkillCasts(playerReport, log.Friendlies[playerIndex], report.Skills);
                 foreach (object[] item in player.Details.DmgDistributions[0].Distribution)
                 {
                     playerReport.DamageSummary.Add(BuildSummary(item, data));
@@ -495,6 +504,48 @@ namespace Gw2LogParser.ExportModels
             report.EnemyBarrierAbsorbed = outBarrier;
             report.DamageDelta = report.OutgoingDamage - report.IncomingDamage;
             report.BarrierDelta = report.SquadBarrierAbsorbed - report.EnemyBarrierAbsorbed;
+        }
+
+        // Skills the player used while in the downed state (GW2 API slots Downed_1..Downed_4,
+        // which also covers Bandage). They're excluded from the Skill Usage report.
+        private static bool IsDownedSkill(SkillItem skill)
+        {
+            string? slot = skill.ApiSkill?.Slot;
+            return slot != null && slot.StartsWith("Downed_", StringComparison.Ordinal);
+        }
+
+        // Tally the player's own cast events over the whole fight for the Skill Usage report.
+        //   Counted:  full / reduced / unknown-status animated casts, EI-inferred instant casts
+        //             (attunement swaps, trait / gear / relic procs, Mirage Cloak dodges, ...),
+        //             arcDPS dodges and weapon swaps.
+        //   Skipped:  interrupted casts (the action never completed), downed-state skills,
+        //             and the bundle swaps EI hides from its own rotation view.
+        // Minion / pet / clone casts are never part of actor.GetCastEvents, so they're excluded
+        // without any extra filtering.
+        private void CountSkillCasts(PlayerReport playerReport, SingleActor actor, Dictionary<long, SkillUsageReport> skills)
+        {
+            foreach (CastEvent cast in actor.GetCastEvents(log, log.LogData.LogStart, log.LogData.LogEnd))
+            {
+                if (cast.IgnoreOnRotationRender() || cast.IsInterrupted) { continue; }
+                SkillItem skill = cast.Skill;
+                if (IsDownedSkill(skill)) { continue; }
+                if (!skills.ContainsKey(skill.ID))
+                {
+                    skills[skill.ID] = new SkillUsageReport
+                    {
+                        Id = skill.ID,
+                        Name = skill.Name,
+                        Icon = skill.Icon,
+                        AutoAttack = skill.IsAutoAttack(log),
+                        // Only the real weapon swap. EI's SkillItem.IsSwap also covers attunement,
+                        // legend and shroud swaps; those stay ordinary skill columns.
+                        Swap = skill.ID == SkillIDs.WeaponSwap,
+                        Dodge = skill.IsDodge(log.SkillData)
+                    };
+                }
+                playerReport.SkillCasts.TryGetValue(skill.ID, out int casts);
+                playerReport.SkillCasts[skill.ID] = casts + 1;
+            }
         }
 
         private GameplayReport BuildGameplayReport(List<double> DmgStats, List<double> OffStats)

@@ -83,6 +83,11 @@ internal class PlayerReport : IComparer<PlayerReport>
     public List<BoonReport> BoonGenOGroupStats { get; set; } = [];
     public List<BoonReport> BoonGenSquadStats { get; set; } = [];
     public HealingReport? healing;
+    // Skill Usage report: casts per skill ID (see Report.Skills for the skill metadata),
+    // summed across fights. Only the player's own casts: no minions, no interrupted casts,
+    // no downed-state skills. Weapon swaps and EI-inferred instant casts (trait/gear procs)
+    // are included.
+    public Dictionary<long, int> SkillCasts { get; set; } = [];
     public int numberOfFights { get; set; } = 1;
 
     public PlayerReport()
