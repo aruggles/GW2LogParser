@@ -79,6 +79,8 @@ public static class SkillIDs
     public const long UraBloodstoneShardPickUp = -60;
     public const long FlameRushOrFlameSurge = -61;
     public const long EchoOfTruthOrVoiceOfTruth = -62;
+    public const long MindWrackOrMindWrackAmmo = -63;
+    public const long SplitSecondOrSplitSecondAmmo = -64;
     #endregion
     #region ArcDPS Hardcoded
     internal const long ArcDPSDodge = 65001;
@@ -170,6 +172,7 @@ public static class SkillIDs
     public const long Encumbered = 1159;
     public const long Bandage = 1175;
     public const long Quickness = 1187;
+    public const long PetRevive = 1196;
     public const long JacarandasEmbraceMinion = 1286; // Skill casted by Jacaranda's Embrace NPC
     public const long GraspingVinesDamage = 1290;
     public const long AimedShotWvW = 1421;
@@ -773,6 +776,7 @@ public static class SkillIDs
     public const long PortalWeaving = 10198;
     public const long PortalExeunt = 10199;
     public const long Blink = 10200;
+    public const long MirrorImages = 10202;
     public const long NullField = 10203;
     public const long MantraOfDistraction = 10204;
     public const long PowerLock = 10206;
@@ -820,6 +824,7 @@ public static class SkillIDs
     public const long StabSpearClone = 10319;
     public const long JabSpearClone = 10320;
     public const long PhantasmalWhalersVolley = 10330;
+    public const long ChaosArmor = 10331;
     public const long ChaosAura = 10332;
     public const long Blur = 10335;
     public const long Swap = 10337;
@@ -2088,7 +2093,7 @@ public static class SkillIDs
     public const long Eat = 34408;
     public const long ShardsOfRageAbomination = 34411;
     public const long Surrender = 34413;
-    public const long Corruption1 = 34416;
+    public const long CorruptionBuff = 34416;
     public const long FlakShotNarella = 34417;
     public const long BloodFueledPlayer = 34422;
     public const long AbominationTransformation = 34427;
@@ -2108,7 +2113,7 @@ public static class SkillIDs
     public const long ShieldHuman = 34468;
     public const long ThrowOilKeg = 34471;
     public const long DownpourBuff = 34472;
-    public const long Corruption2 = 34473;
+    public const long CorruptionDamage = 34473;
     public const long TantrumDamage = 34479;
     public const long BloodShardsHuman = 34480;
     public const long VolatilePoisonSkill = 34481;
@@ -2482,7 +2487,7 @@ public static class SkillIDs
     public const long NovaLaunchBuff = 38929;
     public const long VaultArtsariiv = 38977;
     public const long FixatedBloom4 = 38985;
-    public const long StarbustCascade1 = 38982;
+    public const long StarburstCascade1 = 38982;
     public const long HorizonStrikeArkk2 = 39001;
     public const long CosmicStreaks = 39021;
     public const long RedMarble1 = 39029;
@@ -2526,7 +2531,7 @@ public static class SkillIDs
     public const long HorizonStrikeSkorvald1 = 39507;
     public const long Warp = 39514;
     public const long MistChargedChop2 = 39521;
-    public const long StarbustCascade2 = 39523;
+    public const long StarburstCascade2 = 39523;
     public const long SkorvaldsIre = 39531;
     public const long CranialCascadeAnomaly = 39534;
     public const long FixatedBloom3 = 39558;
@@ -3351,6 +3356,7 @@ public static class SkillIDs
     public const long DarkSaviorHealing = 56922;
     public const long SicEmPvPBuff = 56923;
     public const long PitfallPreparedBuff = 56924;
+    public const long SplitSecondAmmo = 56925;
     public const long Rewinder = 56928;
     public const long SplitSecond = 56930;
     public const long ShadowPortalOpenedBuff = 57031;
@@ -5177,7 +5183,7 @@ public static class SkillIDs
     public const long LoftedCryoflash = 76402;
     public const long InevitableDarknessPlayer = 76412;
     public const long FallingIceCM = 76417;
-    public const long TerrestialCryoflash = 76420;
+    public const long TerrestrialCryoflash = 76420;
     public const long POV_HeartOfTheTitan = 76448;
     public const long FreezingVortex = 76444;
     public const long DeathlyRime = 76446;

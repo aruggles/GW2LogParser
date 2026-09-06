@@ -8,7 +8,8 @@ using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -16,27 +17,28 @@ internal class MursaatOverseer : BastionOfThePenitent
 {
     internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(JadeSoldierAura, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Red), "Jade", "Jade Soldier's Aura hit","Jade Aura", Sev2, 0),
-                new PlayerDstHealthDamageHitMechanic(JadeSoldierExplosion, new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Jade Expl", "Jade Soldier's Death Explosion","Jade Explosion", Sev0, 0),
+                new PlayerDstHealthDamageHitMechanic(JadeSoldierAura, Mech_JadeSoldierAura, new (Symbols.CircleOpen,Colors.Red), new("Jade", "Jade Soldier's Aura hit","Jade Aura"), Sev2),
+                new PlayerDstHealthDamageHitMechanic(JadeSoldierExplosion, Mech_JadeSoldierExplosion, new (Symbols.Circle,Colors.Red), new("Jade Expl", "Jade Soldier's Death Explosion","Jade Explosion"), Sev0),
             ]),
-            //new Mechanic(ClaimSAK, "Claim", Mechanic.MechType.PlayerBoon, ParseEnum.BossIDS.MursaatOverseer, new MechanicPlotlySetting(Symbols.Square,Colors.Yellow), "Claim",0), //Buff remove only
-            //new Mechanic(DispelSAK, "Dispel", Mechanic.MechType.PlayerBoon, ParseEnum.BossIDS.MursaatOverseer, new MechanicPlotlySetting(Symbols.Circle,Colors.Yellow), "Dispel",0), //Buff remove only
-            //new Mechanic(ProtectSAK, "Protect", Mechanic.MechType.PlayerBoon, ParseEnum.BossIDS.MursaatOverseer, new MechanicPlotlySetting(Symbols.Circle,Colors.Teal), "Protect",0), //Buff remove only
-            new PlayerDstBuffApplyMechanic(Invulnerability757, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Teal), "Protect", "Protected by the Protect Shield","Protect Shield", Sev0,0).UsingChecker((ba, log) => ba.AppliedDuration == 1000),
+            //new Mechanic(ClaimSAK, "Claim", Mechanic.MechType.PlayerBoon, ParseEnum.BossIDS.MursaatOverseer, new (Symbols.Square,Colors.Yellow), new("Claim",0), //Buff remove only
+            //new Mechanic(DispelSAK, "Dispel", Mechanic.MechType.PlayerBoon, ParseEnum.BossIDS.MursaatOverseer, new (Symbols.Circle,Colors.Yellow), new("Dispel",0), //Buff remove only
+            //new Mechanic(ProtectSAK, "Protect", Mechanic.MechType.PlayerBoon, ParseEnum.BossIDS.MursaatOverseer, new (Symbols.Circle,Colors.Teal), new("Protect",0), //Buff remove only
+            new PlayerDstBuffApplyMechanic(Invulnerability757, Mech_SAKProtected, new (Symbols.CircleOpen,Colors.Teal), new("Protect", "Protected by the Protect Shield","Protect Shield"), Sev0)
+                .UsingChecker((ba, log) => ba.AppliedDuration == 1000),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(ProtectBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Blue), "Protect (SAK)", "Took protect","Protect (SAK)", Sev0,0)
+                new PlayerDstBuffApplyMechanic(ProtectBuff, Mech_ProtectSAK, new (Symbols.Circle,Colors.Blue), new("Protect (SAK)", "Took protect","Protect (SAK)"), Sev0)
                     .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)),
-                new PlayerDstBuffApplyMechanic(DispelBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Purple), "Dispel (SAK)", "Took dispel","Dispel (SAK)", Sev0,0)
+                new PlayerDstBuffApplyMechanic(DispelBuff, Mech_DispelSAK, new (Symbols.Circle,Colors.Purple), new("Dispel (SAK)", "Took dispel","Dispel (SAK)"), Sev0)
                     .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)),
-                new PlayerDstBuffApplyMechanic(ClaimBuff, new MechanicPlotlySetting(Symbols.Circle,Colors.Yellow), "Claim (SAK)", "Took claim","Claim (SAK)", Sev0,0)
+                new PlayerDstBuffApplyMechanic(ClaimBuff, Mech_ClaimSAK, new (Symbols.Circle,Colors.Yellow), new("Claim (SAK)", "Took claim","Claim (SAK)"), Sev0)
                     .UsingTimeClamper((time, log, encounterPhase) => Math.Max(encounterPhase.Start, time)),
             ]),
             new MechanicGroup([
-                new EnemyDstBuffApplyMechanic(MursaatOverseersShield, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Yellow), "Shield", "Jade Soldier Shield","Soldier Shield", Sev2, 0),
-                new PlayerSrcBuffRemoveFromMechanic(MursaatOverseersShield, new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Yellow), "Dispel", "Dispelled Jade Soldier Shield","Dispel", Sev1, 0),
-                new EnemyDstBuffRemoveMechanic(MursaatOverseersShield, new MechanicPlotlySetting(Symbols.CircleCrossOpen,Colors.Yellow), "Shield.L", "Jade Soldier Shield Lost","Soldier Shield Lost", Sev1, 0),
+                new EnemyDstBuffApplyMechanic(MursaatOverseersShield, Mech_MursaatOverseersShieldApply, new (Symbols.CircleOpen,Colors.Yellow), new("Shield", "Jade Soldier Shield","Soldier Shield"), Sev2),
+                new PlayerSrcBuffRemoveFromMechanic(MursaatOverseersShield, Mech_MursaatOverseersShieldRemove, new (Symbols.SquareOpen,Colors.Yellow), new("Dispel", "Dispelled Jade Soldier Shield","Dispel"), Sev1),
+                new EnemyDstBuffRemoveMechanic(MursaatOverseersShield, Mech_MursaatOverseersShieldLost, new (Symbols.CircleCrossOpen,Colors.Yellow), new("Shield.L", "Jade Soldier Shield Lost","Soldier Shield Lost"), Sev1),
             ]),
-            //new Mechanic(EnemyTile, "Enemy Tile", ParseEnum.BossIDS.MursaatOverseer, new MechanicPlotlySetting(Symbols.SquareOpen,Colors.Yellow), "Floor","Enemy Tile damage", "Tile dmg",0) //Fixed damage (3500), not trackable
+            //new Mechanic(EnemyTile, "Enemy Tile", ParseEnum.BossIDS.MursaatOverseer, new (Symbols.SquareOpen,Colors.Yellow), new("Floor","Enemy Tile damage", "Tile dmg",0) //Fixed damage (3500), not trackable
         ]);
     public MursaatOverseer(int triggerID) : base(triggerID)
     {

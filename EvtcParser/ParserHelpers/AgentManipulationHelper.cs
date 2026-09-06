@@ -122,7 +122,7 @@ public static class AgentManipulationHelper
         };
         if (!copyPositionalDataFromAttackTarget || attackTargetAgents.Count == 0)
         {
-            stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Position);
+            stateChangeCopyFromAgentConditions.Add((x) => x.IsPosition);
             stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Rotation);
             stateChangeCopyFromAgentConditions.Add((x) => x.IsStateChange == StateChange.Velocity);
         }
@@ -140,7 +140,7 @@ public static class AgentManipulationHelper
             Func<CombatItem, bool> canCopyFromAttackTarget = (evt) => attackTargetAgents.Any(x => evt.SrcMatchesAgent(x));
             var stateChangeCopyFromAttackTargetConditions = new List<Func<CombatItem, bool>>()
             {
-                (x) => x.IsStateChange == StateChange.Position,
+                (x) => x.IsPosition,
                 (x) => x.IsStateChange == StateChange.Rotation,
                 (x) => x.IsStateChange == StateChange.Velocity,
             };
@@ -314,7 +314,7 @@ public static class AgentManipulationHelper
         squadCombatStartCombatEnds.Add(long.MaxValue);
         var combatDataDict = combatItems.Where(x => x.SrcIsAgent(extensions) || x.DstIsAgent(extensions)).ToList();
         var positionEvents = combatDataDict
-                .Where(x => x.IsStateChange == StateChange.Position)
+                .Where(x => x.IsPosition)
                 .GroupBy(x => agentData.GetAgent(x.SrcAgent, x.Time))
                 .ToList();
         var lastPositionEvents = positionEvents
@@ -328,7 +328,7 @@ public static class AgentManipulationHelper
         {
             povAgent = agentData.GetAgent(pov.SrcAgent, pov.Time);
             povPositions = combatDataDict
-                .Where(x => x.SrcMatchesAgent(povAgent) && x.IsStateChange == StateChange.Position)
+                .Where(x => x.SrcMatchesAgent(povAgent) && x.IsPosition)
                 .Select(x => new ParametricPoint3D(MovementEvent.GetPoint3D(x), x.Time)).ToList();
         }
         var srcCombatDataDict = combatDataDict.Where(x => x.SrcIsAgent(extensions)).GroupBy(x => agentData.GetAgent(x.SrcAgent, x.Time)).ToDictionary(x => x.Key, x => x.ToList());

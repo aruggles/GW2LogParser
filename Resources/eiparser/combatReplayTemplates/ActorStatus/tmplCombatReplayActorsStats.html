@@ -18,25 +18,23 @@
                 </li>
             </ul>
         </div>
-        <div class="d-flex flex-column combat-actor-status-container scrollable-y ml-1" :style="!singleGroup ? {'transform': 'translate(-24px,0);'} : null">
-            <div v-for="(group,id) in groups" v-if="group" class="d-flex flex-row align-items-center" style="width:240px;">
-                <fieldset class="d-flex flex-row flex-wrap align-items-left" style="width:240px; border: 2px solid #888; margin: 0;">
-                    <legend v-if="!singleGroup" style="font-size: 0.80rem; width: auto; padding: 0 5px; margin-left: 5px;">Group {{id}}</legend>
-                    <div class="d-flex flex-row flex-wrap align-items-center">
-                        <div v-for="(playerData, index) in group" :style="getPlayerDataStyle(index, group)"
-                             class="player-data ml-1 mr-1" :class="{active: selectedactorid === playerData.player.uniqueID}">
-                            <combat-replay-actor-stats-component :actorIndex="playerData.player.id" :time="time" :buffstoshow="buffsToShow" :isTarget="false" :buffs="buffs" :rotation="rotation" />
-                        </div>
-                    </div>
+
+        <div class="d-flex">
+            <div class="combat-actor-status-container scrollable-y mr-2" :class="{'mt-2' : singleGroup}">
+                <fieldset v-for="(group, id) in groups" v-if="group" class="border">
+                    <legend v-if="!singleGroup" class="scale85 ml-1 px-1 w-auto">Group {{id}}</legend>
+                    <combat-replay-actor-stats-component v-for="(player, index) in group"
+                        :class="{active: selectedactorid === player.uniqueID}"
+                        :actorIndex="player.id" :time="time" :buffstoshow="buffsToShow" :isTarget="false" :buffs="buffs" :rotation="rotation" />
                 </fieldset>
             </div>
-        </div>    
-        <div class="mt-1 combat-actor-status-container scrollable-y">
-            <div class="d-flex flex-column justify-content-center align-items-center">
-                <div class="ml-2" style="width:240px; height:1px;"></div>
-                <div v-for="targetData in targets" v-if="render(targetData)" style="width:240px;" class="target-data ml-2" :class="{active: selectedactorid === targetData.target.uniqueID}">
-                    <combat-replay-actor-stats-component :actorIndex="targetData.target.id" :time="time" :buffstoshow="buffsToShowTarget" :isTarget="true" :buffs="true" :rotation="true" />
-                </div>
+
+            <div class="combat-actor-status-container scrollable-y mt-2 ">
+                <fieldset class="border">
+                    <combat-replay-actor-stats-component v-for="target in targets"
+                        :class="{active: selectedactorid === target.uniqueID}"
+                        :actorIndex="target.id" :time="time" :buffstoshow="buffsToShowTarget" :isTarget="true" :buffs="true" :rotation="true" />
+                </fieldset>
             </div>
         </div>
     </div>
@@ -51,85 +49,45 @@
             return {
                 buffs: false,
                 rotation: true,
-                buffsToShow: ["Boons", "Encounter Specifics", "Conditions"]
+                buffsToShow: ["Boons", "Encounter Specifics", "Conditions"],
+                possibleBuffs: ["Boons", "Conditions", "Encounter Specifics", "Shared", "Consumables", "Others"]
             };
-        },
-        methods: {
-            render: function (targetData) {
-                var crTarget = targetData.crTarget;
-                return crTarget.canDraw() && ((crTarget.start === -1 && crTarget.end === -1) || crTarget.start <= this.time && crTarget.end >= this.time);
-            },
-            getPlayerDataStyle: function(index, group) {
-                if (index < group.length - 1) {
-                    return {
-                        width: '100%',
-                        'border-bottom': '2px solid #888'
-                    };
-                }
-                return {
-                    width: "100%",
-                };
-            }
         },
         computed: {
             buffsToShowTarget: function() {
-                let res = [];
-                for (let i = 0; i< this.buffsToShow.length; i++) {
-                    let cat = this.buffsToShow[i];
-                    if (cat === "Shared" || cat === "Consumables") {
-                        continue;
-                    }
-                    res.push(cat);
-                }
-                return res;
+                return this.buffsToShow.filter(b => !["Shared", "Consumables"].includes(b));
             },
             singleGroup: function () {
                 return logData.singleGroup;
-            },
-            possibleBuffs: function() {
-                return [ "Boons", "Conditions", "Encounter Specifics","Shared", "Consumables", "Others"];
             },
             targets: function () {
                 if (logData.targetless) {
                     return [];
                 }
-                var res = [];
-                for (var i = 0; i < logData.targets.length; i++) {
-                    var target = logData.targets[i];
-                    var crTarget = animator.getActorData(target.uniqueID);
-                    if (crTarget) {
-                        res.push({
-                            target: target,
-                            crTarget: crTarget,
-                        });
-                    }
-                }
-                return res;
+
+                const result = logData.targets.filter(target => {
+                    const crTarget = animator.getActorData(target.uniqueID);
+                    return crTarget?.canDraw() &&
+                        ((crTarget.start === -1 && crTarget.end === -1) ||
+                        (crTarget.start <= this.time && crTarget.end >= this.time));
+                });
+                return result;
             },
             groups: function () {
-                var res = [];
-                var i = 0;
+                const result = [];
                 const encounterPlayers = getActiveNonFakePlayersForPhase(this.encounterPhase);
                 const players = getActiveNonFakePlayers(this.time * 0.001);
-                for (i = 0; i < players.length; i++) {
-                    var playerData = players[i];
-                    if (!playerData || !encounterPlayers[i]) {
+
+                for (let i = 0; i < players.length; i++) {
+                    const playerData = players[i];
+
+                    if (!playerData || !encounterPlayers[i] || !animator.getActorData(playerData.uniqueID)) {
                         continue;
                     }
-                    var crPlayer = animator.getActorData(playerData.uniqueID);
-                    if (!crPlayer) {
-                        continue;
-                    }
-                    if (!res[playerData.group]) {
-                        res[playerData.group] = [];
-                    }
-                    res[playerData.group].push({
-                            player: playerData,
-                            crPlayer: crPlayer,
-                        }
-                    );
+
+                    (result[playerData.group] ??= []).push(playerData);
                 }
-                return res;
+                return result;
             }
         }
     });

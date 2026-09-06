@@ -253,12 +253,16 @@ public partial class CombatData
             ConduitHelper.RedirectGladiatorsDefenseCastEvents(this, skillData, _animatedCastDataByID);
         }
 
+        var clones = agentData.GetAgentByType(AgentItem.AgentType.StableSpecies).Where(MesmerHelper.IsClone).ToList();
         foreach (AgentItem p in players)
         {
             switch (p.Spec)
             {
                 case Spec.Luminary:
                     LuminaryHelper.FlagLuminaryRadiantForgeWeaponSwapEvents(GetAnimatedCastData(p), GetWeaponSwapData(p), evtcVersion);
+                    break;
+                case Spec.Chronomancer:
+                    toAdd.AddRange(ChronomancerHelper.ComputeChronomancerShatters(p, this, skillData, clones));
                     break;
                 case Spec.Willbender:
                     toAdd.AddRange(ProfHelper.ComputeEndWithBuffApplyCastEvents(p, this, skillData, FlowingResolveSkill, 440, 500, FlowingResolveBuff));

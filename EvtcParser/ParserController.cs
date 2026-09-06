@@ -28,9 +28,18 @@ public abstract class ParserController
         }
     }
 
-    public virtual void Reset()
+    public virtual void ResetContent()
+    {
+    }
+    public virtual void ResetState()
     {
         StatusList.Clear();
+    }
+
+    public void Reset()
+    {
+        ResetContent();
+        ResetState();
     }
 
     public virtual void UpdateProgressWithCancellationCheck(string status)

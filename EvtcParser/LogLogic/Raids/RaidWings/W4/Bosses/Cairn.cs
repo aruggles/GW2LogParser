@@ -9,7 +9,8 @@ using static GW2EIEvtcParser.LogLogic.LogLogicTimeUtils;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -17,34 +18,34 @@ internal class Cairn : BastionOfThePenitent
 {
     internal readonly MechanicGroup Mechanics = new([
 
-            new PlayerDstHealthDamageHitMechanic(CairnDisplacement, new MechanicPlotlySetting(Symbols.Circle,Colors.LightOrange), "Port", "Orange Teleport Field","Orange TP", Sev0, 0),
+            new PlayerDstHealthDamageHitMechanic(CairnDisplacement, Mech_CairnDisplacement, new (Symbols.Circle,Colors.LightOrange), new("Port", "Orange Teleport Field","Orange TP"), Sev0),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic([SpatialManipulation1, SpatialManipulationInitial, SpatialManipulation2, SpatialManipulation3, SpatialManipulation4, SpatialManipulationFastTrigger], new MechanicPlotlySetting(Symbols.Circle,Colors.DarkGreen), "Std.Green", "Stood in Green Spatial Manipulation Field","Green", Sev2, 0)
+                new PlayerDstHealthDamageHitMechanic([SpatialManipulation1, SpatialManipulationInitial, SpatialManipulation2, SpatialManipulation3, SpatialManipulation4, SpatialManipulationFastTrigger], Mech_SpatialManipulation, new (Symbols.Circle,Colors.DarkGreen), new("Std.Green", "Stood in Green Spatial Manipulation Field","Green"), Sev2)
                     .WithStabilitySubMechanic(
-                        new SubMechanic(new MechanicPlotlySetting(Symbols.Circle,Colors.Green), "Green.C", "Green Spatial Manipulation Field (lift)","Green (lift)", Sev2, 0),
+                        new SubMechanic(Mech_SpatialManipulationNoStab, new (Symbols.Circle,Colors.Green), new("Green.C", "Green Spatial Manipulation Field (lift)","Green (lift)"), Sev2),
                         false
                     )
                     .WithStabilitySubMechanic(
-                        new SubMechanic(new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Green), "Stab.Green.C", "Green Spatial Manipulation Field while affected by stability","Stabilized Green", Sev0, 0),
+                        new SubMechanic(Mech_SpatialManipulationStab, new (Symbols.CircleOpen,Colors.Green), new("Stab.Green.C", "Green Spatial Manipulation Field while affected by stability","Stabilized Green"), Sev0),
                         true
                     )
                     .UsingIgnored()
                 ,
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(MeteorSwarm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Red), "KB", "Knockback Crystals","KB Crystal", Sev0, 1000),
-                new EnemySrcMissileMechanic(MeteorSwarm, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Orange), "Refl.KB","Reflected Knockback Crystals", "Reflected KB Crystal", Sev0, 0)
+                new PlayerDstHealthDamageHitMechanic(MeteorSwarm, Mech_MeteorSwarm, new (Symbols.DiamondTall,Colors.Red), new("KB", "Knockback Crystals","KB Crystal"), Sev0, 1000),
+                new EnemySrcMissileMechanic(MeteorSwarm, Mech_MeteorSwarmReflect, new (Symbols.DiamondTall,Colors.Orange), new("Refl.KB","Reflected Knockback Crystals", "Reflected KB Crystal"), Sev0)
                     .UsingReflected(),
             ]),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(SharedAgony, new MechanicPlotlySetting(Symbols.Circle,Colors.Red), "Agony", "Shared Agony Debuff Application","Shared Agony", Sev0, 0),//could flip
-                new PlayerDstBuffApplyMechanic(SharedAgony25, new MechanicPlotlySetting(Symbols.StarTriangleUpOpen,Colors.Pink), "Agony 25", "Shared Agony Damage (25% Player's HP)","SA dmg 25%", Sev1, 0), // Seems to be a (invisible) debuff application for 1 second from the Agony carrier to the closest(?) person in the circle.
-                new PlayerDstBuffApplyMechanic(SharedAgony50, new MechanicPlotlySetting(Symbols.StarDiamondOpen,Colors.Orange), "Agony 50", "Shared Agony Damage (50% Player's HP)","SA dmg 50%", Sev1, 0), //Chaining from the first person hit by 38170, applying a 1 second debuff to the next person.
-                new PlayerDstBuffApplyMechanic(SharedAgony75, new MechanicPlotlySetting(Symbols.StarOpen,Colors.Red), "Agony 75", "Shared Agony Damage (75% Player's HP)","SA dmg 75%", Sev1, 0), //Chaining from the first person hit by 37768, applying a 1 second debuff to the next person.
+                new PlayerDstBuffApplyMechanic(SharedAgony, Mech_SharedAgony, new (Symbols.Circle,Colors.Red), new("Agony", "Shared Agony Debuff Application","Shared Agony"), Sev0),//could flip
+                new PlayerDstBuffApplyMechanic(SharedAgony25, Mech_SharedAgony25, new (Symbols.StarTriangleUpOpen,Colors.Pink), new("Agony 25", "Shared Agony Damage (25% Player's HP)","SA dmg 25%"), Sev1), // Seems to be a (invisible) debuff application for 1 second from the Agony carrier to the closest(?) person in the circle.
+                new PlayerDstBuffApplyMechanic(SharedAgony50, Mech_SharedAgony50, new (Symbols.StarDiamondOpen,Colors.Orange), new("Agony 50", "Shared Agony Damage (50% Player's HP)","SA dmg 50%"), Sev1), //Chaining from the first person hit by 38170, applying a 1 second debuff to the next person.
+                new PlayerDstBuffApplyMechanic(SharedAgony75, Mech_SharedAgony75, new (Symbols.StarOpen,Colors.Red), new("Agony 75", "Shared Agony Damage (75% Player's HP)","SA dmg 75%"), Sev1), //Chaining from the first person hit by 37768, applying a 1 second debuff to the next person.
             ]),
-            new PlayerDstHealthDamageHitMechanic(EnergySurge, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.DarkGreen), "Leap", "Jump between green fields","Leap", Sev2, 100),
-            new PlayerDstHealthDamageHitMechanic(OrbitalSweep, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.Magenta), "Sweep", "Sword Spin (Knockback)","Sweep", Sev1, 100),//short cooldown because of multihits. Would still like to register second hit at the end of spin though, thus only 0.1s
-            new PlayerDstHealthDamageHitMechanic(GravityWave, new MechanicPlotlySetting(Symbols.Octagon,Colors.Magenta), "Donut", "Expanding Crystal Donut Wave (Knockback)","Crystal Donut", Sev1, 0)
+            new PlayerDstHealthDamageHitMechanic(EnergySurge, Mech_EnergySurge, new (Symbols.TriangleLeft,Colors.DarkGreen), new("Leap", "Jump between green fields","Leap"), Sev2, 100),
+            new PlayerDstHealthDamageHitMechanic(OrbitalSweep, Mech_OrbitalSweep, new (Symbols.DiamondWide,Colors.Magenta), new("Sweep", "Sword Spin (Knockback)","Sweep"), Sev1, 100),//short cooldown because of multihits. Would still like to register second hit at the end of spin though, thus only 0.1s
+            new PlayerDstHealthDamageHitMechanic(GravityWave, Mech_GravityWave, new (Symbols.Octagon,Colors.Magenta), new("Donut", "Expanding Crystal Donut Wave (Knockback)","Crystal Donut"), Sev1)
             // Spatial Manipulation IDs correspond to the following: 1st green when starting the fight: 37629;
             // Greens after Energy Surge/Orbital Sweep: 38302
             //100% - 75%: 37611

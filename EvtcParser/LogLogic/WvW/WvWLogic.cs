@@ -11,7 +11,8 @@ using static GW2EIEvtcParser.MapIDs;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -43,14 +44,14 @@ internal class WvWLogic : LogLogic
             LogID |= LogIDs.WvWMasks.FullInstanceMask;
         }
         MechanicList.Add(new MechanicGroup([
-            new PlayerDamageMechanic(new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Blue), "Kllng.Blw.Player", "Killing Blows inflicted by Squad Players to enemy Players", "Killing Blows to enemy Players", Sev0, 0, (log, a) => {
+            new PlayerDamageMechanic(Mech_KillingBlowPlayer, new (Symbols.TriangleDown, Colors.Blue), new("Kllng.Blw.Player", "Killing Blows inflicted by Squad Players to enemy Players", "Killing Blows to enemy Players"), Sev0, (log, a) => {
                 if (a.Type != AgentItem.AgentType.Player)
                 {
                     return new List<HealthDamageEvent>();
                 }
                 return log.FindActor(a).GetDamageEvents(null, log); //TODO_PERF(Rennorb)
             }).UsingChecker((x, log) => x.HasKilled && (x.To.Type == AgentItem.AgentType.NonSquadPlayer || x.To.IsSpecies(TargetID.WorldVersusWorld))),
-            new EnemyDamageMechanic(new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Red), "Kllng.Blw.Enemy", "Killing Blows inflicted enemy Players by Squad Players", "Killing Blows received by enemies", Sev0, 0, (log, a) => log.FindActor(a).GetDamageTakenEvents(null, log)) //TODO_PERF(Rennorb)
+            new EnemyDamageMechanic(Mech_KillingBlowEnemy, new (Symbols.TriangleDown, Colors.Red), new("Kllng.Blw.Enemy", "Killing Blows inflicted enemy Players by Squad Players", "Killing Blows received by enemies"), Sev0, (log, a) => log.FindActor(a).GetDamageTakenEvents(null, log)) //TODO_PERF(Rennorb)
                 .UsingChecker((x, log) => x.HasKilled && x.CreditedFrom.Type == AgentItem.AgentType.Player),
         ]));
     }

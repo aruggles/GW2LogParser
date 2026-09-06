@@ -68,7 +68,7 @@ public static class EffectGUIDs
 
     #region Mesmer
     public static readonly GUID MesmerThePrestigeDisappear1 = new("48B69FBC3090E144BFC067D6C0208878");
-    public static readonly GUID MesmerThePrestigeDisappear2AndNonChronoShatterAroundClones = new("5FA6527231BB8041AC783396142C6200"); // also used with elementalist cleansing fire
+    public static readonly GUID MesmerThePrestigeDisappear2AndShatterAroundClonesAndChrono = new("5FA6527231BB8041AC783396142C6200"); // also used with elementalist cleansing fire
     public static readonly GUID MesmerSignetOfMidnight = new("02154B72900B5740A73CD0ADECED27BF");
     public static readonly GUID MesmerFeedback = new("D6C8F406E4DEE04AB16A215BE068E910");
     public static readonly GUID MesmerVeil = new("6B29E895E2EB9341B560FFD3A78F78F2");
@@ -85,10 +85,12 @@ public static class EffectGUIDs
     public static readonly GUID MesmerPowerReturn = new("F53E2CE3B06B934085D46FA59468477B");
     public static readonly GUID MesmerDimensionalAperturePortal = new("9246D82C91B5274396DBAB561DC8EFAF");
     public static readonly GUID MesmerIllusionOfLife1 = new("F7D8B60F91335741AB6CDCC9B7CEF2C5");
-    public static readonly GUID MesmerIllusionOfLife2 = new("40818C8E9CC6EF4388C2821FCC26A9EC"); // Collides with other fields
+    public static readonly GUID MesmerIllusionOfLife2AndMirrorImages = new("40818C8E9CC6EF4388C2821FCC26A9EC"); // Collides with other fields
     public static readonly GUID MesmerMentalCollapse120Radius = new("15C98898B2E33A49A7BAE3DFE99A2584");
     public static readonly GUID MesmerMentalCollapse240Radius = new("4590C8949239AE419CEC0F9053548A6F");
     public static readonly GUID MesmerMentalCollapse360Radius = new("674B586AEBEACC419A1EA44FE112F027");
+    public static readonly GUID MesmerChaosArmor = new("9E6A9107AF3D1547A59B4A05FFC43AE5"); // Oms duration, by and on agent
+    public static readonly GUID MesmerChaosArmorGround = new("731F6451C6C9874DA629D92C355194F0"); // 2000ms duration, by agent on ground
     public static readonly GUID MesmerChaosStorm1 = new("921F3521FB79F240B1A8F7EC855F8DF9"); // 5000ms duration
     public static readonly GUID MesmerChaosStorm2 = new("EFB9CDA30AEBC744B9D377A99BEBC0B2"); // Collides with Necromancer marks, Engineer Spear Devastator
     public static readonly GUID ChronomancerSeizeTheMomentShatter = new("4C7A5E148F7FD642B34EE4996DDCBBAB"); // This seems to happen everytime split second, rewinder, time sink or continuum split are cast under SeizeTheMoment
@@ -129,7 +131,7 @@ public static class EffectGUIDs
     public static readonly GUID MesmerRifleInspiringImagery3 = new("116644F736CDFE4F8FF3E1EB5C5C57A2"); // 2000 Duration - Src Mesmer - Ground AoE
     public static readonly GUID MesmerRifleAbstraction = new("6E2B9CF3E5C95846B15BBD1EAA9B3E98"); // 3300 Default Duration - Src Mesmer - Ground Effect
     public static readonly GUID MesmerRifleAbstraction2 = new("593E668A006AB24D84999AED68F2E4C4"); // 2000 Default Duration - Src Mesmer - Ground Effect
-    // public static readonly GUID MesmerTrail = new("73414BA39AFCF540A90CF91DE961CCEF"); // used with e.g. mirror images, phase retreat, illusionary ambush - likely the trail left behind
+    public static readonly GUID MesmerTrail = new("73414BA39AFCF540A90CF91DE961CCEF"); // used with e.g. mirror images, phase retreat, illusionary ambush - likely the trail left behind
     public static readonly GUID TroubadourTaleOfTheSoulkeeper = new("FF116F5E112DA042B238469590A1FCD8"); // 3833 duration
     public static readonly GUID TroubadourTaleOfTheValiantMarshal = new("EBC45B862D299143B4D63CB6CAEC26ED"); // 3833 duration
     public static readonly GUID TroubadourTaleOfTheHonorableRogue = new("DBECB5867D11264FA19FFCDC487A410E"); // 3833 duration

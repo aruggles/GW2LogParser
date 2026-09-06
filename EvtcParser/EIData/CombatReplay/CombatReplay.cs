@@ -42,6 +42,20 @@ public class CombatReplay
         _Positions.Add(position);
     }
 
+    internal virtual void AddTeleport(ParametricPoint3D position)
+    {
+        var lastVelocity = _Velocities.LastOrNull();
+        var velocityInsertTime = lastVelocity?.Time;
+        if (velocityInsertTime.HasValue)
+        {
+            // Add zero velocity after latest event to make sure to stop interpolation ...
+            _Velocities.Add(new(0,0,0, Math.Min(velocityInsertTime.Value + 1, position.Time - 1)));
+            // ... and then restore previous
+            _Velocities.Add(new(lastVelocity!.Value.XYZ, position.Time));
+        }
+        _Positions.Add(position);
+    }
+
     internal virtual void AddVelocity(ParametricPoint3D velocity)
     {
         _Velocities.Add(velocity);
@@ -129,7 +143,7 @@ public class CombatReplay
                         velocity = Velocities[velocityTableIndex];
                     }
 
-                    if (nextPos.Time - last.Time > ArcDPSPollingRate + rate && velocity.XYZ.Length() < 1e-3)
+                    if (velocity.XYZ.Length() < 1e-3)
                     {
                         _PolledPositions[polledPositionTableIndex++] = pos.WithChangedTime(t);
                     }
@@ -168,7 +182,7 @@ public class CombatReplay
                 else
                 {
                     ParametricPoint3D last = _PolledRotations[polledRotationTableIndex - 1].Time > rot.Time ? _PolledRotations[polledRotationTableIndex - 1] : rot;
-                    if (nextRot.Time - last.Time > ArcDPSPollingRate + rate)
+                    if (nextRot.Time - last.Time > ArcDPSPollingRate + ParserHelper.ServerDelayConstant)
                     {
                         _PolledRotations[polledRotationTableIndex++] = rot.WithChangedTime(t);
                     }

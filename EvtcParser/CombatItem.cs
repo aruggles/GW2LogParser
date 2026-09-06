@@ -41,7 +41,9 @@ public class CombatItem
     public readonly byte Pad4;
 
     public bool IsExtension => IsStateChange == StateChange.Extension || IsStateChange == StateChange.ExtensionCombat;
-    public bool IsGeographical => IsStateChange == StateChange.Position ||
+    public bool IsPosition => IsStateChange == StateChange.Position ||
+            IsStateChange == StateChange.Teleport;
+    public bool IsGeographical => IsPosition ||
             IsStateChange == StateChange.Rotation ||
             IsStateChange == StateChange.Velocity;
 
@@ -60,7 +62,7 @@ public class CombatItem
 
 #if DEBUG
     // For debugging, to get rid of statechanges seen generally on all agents
-    public bool IsSpecial => IsStateChange != StateChange.Combat && IsStateChange != StateChange.Position && IsStateChange != StateChange.Rotation && IsStateChange != StateChange.Velocity && IsStateChange != StateChange.HealthUpdate && IsStateChange != StateChange.BarrierUpdate && IsStateChange != StateChange.EnterCombat && IsStateChange != StateChange.ExitCombat && IsStateChange != StateChange.BreakbarPercent && IsStateChange != StateChange.BreakbarState && IsStateChange != StateChange.Spawn && IsStateChange != StateChange.Despawn && IsStateChange != StateChange.TeamChange && IsStateChange != StateChange.StackActive;
+    public bool IsSpecial => IsStateChange != StateChange.Combat && !IsGeographical && IsStateChange != StateChange.HealthUpdate && IsStateChange != StateChange.BarrierUpdate && IsStateChange != StateChange.EnterCombat && IsStateChange != StateChange.ExitCombat && IsStateChange != StateChange.BreakbarPercent && IsStateChange != StateChange.BreakbarState && IsStateChange != StateChange.Spawn && IsStateChange != StateChange.Despawn && IsStateChange != StateChange.TeamChange && IsStateChange != StateChange.StackActive;
 #endif
 
     // Constructor
@@ -287,6 +289,7 @@ public class CombatItem
             || IsStateChange == StateChange.GadgetCaptureSplitPercent
             || IsStateChange == StateChange.GadgetCaptureOutlineHide
             || IsStateChange == StateChange.GadgetCaptureOutlinePoint
+            || IsStateChange == StateChange.Jump
             ;
     }
 

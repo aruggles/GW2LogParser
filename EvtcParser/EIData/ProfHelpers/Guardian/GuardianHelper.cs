@@ -138,11 +138,11 @@ internal static class GuardianHelper
         new BuffOnActorDamageModifier(Mod_SymbolicAvenger, SymbolicAvenger, "Symbolic Avenger", "1% per stack", DamageSource.NoPets, 1.0, DamageType.Strike, DamageType.All, Source.Guardian, ByStack, TraitImages.SymbolicAvenger_Jan2026, DamageModifierMode.All)
             .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
         // - Furious Focus
-        new BuffOnActorDamageModifier(Mod_FuriousFocus, Fury, "Furious Focus", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Guardian, ByPresence, TraitImages.FuriousFocus, DamageModifierMode.All)
+        new BuffOnActorDamageModifier(Mod_FuriousFocus, Fury, "Furious Focus", "10% under Fury", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Guardian, ByPresence, TraitImages.FuriousFocus, DamageModifierMode.All)
             .WithBuilds(GW2Builds.January2026Balance, GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
-        new BuffOnActorDamageModifier(Mod_FuriousFocus, Fury, "Furious Focus", "10%", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Guardian, ByPresence, TraitImages.FuriousFocus, DamageModifierMode.PvE)
+        new BuffOnActorDamageModifier(Mod_FuriousFocus, Fury, "Furious Focus", "10% under Fury", DamageSource.NoPets, 10.0, DamageType.Strike, DamageType.All, Source.Guardian, ByPresence, TraitImages.FuriousFocus, DamageModifierMode.PvE)
             .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
-        new BuffOnActorDamageModifier(Mod_FuriousFocus, Fury, "Furious Focus", "7%", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Guardian, ByPresence, TraitImages.FuriousFocus, DamageModifierMode.sPvPWvW)
+        new BuffOnActorDamageModifier(Mod_FuriousFocus, Fury, "Furious Focus", "7% under Fury", DamageSource.NoPets, 7.0, DamageType.Strike, DamageType.All, Source.Guardian, ByPresence, TraitImages.FuriousFocus, DamageModifierMode.sPvPWvW)
             .WithBuilds(GW2Builds.February2026GuardiansGladeCMReleaseAndMinorBalance),
 
         // Radiance

@@ -14,23 +14,25 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class Escort : StrongholdOfTheFaithful
 {
     internal readonly MechanicGroup Mechanics = new([
-            new PlayerDstHealthDamageMechanic(DetonateMineEscort, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Red), "Mine.H", "Hit by Mine Detonation", "Mine Detonation Hit", Sev0, 150).UsingChecker((de, log) => de.CreditedFrom.IsSpecies(TargetID.Mine)),
-            new PlayerDstHealthDamageMechanic(GlennaBombHit, new MechanicPlotlySetting(Symbols.Hexagon, Colors.LightGrey), "Bomb.H", "Hit by Glenna's Bomb", "Glenna's Bomb Hit", Sev1, 0),
-            new PlayerDstHealthDamageHitMechanic(FireMortarEscortHit, new MechanicPlotlySetting(Symbols.Hourglass, Colors.DarkPurple), "Shrd.H", "Hit by Mortar Fire (Bloodstone Turrets)", "Mortar Fire Hit", Sev2, 0),
+            new PlayerDstHealthDamageMechanic(DetonateMineEscort, Mech_DetonateMine, new (Symbols.CircleCross, Colors.Red), new("Mine.H", "Hit by Mine Detonation", "Mine Detonation Hit"), Sev0, 150)
+                .UsingChecker((de, log) => de.CreditedFrom.IsSpecies(TargetID.Mine)),
+            new PlayerDstHealthDamageMechanic(GlennaBombHit, Mech_GlennaBombed, new (Symbols.Hexagon, Colors.LightGrey), new("Bomb.H", "Hit by Glenna's Bomb", "Glenna's Bomb Hit"), Sev1),
+            new PlayerDstHealthDamageHitMechanic(FireMortarEscortHit, Mech_MortarHit, new (Symbols.Hourglass, Colors.DarkPurple), new("Shrd.H", "Hit by Mortar Fire (Bloodstone Turrets)", "Mortar Fire Hit"), Sev2),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(RadiantAttunementPhantasm, new MechanicPlotlySetting(Symbols.Diamond, Colors.White), "Rad.A", "Radiant Attunement Application", "Radiant Attunement Application", Sev1, 150),
-                new PlayerDstBuffApplyMechanic(CrimsonAttunementPhantasm, new MechanicPlotlySetting(Symbols.Diamond, Colors.Red), "Crim.A", "Crimson Attunement Application", "Crimson Attunement Application", Sev1, 150),
+                new PlayerDstBuffApplyMechanic(RadiantAttunementPhantasm, Mech_RadiantAttunementEscort, new (Symbols.Diamond, Colors.White), new("Rad.A", "Radiant Attunement Application", "Radiant Attunement Application"), Sev1, 150),
+                new PlayerDstBuffApplyMechanic(CrimsonAttunementPhantasm, Mech_CrimsonAttunementEscort, new (Symbols.Diamond, Colors.Red), new("Crim.A", "Crimson Attunement Application", "Crimson Attunement Application"), Sev1, 150),
             ]),
-            new PlayerSrcEffectMechanic(EffectGUIDs.EscortOverHere, new MechanicPlotlySetting(Symbols.Star, Colors.White), "OverHere.C", "Used Over Here! (Special Action Key)", "Over Here! Cast", Sev0, 0),
-            new EnemyDstBuffApplyMechanic(Invulnerability757, new MechanicPlotlySetting(Symbols.DiamondOpen, Colors.LightBlue), "Inv.A", "Invulnerability Applied", "Invulnerability Applied", Sev1, 150),
-            new EnemyCastStartMechanic(TeleportDisplacementField, new MechanicPlotlySetting(Symbols.Square, Colors.LightPurple), "Tel.C", "Teleport Cast", "Teleport Cast", Sev2, 150),
+            new PlayerSrcEffectMechanic(EffectGUIDs.EscortOverHere, Mech_EscortSAK, new (Symbols.Star, Colors.White), new("OverHere.C", "Used Over Here! (Special Action Key)", "Over Here! Cast"), Sev0),
+            new EnemyDstBuffApplyMechanic(Invulnerability757, Mech_EscortInvulnApplied, new (Symbols.DiamondOpen, Colors.LightBlue), new("Inv.A", "Invulnerability Applied", "Invulnerability Applied"), Sev1, 150),
+            new EnemyCastStartMechanic(TeleportDisplacementField, Mech_EscortTPCast, new (Symbols.Square, Colors.LightPurple), new("Tel.C", "Teleport Cast", "Teleport Cast"), Sev2, 150),
         ]);
 
     public Escort(int triggerID) : base(triggerID)
@@ -183,7 +185,7 @@ internal class Escort : StrongholdOfTheFaithful
         var duplicateGlennaPosition = new Vector3(-4326.979f, 13687.298f, -5561.857f);
         foreach (var glenna in agentData.GetStableSpeciesByID(TargetID.Glenna))
         {
-            var positions = combatData.Where(x => x.IsStateChange == StateChange.Position && x.SrcMatchesAgent(glenna)).Take(5).Select(x => new PositionEvent(x, agentData).GetParametricPoint3D());
+            var positions = combatData.Where(x => x.IsPosition && x.SrcMatchesAgent(glenna)).Take(5).Select(x => new PositionEvent(x, agentData).GetParametricPoint3D());
             if (positions.Any(x => (duplicateGlennaPosition.XY() - x.XYZ.XY()).LengthSquared() < 10))
             {
                 glenna.OverrideID(IgnoredSpecies, agentData);

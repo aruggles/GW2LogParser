@@ -14,7 +14,8 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -24,48 +25,48 @@ internal class AetherbladeHideout : EndOfDragonsRaidEncounter
             [
                 // NOTE: Kaleidoscopic Chaos deals HP % damage - Normal Mode: 20% if hit once, 60% if hit twice - Challenge Mode: 33% if hit once, 200% if hit twice.
                 new MechanicGroup([
-                    new PlayerDstHealthDamageHitMechanic(NightmareFusilladeMain, new MechanicPlotlySetting(Symbols.TriangleRight, Colors.DarkRed), "Cone", "Hit by Cone attack", "Cone", Sev2, 150),
-                    new PlayerDstHealthDamageHitMechanic(NightmareFusilladeSide, new MechanicPlotlySetting(Symbols.TriangleLeft, Colors.DarkRed), "Cone.S", "Hit by Side Cone attack", "Side Cone", Sev2, 150),
+                    new PlayerDstHealthDamageHitMechanic(NightmareFusilladeMain, Mech_NightmareFusilladeMain, new (Symbols.TriangleRight, Colors.DarkRed), new("Cone", "Hit by Cone attack", "Cone"), Sev2, 150),
+                    new PlayerDstHealthDamageHitMechanic(NightmareFusilladeSide, Mech_NightmareFusilladeSide, new (Symbols.TriangleLeft, Colors.DarkRed), new("Cone.S", "Hit by Side Cone attack", "Side Cone"), Sev2, 150),
                 ]),
-                new PlayerDstHealthDamageHitMechanic(ElectricBlast, new MechanicPlotlySetting(Symbols.Circle, Colors.LightRed), "ElecBlast.H", "Hit by Electric Blast (Echo AoEs)", "Electric Blast Hit", Sev1, 0),
-                new PlayerDstHealthDamageHitMechanic(ToxicOrb, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Purple), "ToxOrb.H", "Hit by Toxic Orb", "Toxic Orb Hit", Sev1, 0),
+                new PlayerDstHealthDamageHitMechanic(ElectricBlast, Mech_ElectricBlast, new (Symbols.Circle, Colors.LightRed), new("ElecBlast.H", "Hit by Electric Blast (Echo AoEs)", "Electric Blast Hit"), Sev1),
+                new PlayerDstHealthDamageHitMechanic(ToxicOrb, Mech_ToxicOrb, new (Symbols.CircleCross, Colors.Purple), new("ToxOrb.H", "Hit by Toxic Orb", "Toxic Orb Hit"), Sev1),
                 new MechanicGroup([
-                    new PlayerDstHealthDamageHitMechanic(Heartpiercer, new MechanicPlotlySetting(Symbols.Octagon, Colors.White), "HrtPier.H", "Hit by Heartpiercer", "Heartpiercer Hit", Sev1, 0)
+                    new PlayerDstHealthDamageHitMechanic(Heartpiercer, Mech_Heartpiercer, new (Symbols.Octagon, Colors.White), new("HrtPier.H", "Hit by Heartpiercer", "Heartpiercer Hit"), Sev1)
                         .WithStabilitySubMechanic(
-                            new SubMechanic(new MechanicPlotlySetting(Symbols.Octagon, Colors.DarkWhite), "HrtPier.CC", "Knocked Down by Heartpiercer", "Heartpiercer Knockdown", Sev0, 150),
+                            new SubMechanic(Mech_HeartpiercerNoStab, new (Symbols.Octagon, Colors.DarkWhite), new("HrtPier.CC", "Knocked Down by Heartpiercer", "Heartpiercer Knockdown"), Sev0, 150),
                             false
                         ),
                 ]),
-                new PlayerDstHealthDamageHitMechanic(FissureOfTorment, new MechanicPlotlySetting(Symbols.X, Colors.DarkRed), "FissTorm.H", "Hit by Fissure of Torment", "Fissure of Torment Hit", Sev2, 0),
+                new PlayerDstHealthDamageHitMechanic(FissureOfTorment, Mech_FissureOfTorment, new (Symbols.X, Colors.DarkRed), new("FissTorm.H", "Hit by Fissure of Torment", "Fissure of Torment Hit"), Sev2),
                 new MechanicGroup([
-                    new PlayerDstHealthDamageHitMechanic([TormentingWaveNM, TormentingWaveCM], new MechanicPlotlySetting(Symbols.Circle, Colors.DarkRed), "Shck.Wv", "Hit by Shockwave attack", "Shockwave", Sev0, 150),
-                    new PlayerDstHealthDamageMechanic([TormentingWaveNM, TormentingWaveCM], new MechanicPlotlySetting(Symbols.BowtieOpen, Colors.Orange), "Smash", "Died to Echo's Smash", "Smash Death", Sev0, 0)
+                    new PlayerDstHealthDamageHitMechanic([TormentingWaveNM, TormentingWaveCM], Mech_TormentingWave, new (Symbols.Circle, Colors.DarkRed), new("Shck.Wv", "Hit by Shockwave attack", "Shockwave"), Sev0, 150),
+                    new PlayerDstHealthDamageMechanic([TormentingWaveNM, TormentingWaveCM], Mech_TormentingWaveDead, new (Symbols.BowtieOpen, Colors.Orange), new("Smash", "Died to Echo's Smash", "Smash Death"), Sev0)
                         .UsingChecker((evt, log) => evt.HasDowned && evt.To.IsPlayer && evt.To.IsDead(log, evt.Time - 5, evt.Time + 5)),
                 ]),
                 new MechanicGroup([
-                    new PlayerDstHealthDamageHitMechanic([LeyBreachNM, LeyBreachCM], new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Puddle", "Hit by Ley Breach (Red Puddle)", "Puddle", Sev0, 150),
-                    new PlayerDstBuffApplyMechanic(LeyBreachTargetBuff, new MechanicPlotlySetting(Symbols.DiamondOpen, Colors.CobaltBlue), "LeyBreach.T", "Targeted by Ley Breach (Red Puddle)", "Ley Breach Target", Sev1, 0),
+                    new PlayerDstHealthDamageHitMechanic([LeyBreachNM, LeyBreachCM], Mech_LeyBreach, new (Symbols.Circle, Colors.LightOrange), new("Puddle", "Hit by Ley Breach (Red Puddle)", "Puddle"), Sev0, 150),
+                    new PlayerDstBuffApplyMechanic(LeyBreachTargetBuff, Mech_LeyBreachTarget, new (Symbols.DiamondOpen, Colors.CobaltBlue), new("LeyBreach.T", "Targeted by Ley Breach (Red Puddle)", "Ley Breach Target"), Sev1),
                 ]),
-                new PlayerDstHealthDamageHitMechanic([ToxicBulletNMCM1, ToxicBulletNMCM2, ToxicBulletCM], new MechanicPlotlySetting(Symbols.CircleOpenDot, Colors.LightPurple), "ToxBull.H", "Hit by Toxic Bullet", "Toxic Bullet Hit", Sev2, 0),
+                new PlayerDstHealthDamageHitMechanic([ToxicBulletNMCM1, ToxicBulletNMCM2, ToxicBulletCM], Mech_ToxicBullet, new (Symbols.CircleOpenDot, Colors.LightPurple), new("ToxBull.H", "Hit by Toxic Bullet", "Toxic Bullet Hit"), Sev2),
                 new MechanicGroup([
-                    new PlayerDstHealthDamageMechanic(FocusedDestructionNM, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.Red), "Green.Dwn", "Downed by Green", "Green Downed", Sev0, 150)
+                    new PlayerDstHealthDamageMechanic(FocusedDestructionNM, Mech_FocusedDestructionDown, new (Symbols.TriangleUp, Colors.Red), new("Green.Dwn", "Downed by Green", "Green Downed"), Sev0, 150)
                         .UsingChecker((evt, log) => evt.HasDowned),
-                    new PlayerDstHealthDamageMechanic(FocusedDestructionCM, new MechanicPlotlySetting(Symbols.CircleXOpen, Colors.DarkGreen), "Green.Dth", "Died to Focused Destruction (Green)", "Green Death", Sev0, 0)
+                    new PlayerDstHealthDamageMechanic(FocusedDestructionCM, Mech_FocusedDestructionDead, new (Symbols.CircleXOpen, Colors.DarkGreen), new("Green.Dth", "Died to Focused Destruction (Green)", "Green Death"), Sev0)
                         .UsingChecker((evt, log) => evt.HasDowned && evt.To.IsPlayer && evt.To.IsDead(log, evt.Time - 5, evt.Time + 5) && evt.To.HasBuff(log, PhotonSaturation, evt.Time - 10)),
-                    new PlayerDstBuffApplyMechanic(PhotonSaturation, new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Green), "Green.D", "Received Photon Saturation (Green Debuff)", "Green Debuff", Sev3, 150),
-                    new PlayerDstBuffApplyMechanic([SharedDestructionMaiTrinNM, SharedDestructionMaiTrinCM], new MechanicPlotlySetting(Symbols.Circle, Colors.Green), "Green", "Selected for Green", "Green", Sev0, 150),
+                    new PlayerDstBuffApplyMechanic(PhotonSaturation, Mech_PhotonSaturation, new (Symbols.TriangleDown, Colors.Green), new("Green.D", "Received Photon Saturation (Green Debuff)", "Green Debuff"), Sev3, 150),
+                    new PlayerDstBuffApplyMechanic([SharedDestructionMaiTrinNM, SharedDestructionMaiTrinCM], Mech_AHSharedDestruction, new (Symbols.Circle, Colors.Green), new("Green", "Selected for Green", "Green"), Sev0, 150),
                 ]),
-                new PlayerDstHealthDamageMechanic([KaleidoscopicChaosNM, KaleidoscopicChaosCM], new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Orange), "Spread.Dwn", "Downed by Kaleidoscopic Chaos (Spread)", "Kaleidoscopic Chaos Downed", Sev0, 0)
+                new PlayerDstHealthDamageMechanic([KaleidoscopicChaosNM, KaleidoscopicChaosCM], Mech_KaleidoscopicChaos, new (Symbols.TriangleDown, Colors.Orange), new("Spread.Dwn", "Downed by Kaleidoscopic Chaos (Spread)", "Kaleidoscopic Chaos Downed"), Sev0)
                     .UsingChecker((evt, log) => evt.HasDowned),
-                new PlayerDstHealthDamageMechanic(ChaosAndDestructionDamageNM, new MechanicPlotlySetting(Symbols.Hourglass, Colors.Red), "Puzzle.Dth", "Died to Chaos and Destruction (Puzzle)", "Puzzle Death", Sev0, 0)
+                new PlayerDstHealthDamageMechanic(ChaosAndDestructionDamageNM, Mech_ChaosAndDestruction, new (Symbols.Hourglass, Colors.Red), new("Puzzle.Dth", "Died to Chaos and Destruction (Puzzle)", "Puzzle Death"), Sev0)
                     .UsingChecker((evt, log) => evt.HasDowned && evt.To.IsPlayer && evt.To.IsDead(log, evt.Time - 30, evt.Time + 30)),
-                new PlayerDstHealthDamageMechanic(MagBeam, new MechanicPlotlySetting(Symbols.X, Colors.Red), "PuzzleCM.Dth", "Died to Mag Beam (Puzzle)", "Puzzle CM Death", Sev0, 0)
+                new PlayerDstHealthDamageMechanic(MagBeam, Mech_MagBeam, new (Symbols.X, Colors.Red), new("PuzzleCM.Dth", "Died to Mag Beam (Puzzle)", "Puzzle CM Death"), Sev0)
                     .UsingChecker((evt, log) => evt.HasDowned && evt.To.IsPlayer && evt.To.IsDead(log, evt.Time - 5, evt.Time + 5)),
                 new MechanicGroup([
-                    new PlayerDstBuffApplyMechanic(MagneticBomb, new MechanicPlotlySetting(Symbols.Circle, Colors.Magenta), "Bomb", "Selected for Bomb", "Bomb", Sev2, 150),
-                    new PlayerDstBuffApplyMechanic(MaiTrinCMBeamsTargetGreen, new MechanicPlotlySetting(Symbols.DiamondWideOpen, Colors.Green), "BombGreen.A", "Received Green Bomb Target", "Green Bomb Target", Sev1, 0),
-                    new PlayerDstBuffApplyMechanic(MaiTrinCMBeamsTargetRed, new MechanicPlotlySetting(Symbols.DiamondWideOpen, Colors.Red), "BombRed.A", "Received Red Bomb Target", "Red Bomb Target", Sev1, 0),
-                    new PlayerDstBuffApplyMechanic(MaiTrinCMBeamsTargetBlue, new MechanicPlotlySetting(Symbols.DiamondWideOpen, Colors.Blue), "BombBlue.A", "Received Blue Bomb Target", "Blue Bomb Target", Sev1, 0),
+                    new PlayerDstBuffApplyMechanic(MagneticBomb, Mech_MagneticBomb, new (Symbols.Circle, Colors.Magenta), new("Bomb", "Selected for Bomb", "Bomb"), Sev2, 150),
+                    new PlayerDstBuffApplyMechanic(MaiTrinCMBeamsTargetGreen, Mech_BeamTargetGreen, new (Symbols.DiamondWideOpen, Colors.Green), new("BombGreen.A", "Received Green Bomb Target", "Green Bomb Target"), Sev1),
+                    new PlayerDstBuffApplyMechanic(MaiTrinCMBeamsTargetRed, Mech_BeamTargetRed, new (Symbols.DiamondWideOpen, Colors.Red), new("BombRed.A", "Received Red Bomb Target", "Red Bomb Target"), Sev1),
+                    new PlayerDstBuffApplyMechanic(MaiTrinCMBeamsTargetBlue, Mech_BeamTargetBlue, new (Symbols.DiamondWideOpen, Colors.Blue), new("BombBlue.A", "Received Blue Bomb Target", "Blue Bomb Target"), Sev1),
                 ]),
             ]
         );

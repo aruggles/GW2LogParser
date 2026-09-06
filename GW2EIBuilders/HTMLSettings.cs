@@ -16,7 +16,7 @@ public class HTMLSettings
     { 
     }
 
-    public HTMLSettings(string externalHTMLScriptsPath, string externalHTMLScriptsCdn)
+    public HTMLSettings(string? externalHTMLScriptsPath, string? externalHTMLScriptsCdn)
     {
         ExternalHtmlScriptsPath = externalHTMLScriptsPath;
         ExternalHtmlScriptsCdn = externalHTMLScriptsCdn;

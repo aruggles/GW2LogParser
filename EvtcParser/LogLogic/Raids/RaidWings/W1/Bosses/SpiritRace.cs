@@ -12,18 +12,19 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class SpiritRace : SpiritVale
 {
     internal readonly MechanicGroup Mechanics = new([
-            new PlayerDstHealthDamageHitMechanic(SpiritFog, new MechanicPlotlySetting(Symbols.CircleOpen, Colors.Red), "SpiritFog.H", "Hit by Spirit Fog", "Spirit Fog Hit", Sev0, 0),
+            new PlayerDstHealthDamageHitMechanic(SpiritFog, Mech_SpiritFog, new (Symbols.CircleOpen, Colors.Red), new("SpiritFog.H", "Hit by Spirit Fog", "Spirit Fog Hit"), Sev0),
             new MechanicGroup([
-                new AchievementEligibilityMechanic(Ach_OutrunGhost, new MechanicPlotlySetting(Symbols.Diamond, Colors.DarkPink), "Outrun.Achiv.L", "Achievement Eligibility: I Can Outrun A...Ghost Lost", "I Can Outrun A...Ghost Lost", 0)
+                new AchievementEligibilityMechanic(Ach_OutrunGhost, Mech_OutrunGhostLost, new (Symbols.Diamond, Colors.DarkPink),  new("Outrun.Achiv.L", "Achievement Eligibility: I Can Outrun A...Ghost Lost", "I Can Outrun A...Ghost Lost"))
                         .UsingChecker((evt, log) => evt.Lost),
-                new AchievementEligibilityMechanic(Ach_OutrunGhost, new MechanicPlotlySetting(Symbols.Diamond, Colors.Pink), "Outrun.Achiv.K", "Achievement Eligibility: I Can Outrun A...Ghost Kept", "I Can Outrun A...Ghost Kept", 0)
+                new AchievementEligibilityMechanic(Ach_OutrunGhost, Mech_OutrunGhostKept, new (Symbols.Diamond, Colors.Pink),  new("Outrun.Achiv.K", "Achievement Eligibility: I Can Outrun A...Ghost Kept", "I Can Outrun A...Ghost Kept"))
                         .UsingChecker((evt, log) => !evt.Lost)
             ]),
         ]);
@@ -144,7 +145,7 @@ internal class SpiritRace : SpiritVale
             if (candidate.Type == AgentItem.AgentType.VolatileSpecies)
             {
                 needsDummy = false;
-                var positions = combatData.Where(x => x.IsStateChange == StateChange.Position && x.SrcMatchesAgent(candidate)).Select(MovementEvent.GetPointXY).ToList();
+                var positions = combatData.Where(x => x.IsPosition && x.SrcMatchesAgent(candidate)).Select(MovementEvent.GetPointXY).ToList();
                 if (positions.Any(x => (x - position1).Length() < 10))
                 {
                     candidate.OverrideID(TargetID._EtherealBarrier1, agentData);

@@ -42,6 +42,11 @@ public class JsonMechanics
     public IReadOnlyList<JsonMechanic>? MechanicsData;
 
     /// <summary>
+    /// Unique identifier of the mechanic.
+    /// </summary>
+    public int ID;
+
+    /// <summary>
     /// Name of the mechanic, this is the short name as it appears on EI HTML Mechanic tables.
     /// </summary>
     public string? Name;

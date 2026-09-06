@@ -1,5 +1,5 @@
 ﻿<template>
-    <div>
+    <div class="actor-data p-1">
         <div v-if="buffs" class="mb-1">
             <combat-replay-actor-buff v-if="isPresent('Encounter Specifics')" :buffarray="data.encounterSpecifics" />
             <combat-replay-actor-buff v-if="isPresent('Others')" :buffarray="data.others" />

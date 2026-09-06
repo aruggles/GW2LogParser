@@ -6,7 +6,8 @@ using static GW2EIEvtcParser.LogLogic.LogCategories;
 using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -15,8 +16,8 @@ internal abstract class HallOfChains : RaidWingLogic
     public HallOfChains(int triggerID) : base(triggerID)
     {
         MechanicList.Add(new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(FracturedSpirit, new MechanicPlotlySetting(Symbols.Square,Colors.Green), "Orb CD", "Applied when taking green","Green port", Sev2, 0),
-                new PlayerDstBuffApplyMechanic(SourcePureOblivionBuff, new MechanicPlotlySetting(Symbols.HexagonOpen, Colors.Black), "10%", "Lifted by Pure Oblivion", "Pure Oblivion (10%)", Sev0, 0),
+                new PlayerDstBuffApplyMechanic(FracturedSpirit, Mech_FracturedSpirit, new (Symbols.Square,Colors.Green), new("Orb CD", "Applied when taking green","Green port"), Sev2),
+                new PlayerDstBuffApplyMechanic(SourcePureOblivionBuff, Mech_PureOblivions, new (Symbols.HexagonOpen, Colors.Black), new("10%", "Lifted by Pure Oblivion", "Pure Oblivion (10%)"), Sev0),
             ]));
         LogCategoryInformation.SubCategory = SubLogCategory.HallOfChains;
         LogID |= LogIDs.RaidWingMasks.HallOfChainsMask;

@@ -101,8 +101,8 @@ class IconDrawable {
         const offsetedIndex = currentIndex - startIndex;
         const initialAngle = this.angles[offsetedIndex];
         const timeValue = animator.times[currentIndex];
-        var angle = 0;
-        var time = animator.reactiveDataStatus.time;
+        let angle = 0;
+        const time = animator.reactiveDataStatus.time;
         if (time - timeValue > 0 && offsetedIndex < this.angles.length - 1) {
             const nextTimeValue = animator.times[currentIndex + 1];
             let nextAngle = this.angles[offsetedIndex + 1];
@@ -124,11 +124,11 @@ class IconDrawable {
         const positionX = this.positions[2 * offsetedIndex];
         const positionY = this.positions[2 * offsetedIndex + 1];
         const timeValue = animator.times[currentIndex];
-        var pt = {
+        const pt = {
             x: 0,
             y: 0
         };
-        var time = animator.reactiveDataStatus.time;
+        const time = animator.reactiveDataStatus.time;
         if (time - timeValue > 0 && offsetedIndex < 0.5 * this.positions.length - 1) {
             const nextTimeValue = animator.times[currentIndex + 1];
             const nextPositionX = this.positions[2 * offsetedIndex + 2];
@@ -155,7 +155,7 @@ class IconDrawable {
         if (this.angles === null || this.angles.length === 0 || this.disconnected()) {
             return null;
         }
-        var time = animator.reactiveDataStatus.time;
+        const time = animator.reactiveDataStatus.time;
         if (this.start !== -1 && (this.start > time || this.end < time)) {
             return null;
         }
@@ -207,11 +207,11 @@ class IconDrawable {
         if (pos === null) {
             return;
         }
-        var ctx = animator.mainContext;
+        const ctx = animator.mainContext;
         const fullSize = this.getSize();
         const halfSize = fullSize / 2;
-        var isSelected = this.isSelected();
-        var inSelectedGroup = this.inSelectedGroup();
+        const isSelected = this.isSelected();
+        const inSelectedGroup = this.inSelectedGroup();
         if (animator.displaySettings.highlightSelectedGroup && !isSelected && inSelectedGroup) {
             ctx.beginPath();
             ctx.lineWidth = (2 / animator.scale).toString();
@@ -249,7 +249,7 @@ class IconDrawable {
         if (pos === null) {
             return;
         }
-        var ctx = animator.pickContext;
+        const ctx = animator.pickContext;
         
         ctx.save();
         ctx.translate(pos.x, pos.y);

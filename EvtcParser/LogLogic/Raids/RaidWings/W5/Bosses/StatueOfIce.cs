@@ -9,7 +9,8 @@ using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -18,14 +19,14 @@ internal class StatueOfIce : HallOfChains
     internal readonly MechanicGroup Mechanics = new(
         [
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(KingsWrathConeAoE, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.White), "Cone AoE", "Hit by King's Wrath (Cone AoEs)", "King's Wrath Cone AoE Hit", Sev0, 0),
-                new PlayerDstHealthDamageHitMechanic(KingsWrathConeShards, new MechanicPlotlySetting(Symbols.TriangleLeft, Colors.LightBlue), "Cone Shards", "Hit by King's Wrath (Frontal Cone Shards)", "King's Wrath Cone Shards Hit", Sev0, 0),
+                new PlayerDstHealthDamageHitMechanic(KingsWrathConeAoE, Mech_KingsWrathCone, new (Symbols.TriangleUp, Colors.White), new("Cone AoE", "Hit by King's Wrath (Cone AoEs)", "King's Wrath Cone AoE Hit"), Sev0),
+                new PlayerDstHealthDamageHitMechanic(KingsWrathConeShards, Mech_KingsWrathConeShards, new (Symbols.TriangleLeft, Colors.LightBlue), new("Cone Shards", "Hit by King's Wrath (Frontal Cone Shards)", "King's Wrath Cone Shards Hit"), Sev0),
             ]),
-            new PlayerDstHealthDamageHitMechanic(NumbingBreach, new MechanicPlotlySetting(Symbols.BowtieOpen, Colors.LightBlue), "Cracks", "Stood on Numbing Breach (Ice Cracks in the Ground)", "Cracks", Sev0, 0),
+            new PlayerDstHealthDamageHitMechanic(NumbingBreach, Mech_NumbingBreach, new (Symbols.BowtieOpen, Colors.LightBlue), new("Cracks", "Stood on Numbing Breach (Ice Cracks in the Ground)", "Cracks"), Sev0),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(FrozenWind, new MechanicPlotlySetting(Symbols.CircleOpen, Colors.Green), "Green", "Frozen Wind (Stood in Green)", "Green Stack", Sev0, 0),
-                new PlayerDstBuffApplyMechanic(Glaciate, new MechanicPlotlySetting(Symbols.Square, Colors.Purple), "Glaciate", "Glaciated (Frozen by 4th Stack of Frozen Wind)", "Glaciate", Sev0, 0),
-                new EnemySrcEffectMechanic(EffectGUIDs.BrokenKingIceBreakerGreenExplosion, new MechanicPlotlySetting(Symbols.CircleX, Colors.DarkGreen), "Ice Breaker", "Hailstorm Explosion (Missed Green)", "Ice Breaker (Green Missed)", Sev0, 0),
+                new PlayerDstBuffApplyMechanic(FrozenWind, Mech_FrozenWind, new (Symbols.CircleOpen, Colors.Green), new("Green", "Frozen Wind (Stood in Green)", "Green Stack"), Sev0),
+                new PlayerDstBuffApplyMechanic(Glaciate, Mech_Glaciate, new (Symbols.Square, Colors.Purple), new("Glaciate", "Glaciated (Frozen by 4th Stack of Frozen Wind)", "Glaciate"), Sev0),
+                new EnemySrcEffectMechanic(EffectGUIDs.BrokenKingIceBreakerGreenExplosion, Mech_IceBreaker, new (Symbols.CircleX, Colors.DarkGreen), new("Ice Breaker", "Hailstorm Explosion (Missed Green)", "Ice Breaker (Green Missed)"), Sev0),
             ]),
         ]);
     public StatueOfIce(int triggerID) : base(triggerID)

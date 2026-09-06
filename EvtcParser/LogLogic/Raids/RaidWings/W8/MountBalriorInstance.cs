@@ -87,7 +87,7 @@ internal class MountBalriorInstance : MountBalrior
                     end = chest.FirstAware;
                     success = true;
                 }
-                var isCM = greer.GetHealth(log.CombatData) > 35e6;
+                var isCM = eregs.Any(x => x.InAwareTimes(start, end));
                 var encounterName = (isCM ? "Godspoil Greer" : "Greer, the Blightbringer");
                 var name = encounterName + (greers.Count > 0 ? " " + (offset) : "");
                 greer.OverrideName(name);

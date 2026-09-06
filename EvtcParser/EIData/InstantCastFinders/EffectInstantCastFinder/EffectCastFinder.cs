@@ -226,6 +226,19 @@ internal class EffectCastFinder : CheckedCastFinder<EffectEvent>
         });
         return this;
     }
+
+    internal EffectCastFinder UsingNoSecondaryEffectSameSrcCheckerOnSamePosition(GUID effect, long timeOffset = 0, long epsilon = ServerDelayConstant)
+    {
+        UsingChecker((evt, combatData, agentData, skillData) =>
+        {
+            if (combatData.TryGetEffectEventsByGUID(effect, out var effectEvents))
+            {
+                return !effectEvents.Any(other => other != evt && GetAgent(other).Is(GetAgent(evt)) && Math.Abs(other.Time - timeOffset - evt.Time) < epsilon && (other.Position - evt.Position).LengthSquared() < 1e-6);
+            }
+            return true;
+        });
+        return this;
+    }
     internal EffectCastFinder UsingNoSecondaryEffectInvertedSrcChecker(GUID effect, long timeOffset = 0, long epsilon = ServerDelayConstant)
     {
         UsingChecker((evt, combatData, agentData, skillData) =>

@@ -12,7 +12,8 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -20,22 +21,22 @@ internal class Adina : TheKeyOfAhdashim
 {
     internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(RadiantBlindness, new MechanicPlotlySetting(Symbols.Circle,Colors.Magenta), "R.Blind", "Unremovable blindness", "Radiant Blindness", Sev0, 0),
-                new PlayerDstHealthDamageHitMechanic(DiamondPalisadeEye, new MechanicPlotlySetting(Symbols.StarDiamond,Colors.Pink), "Eye", "Looked at Eye", "Looked at Eye", Sev0, 0),
+                new PlayerDstBuffApplyMechanic(RadiantBlindness, Mech_RadiantBlindness, new (Symbols.Circle,Colors.Magenta), new("R.Blind", "Unremovable blindness", "Radiant Blindness"), Sev0),
+                new PlayerDstHealthDamageHitMechanic(DiamondPalisadeEye, Mech_DiamondPalisadeEye, new (Symbols.StarDiamond,Colors.Pink), new("Eye", "Looked at Eye", "Looked at Eye"), Sev0),
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(PerilousPulse, new MechanicPlotlySetting(Symbols.TriangleRight,Colors.Pink), "Perilous Pulse", "Perilous Pulse", "Perilous Pulse", Sev0, 0)
+                new PlayerDstHealthDamageHitMechanic(PerilousPulse, Mech_PerilousPulse, new (Symbols.TriangleRight,Colors.Pink), new("Perilous Pulse", "Perilous Pulse", "Perilous Pulse"), Sev0)
                     .UsingBuffChecker(Stability, false),
-                new PlayerDstHealthDamageHitMechanic(StalagmitesDetonation, new MechanicPlotlySetting(Symbols.Pentagon,Colors.Red), "Mines", "Hit by mines", "Mines", Sev1, 0),
-                new PlayerDstHealthDamageMechanic([DoubleRotatingEarthRays, TripleRotatingEarthRays], new MechanicPlotlySetting(Symbols.Hourglass,Colors.Brown), "S.Thrower", "Hit by rotating SandThrower", "SandThrower", Sev0, 0)
+                new PlayerDstHealthDamageHitMechanic(StalagmitesDetonation, Mech_StalagmitesDetonation, new (Symbols.Pentagon,Colors.Red), new("Mines", "Hit by mines", "Mines"), Sev1),
+                new PlayerDstHealthDamageMechanic([DoubleRotatingEarthRays, TripleRotatingEarthRays], Mech_SandThrower, new (Symbols.Hourglass,Colors.Brown), new("S.Thrower", "Hit by rotating SandThrower", "SandThrower"), Sev0)
                     .UsingChecker((de, log) => de.HasKilled),
             ]),
             new MechanicGroup([
-                new PlayerDstEffectMechanic(EffectGUIDs.AdinaSelectedForPillar,new MechanicPlotlySetting(Symbols.Circle,Colors.Brown), "Slctd.Pillar", "Selected for dropping a Pillar", "Selected for Pillar", Sev1, 0),
-                new PlayerDstHealthDamageHitMechanic(BoulderBarrage, new MechanicPlotlySetting(Symbols.Hexagon,Colors.Red), "Boulder", "Hit by boulder thrown during pillars", "Boulder Barrage", Sev0, 0),
+                new PlayerDstEffectMechanic(EffectGUIDs.AdinaSelectedForPillar, Mech_SelectedForPillar, new (Symbols.Circle,Colors.Brown), new("Slctd.Pillar", "Selected for dropping a Pillar", "Selected for Pillar"), Sev1),
+                new PlayerDstHealthDamageHitMechanic(BoulderBarrage, Mech_BoulderBarrage, new (Symbols.Hexagon,Colors.Red), new("Boulder", "Hit by boulder thrown during pillars", "Boulder Barrage"), Sev0),
             ]),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(ErodingCurse, new MechanicPlotlySetting(Symbols.Square,Colors.LightPurple), "Curse", "Stacking damage debuff from Hand of Erosion", "Eroding Curse", Sev1, 0),
+                new PlayerDstBuffApplyMechanic(ErodingCurse, Mech_ErodingCurse, new (Symbols.Square,Colors.LightPurple), new("Curse", "Stacking damage debuff from Hand of Erosion", "Eroding Curse"), Sev1),
             ]),
         ]);
     public Adina(int triggerID) : base(triggerID)
@@ -121,7 +122,7 @@ internal class Adina : TheKeyOfAhdashim
             hand.PositionAttachTo(atAgent);
             var attackOns = targetables.Where(x => x.Targetable);
             var attackOffs = targetables.Where(x => !x.Targetable);
-            CombatItem? posEvt = combatData.FirstOrDefault(x => x.SrcMatchesAgent(hand) && x.IsStateChange == StateChange.Position);
+            CombatItem? posEvt = combatData.FirstOrDefault(x => x.SrcMatchesAgent(hand) && x.IsPosition);
             var id = TargetID.HandOfErosion;
             if (posEvt != null)
             {
@@ -166,7 +167,7 @@ internal class Adina : TheKeyOfAhdashim
 
     internal static void FindPlatforms(AgentData agentData, List<CombatItem> combatData)
     {
-        var positionsDict = combatData.Where(x => x.IsStateChange == StateChange.Position).Select(x => new PositionEvent(x, agentData)).GroupBy(x => x.Src).ToDictionary(x => x.Key, x => x.ToList());
+        var positionsDict = combatData.Where(x => x.IsPosition).Select(x => new PositionEvent(x, agentData)).GroupBy(x => x.Src).ToDictionary(x => x.Key, x => x.ToList());
         var center = new Vector2(14909.3f, -1470.64f);
         foreach (var agent in agentData.GetAgentByType(AgentItem.AgentType.VolatileSpecies))
         {

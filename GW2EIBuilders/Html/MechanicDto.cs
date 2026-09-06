@@ -6,6 +6,7 @@ namespace GW2EIBuilders.HtmlModels;
 
 internal class MechanicDto
 {
+    public int ID { get; set; }
     public string? Name { get; set; }
 
     public int Icd { get; set; }
@@ -60,6 +61,7 @@ internal class MechanicDto
         {
             var dto = new MechanicDto
             {
+                ID = mech.ID,
                 Name = mech.FullName,
                 ShortName = mech.ShortName,
                 Description = mech.Description,

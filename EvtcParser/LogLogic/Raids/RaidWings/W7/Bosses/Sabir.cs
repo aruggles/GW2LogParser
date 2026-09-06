@@ -13,7 +13,8 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -21,37 +22,37 @@ internal class Sabir : TheKeyOfAhdashim
 {
     internal readonly MechanicGroup Mechanics = new([
             new MechanicGroup([
-                new PlayerDstHealthDamageMechanic(DireDrafts, new MechanicPlotlySetting(Symbols.Circle,Colors.Orange), "B.Tornado", "Hit by big tornado", "Big Tornado Hit", Sev0, 500)
+                new PlayerDstHealthDamageMechanic(DireDrafts, Mech_DireDrafts, new (Symbols.Circle,Colors.Orange), new("B.Tornado", "Hit by big tornado", "Big Tornado Hit"), Sev0, 500)
                     .UsingChecker((de, log) => de.HasDowned || de.HasKilled),
-                new PlayerDstHealthDamageMechanic(UnbridledTempest, new MechanicPlotlySetting(Symbols.Hexagon,Colors.Pink), "Shockwave", "Hit by Shockwave", "Shockwave Hit", Sev0, 0)
+                new PlayerDstHealthDamageMechanic(UnbridledTempest, Mech_UnbridledTempest, new (Symbols.Hexagon,Colors.Pink), new("Shockwave", "Hit by Shockwave", "Shockwave Hit"), Sev0)
                     .UsingChecker((de, log) => de.HasDowned || de.HasKilled),
-                new PlayerDstHealthDamageMechanic(FuryOfTheStorm, new MechanicPlotlySetting(Symbols.Circle,Colors.Purple), "Arena AoE", "Hit by Arena wide AoE", "Arena AoE hit", Sev0, 0)
+                new PlayerDstHealthDamageMechanic(FuryOfTheStorm, Mech_FuryOfTheStorm, new (Symbols.Circle,Colors.Purple), new("Arena AoE", "Hit by Arena wide AoE", "Arena AoE hit"), Sev0)
                     .UsingChecker( (de, log) => de.HasDowned || de.HasKilled ),
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], new MechanicPlotlySetting(Symbols.YUpOpen,Colors.Pink), "Rot.KB", "Pushed by rotating breakbar", "Pushed", Sev0, 0)
+                new PlayerDstHealthDamageHitMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], Mech_DynamicDeterrent, new (Symbols.YUpOpen,Colors.Pink), new("Rot.KB", "Pushed by rotating breakbar", "Pushed"), Sev0)
                     .UsingBuffChecker(Stability, false),
-                new EnemyCastStartMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], new MechanicPlotlySetting(Symbols.Star, Colors.Yellow), "Dynamic Deterrent", "Casted Dynamic Deterrent", "Cast Dynamic Deterrent", Sev3, 0),
+                new EnemyCastStartMechanic([ DynamicDeterrentNM, DynamicDeterrentCM ], Mech_DynamicDeterrentCast, new (Symbols.Star, Colors.Yellow), new("Dynamic Deterrent", "Casted Dynamic Deterrent", "Cast Dynamic Deterrent"), Sev3),
             ]),
-            new PlayerDstHealthDamageHitMechanic([ StormsEdgeLeftHand, StormsEdgeRightHand ], new MechanicPlotlySetting(Symbols.BowtieOpen, Colors.Blue), "Storm's Edge", "Hit by Storm's Edge", "Storm's Edge", Sev2, 0),
-            new PlayerDstHealthDamageHitMechanic(ChainLightning, new MechanicPlotlySetting(Symbols.HexagonOpen, Colors.White), "Chain Lightning", "Hit by Chain Lightning", "Chain Lightning Hit", Sev2, 0),
+            new PlayerDstHealthDamageHitMechanic([ StormsEdgeLeftHand, StormsEdgeRightHand ], Mech_StormsEdge, new (Symbols.BowtieOpen, Colors.Blue), new("Storm's Edge", "Hit by Storm's Edge", "Storm's Edge"), Sev2),
+            new PlayerDstHealthDamageHitMechanic(ChainLightning, Mech_ChainLightning, new (Symbols.HexagonOpen, Colors.White), new("Chain Lightning", "Hit by Chain Lightning", "Chain Lightning Hit"), Sev2),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(Electrospark, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Orange), "Electrospark", "Hit by Electrospark", "Electrospark", Sev1, 0),
+                new PlayerDstHealthDamageHitMechanic(Electrospark, Mech_Electrospark, new (Symbols.CircleCross, Colors.Orange), new("Electrospark", "Hit by Electrospark", "Electrospark"), Sev1),
                 new MechanicGroup([
-                    new AchievementEligibilityMechanic(Ach_ChargedWinds, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.Orange), "Charged Winds L", "Achievement Elegibility: Charged Winds Lost", "Charged Winds Lost", 0)
+                    new AchievementEligibilityMechanic(Ach_ChargedWinds, Mech_ChargedWindsLost, new (Symbols.CircleCrossOpen, Colors.Orange), new("Charged Winds L", "Achievement Elegibility: Charged Winds Lost", "Charged Winds Lost"))
                         .UsingChecker((evt, log) => evt.Lost),
-                    new AchievementEligibilityMechanic(Ach_ChargedWinds, new MechanicPlotlySetting(Symbols.CircleCrossOpen, Colors.LightOrange), "Charged Winds K", "Achievement Elegibility: Charged Winds Kept", "Charged Winds Kept", 0)
+                    new AchievementEligibilityMechanic(Ach_ChargedWinds, Mech_ChargedWindsKept, new (Symbols.CircleCrossOpen, Colors.LightOrange), new("Charged Winds K", "Achievement Elegibility: Charged Winds Kept", "Charged Winds Kept"))
                         .UsingChecker((evt, log) => !evt.Lost)
                 ]),
             ]),
             new MechanicGroup([
                 new MechanicGroup([
-                    new EnemyCastStartMechanic(RegenerativeBreakbar, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.Magenta), "Reg.Breakbar", "Regenerating Breakbar","Regenerative Breakbar", Sev3, 0),
-                    new EnemyDstBuffRemoveMechanic(IonShield, new MechanicPlotlySetting(Symbols.DiamondWide,Colors.DarkTeal), "Reg.Breakbar Brkn", "Regenerative Breakbar Broken", "Regenerative Breakbar Broken", Sev0, 2000),
+                    new EnemyCastStartMechanic(RegenerativeBreakbar, Mech_SabirRegenerativeBreakbar, new (Symbols.DiamondWide,Colors.Magenta), new("Reg.Breakbar", "Regenerating Breakbar","Regenerative Breakbar"), Sev3),
+                    new EnemyDstBuffRemoveMechanic(IonShield, Mech_IonShield, new (Symbols.DiamondWide,Colors.DarkTeal), new("Reg.Breakbar Brkn", "Regenerative Breakbar Broken", "Regenerative Breakbar Broken"), Sev0, 2000),
                 ]),
                 new MechanicGroup([
-                    new EnemyDstBuffApplyMechanic(RepulsionField, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.Magenta), "Rot.Breakbar", "Rotating Breakbar","Rotating Breakbar", Sev3, 0),
-                    new EnemyDstBuffRemoveMechanic(RepulsionField, new MechanicPlotlySetting(Symbols.DiamondTall,Colors.DarkTeal), "Rot.Breakbar Brkn", "Rotating Breakbar Broken","Rotating Breakbar Broken", Sev0, 0),
+                    new EnemyDstBuffApplyMechanic(RepulsionField, Mech_RepulsionFieldApply, new (Symbols.DiamondTall,Colors.Magenta), new("Rot.Breakbar", "Rotating Breakbar","Rotating Breakbar"), Sev3),
+                    new EnemyDstBuffRemoveMechanic(RepulsionField, Mech_RepulsionFieldRemove, new (Symbols.DiamondTall,Colors.DarkTeal), new("Rot.Breakbar Brkn", "Rotating Breakbar Broken","Rotating Breakbar Broken"), Sev0),
                 ]),
             ]),
         ]);

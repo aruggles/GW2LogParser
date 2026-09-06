@@ -11,7 +11,8 @@ using static GW2EIEvtcParser.LogLogic.LogLogicUtils;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -19,14 +20,14 @@ internal class Artsariiv : ShatteredObservatory
 {
     internal readonly MechanicGroup Mechanics = new(
         [
-            new PlayerDstHealthDamageHitMechanic(VaultArtsariiv, new MechanicPlotlySetting(Symbols.TriangleDownOpen, Colors.Yellow), "Vault", "Vault from Big Adds", "Vault (Add)", Sev1, 0),
-            new PlayerDstHealthDamageHitMechanic(SlamArtsariiv, new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Slam", "Slam (Vault) from Boss", "Vault (Arts)", Sev0, 0),
-            new PlayerDstHealthDamageHitMechanic(TeleportLunge, new MechanicPlotlySetting(Symbols.StarTriangleDownOpen, Colors.LightOrange), "3 Jump", "Triple Jump Mid->Edge", "Triple Jump", Sev1, 0),
-            new PlayerDstHealthDamageHitMechanic(AstralSurge, new MechanicPlotlySetting(Symbols.CircleOpen, Colors.Yellow), "Floor Circle", "Different sized spiraling circles", "1000 Circles", Sev2, 0),
-            new PlayerDstHealthDamageHitMechanic([RedMarble1, RedMarble2], new MechanicPlotlySetting(Symbols.Circle, Colors.Red), "Marble", "Red KD Marble after Jump", "Red Marble", Sev0, 0),
-            new PlayerDstHealthDamageHitMechanic([TawShot1, TawShot2, TawShot3, TawShot4], new MechanicPlotlySetting(Symbols.CircleOpen, Colors.Red), "Taw Shot", "Hit by Taw Shot projectile", "Taw Shot", Sev2, 0),
-            new PlayerSrcHealthDamageHitMechanic([TawShot1, TawShot2, TawShot3, TawShot4], new MechanicPlotlySetting(Symbols.CircleXOpen, Colors.Red), "Taw Shot Rfl.", "Hit reflected Taw Shot projectile", "Taw Shot Reflect", Sev0, 0),
-            new SpawnMechanic((int)TargetID.Spark, new MechanicPlotlySetting(Symbols.Star, Colors.Teal), "Spark", "Spawned a Spark (missed marble)", "Spark", Sev0,0),
+            new PlayerDstHealthDamageHitMechanic(VaultArtsariiv, Mech_VaultArtsariiv, new (Symbols.TriangleDownOpen,Colors.Yellow), new("Vault", "Vault from Big Adds","Vault (Add)"), Sev1),
+            new PlayerDstHealthDamageHitMechanic(SlamArtsariiv, Mech_SlamArtsariiv, new (Symbols.Circle,Colors.LightOrange), new("Slam", "Slam (Vault) from Boss","Vault (Arts)"), Sev0),
+            new PlayerDstHealthDamageHitMechanic(TeleportLunge, Mech_TeleportLunge, new (Symbols.StarTriangleDownOpen,Colors.LightOrange), new("3 Jump", "Triple Jump Mid->Edge","Triple Jump"), Sev1),
+            new PlayerDstHealthDamageHitMechanic(AstralSurge, Mech_AstralSurge, new (Symbols.CircleOpen,Colors.Yellow), new("Floor Circle", "Different sized spiraling circles","1000 Circles"), Sev2),
+            new PlayerDstHealthDamageHitMechanic([RedMarble1, RedMarble2], Mech_RedMarble, new (Symbols.Circle,Colors.Red), new("Marble", "Red KD Marble after Jump","Red Marble"), Sev0),
+            new PlayerDstHealthDamageHitMechanic([TawShot1, TawShot2, TawShot3, TawShot4], Mech_TawShot, new (Symbols.CircleOpen, Colors.Red), new("Taw Shot", "Hit by Taw Shot projectile", "Taw Shot"), Sev2),
+            new PlayerSrcHealthDamageHitMechanic([TawShot1, TawShot2, TawShot3, TawShot4], Mech_TawShotReflected, new (Symbols.CircleXOpen, Colors.Red), new("Taw Shot Rfl.", "Hit reflected Taw Shot projectile", "Taw Shot Reflect"), Sev0),
+            new SpawnMechanic((int)TargetID.Spark, Mech_SparkSpawn, new (Symbols.Star,Colors.Teal),new("Spark","Spawned a Spark (missed marble)", "Spark"), Sev0),
         ]);
 
     public Artsariiv(int triggerID) : base(triggerID)

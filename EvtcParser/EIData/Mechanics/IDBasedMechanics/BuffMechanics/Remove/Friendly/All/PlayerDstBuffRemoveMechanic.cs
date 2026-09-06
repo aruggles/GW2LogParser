@@ -6,11 +6,11 @@ namespace GW2EIEvtcParser.EIData;
 internal class PlayerDstBuffRemoveMechanic : PlayerBuffRemoveMechanic<BuffRemoveAllEvent>
 {
     private bool _withMinions;
-    public PlayerDstBuffRemoveMechanic(long mechanicID, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, MechanicSeverity severity, int internalCoolDown) : base(mechanicID, plotlySetting, shortName, description, fullName, severity, internalCoolDown)
+    public PlayerDstBuffRemoveMechanic(long mechanicID, int id, MechanicPlotlySetting plotlySetting, MechanicDescription description, MechanicSeverity severity, int internalCoolDown = 0) : base(mechanicID, id, plotlySetting, description, severity, internalCoolDown)
     {
     }
 
-    public PlayerDstBuffRemoveMechanic(long[] mechanicIDs, MechanicPlotlySetting plotlySetting, string shortName, string description, string fullName, MechanicSeverity severity, int internalCoolDown) : base(mechanicIDs, plotlySetting, shortName, description, fullName, severity, internalCoolDown)
+    public PlayerDstBuffRemoveMechanic(long[] mechanicIDs, int id, MechanicPlotlySetting plotlySetting, MechanicDescription description, MechanicSeverity severity, int internalCoolDown = 0) : base(mechanicIDs, id, plotlySetting, description, severity, internalCoolDown)
     {
     }
 

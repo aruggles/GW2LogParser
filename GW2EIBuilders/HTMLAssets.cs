@@ -157,7 +157,6 @@ public class HTMLAssets
     {
         List<string> templates =
         [
-            Gw2LogParser.Properties.Resources.tmplCombatReplayDamageData,
             Gw2LogParser.Properties.Resources.tmplCombatReplayStatusData,
             Gw2LogParser.Properties.Resources.tmplCombatReplayDamageTable,
             Gw2LogParser.Properties.Resources.tmplCombatReplayActorBuffStats,

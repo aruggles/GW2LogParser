@@ -1,29 +1,37 @@
 <template>
-    <div class="d-flex mt-2 justify-content-center">
-        <div class="d-flex flex-column align-items-center mr-2" style="margin-left: auto; width:620px;">
-            <combat-replay-damage-data-component :time="animationStatus.time" :selectedactorid="animationStatus.selectedActorID">
-            </combat-replay-damage-data-component>
-            <combat-replay-extra-decorations-component :light="light"></combat-replay-extra-decorations-component>
+    <div class="d-flex mt-2">
+        <div class="ml-auto" style=" width: 620px;">
+            <dps-graph-mode-selector-component :data="graphdata" :phaseduration="phaseduration" :phasehassubphases="false" :ignorebreakbar="false" :column="false" />
+            <combat-replay-damage-stats-component :time="animationStatus.time" :playerid="animationStatus.selectedActorID" :graphdata="graphdata" />
+            <combat-replay-extra-decorations-component :light="light" class="mx-auto" />
         </div>
-        <combat-replay-animation-control-component :time="animationStatus.time / 1000.0" :light="light" :range="animationStatus.range":animated="animationStatus.animated">        
-        </combat-replay-animation-control-component>
-        <div class="d-flex flex-column align-items-center ml-2" style="margin-right: auto;width:500px; height:940px;">
-            <combat-replay-status-data-component :time="animationStatus.time" :light="light" :selectedactorid="animationStatus.selectedActorID">
-            </combat-replay-status-data-component>
-        </div>
+        <combat-replay-animation-control-component class="mx-2" :time="animationStatus.time / 1000.0" :light="light" :range="animationStatus.range":animated="animationStatus.animated" />
+        <combat-replay-status-data-component class="mr-auto" :time="animationStatus.time" :light="light" :selectedactorid="animationStatus.selectedActorID" />
     </div>
 </template>
 
 <script>
     Vue.component("combat-replay-ui-component", {
-        props: ["mode", "light"],
         template: `${template}`,
+        mixins: [encounterPhaseComponent],
+        props: ["mode", "light"],
         data: function () {
             return {
                 animationStatus: reactiveAnimationData,
-                selectionMode: 0,
-                targetless: logData.targetless,
+                graphdata: {
+                    dpsmode: 0,
+                    graphmode: logData.wvw ? GraphType.Damage : GraphType.DPS,
+                    damagemode: DamageType.All,
+                }
             };
+        },
+        computed: {
+            phase: function () {
+                return logData.phases[this.encounterPhase.id];
+            },
+            phaseduration: function () {
+                return this.phase.end - this.phase.start;
+            }
         },
         created() {
             animator = new Animator(crData);

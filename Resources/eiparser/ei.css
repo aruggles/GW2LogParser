@@ -27,50 +27,58 @@
 .scrollable-y {
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-width: thin;
 }
 
 .scrollable-x {
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: thin;
 }
 
 .scrollable-x-y {
     overflow-x: auto;
     overflow-y: auto;
-    scrollbar-width: thin;
+}
+
+@supports (-moz-appearance: none) {
+    * {
+        scrollbar-width: thin;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
 }
 
 .theme-yeti ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
     background-color: #DDDDDD;
 }
 
 .theme-yeti ::-webkit-scrollbar-thumb {
     background-color: #888888;
-    border-radius: 10px;
 }
 
 .theme-yeti ::-webkit-scrollbar-track {
-    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
     background-color: #DDDDDD;
 }
 
 .theme-slate ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
     background-color: #888888;
 }
 
 .theme-slate ::-webkit-scrollbar-thumb {
     background-color: #DDDDDD;
-    border-radius: 10px;
 }
 
 .theme-slate ::-webkit-scrollbar-track {
-    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
     background-color: #888888;
 }
 
@@ -141,10 +149,6 @@
     user-select: none;
 }
 
-.actor-rotation {
-    width: 208px;
-}
-
 .cr-breakbar-phase-display {
     font-size: 0.65rem;
     width: 100%;
@@ -171,22 +175,17 @@
     vertical-align: middle;
 }
 
-.theme-slate .player-data.active {
+.actor-data:not(:last-child) {
+    border-bottom: 1px solid #888;
+}
+
+.theme-slate .actor-data.active {
     background-color: rgba(80, 86, 92, 0.9);
 }
 
-.theme-yeti .player-data.active {
+.theme-yeti .actor-data.active {
     background-color: rgba(220, 220, 220, 0.9);
 }
-
-.theme-slate .target-data.active {
-    background-color: rgba(80, 86, 92, 0.9);
-}
-
-.theme-yeti .target-data.active {
-    background-color: rgba(220, 220, 220, 0.9);
-}
-
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -523,6 +522,10 @@ th:hover img.icon-hover,
     width: 120px;
 }
 
+.mech-cell-time {
+    width: 82px;
+}
+
 .mech-cell {
     width: 200px;
 }
@@ -742,12 +745,13 @@ canvas {
 }
 
 .combat-replay-mechanics-list-container {
-    max-height: 800px;
-    max-width:450px; 
+    height: 810px;
+    max-width: 500px; 
 }
 
 .combat-actor-status-container {
-    max-height: 830px;
+    height: 810px;
+    width: 250px;
 }
 
 .combat-replay-mechanics-list-row {

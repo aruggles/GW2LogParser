@@ -157,16 +157,23 @@ internal class Golem : LogLogic
             if (firstExitCombat != null && (log.LogData.LogEnd - firstExitCombat.Time) > 1000 && (firstEnterCombat == null || firstEnterCombat.Time >= firstExitCombat.Time))
             {
                 var phase = new SubPhasePhaseData(log.LogData.LogStart, firstExitCombat.Time, "In Combat " + (++combatPhase));
-                phase.AddTarget(mainTarget, log);
-                phases.Add(phase);
+                if (Math.Abs(phase.Start - phases[0].Start) > ParserHelper.ServerDelayConstant || Math.Abs(phase.End - phases[0].End) > ParserHelper.ServerDelayConstant)
+                {
+                    phase.AddTarget(mainTarget, log);
+                    phases.Add(phase);
+                }
             }
             foreach (EnterCombatEvent ece in log.CombatData.GetEnterCombatEvents(pov))
             {
                 ExitCombatEvent? exce = log.CombatData.GetExitCombatEvents(pov).FirstOrDefault(x => x.Time >= ece.Time);
                 long phaseEndTime = exce != null ? exce.Time : log.LogData.LogEnd;
-                var phase = new SubPhasePhaseData(Math.Max(ece.Time, log.LogData.LogStart), Math.Min(phaseEndTime, log.LogData.LogEnd), "PoV in Combat " + (++combatPhase));
-                phase.AddTarget(mainTarget, log);
-                phases.Add(phase);
+                var phase = new SubPhasePhaseData(Math.Max(ece.Time, log.LogData.LogStart), Math.Min(phaseEndTime, log.LogData.LogEnd));
+                if (Math.Abs(phase.Start - phases[0].Start) > ParserHelper.ServerDelayConstant || Math.Abs(phase.End - phases[0].End) > ParserHelper.ServerDelayConstant)
+                {
+                    phase.Name = "PoV in Combat " + (++combatPhase);
+                    phase.AddTarget(mainTarget, log);
+                    phases.Add(phase);
+                }
             }
         }
 

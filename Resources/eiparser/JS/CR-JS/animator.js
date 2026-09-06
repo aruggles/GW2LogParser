@@ -79,7 +79,7 @@ const Types = {
 };
 
 function getDefaultCombatReplayTime() {
-    var time = EIUrlParams.get("crTime");
+    const time = EIUrlParams.get("crTime");
     if (!time) {
         return 0;
     }
@@ -106,7 +106,7 @@ const reactiveAnimationData = {
     }
 };
 
-var sliderDelimiter = {
+const sliderDelimiter = {
     min: -1,
     max: -1,
     name: logData.phases[0].name
@@ -190,7 +190,7 @@ class RenderablesBranch {
     }
 
     draw(drawFunction) {
-        var time = animator.reactiveDataStatus.time;
+        const time = animator.reactiveDataStatus.time;
         if (this.start > time || this.end < time) {
             return;
         }
@@ -271,7 +271,7 @@ class ConeControl {
 
 class Animator {
     constructor(options) {
-        var _this = this;
+        const _this = this;
         // status
         this.reactiveDataStatus = reactiveAnimationData;
         // time
@@ -526,7 +526,7 @@ class Animator {
                 switch (decorationRendering.type) {
                     case Types.ActorOrientation:
                         let orientationID = decorationRendering.connectedTo.masterID;
-                        var orientationDrawable = new ActorOrientationDrawable(decorationRendering);
+                        const orientationDrawable = new ActorOrientationDrawable(decorationRendering);
                         if (this.agentDataPerParentID.has(orientationID)) {
                             let halfTime = (orientationDrawable.start + orientationDrawable.end) / 2;
                             let agents = this.agentDataPerParentID.get(orientationID);
@@ -889,9 +889,9 @@ class Animator {
     }
 
     resetViewpoint(eiid = 0) {
-        var canvas = this.mainCanvas;
-        var ctx = this.mainContext;
-        var bgCtx = this.bgContext;
+        const canvas = this.mainCanvas;
+        const ctx = this.mainContext;
+        const bgCtx = this.bgContext;
 
         this.mouseDown = null;
         this.dragged = false;
@@ -900,8 +900,8 @@ class Animator {
         this.lastX = canvas.width / 2;
         this.lastY = canvas.height / 2;
         if (defaultViewpoint) {
-            var x = -canvas.width * defaultViewpoint.tx / 100;
-            var y = -canvas.height * defaultViewpoint.ty / 100;
+            const x = -canvas.width * defaultViewpoint.tx / 100;
+            const y = -canvas.height * defaultViewpoint.ty / 100;
             
             ctx.setTransform(1, 0, 0, 1, x, y);
             bgCtx.setTransform(1, 0, 0, 1, x, y);
@@ -992,7 +992,7 @@ class Animator {
             _this.mouseDown = null;
         }, false);
 
-        var zoom = function (evt) {
+        const zoom = function (evt) {
             evt.preventDefault();
             const delta = evt.wheelDelta ? evt.wheelDelta / 40 : evt.detail ? -evt.detail : 0;
             if (delta) {
@@ -1043,13 +1043,13 @@ class Animator {
 
     // https://codepen.io/anon/pen/KrExzG
     _trackTransforms(ctx) {
-        var svg = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
-        var xform = svg.createSVGMatrix();
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
+        let xform = svg.createSVGMatrix();
         ctx.getTransform = function () {
             return xform;
         };
 
-        var drawImage = ctx.drawImage;
+        const drawImage = ctx.drawImage;
         ctx.drawImage = function() {
             const image = arguments[0];
             if (!image || !image.complete || image.naturalWidth === 0) {
@@ -1058,45 +1058,45 @@ class Animator {
             return drawImage.call(ctx, ...arguments);
         }
 
-        var savedTransforms = [];
-        var save = ctx.save;
+        const savedTransforms = [];
+        const save = ctx.save;
         ctx.save = function () {
             savedTransforms.push(xform.translate(0, 0));
             return save.call(ctx);
         };
 
-        var restore = ctx.restore;
+        const restore = ctx.restore;
         ctx.restore = function () {
             xform = savedTransforms.pop();
             return restore.call(ctx);
         };
 
-        var scale = ctx.scale;
-        var _this = this;
+        const scale = ctx.scale;
+        const _this = this;
         ctx.scale = function (sx, sy) {
             xform = xform.scale(sx, sy);
-            var xAxis = Math.sqrt(xform.a * xform.a + xform.b * xform.b);
-            var yAxis = Math.sqrt(xform.c * xform.c + xform.d * xform.d);
+            const xAxis = Math.sqrt(xform.a * xform.a + xform.b * xform.b);
+            const yAxis = Math.sqrt(xform.c * xform.c + xform.d * xform.d);
             _this.scale = Math.max(xAxis, yAxis) / resolutionMultiplier;
             return scale.call(ctx, sx, sy);
         };
         
 
-        var rotate = ctx.rotate;
+        const rotate = ctx.rotate;
         ctx.rotate = function (radians) {
             xform = xform.rotate(radians * 180 / Math.PI);
             return rotate.call(ctx, radians);
         };
 
-        var translate = ctx.translate;
+        const translate = ctx.translate;
         ctx.translate = function (dx, dy) {
             xform = xform.translate(dx, dy);
             return translate.call(ctx, dx, dy);
         };
 
-        var transform = ctx.transform;
+        const transform = ctx.transform;
         ctx.transform = function (a, b, c, d, e, f) {
-            var m2 = svg.createSVGMatrix();
+            const m2 = svg.createSVGMatrix();
             m2.a = a;
             m2.b = b;
             m2.c = c;
@@ -1107,7 +1107,7 @@ class Animator {
             return transform.call(ctx, a, b, c, d, e, f);
         };
 
-        var setTransform = ctx.setTransform;
+        const setTransform = ctx.setTransform;
         ctx.setTransform = function (a, b, c, d, e, f) {
             xform.a = a;
             xform.b = b;
@@ -1118,7 +1118,7 @@ class Animator {
             return setTransform.call(ctx, a, b, c, d, e, f);
         };
 
-        var pt = svg.createSVGPoint();
+        const pt = svg.createSVGPoint();
         ctx.transformedPoint = function (x, y) {
             pt.x = x * resolutionMultiplier;
             pt.y = y * resolutionMultiplier;
@@ -1137,10 +1137,10 @@ class Animator {
         }
         if (this.needBGUpdate || this._mustMoveToSelected()) {
             this.needBGUpdate = false;
-            var ctx = this.bgContext;
-            var canvas = this.bgCanvas;
-            var p1 = ctx.transformedPoint(0, 0);
-            var p2 = ctx.transformedPoint(canvas.width, canvas.height);
+            const ctx = this.bgContext;
+            const canvas = this.bgCanvas;
+            const p1 = ctx.transformedPoint(0, 0);
+            const p2 = ctx.transformedPoint(canvas.width, canvas.height);
             ctx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
 
             ctx.save();
@@ -1162,9 +1162,9 @@ class Animator {
                     // draw scale
                     ctx.lineWidth = 3 * resolutionMultiplier;
                     ctx.strokeStyle = "#CC2200";
-                    var pos = resolutionMultiplier * 70;
-                    var width = resolutionMultiplier * 50;
-                    var height = resolutionMultiplier * 6;
+                    const pos = resolutionMultiplier * 70;
+                    const width = resolutionMultiplier * 50;
+                    const height = resolutionMultiplier * 6;
                     // main line
                     ctx.beginPath();
                     ctx.moveTo(pos, pos);
@@ -1182,7 +1182,7 @@ class Animator {
                     ctx.lineTo(pos + width + resolutionMultiplier, pos - height);
                     ctx.stroke();
                     // text
-                    var fontSize = 13 * resolutionMultiplier;
+                    const fontSize = 13 * resolutionMultiplier;
                     ctx.font = "bold " + fontSize + "px Comic Sans MS";
                     ctx.fillStyle = "#CC2200";
                     ctx.textAlign = "center";
@@ -1202,13 +1202,13 @@ class Animator {
     }
 
     _drawPickCanvas() {
-        var _this = this;
-        var mainCtx = this.mainContext;
-        var mainTransform = mainCtx.getTransform();
-        var ctx = this.pickContext;
-        var canvas = this.pickCanvas;
-        var p1 = ctx.transformedPoint(0, 0);
-        var p2 = ctx.transformedPoint(canvas.width, canvas.height);
+        const _this = this;
+        const mainCtx = this.mainContext;
+        const mainTransform = mainCtx.getTransform();
+        const ctx = this.pickContext;
+        const canvas = this.pickCanvas;
+        const p1 = ctx.transformedPoint(0, 0);
+        const p2 = ctx.transformedPoint(canvas.width, canvas.height);
         ctx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
         ctx.save();
         {
@@ -1248,11 +1248,11 @@ class Animator {
     }
 
     _drawMainCanvas() {
-        var _this = this;
-        var ctx = this.mainContext;
-        var canvas = this.mainCanvas;
-        var p1 = ctx.transformedPoint(0, 0);
-        var p2 = ctx.transformedPoint(canvas.width, canvas.height);
+        const _this = this;
+        const ctx = this.mainContext;
+        const canvas = this.mainCanvas;
+        const p1 = ctx.transformedPoint(0, 0);
+        const p2 = ctx.transformedPoint(canvas.width, canvas.height);
         ctx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
         ctx.save();
         {
@@ -1378,7 +1378,7 @@ function animateCanvas(noRequest) {
 function initCombatReplay(actors, options) {
     // manipulation events
     canvas.addEventListener('touchstart', function (evt) {
-        var touch = evt.changedTouches[0];
+        const touch = evt.changedTouches[0];
         if (!touch) {
             return;
         }
@@ -1390,7 +1390,7 @@ function initCombatReplay(actors, options) {
     }, false);
 
     canvas.addEventListener('touchmove', function (evt) {
-        var touch = evt.changedTouches[0];
+        const touch = evt.changedTouches[0];
         if (!touch) {
             return;
         }
@@ -1398,7 +1398,7 @@ function initCombatReplay(actors, options) {
         lastY = (touch.pageY - canvas.offsetTop);
         dragged = true;
         if (mouseDown) {
-            var pt = ctx.transformedPoint(lastX, lastY);
+            const pt = ctx.transformedPoint(lastX, lastY);
             ctx.translate(pt.x - mouseDown.x, pt.y - mouseDown.y);
             animateCanvas(noUpdateTime);
         }

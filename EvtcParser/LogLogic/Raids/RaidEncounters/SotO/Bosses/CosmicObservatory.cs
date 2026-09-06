@@ -13,7 +13,8 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -25,53 +26,53 @@ internal class CosmicObservatory : SecretOfTheObscureRaidEncounter
         
             new MechanicGroup([
                 new MechanicGroup([
-                    new AchievementEligibilityMechanic(Ach_DancedStars, new MechanicPlotlySetting(Symbols.TriangleDownOpen, Colors.DarkBlue), "DancStars.Achiv.L", "Achievement Eligibility: Danced with the Stars Lost", "Danced with the Stars Lost", 0)
+                    new AchievementEligibilityMechanic(Ach_DancedStars, Mech_DancedStarsLost, new (Symbols.TriangleDownOpen, Colors.DarkBlue), new("DancStars.Achiv.L", "Achievement Eligibility: Danced with the Stars Lost", "Danced with the Stars Lost"))
                             .UsingChecker((evt, log) => evt.Lost),
-                    new AchievementEligibilityMechanic(Ach_DancedStars, new MechanicPlotlySetting(Symbols.TriangleDownOpen, Colors.Blue), "DancStars.Achiv.K", "Achievement Eligibility: Danced with the Stars Kept", "Danced with the Stars Kept", 0)
+                    new AchievementEligibilityMechanic(Ach_DancedStars, Mech_DancedStarsKept, new (Symbols.TriangleDownOpen, Colors.Blue), new("DancStars.Achiv.K", "Achievement Eligibility: Danced with the Stars Kept", "Danced with the Stars Kept"))
                             .UsingChecker((evt, log) => !evt.Lost)
                 ]),
-                new PlayerDstHealthDamageHitMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], new MechanicPlotlySetting(Symbols.TriangleDown, Colors.DarkBlue), "Spin.Neb.H", "Spining Nebula Hit (Spin Projectiles)", "Spinning Nebula Hit", Sev0, 0),
-                new EnemyCastStartMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], new MechanicPlotlySetting(Symbols.CircleCross, Colors.LightRed), "Spinning Nebula", "Spinning Nebula Cast", "Cast Spinning Nebula", Sev3, 0),
+                new PlayerDstHealthDamageHitMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], Mech_SpinningNebula, new (Symbols.TriangleDown, Colors.DarkBlue), new("Spin.Neb.H", "Spining Nebula Hit (Spin Projectiles)", "Spinning Nebula Hit"), Sev0),
+                new EnemyCastStartMechanic([ SpinningNebulaCentral, SpinningNebulaWithTeleport ], Mech_SpinningNebulaCast, new (Symbols.CircleCross, Colors.LightRed), new("Spinning Nebula", "Spinning Nebula Cast", "Cast Spinning Nebula"), Sev3),
             ]),
-            new PlayerDstHealthDamageHitMechanic(DemonicBlast, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.Red), "Dmn.Blst.H", "Demonic Blast Hit (Cones AoEs)", "Demonic Blast Hit", Sev1, 0),
+            new PlayerDstHealthDamageHitMechanic(DemonicBlast, Mech_DemonicBlast, new (Symbols.TriangleUp, Colors.Red), new("Dmn.Blst.H", "Demonic Blast Hit (Cones AoEs)", "Demonic Blast Hit"), Sev1),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(SoulFeast, new MechanicPlotlySetting(Symbols.Circle, Colors.DarkRed), "Sl.Fst.H", "Soul Feat (Pulsing Orb AoEs)", "Soul Feast Hit", Sev0, 0),
-                new PlayerDstBuffApplyMechanic(Revealed, new MechanicPlotlySetting(Symbols.Bowtie, Colors.Teal), "Sl.Fst.T", "Soul Feast Target", "Targeted by Soul Feast", Sev0, 0)
+                new PlayerDstHealthDamageHitMechanic(SoulFeast, Mech_SoulFeast, new (Symbols.Circle, Colors.DarkRed), new("Sl.Fst.H", "Soul Feat (Pulsing Orb AoEs)", "Soul Feast Hit"), Sev0),
+                new PlayerDstBuffApplyMechanic(Revealed, Mech_SoulFeastTarget, new (Symbols.Bowtie, Colors.Teal), new("Sl.Fst.T", "Soul Feast Target", "Targeted by Soul Feast"), Sev0)
                     .UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.Dagda)),
             ]),
             new MechanicGroup([
-                new PlayerDstHealthDamageHitMechanic(PlanetCrashProjectileSkill, new MechanicPlotlySetting(Symbols.StarDiamond, Colors.White), "PlnCrhProj.H", "Planet Crash (Projectiles Hits)", "Planet Crash Projectiles Hit", Sev2, 0),
-                new EnemyCastStartMechanic(PlanetCrashSkill, new MechanicPlotlySetting(Symbols.Star, Colors.Blue), "Planet Crash", "Planet Crash Cast", "Cast Planet Crash", Sev3, 0),
-                new EnemyDstBuffApplyMechanic(Exposed31589, new MechanicPlotlySetting(Symbols.Star, Colors.LightBlue), "Planet Crash (Int)", "Interrupted Planet Crash", "Interrupted Planet Crash", Sev0, 0)
+                new PlayerDstHealthDamageHitMechanic(PlanetCrashProjectileSkill, Mech_PlanetCrash, new (Symbols.StarDiamond, Colors.White), new("PlnCrhProj.H", "Planet Crash (Projectiles Hits)", "Planet Crash Projectiles Hit"), Sev2),
+                new EnemyCastStartMechanic(PlanetCrashSkill, Mech_PlanetCrashCast, new (Symbols.Star, Colors.Blue), new("Planet Crash", "Planet Crash Cast", "Cast Planet Crash"), Sev3),
+                new EnemyDstBuffApplyMechanic(Exposed31589, Mech_PlanetCrashCastStop, new (Symbols.Star, Colors.LightBlue), new("Planet Crash (Int)", "Interrupted Planet Crash", "Interrupted Planet Crash"), Sev0)
                     .UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.Dagda)),
-                new EnemySrcHealthDamageMechanic(PlanetCrashSkill, new MechanicPlotlySetting(Symbols.Star, Colors.DarkBlue), "Planet Crash (Land)", "Planet Crash Landed", "Fully Casted Planet Crash", Sev0, 1000)
+                new EnemySrcHealthDamageMechanic(PlanetCrashSkill, Mech_PlanetCrashCastDone, new (Symbols.Star, Colors.DarkBlue), new("Planet Crash (Land)", "Planet Crash Landed", "Fully Casted Planet Crash"), Sev0, 1000)
                     .UsingChecker((ahde, log) => ahde.HealthDamage >= 0 && ahde.To.IsPlayer),
             ]),
-            new PlayerDstHealthDamageHitMechanic(ChargingConstellationDamage, new MechanicPlotlySetting(Symbols.Star, Colors.White), "ChargCons.H", "Charging Constellation Hit", "Charging Constellation Hit", Sev2, 0),
+            new PlayerDstHealthDamageHitMechanic(ChargingConstellationDamage, Mech_ChargingConstellation, new (Symbols.Star, Colors.White), new("ChargCons.H", "Charging Constellation Hit", "Charging Constellation Hit"), Sev2),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(ShootingStarsTargetBuff, new MechanicPlotlySetting(Symbols.TriangleDown, Colors.Green), "StarsTarg.A", "Shooting Stars Target (Green Arrow)", "Targeted by Shooting Stars", Sev1, 0),
-                new EnemyCastStartMechanic(ShootingStars, new MechanicPlotlySetting(Symbols.TriangleUp, Colors.Green), "Shooting Stars", "Shooting Stars Cast", "Cast Shooting Stars", Sev3, 0),
+                new PlayerDstBuffApplyMechanic(ShootingStarsTargetBuff, Mech_ShootingStarsTarget, new (Symbols.TriangleDown, Colors.Green), new("StarsTarg.A", "Shooting Stars Target (Green Arrow)", "Targeted by Shooting Stars"), Sev1),
+                new EnemyCastStartMechanic(ShootingStars, Mech_ShootingStarsCast, new (Symbols.TriangleUp, Colors.Green), new("Shooting Stars", "Shooting Stars Cast", "Cast Shooting Stars"), Sev3),
             ]),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(ResidualAnxiety, new MechanicPlotlySetting(Symbols.DiamondOpen, Colors.Red), "Rsdl.Anxty", "Residual Anxiety", "Residual Anxiety", Sev0, 0),
-                new PlayerDstBuffApplyMechanic(CosmicObservatoryLostControlBuff, new MechanicPlotlySetting(Symbols.Diamond, Colors.Red), "Lst.Ctrl", "Lost Control (10 stacks of Residual Anxiety)", "Lost Control", Sev0, 0),
+                new PlayerDstBuffApplyMechanic(ResidualAnxiety, Mech_ResidualAnxiety, new (Symbols.DiamondOpen, Colors.Red), new("Rsdl.Anxty", "Residual Anxiety", "Residual Anxiety"), Sev0),
+                new PlayerDstBuffApplyMechanic(CosmicObservatoryLostControlBuff, Mech_COLostControl, new (Symbols.Diamond, Colors.Red), new("Lst.Ctrl", "Lost Control (10 stacks of Residual Anxiety)", "Lost Control"), Sev0),
             ]),
-            new PlayerDstBuffApplyMechanic(DagdaSharedDestruction_MeteorCrash, new MechanicPlotlySetting(Symbols.Circle, Colors.Green), "Shar.Des.T", "Targeted by Shared Destruction (Greens - Meteor Crash)", "Shared Destruction Target (Green - Meteor Crash)", Sev1, 0),
-            new PlayerDstBuffApplyMechanic([ TargetOrder1, TargetOrder2, TargetOrder3, TargetOrder4, TargetOrder5 ], new MechanicPlotlySetting(Symbols.Star, Colors.LightOrange), "Targ.Ord.A", "Received Target Order", "Target Order Application", Sev1, 0),
-            new PlayerDstBuffApplyMechanic(ExtremeVulnerability, new MechanicPlotlySetting(Symbols.X, Colors.DarkRed), "ExtVuln.A", "Applied Extreme Vulnerability", "Extreme Vulnerability Application", Sev0, 0),
+            new PlayerDstBuffApplyMechanic(DagdaSharedDestruction_MeteorCrash, Mech_COSharedDestructionTarget, new (Symbols.Circle, Colors.Green), new("Shar.Des.T", "Targeted by Shared Destruction (Greens - Meteor Crash)", "Shared Destruction Target (Green - Meteor Crash)"), Sev1),
+            new PlayerDstBuffApplyMechanic([ TargetOrder1, TargetOrder2, TargetOrder3, TargetOrder4, TargetOrder5 ], Mech_COTargetOrder, new (Symbols.Star, Colors.LightOrange), new("Targ.Ord.A", "Received Target Order", "Target Order Application"), Sev1),
+            new PlayerDstBuffApplyMechanic(ExtremeVulnerability, Mech_COExtremeVulnerability, new (Symbols.X, Colors.DarkRed), new("ExtVuln.A", "Applied Extreme Vulnerability", "Extreme Vulnerability Application"), Sev0),
             new MechanicGroup([
-                new PlayerSrcBuffRemoveSingleFromMechanic(DagdaDemonicAura, new MechanicPlotlySetting(Symbols.Bowtie, Colors.LightBlue), "DemAur.R", "Removed Stacks of Demonic Aura", "Demonic Aura Stacks Removed", Sev1),
-                new EnemyDstBuffRemoveSingleMechanic(DagdaDemonicAura, new MechanicPlotlySetting(Symbols.BowtieOpen, Colors.LightBlue), "DemAur.L", "Lost stacks of Demonic Aura", "Demonic Aura Stacks Lost", Sev0)
+                new PlayerSrcBuffRemoveSingleFromMechanic(DagdaDemonicAura, Mech_DemonicAuraRemove, new (Symbols.Bowtie, Colors.LightBlue), new("DemAur.R", "Removed Stacks of Demonic Aura", "Demonic Aura Stacks Removed"), Sev1),
+                new EnemyDstBuffRemoveSingleMechanic(DagdaDemonicAura, Mech_DemonicAuraLost, new (Symbols.BowtieOpen, Colors.LightBlue), new("DemAur.L", "Lost stacks of Demonic Aura", "Demonic Aura Stacks Lost"), Sev0)
                     .UsingChecker((abre, log) => abre.CreditedBy.IsPlayer),
             ]),
             new MechanicGroup([
-                new PlayerSrcHealthDamageMechanic(PurifyingLight, new MechanicPlotlySetting(Symbols.Hourglass, Colors.LightBlue), "PurLight.C", "Casted Purifying Light", "Casted Purifying Light", Sev2, 0),
-                new PlayerSrcHealthDamageHitMechanic(PurifyingLight, new MechanicPlotlySetting(Symbols.HourglassOpen, Colors.LightBlue), "PurLight.Soul.C", "Casted Purifying Light (Hit Soul Feast)", "Purifying Light Hit Soul Feast", Sev1, 0)
+                new PlayerSrcHealthDamageMechanic(PurifyingLight, Mech_PurifyingLightCast, new (Symbols.Hourglass, Colors.LightBlue), new("PurLight.C", "Casted Purifying Light", "Casted Purifying Light"), Sev2),
+                new PlayerSrcHealthDamageHitMechanic(PurifyingLight, Mech_PurifyingLightHitSoulFeast, new (Symbols.HourglassOpen, Colors.LightBlue), new("PurLight.Soul.C", "Casted Purifying Light (Hit Soul Feast)", "Purifying Light Hit Soul Feast"), Sev1)
                     .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.SoulFeast)),
-                new PlayerSrcHealthDamageHitMechanic(PurifyingLight, new MechanicPlotlySetting(Symbols.HourglassOpen, Colors.Blue), "PurLight.Dagda.C", "Casted Purifying Light (Hit Dagda)", "Purifying Light Hit Dagda", Sev0, 0)
+                new PlayerSrcHealthDamageHitMechanic(PurifyingLight, Mech_PurifyingLightHitDagda, new (Symbols.HourglassOpen, Colors.Blue), new("PurLight.Dagda.C", "Casted Purifying Light (Hit Dagda)", "Purifying Light Hit Dagda"), Sev0)
                     .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.Dagda)),
             ]),
-            new PlayerDstEffectMechanic(EffectGUIDs.CosmicObservatoryDemonicFever, new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "DemFev.T", "Targeted by Demonic Fever (Orange Spread AoEs)", "Demonic Fever Target", Sev0, 0),
+            new PlayerDstEffectMechanic(EffectGUIDs.CosmicObservatoryDemonicFever, Mech_DemonicFeverTarget, new (Symbols.Circle, Colors.LightOrange), new("DemFev.T", "Targeted by Demonic Fever (Orange Spread AoEs)", "Demonic Fever Target"), Sev0),
         ])
         );
         Icon = EncounterIconCosmicObservatory;

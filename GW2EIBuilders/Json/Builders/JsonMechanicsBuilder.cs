@@ -29,6 +29,7 @@ internal static class JsonMechanicsBuilder
     {
         var jsMechs = new JsonMechanics
         {
+            ID = mech.ID,
             Name = mech.ShortName,
             FullName = mech.FullName,
             Description = mech.Description,

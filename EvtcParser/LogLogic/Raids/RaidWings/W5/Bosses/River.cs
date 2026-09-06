@@ -12,7 +12,8 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
@@ -20,12 +21,12 @@ internal class River : HallOfChains
 {
     internal readonly MechanicGroup Mechanics = new([
 
-            new PlayerDstHealthDamageHitMechanic(BombShellRiverOfSouls, new MechanicPlotlySetting(Symbols.Circle,Colors.Orange), "Bomb Hit","Hit by Hollowed Bomber Exlosion", "Hit by Bomb", Sev0, 0 ),
-            new PlayerDstHealthDamageHitMechanic(SoullessTorrent, new MechanicPlotlySetting(Symbols.Square,Colors.Orange), "Stun Bomb", "Stunned by Soulless Torrent (Mini Bomb)", "Stun Bomb", Sev0, 0)
+            new PlayerDstHealthDamageHitMechanic(BombShellRiverOfSouls, Mech_BombShellRiverOfSouls, new (Symbols.Circle,Colors.Orange), new("Bomb Hit","Hit by Hollowed Bomber Exlosion", "Hit by Bomb"), Sev0),
+            new PlayerDstHealthDamageHitMechanic(SoullessTorrent, Mech_SoullessTorrent, new (Symbols.Square,Colors.Orange), new("Stun Bomb", "Stunned by Soulless Torrent (Mini Bomb)", "Stun Bomb"), Sev0)
                 .UsingBuffChecker(Stability, false),
-            new EnemySrcHealthDamageHitMechanic(BombShellRiverOfSouls, new MechanicPlotlySetting(Symbols.Circle, Colors.LightOrange), "Bomb Hit Desmina", "Hollowed Bomber hit Desmina", "Bomb Desmina", Sev0, 0)
+            new EnemySrcHealthDamageHitMechanic(BombShellRiverOfSouls, Mech_BombShellRiverOfSoulsOnDesmina, new (Symbols.Circle, Colors.LightOrange), new("Bomb Hit Desmina", "Hollowed Bomber hit Desmina", "Bomb Desmina"), Sev0)
                 .UsingChecker((de, log) => de.To.IsSpecies(TargetID.Desmina)),
-            new EnemySrcHealthDamageHitMechanic(EnervatorDamageSkillToDesmina, new MechanicPlotlySetting(Symbols.TriangleDown, Colors.GreenishYellow), "Tether Desmina", "Enervator tethers and damages Desmina", "Enervator Tether", Sev0, 0)
+            new EnemySrcHealthDamageHitMechanic(EnervatorDamageSkillToDesmina, Mech_EnervatorDamageDesmina, new (Symbols.TriangleDown, Colors.GreenishYellow), new("Tether Desmina", "Enervator tethers and damages Desmina", "Enervator Tether"), Sev0)
                 .UsingChecker((de, log) => de.To.IsSpecies(TargetID.Desmina)),
         ]);
     public River(int triggerID) : base(triggerID)
@@ -112,7 +113,7 @@ internal class River : HallOfChains
         agentData.AddCustomNPCAgent(logData.LogStart, logData.LogEnd, "River of Souls", Spec.Gadget, TargetID.DummyTarget, true);
         foreach (var desmina in agentData.GetStableSpeciesByID(TargetID.Desmina))
         {
-            var positions = combatData.Where(x => x.IsStateChange == StateChange.Position && x.SrcMatchesAgent(desmina)).Take(5).Select(x => new PositionEvent(x, agentData).GetParametricPoint3D());
+            var positions = combatData.Where(x => x.IsPosition && x.SrcMatchesAgent(desmina)).Take(5).Select(x => new PositionEvent(x, agentData).GetParametricPoint3D());
             if (positions.Any(x => x.XYZ.X >= 7500))
             {
                 desmina.OverrideID(IgnoredSpecies, agentData);

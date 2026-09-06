@@ -1214,3 +1214,73 @@ function playerIsRunningHealingExtension(playerData) {
     }
     return false;
 }
+
+/**
+ * Binary search over an array of objects sorted to
+ * finds the index of the last element that satisfies the given predicate.
+ *
+ * The predicate is expected to be monotonic across the array:
+ * - `true` for all matching elements.
+ * - `false` for all elements after the last match.
+ *
+ * @param {Array} arr - The sorted array to search.
+ * @param {(item: any) => boolean} predicate - Function that determines whether an element matches.
+ * @returns {number} The index of the last matching element, or `-1` if none exists.
+ */
+function binarySearchLastIndex(arr, predicate) {
+    if (!arr || arr.length === 0) {
+        return -1;
+    }
+
+    let low = 0;
+    let high = arr.length - 1;
+    let result = -1;
+
+    while (low <= high) {
+        const mid = (low + high) >>> 1;
+        if (predicate(arr[mid])) {
+            result = mid;
+            low = mid + 1;
+        }
+        else {
+            high = mid - 1;
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Binary search over an array of objects sorted to
+ * finds the index of the last element that satisfies the given predicate.
+ *
+ * The predicate is expected to be monotonic across the array:
+ * - `false` for all elements before the first match.
+ * - `true` for all matching elements and those after.
+ *
+ * @param {Array} arr - The sorted array to search.
+ * @param {(item: any) => boolean} predicate - Function that determines whether an element matches.
+ * @returns {number} The index of the first matching element, or `arr.length` if none exists.
+ */
+function binarySearchFirstIndex(arr, predicate) {
+    if (!arr || arr.length === 0) {
+        return null;
+    }
+
+    let low = 0;
+    let high = arr.length - 1;
+    let result = arr.length;
+
+    while (low <= high) {
+        const mid = (low + high) >>> 1;
+        if (predicate(arr[mid])) {
+            result = mid;
+            high = mid - 1;
+        }
+        else {
+            low = mid + 1;
+        }
+    }
+
+    return result;
+}

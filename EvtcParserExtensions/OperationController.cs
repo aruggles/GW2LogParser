@@ -77,15 +77,20 @@ public abstract class OperationController : ParserController
         _OpenableFiles = [];
     }
 
-    public override void Reset()
+    public override void ResetContent()
     {
-        base.Reset();
+        base.ResetContent();
         BasicMetaData = null;
         DPSReportLink = null;
         OutLocation = null;
-        Elapsed = "";
         _GeneratedFiles.Clear();
         _OpenableFiles.Clear();
+    }
+
+    public override void ResetState()
+    {
+        base.ResetState();
+        Elapsed = "";
     }
 
     public void Start()

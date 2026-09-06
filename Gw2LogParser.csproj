@@ -52,7 +52,6 @@
     <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorsStats.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorStats.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\ActorStatus\tmplCombatReplayActorStatus.html" />
-    <Content Include="Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageData.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\DamageTable\tmplCombatReplayDamageTable.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayAnimationControl.html" />
     <Content Include="Resources\eiparser\combatReplayTemplates\tmplCombatReplayExtraDecorations.html" />

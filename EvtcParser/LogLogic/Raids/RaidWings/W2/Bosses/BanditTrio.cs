@@ -14,38 +14,43 @@ using static GW2EIEvtcParser.ParserHelper;
 using static GW2EIEvtcParser.ParserHelpers.LogImages;
 using static GW2EIEvtcParser.SkillIDs;
 using static GW2EIEvtcParser.SpeciesIDs;
-using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity;
+using static GW2EIEvtcParser.EIData.Mechanic.MechanicSeverity; 
+using static GW2EIEvtcParser.MechanicIDs;
 
 namespace GW2EIEvtcParser.LogLogic;
 
 internal class BanditTrio : SalvationPass
 {
     internal readonly MechanicGroup Mechanics = new([
-            new PlayerDstBuffApplyMechanic(ShellShocked, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.DarkGreen), "Launched", "Shell-Shocked (Launched from pad)", "Shell-Shocked", Sev2, 0),
-            new PlayerDstBuffApplyMechanic(SlowBurn, new MechanicPlotlySetting(Symbols.StarTriangleDown, Colors.LightPurple), "SlowBurn.A", "Received Slow Burn", "Slow Burn Application", Sev1, 0),
-            new PlayerSrcBuffApplyMechanic(SapperBombDamageBuff, new MechanicPlotlySetting(Symbols.CircleCross, Colors.Green), "Hit Cage", "Hit Cage with Sapper Bomb", "Hit Cage (Sapper Bomb)", Sev0, 0).UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.Cage)),
+            new PlayerDstBuffApplyMechanic(ShellShocked, Mech_ShellShockedTrio, new (Symbols.CircleOpen,Colors.DarkGreen), new("Launched", "Shell-Shocked (Launched from pad)", "Shell-Shocked"), Sev2),
+            new PlayerDstBuffApplyMechanic(SlowBurn, Mech_SlowBurn, new (Symbols.StarTriangleDown, Colors.LightPurple), new("SlowBurn.A", "Received Slow Burn", "Slow Burn Application"), Sev1),
+            new PlayerSrcBuffApplyMechanic(SapperBombDamageBuff, Mech_SapperBombOnCage, new (Symbols.CircleCross, Colors.Green), new("Hit Cage", "Hit Cage with Sapper Bomb", "Hit Cage (Sapper Bomb)"), Sev0)
+                .UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.Cage)),
             new MechanicGroup([
                 new MechanicGroup([
-                    new PlayerSrcBuffApplyMechanic(Targeted, new MechanicPlotlySetting(Symbols.StarSquare, Colors.Pink), "Targeted.B", "Applied Targeted Buff (Berg)", "Targeted Application (Berg)", Sev0, 0).UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.Berg)),
-                    new PlayerSrcBuffApplyMechanic(Targeted, new MechanicPlotlySetting(Symbols.StarSquare, Colors.Purple), "Targeted.A", "Applied Targeted Buff (Any)", "Targeted Application (Any)", Sev1, 0),
+                    new PlayerSrcBuffApplyMechanic(Targeted, Mech_TargetedBerg, new (Symbols.StarSquare, Colors.Pink), new("Targeted.B", "Applied Targeted Buff (Berg)", "Targeted Application (Berg)"), Sev0)
+                        .UsingChecker((bae, log) => bae.To.IsSpecies(TargetID.Berg)),
+                    new PlayerSrcBuffApplyMechanic(Targeted, Mech_TargetedAny, new (Symbols.StarSquare, Colors.Purple), new("Targeted.A", "Applied Targeted Buff (Any)", "Targeted Application (Any)"), Sev1),
                 ]),
                 new MechanicGroup([
-                    new PlayerCastStartMechanic(Beehive, new MechanicPlotlySetting(Symbols.Pentagon, Colors.Yellow), "Beehive.T", "Threw Beehive", "Beehive Throw", Sev0, 0),
-                    new PlayerSrcHealthDamageHitMechanic(Beehive, new MechanicPlotlySetting(Symbols.PentagonOpen, Colors.Yellow), "Beehive.H.B", "Beehive Hits (Berg)", "Beehive Hit (Berg)", Sev0, 0)
+                    new PlayerCastStartMechanic(Beehive, Mech_BeehiveCast, new (Symbols.Pentagon, Colors.Yellow), new("Beehive.T", "Threw Beehive", "Beehive Throw"), Sev0),
+                    new PlayerSrcHealthDamageHitMechanic(Beehive, Mech_BeehiveOnBerg, new (Symbols.PentagonOpen, Colors.Yellow), new("Beehive.H.B", "Beehive Hits (Berg)", "Beehive Hit (Berg)"), Sev0)
                         .UsingChecker((ahde, log) => ahde.To.IsSpecies(TargetID.Berg)),
-                    new PlayerSrcHealthDamageHitMechanic(Beehive, new MechanicPlotlySetting(Symbols.PentagonOpen, Colors.LightOrange), "Beehive.H.A", "Beehive Hits (Any)", "Beehive Hit (Any)", Sev1, 0)
+                    new PlayerSrcHealthDamageHitMechanic(Beehive, Mech_Beehive, new (Symbols.PentagonOpen, Colors.LightOrange), new("Beehive.H.A", "Beehive Hits (Any)", "Beehive Hit (Any)"), Sev1)
                 ]),
-                new PlayerDstHealthDamageHitMechanic(OverheadSmashBerg, new MechanicPlotlySetting(Symbols.TriangleLeft,Colors.Orange), "Smash", "Overhead Smash (CC Attack Berg)","CC Smash", Sev0, 0),
+                new PlayerDstHealthDamageHitMechanic(OverheadSmashBerg, Mech_OverheadSmashBerg, new (Symbols.TriangleLeft,Colors.Orange), new("Smash", "Overhead Smash (CC Attack Berg)","CC Smash"), Sev0),
             ]),
             new MechanicGroup([
-                new PlayerDstBuffApplyMechanic(Blind, new MechanicPlotlySetting(Symbols.X, Colors.White), "Blinded", "Blinded by Zane", "Blinded", Sev1, 0).UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.Zane)),
-                new PlayerDstHealthDamageHitMechanic(HailOfBulletsZane, new MechanicPlotlySetting(Symbols.TriangleRightOpen,Colors.Red), "Zane Cone", "Hail of Bullets (Zane Cone Shot)","Hail of Bullets", Sev2, 0),
+                new PlayerDstBuffApplyMechanic(Blind, Mech_BlindZane, new (Symbols.X, Colors.White), new("Blinded", "Blinded by Zane", "Blinded"), Sev1)
+                    .UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.Zane)),
+                new PlayerDstHealthDamageHitMechanic(HailOfBulletsZane, Mech_HailOfBulletsZane, new (Symbols.TriangleRightOpen,Colors.Red), new("Zane Cone", "Hail of Bullets (Zane Cone Shot)","Hail of Bullets"), Sev2),
             ]),
             new MechanicGroup([
-                new PlayerCastStartMechanic(ThrowOilKeg, new MechanicPlotlySetting(Symbols.Hourglass, Colors.LightRed), "OilKeg.T", "Threw Oil Keg", "Oil Keg Throw", Sev0, 0),
-                new PlayerDstBuffApplyMechanic(Burning, new MechanicPlotlySetting(Symbols.StarOpen, Colors.Red), "Burning", "Burned by Narella", "Burning", Sev1, 0).UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.Narella)),
-                new PlayerDstHealthDamageHitMechanic(FieryVortexNarella, new MechanicPlotlySetting(Symbols.CircleOpen,Colors.Yellow), "Tornado.N", "Fiery Vortex (Tornado Narella)","Tornado (Narella)", Sev0, 250),
-                new PlayerDstHealthDamageHitMechanic(FlakShotNarella, new MechanicPlotlySetting(Symbols.Diamond, Colors.LightRed), "Flak", "Flak Shot (Narella)", "Flak Shot Hit", Sev2, 0),
+                new PlayerCastStartMechanic(ThrowOilKeg, Mech_ThrowOilKeg, new (Symbols.Hourglass, Colors.LightRed), new("OilKeg.T", "Threw Oil Keg", "Oil Keg Throw"), Sev0),
+                new PlayerDstBuffApplyMechanic(Burning, Mech_BurningNarella, new (Symbols.StarOpen, Colors.Red), new("Burning", "Burned by Narella", "Burning"), Sev1)
+                    .UsingChecker((bae, log) => bae.CreditedBy.IsSpecies(TargetID.Narella)),
+                new PlayerDstHealthDamageHitMechanic(FieryVortexNarella, Mech_FieryVortexNarella, new (Symbols.CircleOpen,Colors.Yellow), new("Tornado.N", "Fiery Vortex (Tornado Narella)","Tornado (Narella)"), Sev0, 250),
+                new PlayerDstHealthDamageHitMechanic(FlakShotNarella, Mech_FlakShotNarella, new (Symbols.Diamond, Colors.LightRed), new("Flak", "Flak Shot (Narella)", "Flak Shot Hit"), Sev2),
             ]),
         ]);
     public BanditTrio(int triggerID) : base(triggerID)
@@ -139,7 +144,7 @@ internal class BanditTrio : SalvationPass
             // Thrash mob start check
             var boxStart = new Vector2(-2200, -11300);
             var boxEnd = new Vector2(1000, -7200);
-            var banditPositions = combatData.Where(x => x.IsStateChange == StateChange.Position && agentData.GetAgent(x.SrcAgent, x.Time).IsAnySpecies(TrashMobsToCheck))
+            var banditPositions = combatData.Where(x => x.IsPosition && agentData.GetAgent(x.SrcAgent, x.Time).IsAnySpecies(TrashMobsToCheck))
                 .Select(x => new PositionEvent(x, agentData));
             var banditsInBox = banditPositions.Where(x => x.Time < startToUse + 10000 && x.GetPointXY().IsInBoundingBox(boxStart, boxEnd))
                 .Select(x => x.Src)

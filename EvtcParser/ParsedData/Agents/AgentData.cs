@@ -122,6 +122,15 @@ public class AgentData
         }
         return [];
     }
+    public IReadOnlyList<AgentItem> GetStableSpeciesByIDs(int[] ids)
+    {
+        var list = new List<AgentItem>();
+        foreach (var id in ids)
+        {
+            list.AddRange(GetStableSpeciesByID(id));
+        }
+        return list;
+    }
     public IReadOnlyList<AgentItem> GetStableSpeciesByIDAndAgent(int id, ulong agent)
     {
         if (agent == 0)

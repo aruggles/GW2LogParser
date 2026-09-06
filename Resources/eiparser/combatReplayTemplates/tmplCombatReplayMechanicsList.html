@@ -83,7 +83,7 @@
                 <tbody>
                     <tr v-for="event in filteredMechanicEvents" class="combat-replay-mechanics-list-row"
                         :class="{active: event.actor.id === selectedactorid}" @click="selectMechanic(event)">
-                        <td :class="{'mech-actor-active': reactiveAnimationData.selectedMechanic.name === event.mechanic.name &&
+                        <td class="mech-cell-time" :class="{'mech-actor-active': reactiveAnimationData.selectedMechanic.name === event.mechanic.name &&
                                     reactiveAnimationData.selectedMechanic.actorId === event.actor.id}" 
                                 :data-original-title="'Timestamp'">
                                 {{numberFormater3(event.time / 1000)}}s
@@ -102,7 +102,7 @@
                         </td>
                     </tr>
                     <tr v-for="event in paddedMechanics" class="combat-replay-mechanics-list-row">
-                        <td>
+                        <td class="mech-cell-time">
                         </td>
                         <td class="text-left mech-cell" >
                         </td>

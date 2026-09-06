@@ -175,10 +175,6 @@ namespace Gw2LogParser.Properties {
             get { return ResourceManager.GetString("tmplCombatReplayAnimationControl", resourceCulture); }
         }
 
-        public static string tmplCombatReplayDamageData {
-            get { return ResourceManager.GetString("tmplCombatReplayDamageData", resourceCulture); }
-        }
-
         public static string tmplCombatReplayDamageTable {
             get { return ResourceManager.GetString("tmplCombatReplayDamageTable", resourceCulture); }
         }
