@@ -33,7 +33,7 @@ public class SupportAllStatistics : SupportPerAllyStatistics
         var (Count, Duration) = GetReses(log, actor, start, end);
         ResurrectCount = Count;
         ResurrectTime = Math.Round((double)Duration / 1000, ParserHelper.TimeDigit);
-        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakData(actor.AgentItem))
+        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakData(actor.AgentItem).Where(x => x.Time >= start && x.Time <= end))
         {
             StunBreakCount++;
             RemovedStunDuration += sbe.RemainingDuration;

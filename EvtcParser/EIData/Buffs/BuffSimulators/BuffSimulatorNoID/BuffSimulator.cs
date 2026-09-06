@@ -11,7 +11,6 @@ internal abstract class BuffSimulator : AbstractBuffSimulator
     private readonly int _capacity;
 
     private static readonly QueueLogic _queueLogic = new();
-    private static readonly HealingLogic _healingLogic = new();
     private static readonly ForceOverrideLogic _forceOverrideLogic = new();
     private static readonly OverrideLogic _overrideLogic = new();
     //private static readonly CappedDurationLogic _cappedDurationLogic = new CappedDurationLogic();
@@ -27,7 +26,10 @@ internal abstract class BuffSimulator : AbstractBuffSimulator
                 _logic = _queueLogic;
                 break;
             case BuffStackType.Regeneration:
-                _logic = _healingLogic;
+                // Not shared: HealingLogic is stateful (it stops sorting once a stack-active event
+                // has been seen), so a shared instance would leak that state across every actor,
+                // log and thread that simulates Regeneration.
+                _logic = new HealingLogic();
                 break;
             case BuffStackType.Force:
                 _logic = _forceOverrideLogic;

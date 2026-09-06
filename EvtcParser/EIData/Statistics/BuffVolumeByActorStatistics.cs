@@ -29,10 +29,6 @@ public class BuffVolumeByActorStatistics
             if (abae is BuffExtensionEvent bee)
             {
                 incomingByExtension += bee.ExtendedDuration;
-                if (activePhaseDuration > 0)
-                {
-                    incomingByExtension += bee.ExtendedDuration;
-                }
             }
 
         }

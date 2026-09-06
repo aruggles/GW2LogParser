@@ -42,7 +42,7 @@ public class DefenseAllStatistics : DefensePerTargetStatistics
         DeadDuration = (long)dead.Sum(x => x.IntersectingArea(start, end));
         DcDuration = (long)dc.Sum(x => x.IntersectingArea(start, end));
 
-        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakReceivedData(actor.AgentItem))
+        foreach (StunBreakEvent sbe in log.CombatData.GetStunBreakReceivedData(actor.AgentItem).Where(x => x.Time >= start && x.Time <= end))
         {
             StunBreakCount++;
             RemovedStunDuration += sbe.RemainingDuration;

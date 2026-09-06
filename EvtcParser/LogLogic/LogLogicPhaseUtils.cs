@@ -51,7 +51,7 @@ internal static class LogLogicPhaseUtils
             }
             else
             {
-                var fightPhase = new EncounterPhaseData(startEvent.Time, phases[0].End, "Fight " + (sequence++), true, log.LogData.Logic.Icon, LogData.Mode.Normal, log.LogData.Logic.LogID);
+                var fightPhase = new EncounterPhaseData(startEvent.Time, log.LogData.LogEnd, "Fight " + (sequence++), true, log.LogData.Logic.Icon, LogData.Mode.Normal, log.LogData.Logic.LogID);
                 phases.Add(fightPhase);
                 break;
             }

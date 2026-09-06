@@ -60,7 +60,7 @@ public class DefensePerTargetStatistics
                 {
                     continue;
                 }
-                currentBoonStripTime = Math.Max(currentBoonStripTime + brae.RemovedDuration, log.LogData.LogDuration);
+                currentBoonStripTime = Math.Min(currentBoonStripTime + brae.RemovedDuration, log.LogData.LogDuration);
                 strip++;
             }
             stripTime += currentBoonStripTime;
@@ -90,7 +90,7 @@ public class DefensePerTargetStatistics
                         if (ndhd.IsLifeLeech)
                         {
                             LifeLeechDamageTaken += damageEvent.HealthDamage;
-                            LifeLeechDamageTaken++;
+                            LifeLeechDamageTakenCount++;
                         }
                     }
                     else
