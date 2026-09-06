@@ -40,6 +40,19 @@ internal class GW2SpecAPIController
         _apiSpecs = new GW2APIUtilities.APIItems<GW2APISpec>(specList);
     }
 
+    // FORK: writes the in-memory cache without re-downloading; used to persist the startup download.
+    internal void WriteCachedAPISpecsToFile(string filePath)
+    {
+        // Never persist an empty result: it usually means the API was unreachable, and an empty file
+        // would be read back as a valid cache, so the download would never be retried.
+        if (_apiSpecs.Items.Count == 0)
+        {
+            return;
+        }
+        using var writer = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+        JsonSerializer.Serialize(writer, _apiSpecs.Items.Values.ToList(), GW2APIUtilities.SerializerSettings);
+    }
+
     private void SetAPISpecs(string filePath)
     {
         var fi = new FileInfo(filePath);

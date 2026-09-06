@@ -40,6 +40,19 @@ internal class GW2MapAPIController
         _apiMaps = new GW2APIUtilities.APIItems<GW2APIMap>(mapList);
     }
 
+    // FORK: writes the in-memory cache without re-downloading; used to persist the startup download.
+    internal void WriteCachedAPIMapsToFile(string filePath)
+    {
+        // Never persist an empty result: it usually means the API was unreachable, and an empty file
+        // would be read back as a valid cache, so the download would never be retried.
+        if (_apiMaps.Items.Count == 0)
+        {
+            return;
+        }
+        using var writer = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+        JsonSerializer.Serialize(writer, _apiMaps.Items.Values.ToList(), GW2APIUtilities.SerializerSettings);
+    }
+
     private void SetAPIMaps(string filePath)
     {
         var fi = new FileInfo(filePath);

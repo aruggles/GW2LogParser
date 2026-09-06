@@ -36,6 +36,14 @@ public class GW2APIController
         //traitAPIController.GetAPITraits(null);
     }
 
+    // FORK: persist the caches populated at construction time without a second round of API calls.
+    public void WriteCachedAPIToFile(string skillLocation, string specLocation, string mapLocation)
+    {
+        skillAPIController.WriteCachedAPISkillsToFile(skillLocation);
+        specAPIController.WriteCachedAPISpecsToFile(specLocation);
+        mapAPIController.WriteCachedAPIMapsToFile(mapLocation);
+    }
+
     //----------------------------------------------------------------------------- SKILLS
 
     /// <summary>

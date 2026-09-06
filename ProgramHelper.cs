@@ -35,6 +35,30 @@ public sealed class ProgramHelper : IDisposable
     public ProgramHelper(Version parserVersion)
     {
         ParserVersion = parserVersion;
+        SaveAPICacheIfMissing();
+    }
+
+    /// <summary>
+    /// The static apiController downloads skills/specs/maps from the GW2 API when its cache files are absent,
+    /// but nothing persisted them, so every launch repeated the ~10s download until the user pressed
+    /// "Refresh API Cache". Write whatever was just loaded so the next launch reads from disk instead.
+    /// </summary>
+    private static void SaveAPICacheIfMissing()
+    {
+        static bool Missing(string path) => !File.Exists(path) || new FileInfo(path).Length == 0;
+        if (!Missing(SkillAPICacheLocation) && !Missing(SpecAPICacheLocation) && !Missing(MapAPICacheLocation))
+        {
+            return;
+        }
+        try
+        {
+            Directory.CreateDirectory(CacheLocation);
+            apiController.WriteCachedAPIToFile(SkillAPICacheLocation, SpecAPICacheLocation, MapAPICacheLocation);
+        }
+        catch (Exception)
+        {
+            // Read-only install location or similar: the in-memory cache still serves this session.
+        }
     }
 
     private CancellationTokenSource? RunningMemoryCheck = null;

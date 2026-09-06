@@ -342,6 +342,7 @@ public partial class MainForm : Form
         ProgramHelper.apiController.WriteAPISkillsToFile(ProgramHelper.SkillAPICacheLocation);
         ProgramHelper.apiController.WriteAPISpecsToFile(ProgramHelper.SpecAPICacheLocation);
         ProgramHelper.apiController.WriteAPITraitsToFile(ProgramHelper.TraitAPICacheLocation);
+        ProgramHelper.apiController.WriteAPIMapsToFile(ProgramHelper.MapAPICacheLocation);
         btnRefreshAPI.Enabled = true;
         MessageBox.Show("API cache has been refreshed");
     }
